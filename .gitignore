@@ -8,6 +8,8 @@
 *.pyc
 *core.[0-9]*
 
+*egg-info/
+
 ### Please note that the following files cannot be pushed to the remote repository even after removing them from this .gitignore (they are prohibited in the remote repository)
 .classpath
 .project

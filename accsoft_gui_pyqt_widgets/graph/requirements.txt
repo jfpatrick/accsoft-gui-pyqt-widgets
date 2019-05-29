@@ -1,0 +1,4 @@
+numpy~=1.16
+QtPy~=1.7.0
+PyQt5~=5.12
+pyqtgraph~=0.10.0
