@@ -6,6 +6,9 @@ from typing import Dict, Optional, Type
 
 import pyqtgraph as pg
 
+from qtpy.QtCore import Slot
+from qtpy.QtWidgets import QGraphicsItem
+
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.widgets.axisitems import (
     RelativeTimeAxisItem,
@@ -38,20 +41,24 @@ class ExPlotWidget(pg.PlotWidget):
 
     def __init__(
         self,
+        parent: Optional[QGraphicsItem] = None,
+        background: str = "default",
         config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
-        axis_items: Optional[Dict[str, pg.AxisItem]] = {},
+        axis_items: Dict[str, pg.AxisItem] = {},
         timing_source: Optional[UpdateSource] = None,
-        **plotwidget_kwargs,
+        **plotitem_kwargs,
     ):
         """Create a new plot widget.
 
         Args:
-            timing_source (Optional[UpdateSource]): Optional source for timing
+            parent: parent item for this widget, will only be passed to baseclass
+            background: background for the widget, will only be passed to baseclass
+            timing_source: Optional source for timing
                 updates
-            config (ExPlotWidgetConfig): Configuration for the plot widget
-            **plotwidget_kwargs: Params passed to superclass
+            config: Configuration for the plot widget
+            **plotitem_kwargs: Params passed to the plot item
         """
-        super().__init__(**plotwidget_kwargs)
+        super().__init__(parent=parent, background=background)
         self.timing_source = timing_source
         self._config = config
         self.plotItem: ExPlotItem
@@ -61,7 +68,7 @@ class ExPlotWidget(pg.PlotWidget):
             axis_items=axis_items,
             config=config,
             timing_source=timing_source,
-            **plotwidget_kwargs,
+            **plotitem_kwargs,
         )
         self.setCentralItem(self.plotItem)
 
@@ -158,6 +165,12 @@ class ExPlotWidget(pg.PlotWidget):
             New item that was created
         """
         return self.plotItem.addTimestampMarker(*graphicsobjectargs, data_source=data_source)
+
+    @Slot(float)
+    @Slot(int)
+    def singleCurveValueSlot(self, data):
+        """Slot that allows to draw data """
+        self.plotItem.handle_single_curve_value_slot(data)
 
     def _create_fitting_axis_item(self) -> pg.AxisItem:
         """Create an axis that fits the given plotting style

@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
         )
-        self.plot = accgraph.ExPlotWidget(config=plot_config)
+        self.plot = accgraph.ExPlotWidget(parent=self, config=plot_config)
         self.plot.addCurve(data_source=data_source_1)
         # Uncomment for second curve in additional layer
         # self.plot.plotItem.add_layer_with_y_axis(layer_identifier="layer_1")

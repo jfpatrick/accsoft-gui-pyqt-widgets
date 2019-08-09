@@ -34,8 +34,8 @@ class ExPlotWidgetConfig:
 
     def __init__(
         self,
-        cycle_size: float = 10,
-        time_progress_line: bool = True,
+        cycle_size: float = 60,
+        time_progress_line: bool = False,
         plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
         x_range_offset: float = np.nan,
     ):

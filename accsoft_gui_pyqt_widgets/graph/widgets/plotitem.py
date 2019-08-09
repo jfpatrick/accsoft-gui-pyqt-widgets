@@ -30,13 +30,14 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import (
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
     SlidingPointerPlotCurve,
+    ScrollingPlotCurve
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import CurveDecorators
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     LivePlotCurveConfig,
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
+from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import PointData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,8 +58,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """Create a new plot item.
 
         Args:
-            config (ExPlotWidgetConfig): Configuration for the new plotitem
-            timing_source (UpdateSource): Source for timing updates
+            config: Configuration for the new plotitem
+            timing_source: Source for timing updates
             **plotitem_kwargs: Keyword Arguments that will be passed to PlotItem
         """
         # Pass modified axis for the multilayer movement to function properly
@@ -77,6 +78,9 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self._prepare_layers()
         self._prepare_timing_source_attachment(timing_source)
         self._prepare_scrolling_plot_fixed_scrolling_range()
+        # This will only be used in combination with the singleCurveValueSlot
+        self.single_curve_value_slot_source: Optional[UpdateSource] = None
+        self.single_curve_value_slot_curve: Optional[ScrollingPlotCurve] = None
 
     def _prepare_layers(self):
         """Initialize everything needed for multiple layers"""
@@ -612,6 +616,21 @@ class ExPlotItem(pyqtgraph.PlotItem):
             All items with the fitting type
         """
         return [curve for curve in self.items if isinstance(curve, LiveTimestampMarker)]
+
+    def handle_single_curve_value_slot(self, data):
+        """Handle arriving data"""
+        if self.single_curve_value_slot_source is None:
+            self.single_curve_value_slot_source = UpdateSource()
+        if self.single_curve_value_slot_curve is None:
+            self.single_curve_value_slot_curve = self.addCurve(
+                data_source=self.single_curve_value_slot_source
+            )
+        # Turn on fixed x range scrolling
+        if np.isnan(self.plot_config.x_range_offset):
+            self.plot_config.x_range_offset = 0
+            self._prepare_scrolling_plot_fixed_scrolling_range()
+        new_data = PointData(x_value=datetime.now().timestamp(), y_value=data)
+        self.single_curve_value_slot_source.sig_data_update.emit(new_data)
 
 
 class PlotItemLayer:
