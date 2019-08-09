@@ -625,10 +625,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
             self.single_curve_value_slot_curve = self.addCurve(
                 data_source=self.single_curve_value_slot_source
             )
-        # Turn on fixed x range scrolling
-        if np.isnan(self.plot_config.x_range_offset):
-            self.plot_config.x_range_offset = 0
-            self._prepare_scrolling_plot_fixed_scrolling_range()
         new_data = PointData(x_value=datetime.now().timestamp(), y_value=data)
         self.single_curve_value_slot_source.sig_data_update.emit(new_data)
 
@@ -750,8 +746,10 @@ class PlotItemLayerCollection:
     def update_view_box_geometries(self, plot_item: pyqtgraph.PlotItem):
         """Update the geometry"""
         for layer in self:
-            layer.view_box.setGeometry(plot_item.vb.sceneBoundingRect())
-            layer.view_box.linkedViewChanged(plot_item.vb, layer.view_box.XAxis)
+            # plot item viewbox has to be excluded to keep autoRange settings
+            if not self._plot_item.is_standard_layer(layer=layer):
+                layer.view_box.setGeometry(plot_item.vb.sceneBoundingRect())
+                layer.view_box.linkedViewChanged(plot_item.vb, layer.view_box.XAxis)
 
     def get_view_boxes(self) -> List[pyqtgraph.ViewBox]:
         """Return all layers view boxes as a list"""
