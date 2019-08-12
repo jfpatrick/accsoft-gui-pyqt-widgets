@@ -11,6 +11,7 @@ import pyqtgraph
 from qtpy.QtCore import Signal, Slot
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.axisitems import (
     CustomAxisItem,
     RelativeTimeAxisItem,
@@ -21,7 +22,7 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.bargraphitem import (
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.infiniteline import (
+from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.timestampmarker import (
     LiveTimestampMarker,
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import (
@@ -40,8 +41,6 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
 from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import PointData
 
 _LOGGER = logging.getLogger(__name__)
-
-_MAX_BUFFER_SIZE = 1000000
 
 
 # pylint: disable=too-many-ancestors
@@ -144,6 +143,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         data_source: Optional[UpdateSource] = None,
         curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ) -> pyqtgraph.PlotDataItem:
         """Add new curve for live data
@@ -157,6 +157,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             data_source: source for new data that the curve should display
             curve_config: optional configuration for curve decorators
             layer_identifier: identifier of the layer the new curve is supposed to be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
 
         Returns:
@@ -179,6 +180,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     curve_config=curve_config,
                     data_source=data_source,
                     layer_identifier=layer_identifier,
+                    buffer_size=buffer_size,
                     **plotdataitem_kwargs,
                 )
             elif data_source is None:
@@ -194,6 +196,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self,
         data_source: UpdateSource,
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs,
     ) -> LiveBarGraphItem:
         """Add a new bargraph attached to a live data source
@@ -201,6 +204,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Args:
             data_source (UpdateSource): Source emmiting new data the graph should show
             layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **bargraph_kwargs: keyword arguments for the BarGraphItem base class
 
         Returns:
@@ -211,6 +215,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 plot_item=self,
                 data_source=data_source,
                 layer_identifier=layer_identifier,
+                buffer_size = buffer_size,
                 **bargraph_kwargs,
             )
         else:
@@ -226,6 +231,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self,
         data_source: UpdateSource,
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ) -> LiveInjectionBarGraphItem:
         """Add a new injection bar graph for live data
@@ -236,6 +242,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Args:
             data_source (UpdateSource): Source for data related updates
             layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
 
         Returns:
@@ -245,6 +252,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             plot_item=self,
             data_source=data_source,
             layer_identifier=layer_identifier,
+            buffer_size=buffer_size,
             **errorbaritem_kwargs,
         )
         if not layer_identifier:
@@ -255,7 +263,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
     def addTimestampMarker(
         self,
         *graphicsobjectargs,
-        data_source: UpdateSource
+        data_source: UpdateSource,
+        buffer_size: int = DEFAULT_BUFFER_SIZE
     ) -> LiveTimestampMarker:
         """Add a infinite line item for live data
 
@@ -264,6 +273,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
         Args:
             data_source (UpdateSource): Source for data related updates,
+            buffer_size: maximum count of values the datamodel buffer should hold
             *graphicsobjectargs: Arguments passed to the GraphicsObject baseclass
 
         Returns:
@@ -273,6 +283,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             *graphicsobjectargs,
             plot_item=self,
             data_source=data_source,
+            buffer_size=buffer_size
         )
         self.addItem(layer="", item=new_plot)
         return new_plot

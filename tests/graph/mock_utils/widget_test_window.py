@@ -21,10 +21,7 @@ from .mock_timing_source import MockTimingSource
 
 
 class PlotWidgetTestWindow(QMainWindow):
-    """Helper class for creating a Window containing an ExtendedPlotWidget with
-    timing and data sources that allow convenient testing by giving the option
-    to manually triggering updates with given values.
-    """
+    """Test window with data and timing source"""
 
     def __init__(
         self,
@@ -77,3 +74,29 @@ class PlotWidgetTestWindow(QMainWindow):
                 self.plot.addInjectionBar(data_source=self.data_source_mock)
             elif self.item_to_add == LiveTimestampMarker:
                 self.plot.addTimestampMarker(data_source=self.data_source_mock)
+
+
+class MinimalTestWindow(QMainWindow):
+    """Helper class for creating a Window containing an ExtendedPlotWidget with
+    timing and data sources that allow convenient testing by giving the option
+    to manually triggering updates with given values.
+    """
+
+    def __init__(
+        self,
+        plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
+    ):
+        """Constructor :param plot_config: Configuration for the Plot Widget
+
+        Args:
+            plot_config (ExtendedPlotWidgetConfig): Configuration for the created plot widget
+        """
+        super().__init__()
+        self.plot_config: ExPlotWidgetConfig = plot_config
+        self.plot: ExPlotWidget = ExPlotWidget(config=plot_config)
+        self.resize(800, 600)
+        main_container = QWidget()
+        self.setCentralWidget(main_container)
+        main_layout = QGridLayout()
+        main_container.setLayout(main_layout)
+        main_layout.addWidget(self.plot)

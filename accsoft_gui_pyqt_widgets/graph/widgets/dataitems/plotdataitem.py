@@ -3,7 +3,6 @@ Module contains different curves that can be added to a PlotItem based on pyqtgr
 """
 
 import logging
-from typing import Dict, Optional
 import abc
 
 import numpy as np
@@ -11,6 +10,7 @@ import pyqtgraph
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import CurveDataModel
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
@@ -48,16 +48,26 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         decorators: CurveDecorators,
         timing_source_attached: bool,
         pen="w",
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ):
         """ Constructor for the base class
 
-        You can use create() for creating a curve fitting to the given config
+        Args:
+            plot_item: plot item the curve should fit to
+            curve_config: configuration object for the curve decorators
+            plot_config: configuration of the passed plot item
+            data_source: source the curve receives data from
+            decorators: object wrapping all curve decorators
+            timing_source_attached: flag if a separate source for timing updates is attached to the plot item
+            pen: pen the curve should be drawn with
+            buffer_size: count of values the curve's datamodel's buffer should hold at max
+            **plotdataitem_kwargs: keyword arguments fo the base class
         """
         DataModelBasedItem.__init__(
             self,
             timing_source_attached=timing_source_attached,
-            data_model=CurveDataModel(data_source=data_source),
+            data_model=CurveDataModel(data_source=data_source, buffer_size=buffer_size),
             parent_plot_item=plot_item,
         )
         pyqtgraph.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
@@ -75,9 +85,25 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         plot_item: "ExPlotItem",
         data_source: UpdateSource,
         curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ) -> "LivePlotCurve":
-        """Factory method for creating curve object fitting to the given plotitem."""
+        """Factory method for creating curve object fitting to the given plotitem.
+
+        This function allows easier creation of the right object instead of creating
+        the right object that fits to the plotting style of the plotitem by hand. This
+        function only initializes the item but does not yet add it to the plot item.
+
+        Args:
+            plot_item: plot item the item should fit to
+            data_source: source the item receives data from
+            buffer_size: count of values the item's datamodel's buffer should hold at max
+            curve_config: configuration object for the new item
+            **buffer_size: keyword arguments for the items baseclass
+
+        Returns:
+            the created item
+        """
         plot_config = plot_item.plot_config
         unsupported_style = plot_config.plotting_style.value != PlotWidgetStyle.SCROLLING_PLOT.value \
                             and plot_config.plotting_style.value != PlotWidgetStyle.SLIDING_POINTER.value
@@ -91,6 +117,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
                 data_source=data_source,
                 decorators=CurveDecorators(),
                 timing_source_attached=plot_item.timing_source_attached,
+                buffer_size=buffer_size,
                 **plotdataitem_kwargs,
             )
         if plot_config.plotting_style.value == PlotWidgetStyle.SLIDING_POINTER.value:
@@ -101,6 +128,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
                 data_source=data_source,
                 decorators=CurveDecorators(),
                 timing_source_attached=plot_item.timing_source_attached,
+                buffer_size=buffer_size,
                 **plotdataitem_kwargs,
             )
 

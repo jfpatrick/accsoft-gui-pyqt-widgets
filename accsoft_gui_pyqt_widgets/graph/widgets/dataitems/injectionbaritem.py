@@ -8,6 +8,7 @@ import numpy as np
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import InjectionBarDataModel
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
@@ -29,12 +30,23 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ):
+        """ Constructor for baseclass, use constructors of subclasses
+
+        Args:
+            data_source: source the item receives data from
+            plot_item: plot_item the item should fit in style
+            plot_config: configuration of the plot item
+            timing_source_attached: is a source for timing updates attached to the plotitem
+            buffer_size: count of values the items datamodel's buffer should hold at max
+            **errorbaritem_kwargs: keyword arguments for the baseclass
         """
-        Constructor for baseclass, use constructors of subclasses
-        """
-        data_model = InjectionBarDataModel(data_source=data_source)
+        data_model = InjectionBarDataModel(
+            data_source=data_source,
+            buffer_size=buffer_size
+        )
         pyqtgraph.ErrorBarItem.__init__(self, **errorbaritem_kwargs)
         DataModelBasedItem.__init__(
             self,
@@ -52,9 +64,24 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
     def create(
         data_source: UpdateSource,
         plot_item: pyqtgraph.PlotDataItem,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ) -> "LiveInjectionBarGraphItem":
-        """Factory method for creating injectionbar object fitting the requested style"""
+        """Factory method for creating injectionbar object fitting the requested style
+
+        This function allows easier creation of the right object instead of creating
+        the right object that fits to the plotting style of the plotitem by hand. This
+        function only initializes the item but does not yet add it to the plot item.
+
+        Args:
+            plot_item: plot item the item should fit to
+            data_source: source the item receives data from
+            buffer_size: count of values the item's datamodel's buffer should hold at max
+            **errorbaritem_kwargs: keyword arguments for the items baseclass
+
+        Returns:
+            the created item
+        """
         plot_config = plot_item.plot_config
         if plot_config.plotting_style != PlotWidgetStyle.SCROLLING_PLOT:
             raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
@@ -63,6 +90,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
             data_source=data_source,
             plot_config=plot_config,
             timing_source_attached=plot_item.timing_source_attached,
+            buffer_size=buffer_size,
             x=np.array([0.0]),
             y=np.array([0.0]),
             height=np.array([0.0]),

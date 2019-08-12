@@ -20,9 +20,10 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.bargraphitem import LiveBarGraphItem
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBarGraphItem
-from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.infiniteline import LiveTimestampMarker
+from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
 
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[PlotWidgetStyle, Type[pg.AxisItem]] = {
@@ -79,6 +80,7 @@ class ExPlotWidget(pg.PlotWidget):
         data_source: Optional[UpdateSource] = None,
         curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ) -> pg.PlotDataItem:
         """Add new curve for live data
@@ -92,6 +94,7 @@ class ExPlotWidget(pg.PlotWidget):
             data_source: source for new data that the curve should display
             curve_config: optional configuration for curve decorators
             layer_identifier: identifier of the layer the new curve is supposed to be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
 
         Returns:
@@ -103,6 +106,7 @@ class ExPlotWidget(pg.PlotWidget):
             data_source=data_source,
             curve_config=curve_config,
             layer_identifier=layer_identifier,
+            buffer_size = buffer_size,
             **plotdataitem_kwargs,
         )
 
@@ -110,6 +114,7 @@ class ExPlotWidget(pg.PlotWidget):
         self,
         data_source: UpdateSource,
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs
     ) -> LiveBarGraphItem:
         """Add a new bargraph attached to a live data source
@@ -117,19 +122,24 @@ class ExPlotWidget(pg.PlotWidget):
         Args:
             data_source (UpdateSource): Source emmiting new data the graph should show
             layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **bargraph_kwargs: keyword arguments for the BarGraphItem base class
 
         Returns:
             LiveBarGraphItem that was added to the plot
         """
         return self.plotItem.addBarGraph(
-            data_source=data_source, layer_identifier=layer_identifier, **bargraph_kwargs
+            data_source=data_source,
+            layer_identifier=layer_identifier,
+            buffer_size=buffer_size,
+            **bargraph_kwargs
         )
 
     def addInjectionBar(
         self,
         data_source: UpdateSource,
         layer_identifier: Optional[str] = None,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ) -> LiveInjectionBarGraphItem:
         """Add a new injection bar graph for live data
@@ -140,17 +150,24 @@ class ExPlotWidget(pg.PlotWidget):
         Args:
             data_source (UpdateSource): Source for data related updates
             layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            buffer_size: maximum count of values the datamodel buffer should hold
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
 
         Returns:
             New item that was added to the plot
         """
         return self.plotItem.addInjectionBar(
-            data_source=data_source, layer_identifier=layer_identifier, **errorbaritem_kwargs
+            data_source=data_source,
+            layer_identifier=layer_identifier,
+            buffer_size=buffer_size,
+            **errorbaritem_kwargs
         )
 
     def addTimestampMarker(
-        self, *graphicsobjectargs, data_source: UpdateSource
+        self,
+        *graphicsobjectargs,
+        data_source: UpdateSource,
+        buffer_size: int = DEFAULT_BUFFER_SIZE
     ) -> LiveTimestampMarker:
         """Add a infinite line item for live data
 
@@ -159,12 +176,17 @@ class ExPlotWidget(pg.PlotWidget):
 
         Args:
             data_source (UpdateSource): Source for data related updates,
+            buffer_size: maximum count of values the datamodel buffer should hold
             *graphicsobjectargs: Arguments passed to the GraphicsObject baseclass
 
         Returns:
             New item that was created
         """
-        return self.plotItem.addTimestampMarker(*graphicsobjectargs, data_source=data_source)
+        return self.plotItem.addTimestampMarker(
+            *graphicsobjectargs,
+            data_source=data_source,
+            buffer_size=buffer_size
+        )
 
     @Slot(float)
     @Slot(int)

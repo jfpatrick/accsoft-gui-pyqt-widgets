@@ -7,6 +7,7 @@ import pyqtgraph
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import BarGraphDataModel
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
@@ -28,6 +29,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraphitem_kwargs,
     ):
         """ Constructor for the baseclass
@@ -37,9 +39,13 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             plot_item: Plot Item that called the constructor
             plot_config: Configuration for the Plot Item that called the constructor
             timing_source_attached: Flag if the PlotItem is attached to a source for Timing Updates
+            buffer_size: Count of values the item's datamodel's buffer should hold at max
             **bargraphitem_kwargs: Keyword arguments for the BarGraphItem's constructor
         """
-        data_model = BarGraphDataModel(data_source=data_source)
+        data_model = BarGraphDataModel(
+            data_source=data_source,
+            buffer_size=buffer_size
+        )
         pyqtgraph.BarGraphItem.__init__(self, **bargraphitem_kwargs)
         DataModelBasedItem.__init__(
             self,
@@ -53,9 +59,24 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
     def create(
         plot_item: "ExPlotItem",
         data_source: UpdateSource,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs,
     ) -> "LiveBarGraphItem":
-        """Factory method for creating bargraph object fitting the requested style"""
+        """ Factory method for creating bar graph object fitting the requested style
+
+        This function allows easier creation of the right object instead of creating
+        the right object that fits to the plotting style of the plotitem by hand. This
+        function only initializes the item but does not yet add it to the plot item.
+
+        Args:
+            plot_item: plot item the item should fit to
+            data_source: source the item receives data from
+            buffer_size: count of values the item's data model's buffer should hold at max
+            **bargraph_kwargs: keyword arguments for the items baseclass
+
+        Returns:
+            the created item
+        """
         plot_config = plot_item.plot_config
         if plot_config.plotting_style.value != PlotWidgetStyle.SCROLLING_PLOT.value:
             raise ValueError(f"{plot_config.plotting_style} is not yet a supported style for this item")
@@ -64,6 +85,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             plot_config=plot_item.plot_config,
             data_source=data_source,
             timing_source_attached=plot_item.timing_source_attached,
+            buffer_size = buffer_size,
             x=[0.0],
             height=[0.0],
             width=0,

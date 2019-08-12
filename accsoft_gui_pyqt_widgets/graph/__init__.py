@@ -6,7 +6,7 @@ from .datamodel.itemdatamodel import *
 from .widgets.axisitems import *
 from .widgets.dataitems.bargraphitem import *
 from .widgets.dataitems.datamodelbaseditem import *
-from .widgets.dataitems.infiniteline import *
+from .widgets.dataitems.timestampmarker import *
 from .widgets.dataitems.injectionbaritem import *
 from .widgets.dataitems.plotdataitem import *
 from .widgets.datastructures import *

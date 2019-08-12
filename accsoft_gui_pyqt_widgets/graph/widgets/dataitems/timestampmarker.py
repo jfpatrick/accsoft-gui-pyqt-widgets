@@ -9,6 +9,7 @@ from qtpy.QtCore import QRectF
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import TimestampMarkerDataModel
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
@@ -36,11 +37,15 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
+        buffer_size: int = DEFAULT_BUFFER_SIZE
     ):
         """
         Constructor for baseclass, use constructors of subclasses
         """
-        data_model = TimestampMarkerDataModel(data_source=data_source)
+        data_model = TimestampMarkerDataModel(
+            data_source=data_source,
+            buffer_size=buffer_size
+        )
         pyqtgraph.GraphicsObject.__init__(self, *graphicsobjectargs)
         DataModelBasedItem.__init__(
             self,
@@ -56,6 +61,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         *graphicsobjectargs,
         data_source: UpdateSource,
         plot_item: pyqtgraph.PlotDataItem,
+        buffer_size: int = DEFAULT_BUFFER_SIZE
     ) -> "LiveTimestampMarker":
         """Factory method for creating line object fitting the passed plot"""
         plot_config = plot_item.plot_config
@@ -67,6 +73,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
             plot_config=plot_config,
             data_source=data_source,
             timing_source_attached=plot_item.timing_source_attached,
+            buffer_size=buffer_size
         )
 
     @abc.abstractmethod

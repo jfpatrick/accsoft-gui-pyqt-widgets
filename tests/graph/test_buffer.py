@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
+from .mock_utils.widget_test_window import MinimalTestWindow
 
 # ~~~ Sorting Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -216,6 +217,43 @@ def test_add_empty_list():
         x_values=np.array([]), y_values=np.array([])
     )
     assert buffer.is_empty()
+
+
+@pytest.mark.parametrize("item_to_add", [
+    (accgraph.LivePlotCurve, "addCurve"),
+    (accgraph.LiveBarGraphItem, "addBarGraph"),
+    (accgraph.LiveInjectionBarGraphItem, "addInjectionBar"),
+    (accgraph.LiveTimestampMarker, "addTimestampMarker"),
+])
+@pytest.mark.parametrize("use_convenience_functions", [True, False])
+def test_buffer_size_configurability(
+        qtbot,
+        item_to_add: Tuple[accgraph.DataModelBasedItem, str],
+        use_convenience_functions: bool
+):
+    window = MinimalTestWindow()
+    window.show()
+    qtbot.addWidget(window)
+    plot_item = window.plot.plotItem
+    data_source = accgraph.UpdateSource()
+    if use_convenience_functions:
+        # create item with the addXyz() functions
+        convenience_function = getattr(plot_item, item_to_add[1])
+        item = convenience_function(
+            data_source=data_source,
+            buffer_size=10
+        )
+    else:
+        # create items by hand and
+        item = item_to_add[0].create(
+            plot_item=plot_item,
+            data_source=data_source,
+            buffer_size=10
+        )
+        plot_item.addItem(item=item)
+    # Check if the datamodel has created a buffer in the right size
+    assert item._data_model._full_data_buffer._primary_values.size == 10
+
 
 # ~~~ Util functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
