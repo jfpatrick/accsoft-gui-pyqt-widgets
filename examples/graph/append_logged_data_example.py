@@ -1,5 +1,4 @@
-""" non_linear_append_example.py
-
+"""
 Example for an system that not only emits single live points but also
 saved points that will be emitted later.
 """
