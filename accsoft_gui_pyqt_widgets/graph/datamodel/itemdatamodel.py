@@ -176,8 +176,8 @@ class CurveDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warn(f"Data of type {type(data).__name__} does not "
-                             f"fit this line graph datamodel and will be ignored.")
+                _LOGGER.warning(f"Data of type {type(data).__name__} does not "
+                                f"fit this line graph datamodel and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -221,7 +221,7 @@ class BarGraphDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warn(f"Data of type {type(data).__name__} does not fit this bar graph datamodel and will be ignored.")
+                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this bar graph datamodel and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -266,7 +266,7 @@ class InjectionBarDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warn(f"Data of type {type(data).__name__} does not fit this injection bar datamodel and will be ignored.")
+                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this injection bar datamodel and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -299,5 +299,5 @@ class TimestampMarkerDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warn(f"Data of type {type(data).__name__} does not fit this timestamp mark datamodel and will be ignored.")
+                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this timestamp mark datamodel and will be ignored.")
                 self._non_fitting_data_info_printed = True

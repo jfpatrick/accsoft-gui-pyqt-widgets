@@ -295,11 +295,51 @@ def test_set_axis_range(qtbot):
     check_range(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
 
 
+def test_auto_range_all_layers_at_same_range(qtbot):
+    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    plot_item = window.plot.plotItem
+    layer_0 = plot_item.get_layer_by_identifier("")
+    layer_1 = plot_item.add_layer("layer_1")
+    layer_2 = plot_item.add_layer("layer_2")
+    plot_item.addItem(layer="", item=pg.PlotDataItem([0, 1], [0, 1]))
+    plot_item.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [2, -1]))
+    plot_item.addItem(layer="layer_2", item=pg.PlotDataItem([0, 1], [5, 5]))
+    layer_0.view_box.setRange(xRange=[-1.0, 2.0], yRange=[2.0, 3.0], padding=0.0)
+    layer_1.view_box.setRange(xRange=[-1.0, 2.0], yRange=[2.0, 3.0], padding=0.0)
+    layer_2.view_box.setRange(xRange=[-1.0, 2.0], yRange=[2.0, 3.0], padding=0.0)
+    layer_0.view_box.autoRange(padding=0.0)
+    check_range(layer_0.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
+    check_range(layer_1.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
+    check_range(layer_2.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
+
+
+def test_auto_range_all_layers_at_different_range(qtbot):
+    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    plot_item = window.plot.plotItem
+    layer_0 = plot_item.get_layer_by_identifier("")
+    layer_1 = plot_item.add_layer(identifier="layer_1")
+    layer_2 = plot_item.add_layer(identifier="layer_2")
+    plot_item.addItem(layer="", item=pg.PlotDataItem([-10, 150], [0, 1]))
+    plot_item.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [1.0, 3.0]))
+    plot_item.addItem(layer="layer_2", item=pg.PlotDataItem([250, 300, 350, 400], [-150.0, 0.0, -200.0, 100.0]))
+    layer_0.view_box.setRange(xRange=[-1.0, 2.0], yRange=[3.0, 5.0], padding=0.0)
+    layer_1.view_box.setRange(xRange=[-1.0, 2.0], yRange=[-2.0, 2.0], padding=0.0)
+    layer_2.view_box.setRange(xRange=[-1.0, 2.0], yRange=[-200.0, -100.0], padding=0.0)
+    # Autorange, check if also repeatable
+    for i in range(0, 100):
+        layer_0.view_box.autoRange(padding=0.0)
+        check_range(layer_0.view_box.targetRange(), [[-10.0, 400.0], [0.0, 9.0]])
+        check_range(layer_1.view_box.targetRange(), [[-10.0, 400.0], [-8.0, 10.0]])
+        check_range(layer_2.view_box.targetRange(), [[-10.0, 400.0], [-350.0, 100.0]])
+
+
 def check_range(actual_range: List[List[float]], expected_range: List[List[float]]):
     """Compare a viewboxes range with an expected range"""
     for actual, expected in list(zip(actual_range, expected_range)):
-        assert numpy.isclose(actual[0], expected[0])
-        assert numpy.isclose(actual[1], expected[1])
+        # a bit of tolerance
+        absolute_tolerance = 0.0025 * (expected[1] - expected[0])
+        assert numpy.isclose(actual[0], expected[0], atol=absolute_tolerance)
+        assert numpy.isclose(actual[1], expected[1], atol=absolute_tolerance)
 
 
 def manual_range_change(layer: PlotItemLayer, **kwargs):

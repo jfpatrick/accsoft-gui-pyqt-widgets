@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pyqtgraph
-from qtpy.QtCore import Signal, Slot
+from qtpy.QtCore import Signal, Slot, QRectF
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -63,7 +63,11 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """
         # Pass modified axis for the multilayer movement to function properly
         axis_items["left"] = CustomAxisItem(orientation="left")
-        super().__init__(axisItems=axis_items, **plotitem_kwargs)
+        super().__init__(
+            axisItems=axis_items,
+            viewBox=ExViewBox(),
+            **plotitem_kwargs
+        )
         self._time_progress_line = config.time_progress_line
         self._plot_config: ExPlotWidgetConfig = config
         self._last_timestamp: float = -1.0
@@ -93,6 +97,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
             )
         )
         self.vb.sigResized.connect(self.update_layers)
+        if isinstance(self.vb, ExViewBox):
+            self.vb.set_layer_collection(self._layers)
         self.link_y_range_of_all_layers(link=True)
 
     def _prepare_timing_source_attachment(self, timing_source: Optional[UpdateSource]):
@@ -107,7 +113,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """Initialize everything for the scrolling plot scrolling movement"""
         if not np.isnan(self._plot_config.x_range_offset):
             self.setMouseEnabled(x=False)
-            self.vb.enableAutoRange(axis=pyqtgraph.ViewBox.YAxis, enable=True)
 
     @property
     def plot_config(self):
@@ -132,7 +137,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             clear    - clear all plots before displaying new data
             params   - meta-parameters to associate with this data
         """
-        _LOGGER.warn("PlotItem.plot should not be used for plotting curves with the ExPlotItem, "
+        _LOGGER.warning("PlotItem.plot should not be used for plotting curves with the ExPlotItem, "
                      "please use ExPlotItem.addCurve for this purpose.")
         pyqtgraph.PlotItem.plot(*args, clear=clear, params=params)
 
@@ -306,7 +311,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Returns:
             New created layer instance
         """
-        new_view_box = pyqtgraph.ViewBox()
+        new_view_box = ExViewBox()
         new_y_axis = CustomAxisItem("right", **axis_kwargs)
         new_y_axis.setZValue(len(self._layers))
         new_layer = PlotItemLayer(
@@ -321,11 +326,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
         new_y_axis.linkToView(new_view_box)
         new_view_box.setXLink(self)
         new_y_axis.setLabel(**axis_label_kwargs)
-        new_view_box.enableAutoRange(axis=pyqtgraph.ViewBox.YAxis, enable=True)
         return new_layer
 
     def update_layers(self) -> None:
-        """Update the other layer's viewboxe's geometry to fit the PlotItem ones"""
+        """Update the other layer's viewbox geometry to fit the PlotItem ones"""
         self._layers.update_view_box_geometries(self)
 
     def remove_layer(self, layer: Union["PlotItemLayer", str] = "") -> bool:
@@ -335,7 +339,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
         Args:
             layer: Layer object to remove
-            layer_identifier: Identifier of the layer that should be removed
 
         Returns:
             True if the layer existed and was removed
@@ -345,7 +348,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             layer = self._layers.get(layer)
         if not isinstance(layer, PlotItemLayer):
             raise ValueError(
-                f"The layer could not be removed, since it does not have the right type ({type(layer)}) "
+                f"The layer could not be removed, since it does not have the right type ({type(layer).__name__}) "
                 f"or the given identifier does not exist."
             )
         self.layout.removeItem(layer.axis_item)
@@ -650,14 +653,16 @@ class PlotItemLayer:
     def __init__(
         self,
         plot_item: ExPlotItem,
-        view_box: pyqtgraph.ViewBox,
+        view_box: "ExViewBox",
         axis_item: pyqtgraph.AxisItem,
         identifier: str = default_layer_identifier,
     ):
         self.identifier: str = identifier
-        self.view_box: pyqtgraph.ViewBox = view_box
+        self.view_box: ExViewBox = view_box
         self.axis_item: pyqtgraph.AxisItem = axis_item
         self.plot_item: pyqtgraph.PlotItem = plot_item
+        # by default the plot will start in auto-range mode
+        self.view_box.enableAutoRange(enable=True)
 
     def __eq__(self, other):
         """Check equality of layers by their identifier."""
@@ -676,7 +681,8 @@ class PlotItemLayerCollection:
         self._pot_item_viewbox_reference_range: Dict[
             str, List[float]
         ] = {}
-        self._layer_movement_to_apply_on_other_layers: Dict[str, List[bool]] = {}
+        # Flag if the plot item viewboxes range change should be applied to other layers
+        self._forward_range_change_to_other_layers: Tuple[bool, bool] = (False, True)
         self._layers: Dict[str, PlotItemLayer] = {}
         # For disconnecting movement again
         self._y_range_slots: Dict[Slot, Signal] = {}
@@ -694,6 +700,9 @@ class PlotItemLayerCollection:
 
         None or an empty string as an identifier will return the PlotItem
         layer containing the standard y-axis and viewbox of the PlotItem
+
+        Args:
+            identifier: identifier of the layer that should be searched
         """
         if identifier is None or identifier == "":
             identifier = PlotItemLayer.default_layer_identifier
@@ -707,7 +716,7 @@ class PlotItemLayerCollection:
         return list(self._layers.values())
 
     def add(self, layer: PlotItemLayer) -> None:
-        """Add new layer to the collection. An error is raised if an layer is already
+        """Add new layer to the collection. A key error is raised if an layer is already
         included that has the same identifier.
 
         Args:
@@ -726,15 +735,13 @@ class PlotItemLayerCollection:
                 f"Either rename the layer or remove the already existing one before adding."
             )
         self._layers[layer.identifier] = layer
-        self._layer_movement_to_apply_on_other_layers[layer.identifier] = [True, False]
         self._pot_item_viewbox_reference_range[layer.identifier] = layer.axis_item.range
 
     def remove(self, layer: Union[PlotItemLayer, str] = None) -> bool:
         """ Remove a layer from this collection
 
         Args:
-            layer: Layer to delete
-            layer_identifier: Layer Identifier of the Layer to delete
+            layer: Layer instance or identifier to delete
 
         Returns:
             True if layer was in collection, False if it did not exist
@@ -746,8 +753,6 @@ class PlotItemLayerCollection:
                 del self._layers[lyr.identifier]
                 if self._pot_item_viewbox_reference_range.get(lyr.identifier, None):
                     del self._pot_item_viewbox_reference_range[lyr.identifier]
-                if self._layer_movement_to_apply_on_other_layers.get(lyr.identifier, None):
-                    del self._layer_movement_to_apply_on_other_layers[lyr.identifier]
                 del lyr.axis_item
                 del lyr.view_box
                 del lyr
@@ -755,66 +760,97 @@ class PlotItemLayerCollection:
         return False
 
     def update_view_box_geometries(self, plot_item: pyqtgraph.PlotItem):
-        """Update the geometry"""
+        """Update the viewboxes geometry"""
         for layer in self:
-            # plot item viewbox has to be excluded to keep autoRange settings
+            # plot item view box has to be excluded to keep autoRange settings
             if not self._plot_item.is_standard_layer(layer=layer):
                 layer.view_box.setGeometry(plot_item.vb.sceneBoundingRect())
                 layer.view_box.linkedViewChanged(plot_item.vb, layer.view_box.XAxis)
 
-    def get_view_boxes(self) -> List[pyqtgraph.ViewBox]:
+    def get_view_boxes(self) -> List["ExViewBox"]:
         """Return all layers view boxes as a list"""
         return [layer.view_box for layer in self]
 
     def link_y_range_of_all_layers(self, link: bool) -> None:
         """ Link movements in all layers in y ranges
 
-        Linking the movement in will result in all layers moving
-        together while still maintaining their individual range
-        they are showing. This includes translations as well as
-        scaling of the layer
+        Scale and translate all layers as if they were one, when transformed
+        by interaction with the mouse (except if performed on a specific axis)
+        When moving the layers each will keep its range relative to the made
+        transformation. For example:
 
-        Example:
-            layer 1 y range (0, 1)
+        layer 1 with the y-range (0, 1)
 
-            layer 2 y range (-2, 2)
+        layer 2 with the y-range (-2, 2)
 
-            Moving layer 1 to (1, 2) will translate layer 2's range to (0, 4)
+        Moving layer 1 to (1, 2) will translate layer 2's range to (0, 4)
 
         Args:
-            link (bool): True if the layer's should move together
+            link (bool): True if the layer's should be moved together
 
         Returns:
             None
         """
+        plot_item_layer = self.get()
         if link:
+            # filter by range changes that are executed on the
+            plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.connect(
+                self._handle_axis_triggered_mouse_event
+            )
+            plot_item_layer.view_box.sigRangeChangedManually.connect(
+                self._handle_layer_manual_range_change
+            )
+            # when plot item gets moved, check if move other layers should be moved
+            plot_item_layer.view_box.sigYRangeChanged.connect(
+                self._handle_layer_y_range_change
+            )
             for layer in self:
                 self._pot_item_viewbox_reference_range[layer.identifier] = layer.axis_item.range
-
-                def axis_slot(*args, lyr=layer):
-                    self._handle_axis_triggered_mouse_event(*args, layer=lyr)
-
-                def manual_slot(*args, lyr=layer):
-                    self._handle_layer_manual_range_change(*args, layer=lyr)
-
-                def range_change_slot(*args, lyr=layer):
-                    self._handle_layer_y_range_change(*args, layer=lyr)
-
-                layer.axis_item.sig_vb_mouse_event_triggered_by_axis.connect(axis_slot)
-                layer.view_box.sigRangeChangedManually.connect(manual_slot)
-                layer.view_box.sigYRangeChanged.connect(range_change_slot)
-                self._y_range_slots[
-                    layer.view_box.sigRangeChangedManually
-                ] = manual_slot
-                self._y_range_slots[layer.view_box.sigYRangeChanged] = range_change_slot
         else:
-            for entry in self._y_range_slots.items():
-                try:
-                    entry[0].disconnect(entry[1])
-                except TypeError:
-                    pass
+            # Remove connections again
+            plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.disconnect(
+                self._handle_axis_triggered_mouse_event
+            )
+            plot_item_layer.view_box.sigYRangeChanged.disconnect(
+                self._handle_layer_y_range_change
+            )
 
-    def _handle_axis_triggered_mouse_event(self, mouse_event_on_axis: bool, layer: PlotItemLayer):
+    def set_range_change_forwarding(
+            self,
+            change_is_manual: Optional[bool] = None,
+            mouse_event_valid: Optional[bool] = None
+    ) -> None:
+        """
+        With passing True, a manual range change of the ViewBox of a layer will be applied
+        accordingly to all other layers. When passing false, we can prevent manual range
+        changes to be applied to other layers.
+
+        This function can f.e. be used to make sure that the flag is not set from a Mouse
+        Event on an axis, that set the flag to false which is still activated even though
+        we do not care about it anymore.
+
+        Args:
+            change_is_manual: the range change was done manually and should be applied
+            mouse_event_valid: the mouse event was valid and should be applied (it was
+                not performed on a single axis)
+        """
+        if change_is_manual is not None:
+            modified = list(self._forward_range_change_to_other_layers)
+            modified[0] = change_is_manual
+            self._forward_range_change_to_other_layers = tuple(modified)
+        if mouse_event_valid is not None:
+            modified = list(self._forward_range_change_to_other_layers)
+            modified[1] = mouse_event_valid
+            self._forward_range_change_to_other_layers = tuple(modified)
+
+    def reset_range_change_forwarding(self) -> None:
+        """Set the flag that forwards range changes to true"""
+        self.set_range_change_forwarding(
+            change_is_manual=False,
+            mouse_event_valid=True
+        )
+
+    def _handle_axis_triggered_mouse_event(self, mouse_event_on_axis: bool) -> None:
         """ Handle the results of mouse drag event on the axis
 
         Mouse Events on the Viewbox and Axis are not distinguishable in pyqtgraph. Because of this,
@@ -824,39 +860,55 @@ class PlotItemLayerCollection:
 
         Args:
             mouse_event_on_axis: True if the mouse event was executed while on the axis
-            layer: Layer the movement was executed in
         """
-        self._layer_movement_to_apply_on_other_layers[layer.identifier][0] = not mouse_event_on_axis
+        self.set_range_change_forwarding(mouse_event_valid=(not mouse_event_on_axis))
 
-    def _handle_layer_manual_range_change(self, mouse_enabled: List[bool], layer: PlotItemLayer) -> None:
+    def _handle_layer_manual_range_change(self, mouse_enabled: List[bool]) -> None:
         """ Make Range update slot available, if range change was done by an Mouse Drag Event
 
         Args:
             mouse_enabled: List of bools if mouse interaction is enabled on the x, y axis, expected list length is 2
-            layer: Layer the movement was executed in
         """
-        self._layer_movement_to_apply_on_other_layers[layer.identifier][1] = mouse_enabled[1]
+        self.set_range_change_forwarding(change_is_manual=mouse_enabled[1])
 
-    def _handle_layer_y_range_change(self, *args, layer: PlotItemLayer):
+    def _handle_layer_y_range_change(
+            self,
+            moved_viewbox: pyqtgraph.ViewBox,
+            new_range: Tuple[float, float],
+            *args
+    ) -> None:
         """Handle a view-range change in the PlotItems Viewbox
 
         If a mouse drag-event has been executed on the PlotItem's Viewbox and not on
         the axis-item we want to move all other layer's viewboxes accordingly and
         respecting their own view-range so all layers move by the same pace.
+
+        Args:
+            moved_viewbox: Viewbox that was originally moved
+            new_range: new range the ViewBox now shows
+            *args: Does not get used, this is just for catching additionally passed arguments
+                in case the Event sends more values than expected
         """
-        if (
-            self._layer_movement_to_apply_on_other_layers[layer.identifier][0]
-            and self._layer_movement_to_apply_on_other_layers[layer.identifier][1]
-        ):
-            self._layer_movement_to_apply_on_other_layers[layer.identifier] = [True, False]
-            self._update_y_ranges(*args, layer_manually_moved=layer)
-        else:
-            self._layer_movement_to_apply_on_other_layers[layer.identifier][0] = True
+        if args:
+            _LOGGER.info(f"More values were received than expected: {args}")
+        layer = self.get()
+        if all(self._forward_range_change_to_other_layers):
+            self.apply_range_change_to_other_layers(
+                moved_viewbox=moved_viewbox,
+                new_range=new_range,
+                moved_layer=layer
+            )
+        self.reset_range_change_forwarding()
         # Update saved range even if not caused by manual update (f.e. by "View All")
         self._pot_item_viewbox_reference_range[layer.identifier][0] = layer.axis_item.range[0]
         self._pot_item_viewbox_reference_range[layer.identifier][1] = layer.axis_item.range[1]
 
-    def _update_y_ranges(self, *args, layer_manually_moved: PlotItemLayer):
+    def apply_range_change_to_other_layers(
+            self,
+            moved_viewbox: pyqtgraph.ViewBox,
+            new_range: Tuple[float, float],
+            moved_layer: PlotItemLayer
+    ) -> None:
         """Update the y ranges of all layers
 
         If a fitting manual movement has been detected, we move the viewboxes of all
@@ -864,17 +916,24 @@ class PlotItemLayerCollection:
         keep their view-range (distance between min and max shown value). This results
         in all plots moving seeming as if they were all drawn on the same layer.
         This applies for translations as well as scaling of viewboxes.
+
+        Args:
+            moved_viewbox: Viewbox that was originally moved
+            new_range: new range the ViewBox now shows
+            moved_layer: Layer the moved viewbox belongs to
+
+        Returns:
+            None
         """
-        moved_viewbox = args[0]
-        moved_viewbox_old_min: float = self._pot_item_viewbox_reference_range[layer_manually_moved.identifier][0]
-        moved_viewbox_old_max: float = self._pot_item_viewbox_reference_range[layer_manually_moved.identifier][1]
+        moved_viewbox_old_min: float = self._pot_item_viewbox_reference_range[moved_layer.identifier][0]
+        moved_viewbox_old_max: float = self._pot_item_viewbox_reference_range[moved_layer.identifier][1]
         moved_viewbox_old_y_length: float = moved_viewbox_old_max - moved_viewbox_old_min
-        moved_viewbox_new_min: float = args[1][0]
-        moved_viewbox_new_max: float = args[1][1]
+        moved_viewbox_new_min: float = new_range[0]
+        moved_viewbox_new_max: float = new_range[1]
         moved_distance_min: float = moved_viewbox_new_min - moved_viewbox_old_min
         moved_distance_max: float = moved_viewbox_new_max - moved_viewbox_old_max
-        self._pot_item_viewbox_reference_range[layer_manually_moved.identifier][0] = moved_viewbox_new_min
-        self._pot_item_viewbox_reference_range[layer_manually_moved.identifier][1] = moved_viewbox_new_max
+        self._pot_item_viewbox_reference_range[moved_layer.identifier][0] = moved_viewbox_new_min
+        self._pot_item_viewbox_reference_range[moved_layer.identifier][1] = moved_viewbox_new_max
         for layer in self:
             if layer.view_box is not moved_viewbox:
                 layer_viewbox_old_min: float = layer.axis_item.range[0]
@@ -896,3 +955,176 @@ class PlotItemLayerCollection:
                 )
                 self._pot_item_viewbox_reference_range[layer.identifier][0] = layer_viewbox_new_min
                 self._pot_item_viewbox_reference_range[layer.identifier][1] = layer_viewbox_new_max
+
+
+class ExViewBox(pyqtgraph.ViewBox):
+
+    """ViewBox with extra functionality for the multi-y-axis plotting"""
+
+    def __init__(self, **viewbox_kwargs):
+        """Create a new view box
+
+        Args:
+            **viewbox_kwargs: Keyword arguments for the baseclass ViewBox
+        """
+        super().__init__(**viewbox_kwargs)
+        self._layer_collection: Optional[PlotItemLayerCollection] = None
+
+    def set_layer_collection(self, plotitem_layer_collection: PlotItemLayerCollection):
+        """set a collection of layers"""
+        self._layer_collection = plotitem_layer_collection
+
+    def set_range_manually(self, **kwargs) -> None:
+        """ Set range manually
+
+        Set range, but emit a signal for manual range change to
+        to trigger all other layers to be moved simultaneous.
+
+        Args:
+            **kwargs: Keyword arguments that ViewBox.setRange accepts
+
+        Returns:
+            None
+        """
+        if not kwargs.get("padding"):
+            kwargs["padding"] = 0.0
+        # If we call this explicitly we do not care about prior set flags for range changes
+        self._layer_collection.reset_range_change_forwarding()
+        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
+        self.setRange(**kwargs)
+
+    def autoRange(
+        self,
+        padding: float = None,
+        items: Optional[List[pyqtgraph.GraphicsItem]] = None,
+        item: Optional[pyqtgraph.GraphicsItem] = None
+    ) -> None:
+        """ Overwritten auto range
+
+        Overwrite standard ViewBox auto-range to automatically set the
+        range for the ViewBoxes of all layers. This allows to to view all
+        items in the plot without changing their positions to each other that the
+        user might have arranged by hand.
+
+        Args:
+            padding: padding to use for the auto-range
+            items: items to use for the auto ranging
+            item: deprecated!
+
+        Returns:
+            None
+        """
+        # Behavior of Superclass method
+        if item is not None:
+            _LOGGER.warning("ViewBox.autoRange(item=__) is deprecated. Use 'items' argument instead.")
+            bounds = self.mapFromItemToView(item, item.boundingRect()).boundingRect()
+            if bounds is not None:
+                self.setRange(bounds, padding=padding)
+        # View all for multiple layers
+        if self._layer_collection is not None:
+            if padding is None:
+                padding = 0.05
+            plot_item_view_box: ExViewBox = self._layer_collection.get(
+                identifier=PlotItemLayer.default_layer_identifier
+            ).view_box
+            other_viewboxes: List[ExViewBox] = list(filter(
+                lambda element: element is not plot_item_view_box,
+                self._layer_collection.get_view_boxes()
+            ))
+            goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
+            bounds_list: List[QRectF] = []
+            for vb in other_viewboxes:
+                bounds_list.append(ExViewBox.map_bounding_rectangle_to_other_viewbox(
+                    viewbox_to_map_from=vb,
+                    viewbox_to_map_to=plot_item_view_box,
+                    items=items
+                ))
+            for bound in bounds_list:
+                # Get common bounding rectangle for all items in all layers
+                goal_range = goal_range.united(bound)
+            # Setting the range with the manual signal will move all other layers accordingly
+            plot_item_view_box.set_range_manually(rect=goal_range, padding=padding)
+
+    @staticmethod
+    def map_bounding_rectangle_to_other_viewbox(
+            viewbox_to_map_from: "ExViewBox",
+            viewbox_to_map_to: "ExViewBox",
+            items: List[pyqtgraph.GraphicsItem]
+    ) -> QRectF:
+        """
+        Map a viewbox bounding rectangle to the coordinates of an other one.
+        It is expected that both ViewBoxes have synchronized x ranges, so the
+        x range of the mapped bounding rectangle will be the same.
+
+        Args:
+            viewbox_to_map_from: viewbox the items are located in
+            viewbox_to_map_to: viewbox that the bounding rectangle should
+                be mapped to (normally standard plot-item vb)
+            items: items which bounding rectangles are used for the mapping
+
+        Returns:
+            Bounding rectangle in the standard plotitem viewbox that includes all
+            items from all layers.
+        """
+        bounds: QRectF = viewbox_to_map_from.childrenBoundingRect(items=items)
+        y_range_vb_source = (
+            viewbox_to_map_from.targetRect().top(),
+            viewbox_to_map_from.targetRect().bottom()
+        )
+        y_range_vb_destination = (
+            viewbox_to_map_to.targetRect().top(),
+            viewbox_to_map_to.targetRect().bottom()
+        )
+        y_min_in_destination_vb = ExViewBox.map_y_value_to_other_viewbox(
+            source_y_range=y_range_vb_source,
+            destination_y_range=y_range_vb_destination,
+            y_val_to_map=bounds.bottom()
+        )
+        y_max_in_destination_vb = ExViewBox.map_y_value_to_other_viewbox(
+            source_y_range=y_range_vb_source,
+            destination_y_range=y_range_vb_destination,
+            y_val_to_map=bounds.top()
+        )
+        return QRectF(
+            bounds.x(), y_min_in_destination_vb,
+            bounds.width(), y_max_in_destination_vb - y_min_in_destination_vb
+        )
+
+    @staticmethod
+    def map_y_value_to_other_viewbox(
+        source_y_range: Tuple[float, float],
+        destination_y_range: Tuple[float, float],
+        y_val_to_map: float
+    ) -> float:
+        """
+        Map a y coordinate to the other layer by setting up the transformation
+        between both layers (x coordinate we can skip, since these are always
+        showing the same x range in each layer)
+
+        As given we can use the view viewboxes y ranges
+        (x -> source vb, y -> destination vb) .
+            m * x_1 + c = y_1
+
+            m * x_2 + c = y_2
+
+            -> m = (y_2 - y_1) / (x_2 - x_1)
+
+            -> c = y_1 - m * x_1
+
+        With this we can transform any y coordinate from the source vb to the
+        destination vb.
+
+        Args:
+            source_y_range: shown view-range from the layer the coordinates
+                            are from
+            destination_y_range: shown view-range from the layer the coordinates
+                                 should be mapped to
+            y_val_to_map: Y value to map
+
+        Returns:
+            Y coordinate in the destinations ViewBox
+        """
+        m: float = (destination_y_range[1] - destination_y_range[0]) / \
+                   (source_y_range[1] - source_y_range[0])
+        c: float = destination_y_range[0] - m * source_y_range[0]
+        return m * y_val_to_map + c

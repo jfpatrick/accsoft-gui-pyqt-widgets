@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         )
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         self.plot.addCurve(data_source=data_source_1, pen="b")
+        self.plot.setYRange(-1, 1)
         self.show()
         self.resize(800, 600)
         main_container = QWidget()
