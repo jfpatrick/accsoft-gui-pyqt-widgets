@@ -75,6 +75,18 @@ class ExPlotWidget(pg.PlotWidget):
         self.setCentralItem(self.plotItem)
         self._wrap_plotitem_functions()
 
+    def update_configuration(self, config: ExPlotWidgetConfig) -> None:
+        """
+        Replace the PlotWidgets configuration and adapt all added items
+        to fit the new configuration (f.e. a changed plotting style, cycle
+        size ...)
+
+        Args:
+            config: New configuration object
+        """
+        self._config = config
+        self.plotItem.update_configuration(config=config)
+
     def _wrap_plotitem_functions(self) -> None:
         """
         For convenience the PlotWidget wraps some functions of the PlotItem
@@ -145,7 +157,7 @@ class ExPlotWidget(pg.PlotWidget):
         """Add a new bargraph attached to a live data source
 
         Args:
-            data_source (UpdateSource): Source emmiting new data the graph should show
+            data_source (UpdateSource): Source emitting new data the graph should show
             layer_identifier (Optional[str]): Layer Identifier the curve should be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **bargraph_kwargs: keyword arguments for the BarGraphItem base class

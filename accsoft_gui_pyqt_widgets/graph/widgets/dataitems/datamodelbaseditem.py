@@ -1,12 +1,16 @@
 """Module with baseclasses for attaching pyqtgraph based items to a datamodel"""
 
 import abc
+import logging
+from typing import List, Optional
 
 import numpy as np
 import pyqtgraph
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import BaseDataModel
+from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
 
+_LOGGER = logging.getLogger(__name__)
 
 class DataModelBasedItem(metaclass=abc.ABCMeta):
 
@@ -50,6 +54,12 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         elif self._timing_source_attached and self._last_timestamp != -1:
             self.update_timestamp(self._last_timestamp)
 
+    def get_layer_identifier(self):
+        """Get the identifier of the layer the object has been created in"""
+        if self._layer_identifier is None:
+            return ""
+        return self._layer_identifier
+
     # ~~~~~ Functions mandatory to implement ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @abc.abstractmethod
@@ -71,6 +81,29 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     def get_layer_identifier(self) -> str:
         """Get the identifier of the layer the item is drawn in"""
         return self._layer_identifier
+
+    @staticmethod
+    def check_plotting_style_support(
+            plot_config: ExPlotWidgetConfig,
+            supported_styles: List[PlotWidgetStyle]
+    ) -> None:
+        """ Check an items plotting style compatibility
+
+        Check if the requested plotting style is supported by this item.
+        If no supported styles is passed, the function checks, if 'supported_plotting_styles'
+        exists as a class or instance variable.
+        If a list of supported styles is found, the requested style is checked and, if not
+        fitting a TypeError is raised. If no such list is provided in any of these both ways
+        or the style is supported, no Error is raised.
+
+        Args:
+            plot_config: plot configuration of the plot for which the item should be created
+            supported_styles: optional list of supported styles
+        """
+        if not supported_styles:
+            return
+        if plot_config.plotting_style not in supported_styles:
+            raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
 
 
 class AbstractDataModelBasedItemMeta(type(pyqtgraph.GraphicsObject), type(DataModelBasedItem)):

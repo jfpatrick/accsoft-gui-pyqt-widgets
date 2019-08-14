@@ -1,18 +1,23 @@
 # pylint: disable=missing-docstring
 
-from typing import List, Union
+from typing import List, Union, Optional, Tuple
+import warnings
 
+import pyqtgraph
+import pytest
 import numpy
 
 from accsoft_gui_pyqt_widgets.graph import (LivePlotCurve,
                                             LivePlotCurveConfig,
                                             ExPlotWidgetConfig,
                                             CurveDataWithTime, PlotWidgetStyle,
-                                            SlidingPointerPlotCurve)
+                                            SlidingPointerPlotCurve,
+                                            UpdateSource,
+                                            PointData)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.mock_timing_source import MockTimingSource
-from .mock_utils.widget_test_window import PlotWidgetTestWindow
+from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
 
 
 def test_simple_linear_data_append(qtbot):
@@ -694,7 +699,105 @@ def test_no_timing_source_attached(qtbot):
     )
 
 
-# ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~+
+@pytest.mark.parametrize("params", [
+    ({"pen": "r", "symbol": "o"}),
+    ({"pen": "r"}),
+    ({"pen": None, "symbol": "o"}),
+    ({"pen": None}),
+])
+def test_plotdataitem_components_visible(qtbot, params):
+    """
+    Test if passing nan to a curve and especially scatter plot
+    raises an error.
+
+    PyQtGraph's ScatterPlotItem generates an RuntimeWarning based on numpy less/more
+    operations on arrays containing NaN's. All LivePlotCurve's should filter NaN's
+    before passing their data to the ScatterPlotItem for drawing. To make sure this
+    works, we look for any warnings coming from the ScatterPlotItem when passing data
+    containing NaN's.
+
+    Args:
+        qtbot: pytest-qt fixture for interaction with qt-application
+    """
+    window = _prepare_minimal_test_window(qtbot)
+    source = UpdateSource()
+    # symbol -> pass data to symbol as well
+    item: LivePlotCurve = window.plot.addCurve(data_source=source, **params)
+    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
+    source.sig_data_update[PointData].emit(PointData(1.0, 1.0))
+    source.sig_data_update[PointData].emit(PointData(numpy.nan, numpy.nan))
+    source.sig_data_update[PointData].emit(PointData(2.0, 2.0))
+    source.sig_data_update[PointData].emit(PointData(3.0, 3.0))
+    # Condition as in PlotDataItem.updateItems()
+    if params.get("pen") is not None or (params.get("brush") and params.get("fillLevel") is not None):
+        assert item.curve.isVisible()
+    else:
+        assert not item.curve.isVisible()
+    if params.get("symbol") is not None:
+        assert item.scatter.isVisible()
+    else:
+        assert not item.scatter.isVisible()
+
+
+# ~~~~~~~~~~~~~~ Test numpy RuntimeWarning when passing NaN to ScatterPlotItem ~~~~~~~~~~~~~~~
+
+
+@pytest.fixture(autouse=False)
+def clear_exception_flag():
+    """Fixture for setting up the exception flag for the test_nan_values_in_scatter_plot()"""
+    global test_nan_values_in_scatter_plot_exception_flag
+    test_nan_values_in_scatter_plot_exception_flag = False
+
+
+def _handle_numpy_error(err, flag):
+    """
+    Handle numpy error that is expected from the ScatterPlotItem's paint function
+    when passing data that contains NaN entries. If the exception is detected
+    a flag is set that fails the test_nan_values_in_scatter_plot().
+    """
+    if err == "invalid value" and flag == 8:
+        global test_nan_values_in_scatter_plot_exception_flag
+        test_nan_values_in_scatter_plot_exception_flag = True
+
+
+@pytest.mark.parametrize("data_sequence", [
+    [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (numpy.nan, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (0.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (1.2, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (2.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (numpy.nan, 4.0), (2.0, 2.0), (3.0, 3.0)],
+])
+def test_nan_values_in_scatter_plot(qtbot, clear_exception_flag, data_sequence: List[Tuple[float, float]]):
+    """ Test if passing nan to a curve and especially scatter plot
+    raises an error.
+
+    PyQtGraph's ScatterPlotItem generates an RuntimeWarning based on numpy less/more
+    operations on arrays containing NaN's. All LivePlotCurve's should filter NaN's
+    before passing their data to the ScatterPlotItem for drawing. To make sure this
+    works, we look for any warnings coming from the ScatterPlotItem when passing data
+    containing NaN's.
+
+    Args:
+        qtbot: pytest-qt fixture for interaction with qt-application
+    """
+    global test_nan_values_in_scatter_plot_exception_flag
+    window = _prepare_minimal_test_window(qtbot)
+    source = UpdateSource()
+    # symbol -> pass data to symbol as well
+    window.plot.addCurve(data_source=source, symbol="o")
+    numpy.seterrcall(_handle_numpy_error)
+    numpy.seterr(all="call")
+    for point in data_sequence:
+        source.sig_data_update.emit(PointData(point[0], point[1]))
+        # Wait a bit, so the ScatterPlotItems paint function get's called properly
+        qtbot.wait(1)
+        # See if the numpy error handler has been called with the invalid error
+        assert not test_nan_values_in_scatter_plot_exception_flag
+
+
+# ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
 
 
 def _prepare_sliding_pointer_plot_test_window(
@@ -703,7 +806,8 @@ def _prepare_sliding_pointer_plot_test_window(
         should_create_timing_source: bool = True
 ) -> PlotWidgetTestWindow:
     """
-    Prepare a window for testing
+    Prepare a window for testing. A curve and optionally a timing source
+    can be directly integrated in the window.
 
     Args:
         qtbot: qtbot pytest fixture
@@ -718,6 +822,32 @@ def _prepare_sliding_pointer_plot_test_window(
     window = PlotWidgetTestWindow(plot_config, [curve_config], item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
     window.show()
     qtbot.addWidget(window)
+    return window
+
+
+def _prepare_minimal_test_window(
+        qtbot,
+        plotting_style: Optional[PlotWidgetStyle] = None,
+        cycle_size: Optional[float] = None,
+        time_progress_line: Optional[bool] = None,
+) -> PlotWidgetTestWindow:
+    """
+    Prepare a window for testing. This window won't create any curves or timing
+    sources etc. but only a window with an empty plot.
+
+    Args:
+        qtbot: qtbot pytest fixture
+        cycle_size (int): cycle size, how much data should be shown
+    """
+    plot_config = ExPlotWidgetConfig(
+        plotting_style=plotting_style or PlotWidgetStyle.SCROLLING_PLOT,
+        cycle_size=cycle_size or 10,
+        time_progress_line=time_progress_line or False,
+    )
+    window = MinimalTestWindow(plot_config)
+    window.show()
+    qtbot.addWidget(window)
+    qtbot.waitForWindowShown(window)
     return window
 
 

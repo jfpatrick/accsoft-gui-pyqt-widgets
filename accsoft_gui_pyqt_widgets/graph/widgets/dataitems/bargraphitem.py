@@ -1,5 +1,7 @@
 """Scrolling Bar Chart for live data plotting"""
 
+import sys
+from typing import Union, List
 import abc
 
 import numpy as np
@@ -19,13 +21,21 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
 from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle
 
 
+# which plotting style is achieved by which class
+plotting_style_to_class_mapping = {
+    PlotWidgetStyle.SCROLLING_PLOT: "ScrollingBarGraphItem",
+}
+
+
 class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
 
     """Baseclass for different live bar graph plots"""
 
+    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+
     def __init__(
         self,
-        data_source: UpdateSource,
+        data_source: Union[UpdateSource, BarGraphDataModel],
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
@@ -42,14 +52,19 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             buffer_size: Count of values the item's datamodel's buffer should hold at max
             **bargraphitem_kwargs: Keyword arguments for the BarGraphItem's constructor
         """
-        data_model = BarGraphDataModel(
-            data_source=data_source,
-            buffer_size=buffer_size
-        )
+        if isinstance(data_source, UpdateSource):
+            data_model = BarGraphDataModel(
+                data_source=data_source,
+                buffer_size=buffer_size
+            )
+        elif isinstance(data_source, BarGraphDataModel):
+            data_model = data_source
+        else:
+            raise ValueError(
+                f"Data Source of type {type(data_source).__name__} can not be used as a source or model for data."
+            )
         self._fixed_bar_width = bargraphitem_kwargs.get("width", -1)
-        bargraphitem_kwargs["x"] = bargraphitem_kwargs.get("x") or [0.0]
-        bargraphitem_kwargs["height"] = bargraphitem_kwargs.get("height") or [0.0]
-        bargraphitem_kwargs["width"] = bargraphitem_kwargs.get("width") or [0.0]
+        bargraphitem_kwargs = LiveBarGraphItem._prepare_bar_graph_item_params(**bargraphitem_kwargs)
         pyqtgraph.BarGraphItem.__init__(self, **bargraphitem_kwargs)
         DataModelBasedItem.__init__(
             self,
@@ -58,6 +73,58 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             parent_plot_item=plot_item,
         )
         self._plot_config: ExPlotWidgetConfig = plot_config
+
+    @staticmethod
+    def _prepare_bar_graph_item_params(**bargraph_kwargs):
+        """
+        For drawing the BarGraphItem needs some data to display, empty data will
+        lead to Errors when trying to set the visible range (which is done when drawing).
+        This functions prepares adds some data to avoid this
+        """
+        if bargraph_kwargs.get("x", None) is None:
+            bargraph_kwargs["x"] = np.array([0.0])
+        if bargraph_kwargs.get("height", None) is None:
+            bargraph_kwargs["height"] = np.array([0.0])
+        if bargraph_kwargs.get("width", None) is None:
+            bargraph_kwargs["width"] = np.array([0.0])
+        return bargraph_kwargs
+
+    @staticmethod
+    def create_from(
+        plot_config: ExPlotWidgetConfig,
+        object_to_create_from: "LiveBarGraphItem",
+        **bargraph_kwargs,
+    ) -> "LiveBarGraphItem":
+        """ Create a bargraph from another one
+
+        Factory method for creating bargraph object from a config and an existing object from the
+        same baseclass.
+
+        Args:
+            plot_config: Configuration of the plot the item should be created for
+            object_to_create_from: object which f.e. datamodel should be taken from
+            **bargraph_kwargs: Keyword arguments for the bargraph base class
+
+        Returns:
+
+        """
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveBarGraphItem.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        if not bargraph_kwargs:
+            # contains parameters like pen etc.
+            bargraph_kwargs = object_to_create_from.opts
+        return item_class(
+            plot_item=object_to_create_from._parent_plot_item,
+            plot_config=plot_config,
+            data_source=object_to_create_from._data_model,
+            timing_source_attached=object_to_create_from._timing_source_attached,
+            **bargraph_kwargs,
+        )
 
     @staticmethod
     def create(
@@ -82,14 +149,19 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             the created item
         """
         plot_config = plot_item.plot_config
-        if plot_config.plotting_style.value != PlotWidgetStyle.SCROLLING_PLOT.value:
-            raise ValueError(f"{plot_config.plotting_style} is not yet a supported style for this item")
-        return ScrollingBarGraphItem(
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveBarGraphItem.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        return item_class(
             plot_item=plot_item,
             plot_config=plot_item.plot_config,
             data_source=data_source,
             timing_source_attached=plot_item.timing_source_attached,
-            buffer_size = buffer_size,
+            buffer_size=buffer_size,
             **bargraph_kwargs,
         )
 

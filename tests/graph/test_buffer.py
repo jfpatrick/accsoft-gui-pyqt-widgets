@@ -69,6 +69,7 @@ def test_sorting_of_empty_lists():
 
 # ~~~ Tests for CurveData Buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
 def test_subset_creation_with_clipping_of_data_model_without_nan_values(
         length_for_buffer
@@ -211,7 +212,7 @@ def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
 
 
 def test_add_empty_list():
-    """Check if an empty list of entries is handeled correctly when appended"""
+    """Check if an empty list of entries is handled correctly when appended"""
     buffer = accgraph.SortedCurveDataBuffer(size=10)
     buffer.add_list_of_entries(
         x_values=np.array([]), y_values=np.array([])

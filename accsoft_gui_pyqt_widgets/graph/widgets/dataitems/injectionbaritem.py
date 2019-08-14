@@ -1,7 +1,8 @@
 """Scrolling Bar Chart for live-data plotting"""
 
+import sys
 import abc
-from typing import List, Optional
+from typing import List, Union, Tuple
 
 import pyqtgraph
 import numpy as np
@@ -19,14 +20,21 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle
 
+# which plotting style is achieved by which class
+plotting_style_to_class_mapping = {
+    PlotWidgetStyle.SCROLLING_PLOT: "ScrollingInjectionBarGraphItem",
+}
+
 
 class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, metaclass=AbstractDataModelBasedItemMeta):
 
     """Baseclass for different live bar graph plots"""
 
+    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+
     def __init__(
         self,
-        data_source: UpdateSource,
+        data_source: Union[UpdateSource, InjectionBarDataModel],
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
@@ -43,10 +51,14 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
             buffer_size: count of values the items datamodel's buffer should hold at max
             **errorbaritem_kwargs: keyword arguments for the baseclass
         """
-        data_model = InjectionBarDataModel(
-            data_source=data_source,
-            buffer_size=buffer_size
-        )
+        if isinstance(data_source, UpdateSource):
+            data_model = InjectionBarDataModel(
+                data_source=data_source,
+                buffer_size=buffer_size
+            )
+        elif isinstance(data_source, InjectionBarDataModel):
+            data_model = data_source
+        errorbaritem_kwargs = LiveInjectionBarGraphItem._prepare_error_bar_item_params(**errorbaritem_kwargs)
         pyqtgraph.ErrorBarItem.__init__(self, **errorbaritem_kwargs)
         DataModelBasedItem.__init__(
             self,
@@ -59,6 +71,50 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         self._text_labels: List[pyqtgraph.TextItem] = []
         self._label_texts: List[str] = []
         self._label_y_positions: List[float] = []
+
+    @staticmethod
+    def _prepare_error_bar_item_params(**errorbaritem_kwargs):
+        """For drawing the BarGraphItem needs some data to display, empty data will
+        lead to Errors when trying to set the visible range (which is done when drawing).
+        This functions prepares adds some data to avoid this"""
+        if errorbaritem_kwargs.get("pen", None) is None:
+            errorbaritem_kwargs["pen"] = "w"
+        if errorbaritem_kwargs.get("x", None) is None:
+            errorbaritem_kwargs["x"] = np.array([0.0])
+        if errorbaritem_kwargs.get("y", None) is None:
+            errorbaritem_kwargs["y"] = np.array([0.0])
+        if errorbaritem_kwargs.get("height", None) is None:
+            errorbaritem_kwargs["height"] = np.array([0.0])
+        if errorbaritem_kwargs.get("width", None) is None:
+            errorbaritem_kwargs["width"] = 0.3
+        return errorbaritem_kwargs
+
+    @staticmethod
+    def create_from(
+        plot_config: ExPlotWidgetConfig,
+        object_to_create_from: "LiveInjectionBarGraphItem",
+        **errorbaritem_kwargs,
+    ) -> "LiveInjectionBarGraphItem":
+        """Factory method for creating curve object fitting the requested style
+
+
+        """
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        if not errorbaritem_kwargs:
+            errorbaritem_kwargs = object_to_create_from.opts
+        return item_class(
+            plot_item=object_to_create_from._parent_plot_item,
+            plot_config=plot_config,
+            data_source=object_to_create_from._data_model,
+            timing_source_attached=object_to_create_from._timing_source_attached,
+            **errorbaritem_kwargs,
+        )
 
     @staticmethod
     def create(
@@ -83,18 +139,19 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
             the created item
         """
         plot_config = plot_item.plot_config
-        if plot_config.plotting_style != PlotWidgetStyle.SCROLLING_PLOT:
-            raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
-        return ScrollingInjectionBarGraphItem(
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        return item_class(
             plot_item=plot_item,
             data_source=data_source,
             plot_config=plot_config,
             timing_source_attached=plot_item.timing_source_attached,
             buffer_size=buffer_size,
-            x=np.array([0.0]),
-            y=np.array([0.0]),
-            height=np.array([0.0]),
-            width=0.3,
             **errorbaritem_kwargs,
         )
 

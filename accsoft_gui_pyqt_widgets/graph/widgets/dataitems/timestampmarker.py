@@ -1,7 +1,8 @@
 """Scrolling Bar Chart for live data plotting"""
 
+import sys
 import abc
-from typing import List
+from typing import List, Union
 
 import pyqtgraph
 from qtpy.QtWidgets import QGraphicsItem
@@ -21,6 +22,12 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
 from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle
 
 
+# which plotting style is achieved by which class
+plotting_style_to_class_mapping = {
+    PlotWidgetStyle.SCROLLING_PLOT: "ScrollingTimestampMarker",
+}
+
+
 class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
 
     """Baseclass for an InfiniteLine based marking of specific timestamps
@@ -30,10 +37,12 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
     to provide its own Bounding Rectangle.
     """
 
+    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+
     def __init__(
         self,
         *graphicsobjectargs,
-        data_source: UpdateSource,
+        data_source: Union[UpdateSource, TimestampMarkerDataModel],
         plot_item: pyqtgraph.PlotItem,
         plot_config: ExPlotWidgetConfig,
         timing_source_attached: bool,
@@ -42,10 +51,17 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         """
         Constructor for baseclass, use constructors of subclasses
         """
-        data_model = TimestampMarkerDataModel(
-            data_source=data_source,
-            buffer_size=buffer_size
-        )
+        if isinstance(data_source, TimestampMarkerDataModel):
+            data_model = data_source
+        elif isinstance(data_source, UpdateSource):
+            data_model = TimestampMarkerDataModel(
+                data_source=data_source,
+                buffer_size=buffer_size
+            )
+        else:
+            raise ValueError(
+                f"Data Source of type {type(data_source)} can not be used as a source or model for data."
+            )
         pyqtgraph.GraphicsObject.__init__(self, *graphicsobjectargs)
         DataModelBasedItem.__init__(
             self,
@@ -57,6 +73,30 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         self._line_elements: List[pyqtgraph.InfiniteLine] = []
 
     @staticmethod
+    def create_from(
+            *graphicsobjectargs,
+            plot_config: ExPlotWidgetConfig,
+            object_to_create_from: "LiveTimestampMarker",
+            **kwargs,
+    ):
+        """Factory method for creating curve object fitting the requested style"""
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveTimestampMarker.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        return item_class(
+            *graphicsobjectargs,
+            plot_item=object_to_create_from._parent_plot_item,
+            plot_config=plot_config,
+            data_source=object_to_create_from._data_model,
+            timing_source_attached=object_to_create_from._timing_source_attached,
+            **kwargs,
+        )
+
+    @staticmethod
     def create(
         *graphicsobjectargs,
         data_source: UpdateSource,
@@ -65,9 +105,14 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
     ) -> "LiveTimestampMarker":
         """Factory method for creating line object fitting the passed plot"""
         plot_config = plot_item.plot_config
-        if plot_config.plotting_style != PlotWidgetStyle.SCROLLING_PLOT:
-            raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
-        return ScrollingTimestampMarker(
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LiveTimestampMarker.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        return item_class(
             *graphicsobjectargs,
             plot_item=plot_item,
             plot_config=plot_config,

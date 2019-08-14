@@ -1,8 +1,10 @@
 """
-Module contains different curves that can be added to a PlotItem based on pyqtgraphs PlotDataItem.
+Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
+import sys
 import logging
+from typing import Union, List, Tuple
 import abc
 
 import numpy as np
@@ -33,18 +35,24 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_MAX_BUFFER_SIZE = 1000000
+# which plotting style is achieved by which class
+plotting_style_to_class_mapping = {
+    PlotWidgetStyle.SCROLLING_PLOT: "ScrollingPlotCurve",
+    PlotWidgetStyle.SLIDING_POINTER: "SlidingPointerPlotCurve",
+}
 
 
 class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
+
+    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
 
     def __init__(
         self,
         plot_item: pyqtgraph.PlotItem,
         curve_config: LivePlotCurveConfig,
         plot_config: ExPlotWidgetConfig,
-        data_source: UpdateSource,
+        data_source: Union[UpdateSource, CurveDataModel],
         decorators: CurveDecorators,
         timing_source_attached: bool,
         pen="w",
@@ -61,16 +69,28 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             decorators: object wrapping all curve decorators
             timing_source_attached: flag if a separate source for timing updates is attached to the plot item
             pen: pen the curve should be drawn with
-            buffer_size: count of values the curve's datamodel's buffer should hold at max
+            buffer_size: count of values the curve's data model's buffer should hold at max
             **plotdataitem_kwargs: keyword arguments fo the base class
         """
+        if isinstance(data_source, UpdateSource):
+            data_model = CurveDataModel(
+                data_source=data_source,
+                buffer_size=buffer_size,
+            )
+        elif isinstance(data_source, CurveDataModel):
+            data_model = data_source
+        else:
+            raise ValueError(
+                f"Data Source of type {type(data_source)} can not be used as a source or model for data."
+            )
         DataModelBasedItem.__init__(
             self,
             timing_source_attached=timing_source_attached,
-            data_model=CurveDataModel(data_source=data_source, buffer_size=buffer_size),
+            data_model=data_model,
             parent_plot_item=plot_item,
         )
         pyqtgraph.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
+        self.opts["connect"] = "finite"
         self._parent_plot_item = plot_item
         self._curve_config: LivePlotCurveConfig = curve_config
         self._plot_config: ExPlotWidgetConfig = plot_config
@@ -79,6 +99,33 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         self._data_item_data: CurveData
         if pen is not None:
             self.setPen(pen)
+
+    @staticmethod
+    def create_from(
+        plot_config: ExPlotWidgetConfig,
+        object_to_create_from: "LivePlotCurve",
+        **plotdataitem_kwargs,
+    ) -> "LivePlotCurve":
+        """Factory method for creating curve object fitting the requested style"""
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LivePlotCurve.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        if not plotdataitem_kwargs:
+            plotdataitem_kwargs = object_to_create_from.opts
+        return item_class(
+            start=object_to_create_from._cycle.start,
+            plot_item=object_to_create_from._parent_plot_item,
+            curve_config=object_to_create_from._curve_config,
+            plot_config=plot_config,
+            data_source=object_to_create_from._data_model,
+            decorators=object_to_create_from._decorators,
+            timing_source_attached=object_to_create_from._timing_source_attached,
+            **plotdataitem_kwargs,
+        )
 
     @staticmethod
     def create(
@@ -105,32 +152,75 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             the created item
         """
         plot_config = plot_item.plot_config
-        unsupported_style = plot_config.plotting_style.value != PlotWidgetStyle.SCROLLING_PLOT.value \
-                            and plot_config.plotting_style.value != PlotWidgetStyle.SLIDING_POINTER.value
-        if unsupported_style:
-            raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
-        if plot_config.plotting_style.value == PlotWidgetStyle.SCROLLING_PLOT.value:
-            return ScrollingPlotCurve(
-                plot_item=plot_item,
-                curve_config=curve_config,
-                plot_config=plot_config,
-                data_source=data_source,
-                decorators=CurveDecorators(),
-                timing_source_attached=plot_item.timing_source_attached,
-                buffer_size=buffer_size,
-                **plotdataitem_kwargs,
-            )
-        if plot_config.plotting_style.value == PlotWidgetStyle.SLIDING_POINTER.value:
-            return SlidingPointerPlotCurve(
-                plot_item=plot_item,
-                curve_config=curve_config,
-                plot_config=plot_config,
-                data_source=data_source,
-                decorators=CurveDecorators(),
-                timing_source_attached=plot_item.timing_source_attached,
-                buffer_size=buffer_size,
-                **plotdataitem_kwargs,
-            )
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_config,
+            supported_styles=LivePlotCurve.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        item_class: type = getattr(sys.modules[__name__], class_name)
+        return item_class(
+            plot_item=plot_item,
+            curve_config=curve_config,
+            plot_config=plot_config,
+            data_source=data_source,
+            decorators=CurveDecorators(),
+            timing_source_attached=plot_item.timing_source_attached,
+            buffer_size=buffer_size,
+            **plotdataitem_kwargs,
+        )
+
+    def _set_data(self, x: np.ndarray, y: np.ndarray) -> None:
+        """ Set data of the inner curve and scatter plot
+        
+        PyQtGraph prints RuntimeWarning when the data that is passed to the
+        ScatterPlotItem contains NaN values -> for this purpose we strip
+        all indices containing NaNs, since it won't make any visual difference,
+        because nans won't appear as symbols in the scatter plot.
+        The CurvePlotItem will receive the data as usual.
+        
+        Args:
+            x: x values that are passed to the items
+            y: y values that are passed to the items
+        """
+        if self.opts.get('pen') is not None or (self.opts.get('brush') is not None and self.opts.get('fillLevel') is not None):
+            self.curve.setData(x=x, y=y)
+            self.curve.show()
+        else:
+            self.curve.hide()
+        if self.opts.get('symbol') is not None:
+            data_x_wo_nans, data_y_wo_nans = LivePlotCurve._without_nan_values(x_values=x, y_values=y)
+            self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans)
+            self.scatter.show()
+        else:
+            self.scatter.hide()
+
+    @staticmethod
+    def _without_nan_values(x_values: np.ndarray, y_values: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """ Get (if necessary) copies of the array without NaNs
+
+        Strip arrays of x and y values from nan values. If one of the arrays
+        has the value nan at the index n, in both arrays the value at index n
+        will be removed. This will make sure both arrays will have the same
+        length at the end again.
+
+        Args:
+            x_values: x-values that should be stripped from NaNs
+            y_values: y-values that should be stripped from NaNs
+
+        Returns:
+            Copies of the arrays without any nans. If no NaN's are contained,
+            the original arrays are returned.
+        """
+        if x_values.size != y_values.size:
+            raise ValueError("The passed arrays have to be the same length.")
+        x_nans = np.isnan(x_values)
+        y_nans = np.isnan(y_values)
+        combined_nans = x_nans | y_nans
+        if True in combined_nans:
+            return x_values[~combined_nans], y_values[~combined_nans]
+        else:
+            return x_values, y_values
 
     # ~~~~~~~~~~~~~~~~~ Getter functions ~~~~~~~~~~~~~~~~~~
 
@@ -202,6 +292,7 @@ class SlidingPointerPlotCurve(LivePlotCurve):
     def __init__(
             self,
             plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
+            start: float = np.nan,
             **kwargs
     ):
         """Create a new SlidingPointer curve."""
@@ -210,7 +301,10 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         self._clipped_curve_old: CurveData = CurveData(np.array([]), np.array([]))
         self._clipped_curve_new: CurveData = CurveData(np.array([]), np.array([]))
         size = plot_config.cycle_size
-        self._cycle: SlidingPointerCycle = SlidingPointerCycle(size=size)
+        self._cycle: SlidingPointerCycle = SlidingPointerCycle(
+            start=start,
+            size=size
+        )
         self._first_time_update = True
 
     def equals(self, other: "SlidingPointerPlotCurve") -> bool:
@@ -282,12 +376,13 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         """
         if self._first_time_update:
             self._first_time_update = False
-            self._cycle.start = self._cycle.get_current_time_line_x_pos(
-                self._last_timestamp
-            )
-            self._cycle.end = self._cycle.start + self._cycle.size * (
-                self._cycle.number + 1
-            )
+            if self._cycle.start == 0.0:
+                self._cycle.start = self._cycle.get_current_time_line_x_pos(
+                    self._last_timestamp
+                )
+                self._cycle.end = self._cycle.start + self._cycle.size * (
+                    self._cycle.number + 1
+                )
 
     def _redraw_curve(self) -> None:
         """ Redraw the curve with the current data
@@ -308,18 +403,18 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         ):
             data_x = np.concatenate((data_x, self._clipped_curve_new.x_values))
             data_y = np.concatenate((data_y, self._clipped_curve_new.y_values))
-        if data_x.size != 0 and data_y.size != 0:
-            data_x = np.concatenate((data_x, np.array([np.nan])))
-            data_y = np.concatenate((data_y, np.array([np.nan])))
         if (
             self._clipped_curve_old.x_values.size != 0
             and self._clipped_curve_old.y_values.size != 0
         ):
+            if data_x.size != 0 and data_y.size != 0:
+                data_x = np.concatenate((data_x, np.array([np.nan])))
+                data_y = np.concatenate((data_y, np.array([np.nan])))
             data_x = np.concatenate((data_x, self._clipped_curve_old.x_values))
             data_y = np.concatenate((data_y, self._clipped_curve_old.y_values))
         if data_x.size != 0 and data_y.size != 0:
-            self.curve.clear()
-            self.curve.setData(x=data_x, y=data_y, connect="finite")
+            self.clear()
+            self._set_data(x=data_x, y=data_y)
 
     def _update_new_curve_data_item(self) -> None:
         """Update the displayed new curve with clipping
@@ -428,13 +523,15 @@ class ScrollingPlotCurve(LivePlotCurve):
     def __init__(
         self,
         plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
+        start: float = np.nan,
         **kwargs
     ):
         """Create a new scrolling plot curve. Parameters are the same the ones from the baseclass."""
         super().__init__(plot_config=plot_config, **kwargs)
         self._cycle: ScrollingPlotCycle = ScrollingPlotCycle(
             plot_config=self._plot_config,
-            size=plot_config.cycle_size
+            start=start,
+            size=plot_config.cycle_size,
         )
 
     def equals(self, other: "ScrollingPlotCurve") -> bool:
@@ -489,7 +586,7 @@ class ScrollingPlotCurve(LivePlotCurve):
             curve_x, curve_y = self._data_model.get_subset(
                 start=self._cycle.start, end=self._cycle.end
             )
-        self.setData({"x": curve_x, "y": curve_y}, connect="finite")
+        self._set_data(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)
 
     def get_full_buffer(self):

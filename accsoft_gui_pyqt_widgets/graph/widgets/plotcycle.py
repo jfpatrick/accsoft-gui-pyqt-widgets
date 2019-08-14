@@ -14,17 +14,13 @@ class ScrollingPlotCycle:
     curve and convenience functions for specific cycle related sizes
     """
 
-    start: float = 0.0
-    end: float = 10.0
-    size: float = 10
-
     def __init__(
         self,
         plot_config: ExPlotWidgetConfig,
         start: float = 0.0,
         size: float = 10.0,
     ):
-        self.start = start
+        self.start = start if not np.isnan(start) else 0.0
         self.size = size
         self._x_range_offset = (
             plot_config.x_range_offset
@@ -45,14 +41,9 @@ class SlidingPointerCycle:
     curve and convenience functions for specific cycle related sizes
     """
 
-    start: float = 0.0
-    end: float = 10.0
-    number: float = 0.0
-    size: float = 10
-
     def __init__(self, start: float = 0.0, size: float = 10.0):
         """Create a new cycle with a starting point and a size"""
-        self.start = start
+        self.start = start if not np.isnan(start) else 0.0
         self.size = size
         self.end = self.start + self.size
         self.number = 0.0

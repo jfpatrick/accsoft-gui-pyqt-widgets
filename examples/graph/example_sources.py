@@ -188,7 +188,7 @@ class SinusCurveSource(accgraph.UpdateSource):
             self.sig_data_update[accgraph.TimestampMarkerData].emit(new_data)
             self.label_counter += 1
         else:
-            raise ValueError(f"Unknown signal type: {self.type_to_emit}")
+            raise ValueError(f"Unknown signal type: {self.types_to_emit}")
         self.pointer = (self.pointer + 1) % len(self.sinus_curve)
 
 

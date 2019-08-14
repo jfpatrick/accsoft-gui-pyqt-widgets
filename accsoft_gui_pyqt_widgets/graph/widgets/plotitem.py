@@ -111,8 +111,52 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     def _prepare_scrolling_plot_fixed_scrolling_range(self):
         """Initialize everything for the scrolling plot scrolling movement"""
-        if not np.isnan(self._plot_config.x_range_offset):
+        if self._config_contains_scrolling_style_with_fixed_range():
             self.setMouseEnabled(x=False)
+        else:
+            # Enable in case it was disabled with before a config change
+            self.setMouseEnabled(x=True)
+
+    def update_configuration(self, config: ExPlotWidgetConfig):
+        """Update the plot widgets configuration"""
+        if hasattr(self, "_plot_config") and self._plot_config is not None:
+            if self._plot_config.time_progress_line != config.time_progress_line:
+                if self._last_timestamp != -1.0:
+                    try:
+                        self.removeItem(self._time_line)
+                        self._init_time_line_decorator(timestamp=self._last_timestamp)
+                    except:
+                        pass
+            elif (
+                self._plot_config.cycle_size != config.cycle_size
+                or self._plot_config.x_range_offset != config.x_range_offset
+                or self._plot_config.plotting_style != config.plotting_style
+            ):
+                self._plot_config = config
+                if len(self.items) > 0:
+                    self.update_items_to_new_config(config=config)
+        self._plot_config = config
+        self._prepare_scrolling_plot_fixed_scrolling_range()
+        self._handle_fixed_x_range_update()
+
+    def update_items_to_new_config(self, config):
+        """Replace all items with ones that fit the given config. Cycle's and data models stay get preserved."""
+        # clear View boxes of all layers
+        for viewbox in self._layers.get_view_boxes():
+            viewbox.clear()
+        # Recreate new items based on the old ones
+        for item in self.get_all_data_model_based_items():
+            if hasattr(item, "create_from"):
+                new_item = item.create_from(
+                    plot_config=config, object_to_create_from=item
+                )
+                layer = item.get_layer_identifier()
+                self.addItem(layer=layer, item=new_item)
+                if self._last_timestamp:
+                    self._init_decorators_of_curve(new_item, self._last_timestamp)
+                    self._style_specific_objects_already_drawn = False
+                    self._draw_style_specific_objects()
+                self.removeItem(item)
 
     @property
     def plot_config(self):
@@ -219,7 +263,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
             new_plot: LiveBarGraphItem = LiveBarGraphItem.create(
                 plot_item=self,
                 data_source=data_source,
-                layer_identifier=layer_identifier,
                 buffer_size=buffer_size,
                 **bargraph_kwargs,
             )
@@ -427,7 +470,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self._update_curve_timing(timestamp=self._last_timestamp)
         self._draw_style_specific_objects()
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~ Decorator Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def _init_time_line_decorator(self, timestamp: float) -> None:
         """Create a vertical line representing the latest timestamp
@@ -471,9 +514,17 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
                 )
 
+    def _config_contains_scrolling_style_with_fixed_range(self):
+        """Configuration for a scrolling plot with a fixed x range. """
+        x_range = not np.isnan(self._plot_config.x_range_offset)
+        scrolling_plot = (
+            self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT
+        )
+        return x_range and scrolling_plot
+
     def _handle_fixed_x_range_update(self) -> None:
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
-        if not np.isnan(self._plot_config.x_range_offset):
+        if self._config_contains_scrolling_style_with_fixed_range():
             x_range_min: float = self._last_timestamp - self._plot_config.cycle_size + self._plot_config.x_range_offset
             x_range_max: float = self._last_timestamp + self._plot_config.x_range_offset
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
@@ -630,6 +681,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
             All items with the fitting type
         """
         return [curve for curve in self.items if isinstance(curve, LiveTimestampMarker)]
+
+    def get_all_viewboxes(self) -> List["ExViewBox"]:
+        """Get a list of all ViewBoxes included in the Layer collection"""
+        return self._layers.get_view_boxes()
 
     def handle_single_curve_value_slot(self, data):
         """Handle arriving data"""
@@ -1027,10 +1082,12 @@ class ExViewBox(pyqtgraph.ViewBox):
             plot_item_view_box: ExViewBox = self._layer_collection.get(
                 identifier=PlotItemLayer.default_layer_identifier
             ).view_box
-            other_viewboxes: List[ExViewBox] = list(filter(
-                lambda element: element is not plot_item_view_box,
-                self._layer_collection.get_view_boxes()
-            ))
+            other_viewboxes: List[ExViewBox] = list(
+                filter(
+                    lambda element: element is not plot_item_view_box and element.addedItems,
+                    self._layer_collection.get_view_boxes()
+                )
+            )
             goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
             bounds_list: List[QRectF] = []
             for vb in other_viewboxes:

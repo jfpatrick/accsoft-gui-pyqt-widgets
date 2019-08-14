@@ -28,6 +28,7 @@ class PlotWidgetTestWindow(QMainWindow):
         plot_config: ExPlotWidgetConfig,
         curve_configs: Optional[List[LivePlotCurveConfig]],
         item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = None,
+        opts: dict = {},
         should_create_timing_source: bool = True
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
@@ -40,7 +41,7 @@ class PlotWidgetTestWindow(QMainWindow):
         # Two Threads for Time and Data updates
         self.time_source_mock: Optional[MockTimingSource]
         if should_create_timing_source:
-             self.time_source_mock = MockTimingSource()
+            self.time_source_mock = MockTimingSource()
         else:
             self.time_source_mock = None
         self.data_source_mock: MockDataSource = MockDataSource()
@@ -49,6 +50,7 @@ class PlotWidgetTestWindow(QMainWindow):
             timing_source=self.time_source_mock, config=plot_config
         )
         self.item_to_add: Union[DataModelBasedItem, str] = item_to_add
+        self.opts: dict = opts
         self.curve_configs = curve_configs
         self.add_item()
         self.resize(800, 600)
@@ -62,16 +64,13 @@ class PlotWidgetTestWindow(QMainWindow):
         """Add requested item to the """
         if self.item_to_add == LivePlotCurve:
             for config in self.curve_configs:
-                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, pen="r")
-        elif isinstance(self.item_to_add, str) and self.item_to_add == "ScatterPlot":
-            for config in self.curve_configs:
-                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, pen=None, symbol="o")
+                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, **self.opts)
         # currently other items are only implemented in scrolling plot
         elif self.plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
             if self.item_to_add == LiveBarGraphItem:
-                self.plot.addBarGraph(data_source=self.data_source_mock, width=0.25)
+                self.plot.addBarGraph(data_source=self.data_source_mock, **self.opts)
             elif self.item_to_add == LiveInjectionBarGraphItem:
-                self.plot.addInjectionBar(data_source=self.data_source_mock)
+                self.plot.addInjectionBar(data_source=self.data_source_mock, **self.opts)
             elif self.item_to_add == LiveTimestampMarker:
                 self.plot.addTimestampMarker(data_source=self.data_source_mock)
 
