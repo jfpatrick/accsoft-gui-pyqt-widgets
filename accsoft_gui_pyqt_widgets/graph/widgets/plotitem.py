@@ -215,7 +215,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 plot_item=self,
                 data_source=data_source,
                 layer_identifier=layer_identifier,
-                buffer_size = buffer_size,
+                buffer_size=buffer_size,
                 **bargraph_kwargs,
             )
         else:

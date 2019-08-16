@@ -210,6 +210,8 @@ def check_bargraph(
         assert isinstance(bargraph, ScrollingBarGraphItem)
         assert isinstance(plot_item._time_line, InfiniteLine)
         assert plot_item._time_line.value() == time_2
+        # Check if the fixed bar width is set correctly
+        assert bargraph._fixed_bar_width == 0.25
 
 
 def check_injectionbar_graph(
