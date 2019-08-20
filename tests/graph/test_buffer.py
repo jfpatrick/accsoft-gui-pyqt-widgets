@@ -1,0 +1,230 @@
+"""Tests for the Sorting functionality of the buffers as well as CurveDataBuffer."""
+
+from typing import List, Tuple, Union
+
+import numpy as np
+import pytest
+
+import accsoft_gui_pyqt_widgets.graph as accgraph
+
+# ~~~ Sorting Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def test_check_sorting_of_many_points():
+    """Check sorting of one million shuffled points"""
+    expected_x = np.arange(0.0, 100000.0)
+    expected_y = np.arange(0.0, 100000.0)
+    actual_x = np.copy(expected_x)
+    np.random.shuffle(actual_x)
+    actual_y = np.copy(actual_x)
+    actual_x, actual_y = accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+        primary_values=actual_x, secondary_values_list=[actual_y]
+    )
+    assert np.array_equal(expected_x, actual_x)
+    assert np.array_equal(expected_y, actual_y[0])
+
+
+def test_sorting_lists_with_different_lengths():
+    """Check sorting of one million shuffled points"""
+    expected_x = np.arange(0.0, 7.0)
+    expected_y = np.arange(0.0, 6.0)
+    actual_x = np.copy(expected_x)
+    actual_y = np.copy(expected_y)
+    np.random.shuffle(actual_x)
+    np.random.shuffle(actual_y)
+    with pytest.raises(ValueError):
+        accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+            primary_values=actual_x, secondary_values_list=[actual_y]
+        )
+
+
+def test_sorting_lists_with_different_dimensions():
+    """Check sorting of one million shuffled points"""
+    expected_x = np.array([[0.0], [1.0]])
+    expected_y = np.array([0.0, 1.0])
+    actual_x = np.copy(expected_x)
+    actual_y = np.copy(expected_y)
+    np.random.shuffle(actual_x)
+    np.random.shuffle(actual_y)
+    with pytest.raises(ValueError):
+        accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+            primary_values=actual_x, secondary_values_list=[actual_y]
+        )
+
+
+def test_sorting_of_empty_lists():
+    """Check sorting of one million shuffled points"""
+    expected_x = np.array([])
+    expected_y = np.array([])
+    actual_x = np.copy(expected_x)
+    actual_y = np.copy(expected_y)
+    np.random.shuffle(actual_x)
+    np.random.shuffle(actual_y)
+    accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+        primary_values=actual_x, secondary_values_list=[actual_y]
+    )
+    assert np.array_equal(expected_x, actual_x)
+    assert np.array_equal(expected_y, actual_y)
+
+# ~~~ Tests for CurveData Buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+@pytest.mark.parametrize("length_for_buffer", [10, 14])
+def test_subset_creation_with_clipping_of_data_model_without_nan_values(
+        length_for_buffer
+):
+    """Subset Creation with """
+    buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
+    buffer.add_list_of_entries(
+        x_values=np.arange(start=0.0, stop=10.0),
+        y_values=np.arange(start=0.0, stop=10.0),
+    )
+
+    # Start in front of first value, End in between values
+    subset = buffer.get_subset(start=-4.4, end=7.9, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9],
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start in front of first value, End exactly on value
+    subset = buffer.get_subset(start=-2.6, end=8.0, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start in front of first value, End after last values
+    subset = buffer.get_subset(start=-0.1, end=11.6)
+    expected = create_expected_tuple_from_list(
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+        [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+
+    # Start on value, End in between values
+    subset = buffer.get_subset(start=2.0, end=7.9, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9]
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start on value, End on value
+    subset = buffer.get_subset(start=2.0, end=8.0, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start on value, End after last value
+    subset = buffer.get_subset(start=2.0, end=12.3, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+
+    # Start between values, End after last value
+    subset = buffer.get_subset(start=2.3, end=11.2, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start between values, End on value
+    subset = buffer.get_subset(start=2.3, end=8.0, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start between values, End between values
+    subset = buffer.get_subset(start=2.3, end=8.9, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 8.9],
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 8.9],
+    )
+    assert np.allclose(subset, expected)
+
+    # Start in front of first value and End in front of first value
+    subset = buffer.get_subset(start=-15.3, end=-0.6, clip_at_boundaries=True)
+    expected = create_expected_tuple(start=0.0, stop=0.0)
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Start after last value and End after last value
+    subset = buffer.get_subset(start=15.3, end=24.6, clip_at_boundaries=True)
+    expected = create_expected_tuple(start=0.0, stop=0.0)
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Exactly one value
+    subset = buffer.get_subset(start=5.0, end=5.0)
+    expected = create_expected_tuple_from_list([5.0], [5.0])
+    assert np.allclose(subset, expected, equal_nan=True)
+
+
+@pytest.mark.parametrize("length_for_buffer", [10, 14])
+def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
+        length_for_buffer
+):
+    """Check same subsets as with buffer without nans with an full buffer and an buffer with empty places left"""
+    buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
+    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_list_of_entries(
+        x_values=np.array([0.0, 1.0]), y_values=np.array([0.0, 1.0])
+    )
+    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_list_of_entries(
+        x_values=np.array([2.0, 3.0]), y_values=np.array([2.0, 3.0])
+    )
+    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_list_of_entries(
+        x_values=np.array([4.0, 5.0]), y_values=np.array([4.0, 5.0])
+    )
+    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+
+    # Span the whole array
+    subset = buffer.get_subset(start=-1.0, end=7.0, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list(
+        [0.0, 1.0, np.nan, 2.0, 3.0, np.nan, 4.0, 5.0],
+        [0.0, 1.0, np.nan, 2.0, 3.0, np.nan, 4.0, 5.0],
+    )
+    assert np.allclose(subset, expected, equal_nan=True)
+    # No value, range before first value
+    subset = buffer.get_subset(start=-4.0, end=-1.23, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([], [])
+    assert np.allclose(subset, expected, equal_nan=True)
+    # No value, range after last value
+    subset = buffer.get_subset(start=14.32, end=43.21, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([], [])
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Only first number
+    subset = buffer.get_subset(start=-4.32, end=0.0, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([0.0], [0.0])
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Only first number with clipping
+    subset = buffer.get_subset(start=-4.32, end=0.5, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([0.0, 0.5], [0.0, 0.5])
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Only first number with clipping
+    subset = buffer.get_subset(start=-4.32, end=1.5, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([0.0, 1.0], [0.0, 1.0])
+    assert np.allclose(subset, expected, equal_nan=True)
+    # Only first number with clipping
+    subset = buffer.get_subset(start=3.9, end=5.1, clip_at_boundaries=True)
+    expected = create_expected_tuple_from_list([4.0, 5.0], [4.0, 5.0])
+    assert np.allclose(subset, expected, equal_nan=True)
+
+
+def test_add_empty_list():
+    """Check if an empty list of entries is handeled correctly when appended"""
+    buffer = accgraph.SortedCurveDataBuffer(size=10)
+    buffer.add_list_of_entries(
+        x_values=np.array([]), y_values=np.array([])
+    )
+    assert buffer.is_empty()
+
+# ~~~ Util functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def create_expected_tuple(start: float, stop: float):
+    """Create tuple with x and y value list with y[i] = x[i] + 1"""
+    return np.arange(start=start, stop=stop), np.arange(start=start + 1, stop=stop + 1)
+
+
+def create_expected_tuple_from_list(list_1: List[float], list_2: List[float]):
+    """Convert Tuple with lists to Tuple with np.ndarray"""
+    return np.array(list_1), np.array(list_2)

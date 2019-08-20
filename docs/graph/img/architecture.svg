@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="718px" height="751px" version="1.1" style="background-color: rgb(255, 255, 255);">
+    <defs>
+        <style type="text/css">ul { margin-top: 0px; margin-bottom: 10px }
+ol { margin-top: 0px; margin-bottom: 10px }
+ul { margin-top: 0px; margin-bottom: 10px }
+ol { margin-top: 0px; margin-bottom: 10px }
+ul { margin-top: 0px; margin-bottom: 10px }
+ol { margin-top: 0px; margin-bottom: 10px }
+</style>
+    </defs>
+    <g transform="translate(0.5,0.5)">
+        <path d="M 201.06 105.59 L 201.06 140.12 Q 201.06 150.12 207.53 150.12 L 210.76 150.12 Q 214 150.12 214 160.12 L 214 341.29 Q 214 351.29 224 351.29 L 241.65 351.29 Q 251.65 351.29 251.65 361.29 L 251.65 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 201.06 93.59 L 207.06 105.59 L 195.06 105.59 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 66.94 106.12 L 66.94 242.47 Q 66.94 252.47 76.94 252.47 L 83.71 252.47 Q 90.47 252.47 90.47 262.47 L 90.47 326.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 66.94 94.12 L 72.94 106.12 L 60.94 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 106.71 L 434 115.47 Q 434 124.24 424 124.24 L 417.82 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 93.71 L 440.5 100.21 L 434 106.71 L 427.5 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 106.12 L 614 166 Q 614 176 604 176 L 542.82 176 Q 532.82 176 532.82 186 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 94.12 L 620 106.12 L 608 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 106.71 L 465.76 163.65 Q 465.76 173.65 475.76 173.65 L 522.82 173.65 Q 532.82 173.65 532.82 183.65 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 93.71 L 472.26 100.21 L 465.76 106.71 L 459.26 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="1.5" y="0" width="135.4" height="20" fill="#7acff5" stroke="none" pointer-events="none" />
+        <rect x="1.5" y="20" width="677" height="93" fill="#7acff5" stroke="none" pointer-events="none" />
+        <path d="M 1.5 20 L 678.5 20 L 678.5 113 L 1.5 113 L 1.5 0 L 136.9 0 L 136.9 20" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" text-anchor="middle" font-size="12px">
+            <text x="338.91" y="32.5">pyqtgraph</text>
+        </g>
+        <rect x="15.5" y="43" width="104" height="50" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 15.5 59.36 L 119.5 59.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="66.41" y="54.5">PlotWidget</text>
+        </g>
+        <rect x="157" y="43" width="88" height="50" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 157 59.36 L 245 59.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="199.91" y="54.5">PlotItem</text>
+        </g>
+        <rect x="309" y="43" width="78" height="50" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 309 59.36 L 387 59.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="346.91" y="54.5">AxisItem</text>
+        </g>
+        <rect x="565" y="43" width="98" height="50" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 565 59.36 L 663 59.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="612.91" y="54.5">PlotDataItem</text>
+        </g>
+        <rect x="414.5" y="43" width="79" height="50" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 414.5 59.36 L 493.5 59.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="452.91" y="54.5">ViewBox</text>
+        </g>
+        <path d="M 348.12 106.71 L 348.12 115.47 Q 348.12 124.24 358.12 124.24 L 401.65 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 348.12 93.71 L 354.62 100.21 L 348.12 106.71 L 341.62 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 544.65 L 408.12 517.76 Q 408.12 507.76 398.12 507.76 L 367.53 507.76 Q 357.53 507.76 357.53 497.76 L 357.53 369.53 Q 357.53 359.53 367.53 359.53 L 495.76 359.53 Q 505.76 359.53 505.76 349.53 L 505.76 320.12 Q 505.76 310.12 506.35 310.12 L 506.94 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 557.65 L 401.62 551.15 L 408.12 544.65 L 414.62 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 544.65 L 164.59 513.06 Q 164.59 503.06 174.59 503.06 L 268.71 503.06 Q 278.71 503.06 278.71 493.06 L 278.71 448.94" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 557.65 L 158.09 551.15 L 164.59 544.65 L 171.09 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 305.76 698.35 L 305.76 657.76 Q 305.76 647.76 315.76 647.76 L 367.53 647.76 Q 377.53 647.76 377.53 637.76 L 377.53 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 256.35 698.35 L 256.35 657.76 Q 256.35 647.76 246.35 647.76 L 174.59 647.76 Q 164.59 647.76 164.59 637.76 L 164.59 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="1.67" y="136" width="142.4" height="20" fill="#7acff5" stroke="none" pointer-events="none" />
+        <rect x="1.67" y="156" width="712" height="336" fill="#7acff5" stroke="none" pointer-events="none" />
+        <path d="M 1.67 156 L 713.67 156 L 713.67 492 L 1.67 492 L 1.67 136 L 144.07 136 L 144.07 156" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" text-anchor="middle" font-size="12px">
+            <text x="356.58" y="168.5">widgets</text>
+        </g>
+        <rect x="264.5" y="183" width="143" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 264.5 199.36 L 407.5 199.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="334.91" y="194.5">AccSoftPlotItemLayer</text>
+        </g>
+        <rect x="241.5" y="254" width="189" height="56" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 241.5 270.35 L 430.5 270.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="334.91" y="265.5">AccSoftPlotItemLayerCollection</text>
+        </g>
+        <path d="M 336.35 240.29 L 336.35 239.32 Q 336.35 238.35 336.35 230.71 L 336.35 223.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 336.35 253.29 L 329.85 246.79 L 336.35 240.29 L 342.85 246.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="24" y="327" width="133" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 24 343.37 L 157 343.37" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="89.41" y="338.5">AccSoftPlotWidget</text>
+        </g>
+        <rect x="225.5" y="397" width="106" height="52" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 225.5 413.37 L 331.5 413.37" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="277.41" y="408.5">AccSoftPlotItem</text>
+        </g>
+        <path d="M 170.71 346.59 L 181.65 346.59 Q 191.65 346.59 191.65 356.59 L 191.65 413.06 Q 191.65 423.06 201.65 423.06 L 225.76 423.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 157.71 346.59 L 164.21 340.09 L 170.71 346.59 L 164.21 353.09 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 383.47 L 304.59 356.59 Q 304.59 346.59 296.94 346.59 L 293.12 346.59 Q 289.29 346.59 289.29 336.59 L 289.29 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.47 L 298.09 389.97 L 304.59 383.47 L 311.09 389.97 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="480" y="262" width="106" height="48" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 480 278.37 L 586 278.37" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="531.91" y="273.5">AccSoftPlotCurve</text>
+        </g>
+        <path d="M 304.59 383.29 L 304.59 356.59 Q 304.59 346.59 314.59 346.59 L 439.29 346.59 Q 449.29 346.59 449.29 336.59 L 449.29 296.59 Q 449.29 286.59 459.29 286.59 L 479.88 286.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.29 L 298.09 389.79 L 304.59 383.29 L 311.09 389.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="522.5" y="397" width="146" height="51" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 522.5 413.37 L 668.5 413.37" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="594.41" y="408.5">SlidingPointerPlotCurve</text>
+        </g>
+        <rect x="391" y="398.5" width="122" height="48" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 391 414.88 L 513 414.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="450.91" y="410">ScrollingPlotCurve</text>
+        </g>
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 542.82 366.59 L 562.82 366.59 Q 572.82 366.59 582.82 366.59 L 589 366.59 Q 595.18 366.59 595.18 376.59 L 595.18 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 522.82 366.59 L 461.65 366.59 Q 451.65 366.59 451.65 376.59 L 451.65 398.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="0.5" y="511" width="142.8" height="20" fill="#7acff5" stroke="none" pointer-events="none" />
+        <rect x="0.5" y="531" width="714" height="85" fill="#7acff5" stroke="none" pointer-events="none" />
+        <path d="M 0.5 531 L 714.5 531 L 714.5 616 L 0.5 616 L 0.5 511 L 143.3 511 L 143.3 531" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" text-anchor="middle" font-size="12px">
+            <text x="356.41" y="543.5">datamodel</text>
+        </g>
+        <rect x="102.5" y="558" width="123" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 102.5 574.36 L 225.5 574.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="162.91" y="569.5">PlotItemDataModel</text>
+        </g>
+        <rect x="507" y="558" width="152" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 507 574.36 L 659 574.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="581.91" y="569.5">SortedCurveDataBuffer</text>
+        </g>
+        <rect x="347" y="558" width="123" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 347 574.36 L 470 574.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="407.41" y="569.5">CurveDataModel</text>
+        </g>
+        <path d="M 493.23 578.35 L 490.68 578.35 Q 488.12 578.35 479.06 578.35 L 470 578.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 506.23 578.35 L 499.73 584.85 L 493.23 578.35 L 499.73 571.85 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 333.29 578 L 225.5 578" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 346.29 578 L 339.79 584.5 L 333.29 578 L 339.79 571.5 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <rect x="1.5" y="648" width="142.8" height="20" fill="#7acff5" stroke="none" pointer-events="none" />
+        <rect x="1.5" y="668" width="714" height="80" fill="#7acff5" stroke="none" pointer-events="none" />
+        <path d="M 1.5 668 L 715.5 668 L 715.5 748 L 1.5 748 L 1.5 648 L 144.3 648 L 144.3 668" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" text-anchor="middle" font-size="12px">
+            <text x="357.41" y="680.5">connection</text>
+        </g>
+        <rect x="232.5" y="698" width="97" height="40" fill="#7acff5" stroke="#000000" pointer-events="none" />
+        <path d="M 232.5 714.36 L 329.5 714.36" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <g fill="#000000" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="279.91" y="709.5">UpdateSource</text>
+        </g>
+        <path d="M 66.94 106.12 L 66.94 242.47 Q 66.94 252.47 76.94 252.47 L 83.71 252.47 Q 90.47 252.47 90.47 262.47 L 90.47 326.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 66.94 94.12 L 72.94 106.12 L 60.94 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 201.06 105.59 L 201.06 140.12 Q 201.06 150.12 207.53 150.12 L 210.76 150.12 Q 214 150.12 214 160.12 L 214 341.29 Q 214 351.29 224 351.29 L 241.65 351.29 Q 251.65 351.29 251.65 361.29 L 251.65 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 201.06 93.59 L 207.06 105.59 L 195.06 105.59 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 348.12 106.71 L 348.12 115.47 Q 348.12 124.24 358.12 124.24 L 401.65 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 348.12 93.71 L 354.62 100.21 L 348.12 106.71 L 341.62 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 106.12 L 614 166 Q 614 176 604 176 L 542.82 176 Q 532.82 176 532.82 186 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 94.12 L 620 106.12 L 608 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 106.71 L 465.76 163.65 Q 465.76 173.65 475.76 173.65 L 522.82 173.65 Q 532.82 173.65 532.82 183.65 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 93.71 L 472.26 100.21 L 465.76 106.71 L 459.26 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 106.71 L 434 115.47 Q 434 124.24 424 124.24 L 417.82 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 93.71 L 440.5 100.21 L 434 106.71 L 427.5 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 336.35 240.29 L 336.35 239.32 Q 336.35 238.35 336.35 230.71 L 336.35 223.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 336.35 253.29 L 329.85 246.79 L 336.35 240.29 L 342.85 246.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 348.12 106.71 L 348.12 115.47 Q 348.12 124.24 358.12 124.24 L 401.65 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 348.12 93.71 L 354.62 100.21 L 348.12 106.71 L 341.62 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 106.71 L 434 115.47 Q 434 124.24 424 124.24 L 417.82 124.24 Q 411.65 124.24 411.65 134.24 L 411.65 193.06 Q 411.65 203.06 409.29 203.06 L 406.94 203.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 434 93.71 L 440.5 100.21 L 434 106.71 L 427.5 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 336.35 240.29 L 336.35 239.32 Q 336.35 238.35 336.35 230.71 L 336.35 223.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 336.35 253.29 L 329.85 246.79 L 336.35 240.29 L 342.85 246.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 383.47 L 304.59 356.59 Q 304.59 346.59 296.94 346.59 L 293.12 346.59 Q 289.29 346.59 289.29 336.59 L 289.29 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.47 L 298.09 389.97 L 304.59 383.47 L 311.09 389.97 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 66.94 106.12 L 66.94 242.47 Q 66.94 252.47 76.94 252.47 L 83.71 252.47 Q 90.47 252.47 90.47 262.47 L 90.47 326.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 66.94 94.12 L 72.94 106.12 L 60.94 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 170.71 346.59 L 181.65 346.59 Q 191.65 346.59 191.65 356.59 L 191.65 413.06 Q 191.65 423.06 201.65 423.06 L 225.76 423.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 157.71 346.59 L 164.21 340.09 L 170.71 346.59 L 164.21 353.09 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 544.65 L 164.59 513.06 Q 164.59 503.06 174.59 503.06 L 268.71 503.06 Q 278.71 503.06 278.71 493.06 L 278.71 448.94" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 557.65 L 158.09 551.15 L 164.59 544.65 L 171.09 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 383.47 L 304.59 356.59 Q 304.59 346.59 296.94 346.59 L 293.12 346.59 Q 289.29 346.59 289.29 336.59 L 289.29 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.47 L 298.09 389.97 L 304.59 383.47 L 311.09 389.97 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 383.29 L 304.59 356.59 Q 304.59 346.59 314.59 346.59 L 439.29 346.59 Q 449.29 346.59 449.29 336.59 L 449.29 296.59 Q 449.29 286.59 459.29 286.59 L 479.88 286.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.29 L 298.09 389.79 L 304.59 383.29 L 311.09 389.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 170.71 346.59 L 181.65 346.59 Q 191.65 346.59 191.65 356.59 L 191.65 413.06 Q 191.65 423.06 201.65 423.06 L 225.76 423.06" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 157.71 346.59 L 164.21 340.09 L 170.71 346.59 L 164.21 353.09 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 201.06 105.59 L 201.06 140.12 Q 201.06 150.12 207.53 150.12 L 210.76 150.12 Q 214 150.12 214 160.12 L 214 341.29 Q 214 351.29 224 351.29 L 241.65 351.29 Q 251.65 351.29 251.65 361.29 L 251.65 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 201.06 93.59 L 207.06 105.59 L 195.06 105.59 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 544.65 L 408.12 517.76 Q 408.12 507.76 398.12 507.76 L 367.53 507.76 Q 357.53 507.76 357.53 497.76 L 357.53 369.53 Q 357.53 359.53 367.53 359.53 L 495.76 359.53 Q 505.76 359.53 505.76 349.53 L 505.76 320.12 Q 505.76 310.12 506.35 310.12 L 506.94 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 557.65 L 401.62 551.15 L 408.12 544.65 L 414.62 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 106.71 L 465.76 163.65 Q 465.76 173.65 475.76 173.65 L 522.82 173.65 Q 532.82 173.65 532.82 183.65 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 465.76 93.71 L 472.26 100.21 L 465.76 106.71 L 459.26 100.21 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 542.82 366.59 L 562.82 366.59 Q 572.82 366.59 582.82 366.59 L 589 366.59 Q 595.18 366.59 595.18 376.59 L 595.18 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 522.82 366.59 L 461.65 366.59 Q 451.65 366.59 451.65 376.59 L 451.65 398.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 383.29 L 304.59 356.59 Q 304.59 346.59 314.59 346.59 L 439.29 346.59 Q 449.29 346.59 449.29 336.59 L 449.29 296.59 Q 449.29 286.59 459.29 286.59 L 479.88 286.59" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 304.59 396.29 L 298.09 389.79 L 304.59 383.29 L 311.09 389.79 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 106.12 L 614 166 Q 614 176 604 176 L 542.82 176 Q 532.82 176 532.82 186 L 532.82 261.88" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 614 94.12 L 620 106.12 L 608 106.12 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 542.82 366.59 L 562.82 366.59 Q 572.82 366.59 582.82 366.59 L 589 366.59 Q 595.18 366.59 595.18 376.59 L 595.18 397.18" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 323.24 L 532.82 356.59 Q 532.82 366.59 522.82 366.59 L 461.65 366.59 Q 451.65 366.59 451.65 376.59 L 451.65 398.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 532.82 311.24 L 538.82 323.24 L 526.82 323.24 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 544.65 L 164.59 513.06 Q 164.59 503.06 174.59 503.06 L 268.71 503.06 Q 278.71 503.06 278.71 493.06 L 278.71 448.94" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 164.59 557.65 L 158.09 551.15 L 164.59 544.65 L 171.09 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 256.35 698.35 L 256.35 657.76 Q 256.35 647.76 246.35 647.76 L 174.59 647.76 Q 164.59 647.76 164.59 637.76 L 164.59 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 333.29 578 L 225.5 578" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 346.29 578 L 339.79 584.5 L 333.29 578 L 339.79 571.5 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 493.23 578.35 L 490.68 578.35 Q 488.12 578.35 479.06 578.35 L 470 578.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 506.23 578.35 L 499.73 584.85 L 493.23 578.35 L 499.73 571.85 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 305.76 698.35 L 305.76 657.76 Q 305.76 647.76 315.76 647.76 L 367.53 647.76 Q 377.53 647.76 377.53 637.76 L 377.53 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 493.23 578.35 L 490.68 578.35 Q 488.12 578.35 479.06 578.35 L 470 578.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 506.23 578.35 L 499.73 584.85 L 493.23 578.35 L 499.73 571.85 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 544.65 L 408.12 517.76 Q 408.12 507.76 398.12 507.76 L 367.53 507.76 Q 357.53 507.76 357.53 497.76 L 357.53 369.53 Q 357.53 359.53 367.53 359.53 L 495.76 359.53 Q 505.76 359.53 505.76 349.53 L 505.76 320.12 Q 505.76 310.12 506.35 310.12 L 506.94 310.12" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 408.12 557.65 L 401.62 551.15 L 408.12 544.65 L 414.62 551.15 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 333.29 578 L 225.5 578" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 346.29 578 L 339.79 584.5 L 333.29 578 L 339.79 571.5 Z" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 305.76 698.35 L 305.76 657.76 Q 305.76 647.76 315.76 647.76 L 367.53 647.76 Q 377.53 647.76 377.53 637.76 L 377.53 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+        <path d="M 256.35 698.35 L 256.35 657.76 Q 256.35 647.76 246.35 647.76 L 174.59 647.76 Q 164.59 647.76 164.59 637.76 L 164.59 598.35" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none" />
+    </g>
+</svg>

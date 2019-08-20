@@ -1,0 +1,79 @@
+"""
+Window with Extended PlotWidget for Testing purposes
+"""
+
+from typing import List, Optional, Type, Union
+
+from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
+
+from accsoft_gui_pyqt_widgets.graph import (LiveBarGraphItem,
+                                            LiveTimestampMarker,
+                                            LiveInjectionBarGraphItem,
+                                            LivePlotCurve,
+                                            LivePlotCurveConfig,
+                                            ExPlotWidget,
+                                            ExPlotWidgetConfig,
+                                            DataModelBasedItem,
+                                            PlotWidgetStyle)
+
+from .mock_data_source import MockDataSource
+from .mock_timing_source import MockTimingSource
+
+
+class PlotWidgetTestWindow(QMainWindow):
+    """Helper class for creating a Window containing an ExtendedPlotWidget with
+    timing and data sources that allow convenient testing by giving the option
+    to manually triggering updates with given values.
+    """
+
+    def __init__(
+        self,
+        plot_config: ExPlotWidgetConfig,
+        curve_configs: Optional[List[LivePlotCurveConfig]],
+        item_to_add: Union[Type[DataModelBasedItem], str] = LivePlotCurve,
+        should_create_timing_source: bool = True
+    ):
+        """Constructor :param plot_config: Configuration for the Plot Widget
+
+        Args:
+            plot_config (ExtendedPlotWidgetConfig):
+            curve_configs:
+        """
+        super().__init__()
+        # Two Threads for Time and Data updates
+        self.time_source_mock: Optional[MockTimingSource]
+        if should_create_timing_source:
+             self.time_source_mock = MockTimingSource()
+        else:
+            self.time_source_mock = None
+        self.data_source_mock: MockDataSource = MockDataSource()
+        self.plot_config: ExPlotWidgetConfig = plot_config
+        self.plot: ExPlotWidget = ExPlotWidget(
+            timing_source=self.time_source_mock, config=plot_config
+        )
+        self.item_to_add: Union[DataModelBasedItem, str] = item_to_add
+        self.curve_configs = curve_configs
+        self.add_item()
+        self.resize(800, 600)
+        main_container = QWidget()
+        self.setCentralWidget(main_container)
+        main_layout = QGridLayout()
+        main_container.setLayout(main_layout)
+        main_layout.addWidget(self.plot)
+
+    def add_item(self):
+        """Add requested item to the """
+        if self.item_to_add == LivePlotCurve:
+            for config in self.curve_configs:
+                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, pen="r")
+        elif isinstance(self.item_to_add, str) and self.item_to_add == "ScatterPlot":
+            for config in self.curve_configs:
+                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, pen=None, symbol="o")
+        # currently other items are only implemented in scrolling plot
+        elif self.plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
+            if self.item_to_add == LiveBarGraphItem:
+                self.plot.addBarGraph(data_source=self.data_source_mock)
+            elif self.item_to_add == LiveInjectionBarGraphItem:
+                self.plot.addInjectionBar(data_source=self.data_source_mock)
+            elif self.item_to_add == LiveTimestampMarker:
+                self.plot.addTimestampMarker(data_source=self.data_source_mock)
