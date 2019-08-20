@@ -2,6 +2,7 @@
 Extended Widget for custom plotting with simple configuration wrappers
 """
 
+import itertools
 from typing import Dict, Optional, Type
 
 import pyqtgraph as pg
@@ -72,6 +73,30 @@ class ExPlotWidget(pg.PlotWidget):
             **plotitem_kwargs,
         )
         self.setCentralItem(self.plotItem)
+        self._wrap_plotitem_functions()
+
+    def _wrap_plotitem_functions(self) -> None:
+        """
+        For convenience the PlotWidget wraps some functions of the PlotItem
+        Since we replace the inner `self.plotItem` we have to change the wrapped
+        functions of it as well. This list has to be kept in sync with the
+        equivalent in the baseclass constructor.
+
+        Returns:
+            None
+        """
+        wrap_from_baseclass = [
+            "addItem", "removeItem", "autoRange", "clear", "setXRange",
+            "setYRange", "setRange", "setAspectLocked", "setMouseEnabled",
+            "setXLink", "setYLink", "enableAutoRange", "disableAutoRange",
+            "setLimits", "register", "unregister", "viewRect"
+       ]
+        wrap_additionally = [
+            "add_layer"
+        ]
+        for m in itertools.chain(wrap_from_baseclass, wrap_additionally):
+            setattr(self, m, getattr(self.plotItem, m))
+        self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
 
     def addCurve(
         self,
