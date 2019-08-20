@@ -27,7 +27,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self,
         plot_config: ExPlotWidgetConfig,
         curve_configs: Optional[List[LivePlotCurveConfig]],
-        item_to_add: Union[Type[DataModelBasedItem], str] = LivePlotCurve,
+        item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = None,
         should_create_timing_source: bool = True
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
