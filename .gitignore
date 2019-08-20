@@ -1,5 +1,6 @@
 # Placeholder for user defined entries. If you would like to extend this file, please put your entries in this section.
 
+*.coverage
 
 # End of placeholder for user defined entries
 
@@ -7,6 +8,10 @@
 
 *.pyc
 *core.[0-9]*
+
+# Venv and VS Code specific folders
+.venv
+.vscode
 
 *egg-info/
 

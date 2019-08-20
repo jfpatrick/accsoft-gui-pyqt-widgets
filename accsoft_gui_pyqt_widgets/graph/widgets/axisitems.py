@@ -4,13 +4,41 @@ Different AxisItem implementations for Timestamp based plotting for better reada
 
 from datetime import datetime
 from typing import List
+
 from pyqtgraph import AxisItem
+from qtpy.QtCore import Signal
 
 
+class CustomAxisItem(AxisItem):
+
+    """AxisItem with some required extra functions"""
+
+    # Signal for informing later components that
+    sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
+
+    def mouseDragEvent(self, event):
+        """Make the mouse drag event on the axis distinguishable from the ViewBox one"""
+        self.sig_vb_mouse_event_triggered_by_axis.emit(True)
+        super().mouseDragEvent(event)
+
+    def mouseClickEvent(self, event):
+        """Make the mouse click event on the axis distinguishable from the ViewBox one"""
+        self.sig_vb_mouse_event_triggered_by_axis.emit(True)
+        super().mouseClickEvent(event)
+
+    def wheelEvent(self, ev):
+        """Make the mouse click event on the axis distinguishable from the ViewBox one"""
+        self.sig_vb_mouse_event_triggered_by_axis.emit(True)
+        super().wheelEvent(ev)
+
+
+# pylint: disable=too-many-ancestors
 class TimeAxisItem(AxisItem):
     """Axis Item that shows timestamps as strings in format HH:MM:SS"""
 
-    def tickStrings(self, values: List[float], scale: float, spacing: float) -> List[str]:
+    def tickStrings(
+        self, values: List[float], scale: float, spacing: float
+    ) -> List[str]:
         """Translate timestamps to human readable times formatted HH:MM:SS
 
         Args:
@@ -22,13 +50,17 @@ class TimeAxisItem(AxisItem):
             A list of human readable times
         """
         try:
-            return [datetime.fromtimestamp(value).strftime("%H:%M:%S") for value in values]
+            return [
+                datetime.fromtimestamp(value).strftime("%H:%M:%S") for value in values
+            ]
         except ValueError:
             return [""]
 
 
 class RelativeTimeAxisItem(AxisItem):
-    """Axis Item that displays timestamps as difference in seconds to an given
+    """ Relative-Time Axis-Item
+
+    Axis Item that displays timestamps as difference in seconds to an given
     start time. Example: start-time 01:00:00 and tick is 01:00:10 -> "+10s" will
     be displayed at the position of the tick
     """
@@ -44,7 +76,8 @@ class RelativeTimeAxisItem(AxisItem):
 
     def set_start_time(self, timestamp) -> None:
         """Sets the start time on which the relative timestamps should be
-        calculated from.
+        calculated from. This has to be done either by hand or as soon as
+        the first timestamp get's available.
 
         Args:
             timestamp: Timestamp that represents the start time
@@ -56,7 +89,7 @@ class RelativeTimeAxisItem(AxisItem):
 
     def tickStrings(self, values, scale, spacing) -> List[str]:
         """Translate timestamp differences from a point in time to the
-        start-time to human readable strings in seconds.
+        start-time to readable strings in seconds.
 
         Args:
             values: Positions from the axis that are supposed to be labeled
@@ -68,7 +101,11 @@ class RelativeTimeAxisItem(AxisItem):
             from the cycle start
         """
         try:
-            return [("+" if (value - self.start) > 0 else "") + f"{self._cut_to_n_decimals(value - self.start, 2)}s" for value in values]
+            return [
+                ("+" if (value - self.start) > 0 else "")
+                + f"{self._cut_to_n_decimals(value - self.start, 2)}s"
+                for value in values
+            ]
         except ValueError:
             return [""]
 

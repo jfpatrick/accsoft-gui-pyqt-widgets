@@ -5,55 +5,60 @@ For developer additional dependencies:  pip install .[testing]
 """
 
 import os
-from typing import List, Dict
-from setuptools import setup, find_packages
+from typing import Dict, List
 
-found_user_deps_files = []
-found_dev_deps_files = []
+from setuptools import find_packages, setup
+
+FOUND_USER_DEPS_FILES = []
+FOUND_DEV_DEPS_FILES = []
 # Files to search for -> requirements = minimal deps to run, dev_requirements = deps for running tests...
-usr_deps_filename = "requirements.txt"
-dev_deps_filename = "dev_requirements.txt"
-dev_deps_map_key = "testing"
-current_file_location = os.path.abspath(os.path.dirname(__file__))
+USR_DEPS_FILENAME = "requirements.txt"
+DEV_DEPS_FILENAME = "dev_requirements.txt"
+DEV_DEPS_MAP_KEY = "testing"
+CURRENT_FILE_LOCATION = os.path.abspath(os.path.dirname(__file__))
 
-packages = [
-    "accsoft_gui_pyqt_widgets",
-]
-install_requires: List[str] = []
-extra_requires: Dict[str, List[str]] = {
-    dev_deps_map_key: [],
-}
+PACKAGES = ["accsoft_gui_pyqt_widgets"]
+INSTALL_REQUIRES: List[str] = []
+EXTRA_REQUIRES: Dict[str, List[str]] = {DEV_DEPS_MAP_KEY: []}
 
-print(f"Search for files {usr_deps_filename} and {dev_deps_filename} recursively, starting from {current_file_location}")
+print(
+    f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, starting from {CURRENT_FILE_LOCATION}"
+)
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-for package in packages:
-    folder_to_search = current_file_location + ("" if current_file_location[-1] == os.path.sep else os.path.sep) + package
+for package in PACKAGES:
+    folder_to_search = (
+        CURRENT_FILE_LOCATION
+        + ("" if CURRENT_FILE_LOCATION[-1] == os.path.sep else os.path.sep)
+        + package
+    )
     print(f"Search folder:                     {folder_to_search}")
     for root, directories, files in os.walk(
-            folder_to_search, onerror=(lambda err: print(f"{folder_to_search} not found."))):
+        folder_to_search,
+        onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),
+    ):
         for file in files:
-            if dev_deps_filename == file:
+            if DEV_DEPS_FILENAME == file:
                 print(f"Found developer requirements file: {os.path.join(root, file)}")
-                found_dev_deps_files.append(os.path.join(root, file))
-            elif usr_deps_filename == file:
+                FOUND_DEV_DEPS_FILES.append(os.path.join(root, file))
+            elif USR_DEPS_FILENAME == file:
                 print(f"Found user requirements file:      {os.path.join(root, file)}")
-                found_user_deps_files.append(os.path.join(root, file))
+                FOUND_USER_DEPS_FILES.append(os.path.join(root, file))
 
-for usr_dep_file in found_user_deps_files:
+for usr_dep_file in FOUND_USER_DEPS_FILES:
     with open(os.path.join(usr_dep_file), "r") as f:
         deps = f.read().split()
         print(f"Collecting user dependencies:      {deps}")
-        install_requires += deps
+        INSTALL_REQUIRES += deps
 
-for dev_dep_file in found_dev_deps_files:
+for dev_dep_file in FOUND_DEV_DEPS_FILES:
     with open(os.path.join(dev_dep_file), "r") as f:
         deps = f.read().split()
         print(f"Collecting developer dependencies: {deps}")
-        extra_requires["testing"] += deps
+        EXTRA_REQUIRES["testing"] += deps
 
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Result of Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print(f"Combined user dependencies:        {install_requires}")
-print(f"Combined developer dependencies:   {extra_requires}")
+print(f"Combined user dependencies:        {INSTALL_REQUIRES}")
+print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
 
 # raise ValueError("Stop")
 
@@ -61,7 +66,7 @@ setup(
     name="accsoft_gui_pyqt_widgets",
     version="0.1.0",
     description="PyQt based widgets",
-    packages=find_packages(exclude=('examples', 'docs')),
-    install_requires=install_requires,
-    extras_require=extra_requires
+    packages=find_packages(exclude=("examples", "docs")),
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRA_REQUIRES,
 )

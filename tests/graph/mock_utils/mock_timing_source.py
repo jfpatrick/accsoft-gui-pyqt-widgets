@@ -3,7 +3,7 @@
 from accsoft_gui_pyqt_widgets.graph import UpdateSource
 
 
-class ManualTimingSource(UpdateSource):
+class MockTimingSource(UpdateSource):
     """Timing Source for Testing Purposes
 
     Class for sending the right signals to the ExtendedPlotWidget. This
@@ -17,4 +17,4 @@ class ManualTimingSource(UpdateSource):
         Args:
             timestamp (float): timestamp to emit
         """
-        self.timing_signal.emit(timestamp)
+        self.sig_timing_update.emit(timestamp)
