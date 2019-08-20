@@ -69,7 +69,7 @@ class PlotWidgetTestWindow(QMainWindow):
         # currently other items are only implemented in scrolling plot
         elif self.plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
             if self.item_to_add == LiveBarGraphItem:
-                self.plot.addBarGraph(data_source=self.data_source_mock)
+                self.plot.addBarGraph(data_source=self.data_source_mock, width=0.25)
             elif self.item_to_add == LiveInjectionBarGraphItem:
                 self.plot.addInjectionBar(data_source=self.data_source_mock)
             elif self.item_to_add == LiveTimestampMarker:

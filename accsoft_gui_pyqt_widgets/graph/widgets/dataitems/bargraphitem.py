@@ -46,6 +46,10 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             data_source=data_source,
             buffer_size=buffer_size
         )
+        self._fixed_bar_width = bargraphitem_kwargs.get("width", -1)
+        bargraphitem_kwargs["x"] = bargraphitem_kwargs.get("x") or [0.0]
+        bargraphitem_kwargs["height"] = bargraphitem_kwargs.get("height") or [0.0]
+        bargraphitem_kwargs["width"] = bargraphitem_kwargs.get("width") or [0.0]
         pyqtgraph.BarGraphItem.__init__(self, **bargraphitem_kwargs)
         DataModelBasedItem.__init__(
             self,
@@ -86,9 +90,6 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             data_source=data_source,
             timing_source_attached=plot_item.timing_source_attached,
             buffer_size = buffer_size,
-            x=[0.0],
-            height=[0.0],
-            width=0,
             **bargraph_kwargs,
         )
 
@@ -145,8 +146,11 @@ class ScrollingBarGraphItem(LiveBarGraphItem):
         and redraw the bars of the graph from this data.
         """
         self._cycle.update_cycle(self._last_timestamp)
-        smallest_distance = self._data_model.get_smallest_distance_between_x_values()
-        width = 0.9 * smallest_distance if smallest_distance != np.inf else 1.0
+        if self._fixed_bar_width == -1:
+            smallest_distance = self._data_model.get_smallest_distance_between_x_values()
+            width = 0.9 * smallest_distance if smallest_distance != np.inf else 1.0
+        else:
+            width = self._fixed_bar_width
         curve_x, curve_y, height = self._data_model.get_subset(
             start=self._cycle.start, end=self._cycle.end
         )

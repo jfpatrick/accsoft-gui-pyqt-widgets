@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         )
         self.plot.plotItem.add_layer(identifier="layer_1")
         # Add graph items to the Plot
-        bargraph = self.plot.addBarGraph(layer_identifier="layer_1", data_source=data_source_3, brush='g', pen='w')
+        bargraph = self.plot.addBarGraph(layer_identifier="layer_1", data_source=data_source_3, brush='g', pen='w', width=0.9)
         injectionbar = self.plot.addInjectionBar(layer_identifier="layer_1", data_source=data_source_4, pen='b')
         self.plot.addTimestampMarker(data_source=data_source_5)
         scatter_plot = self.plot.addCurve(data_source=data_source_2, pen=None, symbol='o', symbolPen="w", symbolSize=10, symbolBrush=(255, 0, 0, 255))
