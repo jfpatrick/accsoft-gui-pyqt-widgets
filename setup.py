@@ -66,7 +66,7 @@ setup(
     name="accsoft_gui_pyqt_widgets",
     version="0.1.0",
     description="PyQt based widgets",
-    packages=find_packages(exclude=("examples", "docs")),
+    packages=find_packages(exclude=("examples", "docs", "tests")),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRA_REQUIRES,
 )
