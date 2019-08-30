@@ -16,7 +16,8 @@ from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import (
     SortedTimestampMarkerDataBuffer,
     SortedInjectionBarsDataBuffer,
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import (
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
+    AbstractQObjectMeta,
     BarCollectionData,
     BarData,
     CurveData,
@@ -28,20 +29,6 @@ from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class AbstractQObjectMeta(type(QObject), abc.ABCMeta):
-
-    """ Metaclass for abstract classes based on QObject
-
-    A class inheriting from QObject with ABCMeta as metaclass will lead to
-    an metaclass conflict:
-
-    TypeError: metaclass conflict: the metaclass of a derived class must be
-    a (non-strict) subclass of the metaclasses of all its bases
-    """
-
-    pass
 
 
 class BaseDataModel(QObject, metaclass=AbstractQObjectMeta):
@@ -162,13 +149,13 @@ class CurveDataModel(BaseDataModel):
 
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
-        if isinstance(data, PointData):
+        if isinstance(data, PointData) and data.is_valid():
             self._full_data_buffer.add_entry(
                 x_value=data.x_value,
                 y_value=data.y_value
             )
             self.sig_model_has_changed.emit()
-        elif isinstance(data, CurveData):
+        elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x_values=data.x_values,
                 y_values=data.y_values
@@ -176,8 +163,8 @@ class CurveDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data of type {type(data).__name__} does not "
-                                f"fit this line graph datamodel and will be ignored.")
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
+                                f"line graph datamodel or is invalid and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -207,12 +194,12 @@ class BarGraphDataModel(BaseDataModel):
 
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
-        if isinstance(data, BarData):
+        if isinstance(data, BarData) and data.is_valid():
             self._full_data_buffer.add_entry(
                 x_value=data.x_value, y_value=data.y_value, height=data.height
             )
             self.sig_model_has_changed.emit()
-        elif isinstance(data, BarCollectionData):
+        elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x_values=data.x_values,
                 y_values=data.y_values,
@@ -221,7 +208,8 @@ class BarGraphDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this bar graph datamodel and will be ignored.")
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not "
+                                f"fit this bar graph datamodel or is invalid and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -242,31 +230,28 @@ class InjectionBarDataModel(BaseDataModel):
 
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
-        if isinstance(data, InjectionBarData):
+        if isinstance(data, InjectionBarData) and data.is_valid():
             self._full_data_buffer.add_entry(
                 x_value=data.x_value,
                 y_value=data.y_value,
                 height=data.height,
                 width=data.width,
-                top=data.top,
-                bottom=data.bottom,
                 label=data.label,
             )
             self.sig_model_has_changed.emit()
-        elif isinstance(data, InjectionBarCollectionData):
+        elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x_values=data.x_values,
                 y_values=data.y_values,
                 heights=data.heights,
                 widths=data.widths,
-                tops=data.tops,
-                bottoms=data.bottoms,
                 labels=data.labels,
             )
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this injection bar datamodel and will be ignored.")
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
+                                f"this injection-bar datamodel or is invalid and will be ignored.")
                 self._non_fitting_data_info_printed = True
 
 
@@ -285,12 +270,12 @@ class TimestampMarkerDataModel(BaseDataModel):
 
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
-        if isinstance(data, TimestampMarkerData):
+        if isinstance(data, TimestampMarkerData) and data.is_valid():
             self._full_data_buffer.add_entry(
                 x_value=data.x_value, color=data.color, label=data.label
             )
             self.sig_model_has_changed.emit()
-        elif isinstance(data, TimestampMarkerCollectionData):
+        elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x_values=data.x_values,
                 colors=data.colors,
@@ -299,5 +284,6 @@ class TimestampMarkerDataModel(BaseDataModel):
             self.sig_model_has_changed.emit()
         else:
             if not self._non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data of type {type(data).__name__} does not fit this timestamp mark datamodel and will be ignored.")
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
+                                f"this timestamp mark datamodel or is invalid and will be ignored.")
                 self._non_fitting_data_info_printed = True

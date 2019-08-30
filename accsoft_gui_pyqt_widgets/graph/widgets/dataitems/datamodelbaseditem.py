@@ -12,6 +12,7 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import ExPlotWidge
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class DataModelBasedItem(metaclass=abc.ABCMeta):
 
     """ Baseclass for DataSource based graphitems
@@ -60,6 +61,10 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
             return ""
         return self._layer_identifier
 
+    def get_data_model(self):
+        """Get datamodel that the item is based on"""
+        return self._data_model
+
     # ~~~~~ Functions mandatory to implement ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @abc.abstractmethod
@@ -77,10 +82,6 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     def set_layer_information(self, layer_identifier: str) -> None:
         """Get the identifier of the layer the item is drawn in"""
         self._layer_identifier = layer_identifier
-
-    def get_layer_identifier(self) -> str:
-        """Get the identifier of the layer the item is drawn in"""
-        return self._layer_identifier
 
     @staticmethod
     def check_plotting_style_support(

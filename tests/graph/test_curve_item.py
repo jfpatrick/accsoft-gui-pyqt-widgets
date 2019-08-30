@@ -741,14 +741,6 @@ def test_plotdataitem_components_visible(qtbot, params):
 
 # ~~~~~~~~~~~~~~ Test numpy RuntimeWarning when passing NaN to ScatterPlotItem ~~~~~~~~~~~~~~~
 
-
-@pytest.fixture(autouse=False)
-def clear_exception_flag():
-    """Fixture for setting up the exception flag for the test_nan_values_in_scatter_plot()"""
-    global test_nan_values_in_scatter_plot_exception_flag
-    test_nan_values_in_scatter_plot_exception_flag = False
-
-
 def _handle_numpy_error(err, flag):
     """
     Handle numpy error that is expected from the ScatterPlotItem's paint function
@@ -769,7 +761,7 @@ def _handle_numpy_error(err, flag):
     [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (2.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
     [(0.0, 0.0), (1.0, 1.0), (numpy.nan, 4.0), (2.0, 2.0), (3.0, 3.0)],
 ])
-def test_nan_values_in_scatter_plot(qtbot, clear_exception_flag, data_sequence: List[Tuple[float, float]]):
+def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, float]]):
     """ Test if passing nan to a curve and especially scatter plot
     raises an error.
 
@@ -783,6 +775,7 @@ def test_nan_values_in_scatter_plot(qtbot, clear_exception_flag, data_sequence: 
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     global test_nan_values_in_scatter_plot_exception_flag
+    test_nan_values_in_scatter_plot_exception_flag = False
     window = _prepare_minimal_test_window(qtbot)
     source = UpdateSource()
     # symbol -> pass data to symbol as well

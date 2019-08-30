@@ -38,7 +38,7 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import PointData
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,7 +68,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
             viewBox=ExViewBox(),
             **plotitem_kwargs
         )
-        self._time_progress_line = config.time_progress_line
         self._plot_config: ExPlotWidgetConfig = config
         self._last_timestamp: float = -1.0
         self._time_line = None
@@ -120,30 +119,26 @@ class ExPlotItem(pyqtgraph.PlotItem):
     def update_configuration(self, config: ExPlotWidgetConfig):
         """Update the plot widgets configuration"""
         if hasattr(self, "_plot_config") and self._plot_config is not None:
-            if self._plot_config.time_progress_line != config.time_progress_line:
-                if self._last_timestamp != -1.0:
-                    try:
-                        self.removeItem(self._time_line)
-                        self._init_time_line_decorator(timestamp=self._last_timestamp)
-                    except:
-                        pass
-            elif (
+            if (
                 self._plot_config.cycle_size != config.cycle_size
                 or self._plot_config.x_range_offset != config.x_range_offset
                 or self._plot_config.plotting_style != config.plotting_style
             ):
                 self._plot_config = config
+                # clear View boxes of all layers
+                for viewbox in self._layers.get_view_boxes():
+                    viewbox.clear()
+                # update plotting items
                 if len(self.items) > 0:
                     self.update_items_to_new_config(config=config)
+                # recreated removed time progress line decorator
+                self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
         self._plot_config = config
         self._prepare_scrolling_plot_fixed_scrolling_range()
         self._handle_fixed_x_range_update()
 
     def update_items_to_new_config(self, config):
         """Replace all items with ones that fit the given config. Cycle's and data models stay get preserved."""
-        # clear View boxes of all layers
-        for viewbox in self._layers.get_view_boxes():
-            viewbox.clear()
         # Recreate new items based on the old ones
         for item in self.get_all_data_model_based_items():
             if hasattr(item, "create_from"):
@@ -299,7 +294,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
         new_plot: LiveInjectionBarGraphItem = LiveInjectionBarGraphItem.create(
             plot_item=self,
             data_source=data_source,
-            layer_identifier=layer_identifier,
             buffer_size=buffer_size,
             **errorbaritem_kwargs,
         )
@@ -472,15 +466,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     # ~~~~~~~~~~~~~~~~~~~~ Decorator Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def _init_time_line_decorator(self, timestamp: float) -> None:
+    def _init_time_line_decorator(self, timestamp: float, force: bool = False) -> None:
         """Create a vertical line representing the latest timestamp
 
         Args:
             timestamp: Position where to create the
+            force: If true, a new time line will be created
         """
-        if self._last_timestamp == -1.0:
+        if force or self._last_timestamp == -1.0:
             label_opts = {"movable": True, "position": 0.96}
-            if self._time_progress_line:
+            if self._plot_config.time_progress_line:
                 self._time_line = self.addLine(
                     timestamp,
                     pen=(pyqtgraph.mkPen(80, 80, 80)),

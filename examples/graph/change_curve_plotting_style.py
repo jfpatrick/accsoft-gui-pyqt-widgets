@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         main_container = QWidget()
         self.setCentralWidget(main_container)
         main_layout = QGridLayout()
-        main_layout.addWidget(self.plot, 0, 0, 1, 8)
+        main_layout.addWidget(self.plot, 0, 0, 1, 10)
         self.plot.plotItem.enableAutoRange()
         self.create_input(main_layout, main_container)
         main_container.setLayout(main_layout)
@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
         self.cycle_size_input.valueChanged.connect(self.change_plot_config)
         self.offset_input.valueChanged.connect(self.change_plot_config)
         self.offset_checkbox.stateChanged.connect(self.change_plot_config)
+        self.time_line_checkbox.stateChanged.connect(self.change_plot_config)
 
     def create_input(self, main_layout: QGridLayout, main_container: QWidget):
         """"""
@@ -68,15 +69,19 @@ class MainWindow(QMainWindow):
         # Cycle Offset Input
         self.offset_input = QSpinBox()
         self.offset_checkbox = QCheckBox()
+        self.time_line_checkbox = QCheckBox()
         self.offset_checkbox.setChecked(False)
         self.offset_input.setRange(-10.0, 10.0)
         self.offset_input.setValue(0.0)
         label_3 = QLabel("s Offset")
         label_4 = QLabel("Fixed x-range")
+        label_5 = QLabel("Show time line")
         main_layout.addWidget(self.offset_input)
         main_layout.addWidget(label_3)
         main_layout.addWidget(label_4)
         main_layout.addWidget(self.offset_checkbox)
+        main_layout.addWidget(label_5)
+        main_layout.addWidget(self.time_line_checkbox)
 
     def change_plot_config(self, *args):
         """Change the pltos configuration with the values from the inputs"""
@@ -86,7 +91,7 @@ class MainWindow(QMainWindow):
         # Create new configuration object
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=style,
-            time_progress_line=False,
+            time_progress_line=self.time_line_checkbox.isChecked(),
             cycle_size=cycle_size,
             x_range_offset=offset
         )

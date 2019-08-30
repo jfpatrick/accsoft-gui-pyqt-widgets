@@ -184,9 +184,7 @@ def _create_injection_bar_data(value: float) -> accgraph.InjectionBarData:
         y_value=value + 0.1,
         height=value + 0.2,
         width=value + 0.3,
-        top=value + 0.4,
-        bottom=value + 0.5,
-        label=str(value + 0.6),
+        label=str(value + 0.4),
     )
 
 
@@ -197,9 +195,7 @@ def _create_injection_bar_data_collection(values: np.ndarray) -> accgraph.Inject
         y_values=values + 0.1,
         heights=values + 0.2,
         widths=values + 0.3,
-        tops=values + 0.4,
-        bottoms=values + 0.5,
-        labels=np.array([str(value + 0.6) for value in values]),
+        labels=np.array([str(value + 0.4) for value in values]),
     )
 
 
@@ -207,11 +203,9 @@ def _create_injection_bar_data_model_expected_content(x_values: List[float]) -> 
     return (
         np.array(x_values),  # x_values
         np.array([x_value + 0.1 for x_value in x_values]),  # y_values
-        np.array([x_value + 0.2 for x_value in x_values]),  # height
-        np.array([x_value + 0.3 for x_value in x_values]),  # width
-        np.array([x_value + 0.4 for x_value in x_values]),  # top
-        np.array([x_value + 0.5 for x_value in x_values]),  # bottom
-        np.array([str(x_value + 0.6) for x_value in x_values], dtype="<U100"),  # label
+        np.array([((x_value + 0.2) if not np.isnan(x_value) else 0.0) for x_value in x_values]),  # height
+        np.array([((x_value + 0.3) if not np.isnan(x_value) else 0.0) for x_value in x_values]),  # width
+        np.array([str(x_value + 0.4) for x_value in x_values], dtype="<U100"),  # label
     )
 
 

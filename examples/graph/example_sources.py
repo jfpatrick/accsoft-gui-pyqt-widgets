@@ -15,15 +15,17 @@ import accsoft_gui_pyqt_widgets.graph as accgraph
 class LocalTimerTimingSource(accgraph.UpdateSource):
     """Class for sending timing-update signals based on a QTimer instance."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, offset: float = 0.0, *args, **kwargs):
         """Create new instance of LocalTimerTimingSource.
 
         Args:
+            offset: offset of the emitted time to the actual current time
             *args: Delegated to superclass
             **kwargs: Delegated to superclass
         """
         super().__init__(*args, **kwargs)
         self.timer = QTimer(self)
+        self.offset = offset
         self.timer.timeout.connect(self._create_new_value)
         self.timer.start(1000 / 60)
 
@@ -33,59 +35,7 @@ class LocalTimerTimingSource(accgraph.UpdateSource):
         Returns:
             None
         """
-        self.sig_timing_update.emit(datetime.now().timestamp())
-
-
-class OneSecDelayedTimingSource(accgraph.UpdateSource):
-    """Class for sending timing-update signals based on a QTimer instance."""
-
-    def __init__(self, *args, **kwargs):
-        """Create new instance of LocalTimerTimingSource.
-
-        Args:
-            *args: Delegated to superclass
-            **kwargs: Delegated to superclass
-        """
-        super().__init__(*args, **kwargs)
-        self.timer = QTimer(self)
-        self.delay = 0
-        self.timer.timeout.connect(self._create_new_value)
-        self.timer.start(1000 / 60)
-
-    def _create_new_value(self) -> None:
-        """Emit new timestamp.
-
-        Returns:
-            None
-        """
-        self.sig_timing_update.emit(datetime.now().timestamp() - self.delay)
-        self.delay = 2.0
-
-
-class OneSecFutureTimingSource(accgraph.UpdateSource):
-    """Class for sending timing-update signals based on a QTimer instance."""
-
-    def __init__(self, *args, **kwargs):
-        """Create new instance of LocalTimerTimingSource.
-
-        Args:
-            *args: Delegated to superclass
-            **kwargs: Delegated to superclass
-        """
-        super().__init__(*args, **kwargs)
-        self.timer = QTimer(self)
-        self.delay = 0
-        self.timer.timeout.connect(self._create_new_value)
-        self.timer.start(1000 / 60)
-
-    def _create_new_value(self) -> None:
-        """Emit new timestamp.
-
-        Returns:
-            None
-        """
-        self.sig_timing_update.emit(datetime.now().timestamp() + self.delay)
-        self.delay = 2.0
+        self.sig_timing_update.emit(datetime.now().timestamp() + self.offset)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,9 +113,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
                 height=2.0,
-                width=0.05,
-                top=self.sinus_curve[self.pointer] + 1,
-                bottom=self.sinus_curve[self.pointer] - 1,
+                width=0.0,
                 label=str(self.label_counter),
             )
             self.sig_data_update[accgraph.InjectionBarData].emit(new_data)
@@ -305,15 +253,13 @@ class ManualDataSource(accgraph.UpdateSource):
         new_data = accgraph.PointData(x_value=timestamp, y_value=value)
         self.sig_data_update[accgraph.PointData].emit(new_data)
 
-    def create_new_injectionbar_data(self, x_value, y_value, height, width, top, bottom, label) -> None:
+    def create_new_injectionbar_data(self, x_value, y_value, height, width, label) -> None:
         """Manually emit a signal with a given new value."""
         new_data = accgraph.InjectionBarData(
             x_value=x_value,
             y_value=y_value,
             height=height,
             width=width,
-            top=top,
-            bottom=bottom,
             label=label
         )
         self.sig_data_update[accgraph.InjectionBarData].emit(new_data)
