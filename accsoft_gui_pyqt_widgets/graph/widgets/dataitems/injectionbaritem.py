@@ -2,10 +2,11 @@
 
 import sys
 import abc
-from typing import List, Union, Tuple
+from typing import List, Union
 
 import pyqtgraph
 import numpy as np
+from qtpy.QtGui import QPen
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import InjectionBarDataModel
@@ -190,7 +191,11 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         """Draw a label next to the actual ErrorBarItem at a given position"""
         if 0 <= index < len(self._label_texts):
             self._text_labels.append(pyqtgraph.TextItem(text=self._label_texts[index]))
-            self._text_labels[index].setColor(self.opts.get("pen", "w") or "w")
+            try:
+                color = pyqtgraph.mkPen(self.opts.get("pen", "w") or "w").color()
+            except ValueError:
+                color = "w"
+            self._text_labels[index].setColor(color)
             self._text_labels[index].setParentItem(self)
             self._text_labels[index].setPos(x_position, self._label_y_positions[index])
 

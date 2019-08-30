@@ -28,7 +28,7 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.timestampmarker import Liv
 
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[PlotWidgetStyle, Type[pg.AxisItem]] = {
-    PlotWidgetStyle.DEFAULT: pg.AxisItem,
+    PlotWidgetStyle.STATIC_PLOT: pg.AxisItem,
     PlotWidgetStyle.SLIDING_POINTER: RelativeTimeAxisItem,
     PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
 }
@@ -149,7 +149,7 @@ class ExPlotWidget(pg.PlotWidget):
 
     def addBarGraph(
         self,
-        data_source: UpdateSource,
+        data_source: Optional[UpdateSource] = None,
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs

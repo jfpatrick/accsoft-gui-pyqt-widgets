@@ -38,25 +38,13 @@ class MainWindow(QMainWindow):
             time_progress_line=True,
             x_range_offset=0
         )
-        curve_config_1 = accgraph.LivePlotCurveConfig(
-            draw_horizontal_line=True
-        )
-        curve_config_2 = accgraph.LivePlotCurveConfig(
-            draw_point=True
-        )
-        curve_config_3 = accgraph.LivePlotCurveConfig(
-            draw_vertical_line=True
-        )
-        curve_config_4 = accgraph.LivePlotCurveConfig(
-            draw_point=True
-        )
         self.plot = accgraph.ExPlotWidget(
             timing_source=timing_source, config=plot_config
         )
-        self.plot.addCurve(data_source=data_source_1, curve_config=curve_config_1, pen="r")
-        self.plot.addCurve(data_source=data_source_2, curve_config=curve_config_2, pen="b")
-        self.plot.addCurve(data_source=data_source_3, curve_config=curve_config_3, pen="y")
-        self.plot.addCurve(data_source=data_source_4, curve_config=curve_config_4, pen="g")
+        self.plot.addCurve(data_source=data_source_1, pen="r")
+        self.plot.addCurve(data_source=data_source_2, pen="b")
+        self.plot.addCurve(data_source=data_source_3, pen="y")
+        self.plot.addCurve(data_source=data_source_4, pen="g")
         self.show()
         self.resize(800, 600)
         main_container = QWidget()

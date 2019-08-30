@@ -11,6 +11,8 @@ import numpy as np
 class PlotWidgetStyle(Enum):
     """Enumeration for the different available styles for the widgets
 
+    STATIC_PLOT: Static plotting with pure PyQtGraph plotting items.
+
     SCROLLING_PLOT: New data gets appended and old one cut. This creates
     a scrolling movement of the graph in positive x direction
 
@@ -20,7 +22,7 @@ class PlotWidgetStyle(Enum):
     direction since its x range is fixed.
     """
 
-    DEFAULT = 0
+    STATIC_PLOT = 0
     SCROLLING_PLOT = 1
     SLIDING_POINTER = 2
 

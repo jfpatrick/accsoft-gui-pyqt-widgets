@@ -243,7 +243,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     def addBarGraph(
         self,
-        data_source: UpdateSource,
+        data_source: Optional[UpdateSource] = None,
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs,
