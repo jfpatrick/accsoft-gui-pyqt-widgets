@@ -53,7 +53,11 @@ class TimeAxisItem(AxisItem):
             return [
                 datetime.fromtimestamp(value).strftime("%H:%M:%S") for value in values
             ]
-        except ValueError:
+        except (ValueError, OSError, OverflowError):
+            # Errors appear in datatime.fromtimestamp()
+            # ValueError -> year -566 is out of range
+            # OSError -> Value too large for data type
+            # OverflowError -> timestamp out of range for platform time_t
             return [""]
 
 
@@ -100,14 +104,11 @@ class RelativeTimeAxisItem(AxisItem):
             A list of Formatted strings that represents the distance in time
             from the cycle start
         """
-        try:
-            return [
-                ("+" if (value - self.start) > 0 else "")
-                + f"{self._cut_to_n_decimals(value - self.start, 2)}s"
-                for value in values
-            ]
-        except ValueError:
-            return [""]
+        return [
+            ("+" if (value - self.start) > 0 else "")
+            + f"{self._cut_to_n_decimals(value - self.start, 2)}s"
+            for value in values
+        ]
 
     @staticmethod
     def _cut_to_n_decimals(value: float, decimal_count: int) -> float:

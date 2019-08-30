@@ -28,20 +28,14 @@ class MainWindow(QMainWindow):
             cycle_size=10,
             time_progress_line=True,
         )
-        curve_config_1 = accgraph.LivePlotCurveConfig(
-            draw_horizontal_line=True
-        )
-        curve_config_2 = accgraph.LivePlotCurveConfig(
-            draw_point=True
-        )
         self.plot = accgraph.ExPlotWidget(
             timing_source=timing_source, config=plot_config
         )
         self.plot.plotItem.add_layer(identifier="new axis")
         self.plot.plotItem.addCurve(
-            data_source=data_source_1, curve_config=curve_config_1, layer_identifier="new axis", pen="r"
+            data_source=data_source_1, layer_identifier="new axis", pen="r"
         )
-        self.plot.addCurve(data_source=data_source_2, curve_config=curve_config_2, pen="y")
+        self.plot.addCurve(data_source=data_source_2, pen="y")
         self.show()
         self.resize(800, 600)
         main_container = QWidget()

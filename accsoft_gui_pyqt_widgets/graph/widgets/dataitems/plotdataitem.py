@@ -4,7 +4,7 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 
 import sys
 import logging
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 import abc
 
 import numpy as np
@@ -41,6 +41,27 @@ plotting_style_to_class_mapping = {
     PlotWidgetStyle.SLIDING_POINTER: "SlidingPointerPlotCurve",
 }
 
+# params accepted by the plotdataitem and their fitting params in the curve-item
+_plotdataitem_curve_param_mapping = [
+    ("pen", "pen"),
+    ("shadowPen", "shadowPen"),
+    ("fillLevel", "fillLevel"),
+    ("fillBrush", "brush"),
+    ("antialias", "antialias"),
+    ("connect", "connect"),
+    ("stepMode", "stepMode"),
+]
+
+# params accepted by the plotdataitem and their fitting params in the scatter-plot-item
+_plotdataitem_scatter_param_mapping = [
+    ("symbolPen", "pen"),
+    ("symbolBrush", "brush"),
+    ("symbol", "symbol"),
+    ("symbolSize", "size"),
+    ("data", "data"),
+    ("pxMode", "pxMode"),
+    ("antialias", "antialias"),
+]
 
 class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
@@ -183,14 +204,22 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             x: x values that are passed to the items
             y: y values that are passed to the items
         """
-        if self.opts.get('pen') is not None or (self.opts.get('brush') is not None and self.opts.get('fillLevel') is not None):
-            self.curve.setData(x=x, y=y)
+        # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
+        curve_arguments: Dict = {}
+        for orig_key, curve_key in _plotdataitem_curve_param_mapping:
+            curve_arguments[curve_key] = self.opts[orig_key]
+        scatter_arguments: Dict = {}
+        for orig_key, scatter_key in _plotdataitem_scatter_param_mapping:
+            if orig_key in self.opts:
+                scatter_arguments[scatter_key] = self.opts[orig_key]
+        if self.opts.get("pen") is not None or (self.opts.get("brush") is not None and self.opts.get("fillLevel") is not None):
+            self.curve.setData(x=x, y=y, **curve_arguments)
             self.curve.show()
         else:
             self.curve.hide()
-        if self.opts.get('symbol') is not None:
+        if self.opts.get("symbol") is not None:
             data_x_wo_nans, data_y_wo_nans = LivePlotCurve._without_nan_values(x_values=x, y_values=y)
-            self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans)
+            self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans, **scatter_arguments)
             self.scatter.show()
         else:
             self.scatter.hide()
