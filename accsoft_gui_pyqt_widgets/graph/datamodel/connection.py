@@ -2,7 +2,7 @@
 
 from qtpy.QtCore import QObject, Signal
 
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import (
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
     BarCollectionData,
     BarData,
     CurveData,

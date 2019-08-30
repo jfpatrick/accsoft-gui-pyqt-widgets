@@ -92,7 +92,7 @@ def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_ty
     assert dm_util.check_datamodel(datamodel, 5, [98.0, 99.0, 100.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.BaseDataModel]):
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -116,7 +116,7 @@ def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_sort_values_around_nan_value(model_type: Type[accgraph.BaseDataModel]):
     """Test sorting values right next to a NaN value"""
     data_source_1: MockDataSource = MockDataSource()
@@ -134,7 +134,7 @@ def test_sort_values_around_nan_value(model_type: Type[accgraph.BaseDataModel]):
     assert dm_util.check_datamodel(datamodel, 5, [2.0, 2.5, 2.75, 3.0, np.nan])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_append_nan_on_first_position(model_type: Type[accgraph.BaseDataModel]):
     """First value appended to the DataModel is NaN"""
     data_source_1: MockDataSource = MockDataSource()
@@ -159,7 +159,7 @@ def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel]):
     """First value after shift in databuffer is NaN"""
     data_source_1: MockDataSource = MockDataSource()
@@ -173,7 +173,7 @@ def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_append_list_containing_nan(model_type: Type[accgraph.BaseDataModel]):
     """Append a list with values that contain a nan"""
     data_source_1: MockDataSource = MockDataSource()
@@ -182,26 +182,6 @@ def test_append_list_containing_nan(model_type: Type[accgraph.BaseDataModel]):
     assert dm_util.check_datamodel(datamodel, 5, [2.0, 3.0, 4.0])
     data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, [3.75, np.nan]))
     assert dm_util.check_datamodel(datamodel, 5, [2.0, 3.0, 3.75, 4.0, np.nan])
-
-
-@pytest.mark.parametrize("model_type", datamodels_to_test)
-def test_append_multiple_following_nan_values(model_type: Type[accgraph.BaseDataModel]):
-    """Append multiple following NaNs without numbers in between"""
-    data_source_1: MockDataSource = MockDataSource()
-    datamodel = model_type(data_source=data_source_1, buffer_size=5)
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 2.0))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    assert dm_util.check_datamodel(datamodel, 5, [1.0, np.nan, 2.0, np.nan])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 3.0))
-    assert dm_util.check_datamodel(datamodel, 5, [1.0, np.nan, 2.0, np.nan, 3.0])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, np.nan])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, np.nan])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, np.nan])
 
 
 # ~~~~~ Data Model Subset tesing without clipping ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -241,7 +221,7 @@ def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgr
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
@@ -280,7 +260,7 @@ def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_value(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()

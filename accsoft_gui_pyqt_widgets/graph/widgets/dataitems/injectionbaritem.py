@@ -11,6 +11,7 @@ from qtpy.QtGui import QPen
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import InjectionBarDataModel
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
@@ -79,7 +80,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         lead to Errors when trying to set the visible range (which is done when drawing).
         This functions prepares adds some data to avoid this"""
         if errorbaritem_kwargs.get("pen", None) is None:
-            errorbaritem_kwargs["pen"] = "w"
+            errorbaritem_kwargs["pen"] = DEFAULT_COLOR
         if errorbaritem_kwargs.get("x", None) is None:
             errorbaritem_kwargs["x"] = np.array([0.0])
         if errorbaritem_kwargs.get("y", None) is None:
@@ -87,7 +88,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         if errorbaritem_kwargs.get("height", None) is None:
             errorbaritem_kwargs["height"] = np.array([0.0])
         if errorbaritem_kwargs.get("width", None) is None:
-            errorbaritem_kwargs["width"] = 0.3
+            errorbaritem_kwargs["width"] = 0.0
         return errorbaritem_kwargs
 
     @staticmethod
@@ -234,19 +235,22 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
         and redraw the bars of the graph from this data.
         """
         self._cycle.update_cycle(self._last_timestamp)
-        curve_x, curve_y, height, width, top, bottom, labels = self._data_model.get_subset(
+        curve_x, curve_y, height, width, labels = self._data_model.get_subset(
             start=self._cycle.start, end=self._cycle.end
         )
         self._label_texts = labels
-        self._label_y_positions = [(y + h / 2) for y, h in zip(curve_y, height)]
+        self._label_y_positions = []
+        for y, h in zip(curve_y, height):
+            y = y if not np.isnan(y) else 0
+            h = h if not np.isnan(h) else 0
+            self._label_y_positions.append(y + h / 2)
         if curve_x.size == curve_y.size and curve_x.size > 0:
-            beam = width[0] if width[0] is not None else 0.05
+            # beam = self.opts.get("beam") or height.max() * 0.1
+            beam = self.opts.get("beam", 0.0) or 0.0
             self.setData(
                 x=curve_x,
                 y=curve_y,
                 height=height,
-                width=0.0,
+                width=width,
                 beam=beam,
-                top=top,
-                bottom=bottom,
             )

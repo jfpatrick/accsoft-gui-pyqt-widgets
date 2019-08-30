@@ -13,11 +13,12 @@ import pyqtgraph
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import CurveDataModel
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import (
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
     CurveData,
     CurveDataWithTime,
     CurveDecorators,
@@ -76,7 +77,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         data_source: Union[UpdateSource, CurveDataModel],
         decorators: CurveDecorators,
         timing_source_attached: bool,
-        pen="w",
+        pen=DEFAULT_COLOR,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ):

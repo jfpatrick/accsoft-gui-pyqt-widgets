@@ -5,13 +5,10 @@ that are able to safe different types and amount of data
 
 import abc
 import math
-import logging
-from typing import List, Optional, Tuple
-
-import numpy as np
+from typing import Optional, Tuple
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import *
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import PointData
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
 
 DEFAULT_BUFFER_SIZE: int = 100000
 
@@ -153,10 +150,9 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
     ) -> None:
         """Append a new entry to the buffer
 
-        Add a single entry into the buffer and sort it in at the right position
+        Add a single entry into the buffer and sort it in at the right position.
+        Before calling make sure your data is valid and can be drawn.
         """
-        if primary_value is None or secondary_values is None:
-            raise ValueError("Passed keyword arguments do not match the expected ones.")
         svl = [np.array([secondary_value]) for secondary_value in secondary_values]
         primary_values, secondary_values_list = self._prepare_buffer_and_values(
             primary_values=np.array([primary_value]), secondary_values_list=svl
@@ -177,6 +173,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         NaN values are sorted according to numpy.sort, which means they will
         be moved to the end of the array. To make sure NaN is appended at the
         right position, it should be passed as a single point (add_point()).
+        Before calling make sure the passed data is valid.
 
         Params:
             **kwargs: primary secondary values, see subtype implementations for
@@ -201,10 +198,10 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """ Sort in a single point by its primary value
 
         This function does not prepare anything for storing the points.
-        F.e. id does not check if the point is in the currently saved range
+        F.e. it does not check if the point is in the currently saved range
         or earlier as well as it does not check, if enough space is left to add.
         For making sure the buffer is prepared for the addition of a new point,
-        use the public functions add_point and add_list_of_points.
+        use the public functions add_values_to_buffer and add_list_of_values_to_buffer.
 
         If possible, primary values will always be sorted in after nan values,
         except this would destroy the order. The corresponding secondary values
@@ -289,13 +286,6 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
             primary_values=primary_values, secondary_values_list=secondary_values_list
         ):
             return primary_values, secondary_values_list
-        if self._is_double_nan_append(
-            primary_values=primary_values, secondary_values_list=secondary_values_list
-        ):
-            return (
-                np.array([]),
-                [np.array([])],
-            )
         primary_values, secondary_values_list = self.sorted_data_arrays(
             primary_values, secondary_values_list
         )
@@ -416,9 +406,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         )
         if self._next_free_slot > 0:
             for secondary_values in secondary_values_list:
-                arrays_of_length_one = (
-                    arrays_of_length_one and secondary_values.size == 1
-                )
+                arrays_of_length_one = arrays_of_length_one and secondary_values.size == 1
                 for self_secondary_values in self._secondary_values_lists:
                     if not isinstance(
                         self_secondary_values[self._next_free_slot - 1], str
@@ -459,42 +447,25 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
     @staticmethod
     def _get_indices_for_cutting_leading_and_trailing_nans(
         primary_values: np.ndarray,
-        secondary_values_list: List[np.ndarray],
         start_index: int,
         end_index: int,
     ) -> Tuple[int, int]:
         """Cut trailing and leading nans
 
-        Move start and end index to cut leading and trailing nans. Nans in surrounded
-        by non nan values are not affected by this. The passed arrays won't be changed
-        in any way.
+        Since we define a subset from two primary values, we don't want any leading or
+        trailing entries that have NaN as a primary value, since for those it can't be
+        said, if they are inside the subset or not.
+        Nans surrounded by non nan values are not affected by this. The passed
+        arrays won't be changed in any way.
 
         Return:
             start and end index that can be used to cut leading and trailing nans
         """
         if 0 < end_index <= primary_values.size:
-            last_value_in_all_arrays_nan = np.isnan(primary_values[end_index - 1])
-            for secondary_values in secondary_values_list:
-                if isinstance(secondary_values[end_index - 1], float):
-                    last_value_in_this_array_nan = secondary_values[
-                        end_index - 1
-                    ] is None or np.isnan(secondary_values[end_index - 1])
-                    last_value_in_all_arrays_nan = (
-                        last_value_in_all_arrays_nan and last_value_in_this_array_nan
-                    )
-            if last_value_in_all_arrays_nan and end_index > start_index:
+            if np.isnan(primary_values[end_index - 1]) and end_index > start_index:
                 end_index -= 1
         if 0 <= start_index < primary_values.size:
-            start_value_in_all_arrays_nan = np.isnan(primary_values[start_index])
-            for secondary_values in secondary_values_list:
-                if isinstance(secondary_values[start_index], float):
-                    start_value_in_this_array_nan = secondary_values[
-                        start_index
-                    ] is None or np.isnan(secondary_values[start_index])
-                    start_value_in_all_arrays_nan = (
-                        start_value_in_all_arrays_nan and start_value_in_this_array_nan
-                    )
-            if start_value_in_all_arrays_nan and start_index < end_index:
+            if np.isnan(primary_values[start_index]) and start_index < end_index:
                 start_index += 1
         return start_index, end_index
 
@@ -586,11 +557,19 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists[0].fill(np.nan)
 
     def add_entry(self, x_value: float, y_value: float) -> None:
-        """Append a single point to the buffer"""
+        """Append a single point to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_values_to_buffer(primary_value=x_value, secondary_values=[y_value])
 
     def add_list_of_entries(self, x_values: np.ndarray, y_values: np.ndarray) -> None:
-        """Append a list of points to the buffer"""
+        """Append a list of points to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_list_of_values_to_buffer(
             primary_values=x_values, secondary_values_list=[y_values]
         )
@@ -634,7 +613,6 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             )
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
-            secondary_values_list=[y_values],
             start_index=start_index,
             end_index=end_index,
         )
@@ -661,7 +639,6 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         end_clipping_point: Optional[PointData] = None
         start_index, end_index = SortedCurveDataBuffer._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
-            secondary_values_list=[y_values],
             start_index=start_index,
             end_index=end_index,
         )
@@ -743,7 +720,11 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists[1].fill(np.nan)
 
     def add_entry(self, x_value: float, y_value: float, height: float) -> None:
-        """Append a single bar to the buffer"""
+        """Append a single bar to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_values_to_buffer(
             primary_value=x_value, secondary_values=[y_value, height]
         )
@@ -751,7 +732,11 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
     def add_list_of_entries(
         self, x_values: np.ndarray, y_values: np.ndarray, height: np.ndarray
     ) -> None:
-        """Append a list of bars to the buffer"""
+        """Append a list of bars to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_list_of_values_to_buffer(
             primary_values=x_values, secondary_values_list=[y_values, height]
         )
@@ -778,7 +763,6 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
-            secondary_values_list=[y_values],
             start_index=start_index,
             end_index=end_index,
         )
@@ -796,7 +780,7 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
     Content
         Primary Value =     X Value
 
-        Secondary Values =  Y Value, Height, Width, Top, Bottom, Label
+        Secondary Values =  Y Value, Height, Width, Label
     """
 
     def reset(self) -> None:
@@ -814,12 +798,6 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         # Width
         self._secondary_values_lists.append(np.empty(self._size))
         self._secondary_values_lists[2].fill(np.nan)
-        # Top
-        self._secondary_values_lists.append(np.empty(self._size))
-        self._secondary_values_lists[3].fill(np.nan)
-        # Bottom
-        self._secondary_values_lists.append(np.empty(self._size))
-        self._secondary_values_lists[4].fill(np.nan)
         # Label
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
@@ -829,14 +807,16 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         y_value: float,
         height: float,
         width: float,
-        top: float,
-        bottom: float,
         label: str,
     ) -> None:
-        """Append an injectionbar to the buffer"""
+        """Append an injectionbar to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_values_to_buffer(
             primary_value=x_value,
-            secondary_values=[y_value, height, width, top, bottom, label],
+            secondary_values=[y_value, height, width, label],
         )
 
     def add_list_of_entries(
@@ -845,21 +825,21 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         y_values: np.ndarray,
         heights: np.ndarray,
         widths: np.ndarray,
-        tops: np.ndarray,
-        bottoms: np.ndarray,
         labels: np.ndarray,
     ) -> None:
-        """Append a list of injectionbars to the buffer"""
+        """Append a list of injectionbars to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_list_of_values_to_buffer(
             primary_values=x_values,
-            secondary_values_list=[y_values, heights, widths, tops, bottoms, labels],
+            secondary_values_list=[y_values, heights, widths, labels],
         )
 
     def get_subset(
         self, start: float, end: float
     ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
@@ -874,23 +854,20 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
 
         Returns:
             Primary and Secondary Values of the subset in a tuple of the form
-            (x_values, y_values, height_values, width_values, top_values, bottom_values, labels)
+            (x_values, y_values, height_values, width_values, labels)
         """
         i = self.count_occupied_entries
         x_values: np.ndarray = self._primary_values[:i]
         y_values: np.ndarray = self._secondary_values_lists[0][:i]
         heights: np.ndarray = self._secondary_values_lists[1][:i]
         widths: np.ndarray = self._secondary_values_lists[2][:i]
-        tops: np.ndarray = self._secondary_values_lists[3][:i]
-        bottoms: np.ndarray = self._secondary_values_lists[4][:i]
-        labels: np.ndarray = self._secondary_values_lists[5][:i]
+        labels: np.ndarray = self._secondary_values_lists[3][:i]
         start_index = self.searchsorted_with_nans(
             array=x_values, value=start, side="left"
         )
         end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
-            secondary_values_list=[y_values, heights, widths, tops, bottoms, labels],
             start_index=start_index,
             end_index=end_index,
         )
@@ -899,8 +876,6 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
             y_values[start_index:end_index],
             heights[start_index:end_index],
             widths[start_index:end_index],
-            tops[start_index:end_index],
-            bottoms[start_index:end_index],
             labels[start_index:end_index],
         )
 
@@ -927,7 +902,11 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
     def add_entry(self, x_value: float, color: str, label: str) -> None:
-        """Append a single infinite line to the buffer"""
+        """Append a single infinite line to the buffer
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_values_to_buffer(
             primary_value=x_value, secondary_values=[color, label]
         )
@@ -935,7 +914,11 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
     def add_list_of_entries(
         self, x_values: np.ndarray, colors: np.ndarray, labels: np.ndarray
     ) -> None:
-        """Append a list of infinite lines"""
+        """Append a list of infinite lines
+
+        It is expected, that the passed data is valid. Make sure before calling,
+        this is the case
+        """
         super().add_list_of_values_to_buffer(
             primary_values=x_values, secondary_values_list=[colors, labels]
         )
@@ -961,9 +944,9 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
             array=x_values, value=start, side="left"
         )
         end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
+        # indices for removing leading/trailing entries that have NaN as their primary value
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
-            secondary_values_list=[color, label],
             start_index=start_index,
             end_index=end_index,
         )

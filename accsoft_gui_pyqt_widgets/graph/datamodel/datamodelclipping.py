@@ -5,7 +5,7 @@ from typing import Dict, List, Union
 
 import numpy as np
 
-from accsoft_gui_pyqt_widgets.graph.widgets.datastructures import (
+from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
     CurveData,
     CurveDataWithTime,
     PointData,
