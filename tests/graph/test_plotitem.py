@@ -52,10 +52,8 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, cycle_size: float, should_c
         time_progress_line=True,
         x_range_offset=0.0
     )
-    curve_config = accgraph.LivePlotCurveConfig()
     window = PlotWidgetTestWindow(
         plot_config,
-        [curve_config],
         item_to_add=accgraph.LivePlotCurve,
         should_create_timing_source=should_create_timing_source
     )

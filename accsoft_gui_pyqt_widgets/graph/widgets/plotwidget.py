@@ -16,7 +16,6 @@ from accsoft_gui_pyqt_widgets.graph.widgets.axisitems import (
     TimeAxisItem,
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    LivePlotCurveConfig,
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
@@ -115,7 +114,6 @@ class ExPlotWidget(pg.PlotWidget):
         c: Optional[pg.PlotDataItem] = None,
         params: Optional = None,
         data_source: Optional[UpdateSource] = None,
-        curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
@@ -129,7 +127,6 @@ class ExPlotWidget(pg.PlotWidget):
             c: PlotDataItem instance that is added, for backwards compatibility to the original function
             params: params for c, for backwards compatibility to the original function
             data_source: source for new data that the curve should display
-            curve_config: optional configuration for curve decorators
             layer_identifier: identifier of the layer the new curve is supposed to be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
@@ -141,9 +138,8 @@ class ExPlotWidget(pg.PlotWidget):
             c=c,
             params=params,
             data_source=data_source,
-            curve_config=curve_config,
             layer_identifier=layer_identifier,
-            buffer_size = buffer_size,
+            buffer_size=buffer_size,
             **plotdataitem_kwargs,
         )
 

@@ -2,7 +2,7 @@
 Window with Extended PlotWidget for Testing purposes
 """
 
-from typing import List, Optional, Type, Union
+from typing import Optional, Type, Union
 
 from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
 
@@ -10,7 +10,6 @@ from accsoft_gui_pyqt_widgets.graph import (LiveBarGraphItem,
                                             LiveTimestampMarker,
                                             LiveInjectionBarGraphItem,
                                             LivePlotCurve,
-                                            LivePlotCurveConfig,
                                             ExPlotWidget,
                                             ExPlotWidgetConfig,
                                             DataModelBasedItem,
@@ -26,7 +25,6 @@ class PlotWidgetTestWindow(QMainWindow):
     def __init__(
         self,
         plot_config: ExPlotWidgetConfig,
-        curve_configs: Optional[List[LivePlotCurveConfig]],
         item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = None,
         opts: dict = {},
         should_create_timing_source: bool = True
@@ -51,7 +49,6 @@ class PlotWidgetTestWindow(QMainWindow):
         )
         self.item_to_add: Union[DataModelBasedItem, str] = item_to_add
         self.opts: dict = opts
-        self.curve_configs = curve_configs
         self.add_item()
         self.resize(800, 600)
         main_container = QWidget()
@@ -63,9 +60,7 @@ class PlotWidgetTestWindow(QMainWindow):
     def add_item(self):
         """Add requested item to the """
         if self.item_to_add == LivePlotCurve:
-            for config in self.curve_configs:
-                self.plot.addCurve(curve_config=config, data_source=self.data_source_mock, **self.opts)
-        # currently other items are only implemented in scrolling plot
+            self.plot.addCurve(data_source=self.data_source_mock, **self.opts)
         elif self.plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
             if self.item_to_add == LiveBarGraphItem:
                 self.plot.addBarGraph(data_source=self.data_source_mock, **self.opts)

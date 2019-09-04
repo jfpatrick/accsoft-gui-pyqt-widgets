@@ -662,41 +662,6 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
         return valid_indices
 
 
-# ~~~~~~~~~~~~~~~~~ Data Structures for Curve Decorators ~~~~~~~~~~~~~~~~~
-
-
-class CurveDecorators:
-    """Collection of decorators of a single curve."""
-
-    def __init__(
-        self,
-        vertical_line: pyqtgraph.InfiniteLine = None,
-        horizontal_line: pyqtgraph.InfiniteLine = None,
-        point: pyqtgraph.PlotDataItem = None,
-    ):
-        """Create a new CurveDecorators object
-
-        Args:
-            vertical_line (pyqtgraph.InfiniteLine): vertical line
-            horizontal_line (pyqtgraph.InfiniteLine): horizontal line
-            point (pyqtgraph.PlotDataItem): point
-        """
-        self.vertical_line: pyqtgraph.InfiniteLine = vertical_line
-        self.horizontal_line: pyqtgraph.InfiniteLine = horizontal_line
-        self.point: pyqtgraph.PlotDataItem = point
-
-    def get_all_decorators_as_list(self):
-        """Return all decorators in a list"""
-        result = []
-        if self.vertical_line:
-            result.append(self.vertical_line)
-        if self.horizontal_line:
-            result.append(self.horizontal_line)
-        if self.point:
-            result.append(self.point)
-        return result
-
-
 # ~~~~~~~~~~~~~~~~~ Data Structures for testing purposes ~~~~~~~~~~~~~~~~~
 
 # Collection for a sliding pointer curves

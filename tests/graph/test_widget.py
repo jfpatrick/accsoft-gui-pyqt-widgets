@@ -12,7 +12,6 @@ from accsoft_gui_pyqt_widgets.graph import (LiveBarGraphItem,
                                             LiveTimestampMarker,
                                             LiveInjectionBarGraphItem,
                                             LivePlotCurve,
-                                            LivePlotCurveConfig,
                                             ExPlotItem, ExPlotWidget,
                                             ExPlotWidgetConfig, BarData,
                                             DataModelBasedItem,
@@ -66,9 +65,6 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
     PlotWidgetStyle.SLIDING_POINTER
 ])
 @pytest.mark.parametrize("time_line", [False, True])
-@pytest.mark.parametrize("v_line", [False, True])
-@pytest.mark.parametrize("h_line", [False, True])
-@pytest.mark.parametrize("point", [False, True])
 @pytest.mark.parametrize("item_to_add", [
     (LivePlotCurve, "curve"),
     (LiveBarGraphItem, "bargraph"),
@@ -80,9 +76,6 @@ def test_all_available_widget_configurations(
     cycle_size: int,
     plotting_style: PlotWidgetStyle,
     time_line: bool,
-    v_line: bool,
-    h_line: bool,
-    point: bool,
     item_to_add: Tuple[DataModelBasedItem, str, Dict]
 ):
     """Iterate through the possible combinations of parameters when creating
@@ -93,9 +86,6 @@ def test_all_available_widget_configurations(
         cycle_size: cycle size to use
         plotting_style: plotting style to use
         time_line: should a line at the current timestamp be drawn
-        v_line: should a vertical line decorator be drawn on curves
-        h_line: should a horizontal line decorator be drawn on curves
-        point: should a point line decorator be drawn on curves
         item_to_add: Type of data-item to add and the key for getting the fitting opts
     """
     # pylint: disable=too-many-locals,protected-access
@@ -105,12 +95,8 @@ def test_all_available_widget_configurations(
         plotting_style=plotting_style,
         time_progress_line=time_line,
     )
-    curve_config = LivePlotCurveConfig(
-        draw_vertical_line=v_line, draw_horizontal_line=h_line, draw_point=point
-    )
     window = PlotWidgetTestWindow(
         plot_config=plot_config,
-        curve_configs=[curve_config],
         item_to_add=item_to_add[0],
         opts=_test_change_plot_config_on_running_plot_opts.get(item_to_add[1], {})
     )
@@ -123,7 +109,7 @@ def test_all_available_widget_configurations(
     window.time_source_mock.create_new_value(time_2)
     assert isinstance(window.plot, ExPlotWidget)
     plot_item: ExPlotItem = window.plot.plotItem
-    check_plot_curves(item_to_add, plot_item, time_2, data_x, data_y, v_line, h_line, point)
+    check_plot_curves(item_to_add, plot_item, time_2)
     check_bargraph(item_to_add, plot_item, time_2)
     check_injectionbar_graph(item_to_add, plot_item, time_2)
     assert check_axis_strings(plot_item, plotting_style)
@@ -177,12 +163,10 @@ def test_change_plot_config_on_running_plot(
         time_progress_line=time_line_change[1],
         x_range_offset=x_offset_change[1]
     )
-    window = PlotWidgetTestWindow(
+    window = MinimalTestWindow(
         plot_config=plot_config_before_change,
-        curve_configs=[],
-        item_to_add=None,
-        should_create_timing_source=False
     )
+    qtbot.waitForWindowShown(window)
     plotwidget: ExPlotWidget = window.plot
     ds_curve = MockDataSource()
     ds_bar = MockDataSource()
@@ -359,11 +343,6 @@ def check_plot_curves(
         item_to_add: Union[DataModelBasedItem, str],
         plot_item: ExPlotItem,
         time_2: float,
-        data_x: float,
-        data_y: float,
-        v_line: bool,
-        h_line: bool,
-        point: bool
 ):
     """Check if the curve is created correctly"""
     if item_to_add == LivePlotCurve or isinstance(item_to_add, str) and item_to_add == "ScatterPlot":
@@ -383,22 +362,6 @@ def check_plot_curves(
             assert isinstance(curve, SlidingPointerPlotCurve)
         assert isinstance(plot_item._time_line, pg.InfiniteLine)
         assert plot_item._time_line.value() == time_2
-        if v_line:
-            assert isinstance(curve._decorators.vertical_line, pg.InfiniteLine)
-            assert curve._decorators.vertical_line.value() == data_x
-        else:
-            assert curve._decorators.vertical_line is None
-        if h_line:
-            assert isinstance(curve._decorators.horizontal_line, pg.InfiniteLine)
-            assert curve._decorators.horizontal_line.value() == data_y
-        else:
-            assert curve._decorators.horizontal_line is None
-        if point:
-            assert isinstance(curve._decorators.point, pg.PlotDataItem)
-            assert list(curve._decorators.point.getData()[0]) == [data_x]
-            assert list(curve._decorators.point.getData()[1]) == [data_y]
-        else:
-            assert curve._decorators.point is None
 
 
 def check_bargraph(

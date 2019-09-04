@@ -34,7 +34,6 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.plotdataitem import (
     ScrollingPlotCurve
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    LivePlotCurveConfig,
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
@@ -148,7 +147,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 layer = item.get_layer_identifier()
                 self.addItem(layer=layer, item=new_item)
                 if self._last_timestamp:
-                    self._init_decorators_of_curve(new_item, self._last_timestamp)
                     self._style_specific_objects_already_drawn = False
                     self._draw_style_specific_objects()
                 self.removeItem(item)
@@ -185,7 +183,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
         c: Optional[pyqtgraph.PlotDataItem] = None,
         params: Optional = None,
         data_source: Optional[UpdateSource] = None,
-        curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
@@ -218,10 +215,9 @@ class ExPlotItem(pyqtgraph.PlotItem):
             if layer_identifier == "" or layer_identifier is None:
                 layer_identifier = PlotItemLayer.default_layer_identifier
             # create curve that is attached to live data
-            if data_source is not None and curve_config is not None:
+            if data_source is not None:
                 new_plot: LivePlotCurve = LivePlotCurve.create(
                     plot_item=self,
-                    curve_config=curve_config,
                     data_source=data_source,
                     layer_identifier=layer_identifier,
                     buffer_size=buffer_size,
@@ -232,8 +228,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     **plotdataitem_kwargs
                 )
             self.addItem(layer=layer_identifier, item=new_plot)
-            if self._last_timestamp:
-                self._init_decorators_of_curve(new_plot, self._last_timestamp)
             return new_plot
 
     def addBarGraph(
@@ -454,7 +448,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             timestamp: Updated timestamp provided by the timing source
         """
         self._init_time_line_decorator(timestamp=timestamp)
-        self._init_line_decorators(timestamp=timestamp)
+        self._init_relative_time_axis_start(timestamp=timestamp)
         if timestamp >= self._last_timestamp:
             self._last_timestamp = timestamp
             self._handle_fixed_x_range_update()
@@ -583,49 +577,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
             ):
                 item.update_timestamp(new_timestamp=timestamp)
 
-    def _init_line_decorators(self, timestamp: float):
-        """Initial drawing of the line decorators for the plot curve
+    def _init_relative_time_axis_start(self, timestamp: float):
+        """Initialize the start time for the relative time axis.
 
         Args:
-            timestamp: timestamp where to draw
+            timestamp: timestamp to set the start time of the axis to
         """
         if self._last_timestamp == -1.0:
-            for curve in self.curves:
-                self._init_decorators_of_curve(curve=curve, timestamp=timestamp)
             axis = self.getAxis("bottom")
             if isinstance(axis, RelativeTimeAxisItem):
                 axis.set_start_time(timestamp)
-
-    def _init_decorators_of_curve(self, curve: LivePlotCurve, timestamp: float):
-        """ Initialize curve decorators """
-        if isinstance(curve, LivePlotCurve):
-            decorator = curve.get_decorators()
-            if curve.get_conf().draw_vertical_line:
-                if decorator.vertical_line:
-                    decorator.vertical_line.setPos(pos=timestamp)
-                else:
-                    decorator.vertical_line = pyqtgraph.InfiniteLine(
-                        pos=timestamp, angle=90
-                    )
-                    self._layers.get(curve.get_layer_identifier()).view_box.addItem(
-                        decorator.vertical_line
-                    )
-            if curve.get_conf().draw_horizontal_line:
-                if decorator.horizontal_line:
-                    decorator.horizontal_line.setPos(pos=timestamp)
-                else:
-                    decorator.horizontal_line = pyqtgraph.InfiniteLine(pos=0, angle=0)
-                    self._layers.get(curve.get_layer_identifier()).view_box.addItem(
-                        decorator.horizontal_line
-                    )
-            if curve.get_conf().draw_point:
-                if not decorator.point:
-                    decorator.point = pyqtgraph.PlotDataItem(
-                        connect="pairs", symbol="+"
-                    )
-                    self._layers.get(curve.get_layer_identifier()).view_box.addItem(
-                        decorator.point
-                    )
 
     def get_last_time_stamp(self) -> float:
         """ Get the latest known timestamp """
