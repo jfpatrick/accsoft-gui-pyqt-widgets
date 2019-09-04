@@ -40,9 +40,9 @@ class BaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     # The new data then can be retrieved by the view
     sig_model_has_changed = Signal()
 
-    def __init__(self, data_source: UpdateSource, buffer_size: Optional[int] = DEFAULT_BUFFER_SIZE):
+    def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         super().__init__()
-        self._buffer_size = buffer_size or DEFAULT_BUFFER_SIZE
+        self._buffer_size = buffer_size
         self._full_data_buffer: BaseSortedDataBuffer
         self._data_source = data_source
         self._connect_to_data_source()
@@ -133,7 +133,7 @@ class CurveDataModel(BaseDataModel):
 
     """DataModel for a live line graph"""
 
-    def __init__(self, data_source: UpdateSource, buffer_size: Optional[int] = DEFAULT_BUFFER_SIZE):
+    def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         """Create a new curve data model connected to a data-source"""
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedCurveDataBuffer = SortedCurveDataBuffer(size=buffer_size)
@@ -174,7 +174,7 @@ class BarGraphDataModel(BaseDataModel):
     DataModel for a live bar graph
     """
 
-    def __init__(self, data_source: UpdateSource, buffer_size: Optional[int] = None):
+    def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         """Create a new bar graph data model connected to a data-source"""
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedBarGraphDataBuffer = SortedBarGraphDataBuffer(size=buffer_size)
@@ -219,7 +219,7 @@ class InjectionBarDataModel(BaseDataModel):
     DataModel for a live injection bar graph
     """
 
-    def __init__(self, data_source: UpdateSource, buffer_size: Optional[int] = None):
+    def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedInjectionBarsDataBuffer = SortedInjectionBarsDataBuffer(size=buffer_size)
 
@@ -259,7 +259,7 @@ class TimestampMarkerDataModel(BaseDataModel):
 
     """DataModel for a live Vertical Infinite Lines marking timestamps (f.e. for marking special timestamps)"""
 
-    def __init__(self, data_source: UpdateSource, buffer_size: Optional[int] = None):
+    def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedTimestampMarkerDataBuffer = SortedTimestampMarkerDataBuffer(size=buffer_size)
 

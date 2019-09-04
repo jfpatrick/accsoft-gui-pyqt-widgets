@@ -246,7 +246,7 @@ def test_buffer_size_configurability(
         )
     else:
         # create items by hand and
-        item = item_to_add[0].create(
+        item = item_to_add[0].create(  # type: ignore
             plot_item=plot_item,
             data_source=data_source,
             buffer_size=10

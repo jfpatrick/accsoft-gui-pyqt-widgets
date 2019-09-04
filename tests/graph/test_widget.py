@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 from datetime import datetime
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple, Dict, Type, Optional
 import itertools
 
 import pytest
@@ -30,7 +30,7 @@ from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
 
 
-def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
+def check_axis_strings(plot_item: ExPlotItem, style: int) -> bool:
     """
     Check if the axes are showing the expected text at each tick
 
@@ -74,9 +74,9 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
 def test_all_available_widget_configurations(
     qtbot,
     cycle_size: int,
-    plotting_style: PlotWidgetStyle,
+    plotting_style: int,
     time_line: bool,
-    item_to_add: Tuple[DataModelBasedItem, str, Dict]
+    item_to_add: Tuple[Type[DataModelBasedItem], str, Dict]
 ):
     """Iterate through the possible combinations of parameters when creating
      a new PlotWidget and check if all elements are created as expected.
@@ -100,6 +100,8 @@ def test_all_available_widget_configurations(
         item_to_add=item_to_add[0],
         opts=_test_change_plot_config_on_running_plot_opts.get(item_to_add[1], {})
     )
+    if window.time_source_mock is None:
+        raise ValueError("Timing Source for the test window was not created as expected.")
     window.show()
     qtbot.addWidget(window)
     time_1, time_2 = 0.0, 1.0
@@ -122,7 +124,8 @@ _test_change_plot_config_on_running_plot_plotting_style_change = list(itertools.
     [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER]
 ))
 _test_change_plot_config_on_running_plot_time_line_change = list(itertools.product([True, False], [True, False]))
-_test_change_plot_config_on_running_plot_opts = {
+_test_change_plot_config_on_running_plot_use_set_property = [True, False]
+_test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, float]]] = {
     "curve": {
         "symbol": "o",
         "pen": "g",
@@ -143,36 +146,43 @@ _test_change_plot_config_on_running_plot_opts = {
 @pytest.mark.parametrize("x_offset_change", _test_change_plot_config_on_running_plot_x_offset_change)
 @pytest.mark.parametrize("plotting_style_change", _test_change_plot_config_on_running_plot_plotting_style_change)
 @pytest.mark.parametrize("time_line_change", _test_change_plot_config_on_running_plot_time_line_change)
+@pytest.mark.parametrize("use_set_property", _test_change_plot_config_on_running_plot_use_set_property)
 def test_change_plot_config_on_running_plot(
     qtbot,
     cycle_size_change: List[float],
     x_offset_change: List[float],
-    plotting_style_change: List[PlotWidgetStyle],
-    time_line_change: List[bool]
+    plotting_style_change: List[int],
+    time_line_change: List[bool],
+    use_set_property: List[bool]
 ):
     """Test if changes in the configuration are applied correctly in an already running plot"""
-    plot_config_before_change = ExPlotWidgetConfig(
-        cycle_size=cycle_size_change[0],
-        plotting_style=plotting_style_change[0],
-        time_progress_line=time_line_change[0],
-        x_range_offset=x_offset_change[0]
-    )
-    plot_config_after_change = ExPlotWidgetConfig(
-        cycle_size=cycle_size_change[1],
-        plotting_style=plotting_style_change[1],
-        time_progress_line=time_line_change[1],
-        x_range_offset=x_offset_change[1]
-    )
-    window = MinimalTestWindow(
-        plot_config=plot_config_before_change,
-    )
+    if not use_set_property:
+        plot_config_before_change = ExPlotWidgetConfig(
+            cycle_size=cycle_size_change[0],
+            plotting_style=plotting_style_change[0],
+            time_progress_line=time_line_change[0],
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=x_offset_change[0]
+        )
+        window = MinimalTestWindow(
+            plot_config=plot_config_before_change,
+        )
+    else:
+        # Create the widget in the same way it would be done when loading from a file
+        # created with Qt Designer
+        window = MinimalTestWindow()
+        window.plot.setProperty("xRangeCycleSize", cycle_size_change[0])
+        window.plot.setProperty("plottingStyle", plotting_style_change[0])
+        window.plot.setProperty("showTimeProgressLine", time_line_change[0])
+        window.plot.setProperty("scrollingPlotFixedXRange", True)
+        window.plot.setProperty("scrollingPlotFixedXRangeOffset", x_offset_change[0])
     qtbot.waitForWindowShown(window)
     plotwidget: ExPlotWidget = window.plot
     ds_curve = MockDataSource()
     ds_bar = MockDataSource()
     ds_injection = MockDataSource()
     ds_line = MockDataSource()
-    plotwidget.addCurve(
+    plotwidget.addCurve(  # type: ignore
         data_source=ds_curve,
         **_test_change_plot_config_on_running_plot_opts["curve"]
     )
@@ -182,7 +192,7 @@ def test_change_plot_config_on_running_plot(
     if PlotWidgetStyle.SLIDING_POINTER not in plotting_style_change:
         # Bar graph in its own layer
         plotwidget.add_layer(identifier="layer_1")
-        plotwidget.addBarGraph(
+        plotwidget.addBarGraph(  # type: ignore
             data_source=ds_bar,
             layer_identifier="layer_1",
             **_test_change_plot_config_on_running_plot_opts["bargraph"]
@@ -192,7 +202,7 @@ def test_change_plot_config_on_running_plot(
         emit_fitting_value(LiveBarGraphItem, ds_bar, 30.0, 0.0)
         # Injection bar Graph in its own layer
         plotwidget.add_layer(identifier="layer_2")
-        plotwidget.addInjectionBar(
+        plotwidget.addInjectionBar(  # type: ignore
             data_source=ds_injection,
             layer_identifier="layer_2",
             **_test_change_plot_config_on_running_plot_opts["injectionbar"]
@@ -217,7 +227,21 @@ def test_change_plot_config_on_running_plot(
         plotwidget.plotItem._cycle_start_boundary,
         plotwidget.plotItem._cycle_end_boundary,
     ]
-    plotwidget.update_configuration(plot_config_after_change)
+    if not use_set_property:
+        plot_config_after_change = ExPlotWidgetConfig(
+            cycle_size=cycle_size_change[1],
+            plotting_style=plotting_style_change[1],
+            time_progress_line=time_line_change[1],
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=x_offset_change[1]
+        )
+        plotwidget.update_configuration(plot_config_after_change)
+    else:
+        window.plot.setProperty("xRangeCycleSize", cycle_size_change[1])
+        window.plot.setProperty("plottingStyle", plotting_style_change[1])
+        window.plot.setProperty("showTimeProgressLine", time_line_change[1])
+        window.plot.setProperty("scrollingPlotFixedXRange", True)
+        window.plot.setProperty("scrollingPlotFixedXRangeOffset", x_offset_change[1])
     check_scrolling_plot_with_fixed_x_range(
         cycle_size_change=cycle_size_change[1],
         x_offset_change=x_offset_change[1],
@@ -331,7 +355,7 @@ def test_static_items_config_change(qtbot, config_style_change):
 def check_scrolling_plot_with_fixed_x_range(
     cycle_size_change: float,
     x_offset_change: float,
-    plotting_style_change: PlotWidgetStyle,
+    plotting_style_change: int,
     plotwidget: ExPlotWidget,
 ):
     """Check (if the config fits) if the fixed x range on the scrolling plot is set right."""
@@ -435,7 +459,7 @@ def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):
 
 
 def check_plot_curves(
-        item_to_add: Union[DataModelBasedItem, str],
+        item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
         plot_item: ExPlotItem,
         time_2: float,
 ):
@@ -460,7 +484,7 @@ def check_plot_curves(
 
 
 def check_bargraph(
-        item_to_add: Union[DataModelBasedItem, str],
+        item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
         plot_item: ExPlotItem,
         time_2: float
 ):
@@ -484,7 +508,7 @@ def check_bargraph(
 
 
 def check_injectionbar_graph(
-        item_to_add: Union[DataModelBasedItem, str],
+        item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
         plot_item: ExPlotItem,
         time_2: float
 ):

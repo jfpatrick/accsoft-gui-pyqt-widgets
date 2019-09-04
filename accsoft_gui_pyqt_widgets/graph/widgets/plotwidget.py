@@ -3,16 +3,19 @@ Extended Widget for custom plotting with simple configuration wrappers
 """
 
 import itertools
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
+import copy
 
 import pyqtgraph as pg
+import numpy as np
 
-from qtpy.QtCore import Slot
-from qtpy.QtWidgets import QGraphicsItem
+from qtpy.QtCore import Slot, Property, Q_ENUM
+from qtpy.QtWidgets import QWidget
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
+    PlotWidgetStyle
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -21,19 +24,24 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import Li
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
 
 
-class ExPlotWidget(pg.PlotWidget):
+class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
     """Extended PlotWidget
 
     Extended version of PyQtGraphs PlotWidget with additional functionality
     providing special functionality for live data plotting.
+
+    ExPlotWidget subclasses PlotWidgetStyle to have access to its class
+    attributes, which are needed for using the ExPlotWidget in QtDesigner
     """
+
+    Q_ENUM(PlotWidgetStyle)
 
     def __init__(
         self,
-        parent: Optional[QGraphicsItem] = None,
+        parent: Optional[QWidget] = None,
         background: str = "default",
-        config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
-        axis_items: Dict[str, pg.AxisItem] = {},
+        config: ExPlotWidgetConfig = None,
+        axis_items: Optional[Dict[str, pg.AxisItem]] = None,
         timing_source: Optional[UpdateSource] = None,
         **plotitem_kwargs,
     ):
@@ -48,10 +56,34 @@ class ExPlotWidget(pg.PlotWidget):
             **plotitem_kwargs: Params passed to the plot item
         """
         super().__init__(parent=parent, background=background)
+        config = config or ExPlotWidgetConfig()
+        if axis_items is None:
+            axis_items = {}
         self.timing_source = timing_source
         self._config = config
-        self.plotItem: ExPlotItem
         axis_items = axis_items or {}
+        # From baseclass
+        self.plotItem: ExPlotItem
+        self._init_ex_plot_item(
+            axis_items=axis_items,
+            config=config,
+            timing_source=timing_source,
+            **plotitem_kwargs
+        )
+        self._wrap_plotitem_functions()
+
+    def _init_ex_plot_item(
+            self,
+            config: ExPlotWidgetConfig = None,
+            axis_items: Dict[str, pg.AxisItem] = {},
+            timing_source: Optional[UpdateSource] = None,
+            **plotitem_kwargs
+    ):
+        """
+        Replace the plot item created by the baseclass with an instance
+        of the extended plot item.
+        """
+        old_plot_item = self.plotItem
         self.plotItem = ExPlotItem(
             axis_items=axis_items,
             config=config,
@@ -59,7 +91,8 @@ class ExPlotWidget(pg.PlotWidget):
             **plotitem_kwargs,
         )
         self.setCentralItem(self.plotItem)
-        self._wrap_plotitem_functions()
+        self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
+        del old_plot_item
 
     def update_configuration(self, config: ExPlotWidgetConfig) -> None:
         """
@@ -99,7 +132,7 @@ class ExPlotWidget(pg.PlotWidget):
     def addCurve(
         self,
         c: Optional[pg.PlotDataItem] = None,
-        params: Optional = None,
+        params: Optional[Any] = None,
         data_source: Optional[UpdateSource] = None,
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
@@ -207,6 +240,81 @@ class ExPlotWidget(pg.PlotWidget):
             data_source=data_source,
             buffer_size=buffer_size
         )
+
+    # ====================================================================================
+    #                Properties for Designer integration
+    # ====================================================================================
+
+    def _get_plotting_style(self) -> int:
+        """QtDesigner getter function for the PlotItems Plotting style"""
+        return self.plotItem.plot_config.plotting_style
+
+    def _set_plotting_style(self, new_val: int):
+        """QtDesigner setter function for the PlotItems Plotting Style"""
+        if new_val != self.plotItem.plot_config.plotting_style:
+            new_config = copy.deepcopy(self.plotItem.plot_config)
+            new_config.plotting_style = new_val
+            self.plotItem.update_configuration(config=new_config)
+
+    plottingStyle = Property(PlotWidgetStyle, _get_plotting_style, _set_plotting_style)
+
+    def _get_show_time_line(self) -> bool:
+        """QtDesigner getter function for the PlotItems flag for showing the current timestamp with a line"""
+        return self.plotItem.plot_config.time_progress_line
+
+    def _set_show_time_line(self, new_val: bool):
+        """QtDesigner setter function for the PlotItems flag for showing the current timestamp with a line"""
+        if new_val != self.plotItem.plot_config.time_progress_line:
+            new_config = copy.deepcopy(self.plotItem.plot_config)
+            new_config.time_progress_line = new_val
+            self.plotItem.update_configuration(config=new_config)
+
+    showTimeProgressLine = Property(bool, _get_show_time_line, _set_show_time_line)
+
+    def _get_cycle_size(self) -> float:
+        """QtDesigner getter function for the PlotItems cycle size"""
+        return self.plotItem.plot_config.cycle_size
+
+    def _set_cycle_size(self, new_val: float):
+        """QtDesigner setter function for the PlotItems cycle size"""
+        if new_val != self.plotItem.plot_config.cycle_size:
+            new_config = copy.deepcopy(self.plotItem.plot_config)
+            new_config.cycle_size = new_val
+            self.plotItem.update_configuration(config=new_config)
+
+    xRangeCycleSize = Property(float, _get_cycle_size, _set_cycle_size)
+
+    def _get_fixed_x_range(self) -> bool:
+        """QtDesigner getter function for the PlotItems flag for a fixed scrolling x range"""
+        return self.plotItem.plot_config.scrolling_plot_fixed_x_range
+
+    def _set_fixed_x_range(self, new_val: bool):
+        """QtDesigner setter function for the PlotItems flag for a fixed scrolling x range"""
+        if new_val != self.plotItem.plot_config.scrolling_plot_fixed_x_range:
+            new_config = copy.deepcopy(self.plotItem.plot_config)
+            new_config.scrolling_plot_fixed_x_range = new_val
+            self.plotItem.update_configuration(config=new_config)
+
+    scrollingPlotFixedXRange = Property(bool, _get_fixed_x_range, _set_fixed_x_range)
+
+    def _get_x_range_offset(self) -> float:
+        """QtDesigner getter function for the PlotItems fixed scrolling x range offset"""
+        if np.isnan(self.plotItem.plot_config.scrolling_plot_fixed_x_range_offset):
+            return 0.0
+        return self.plotItem.plot_config.scrolling_plot_fixed_x_range_offset
+
+    def _set_x_range_offset(self, new_val: float):
+        """QtDesigner setter function for the PlotItems fixed scrolling x range offset"""
+        if new_val != self.plotItem.plot_config.scrolling_plot_fixed_x_range_offset:
+            new_config = copy.deepcopy(self.plotItem.plot_config)
+            new_config.scrolling_plot_fixed_x_range_offset = new_val
+            self.plotItem.update_configuration(config=new_config)
+
+    scrollingPlotFixedXRangeOffset = Property(float, fget=_get_x_range_offset, fset=_set_x_range_offset, doc="blah blah")
+
+    # ====================================================================================
+    #                Slot for simple one curve in Designer
+    # ====================================================================================
 
     @Slot(float)
     @Slot(int)

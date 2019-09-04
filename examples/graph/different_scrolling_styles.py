@@ -21,7 +21,8 @@ class MainWindow(QMainWindow):
             cycle_size=30,
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
-            x_range_offset=0
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=0.0
         )
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         # Create example update sources for data and time

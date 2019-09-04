@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="3,2">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="3,2">
+        <item>
+         <widget class="ExPlotWidget" name="widget_2">
+          <property name="toolTip">
+           <string>Extended PlotWidget Plugin</string>
+          </property>
+          <property name="xRangeCycleSize" stdset="0">
+           <double>5.000000000000000</double>
+          </property>
+          <property name="scrollingPlotFixedXRange" stdset="0">
+           <bool>true</bool>
+          </property>
+          <property name="scrollingPlotFixedXRangeOffset" stdset="0">
+           <double>0.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ExPlotWidget" name="widget_3">
+          <property name="toolTip">
+           <string>Extended PlotWidget Plugin</string>
+          </property>
+          <property name="plottingStyle" stdset="0">
+           <enum>ExPlotWidget::STATIC_PLOT</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="ExPlotWidget" name="widget_1">
+        <property name="toolTip">
+         <string>Extended PlotWidget Plugin</string>
+        </property>
+        <property name="plottingStyle" stdset="0">
+         <enum>ExPlotWidget::SLIDING_POINTER</enum>
+        </property>
+        <property name="showTimeProgressLine" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="xRangeCycleSize" stdset="0">
+         <double>10.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ExPlotWidget</class>
+   <extends>QGraphicsView</extends>
+   <header>accsoft_gui_pyqt_widgets.graph.widgets.plotwidget</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

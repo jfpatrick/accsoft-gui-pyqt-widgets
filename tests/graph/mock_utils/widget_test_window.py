@@ -2,7 +2,7 @@
 Window with Extended PlotWidget for Testing purposes
 """
 
-from typing import Optional, Type, Union
+from typing import Optional, Type, Union, Dict
 
 from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
 
@@ -26,7 +26,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self,
         plot_config: ExPlotWidgetConfig,
         item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = None,
-        opts: dict = {},
+        opts: Optional[Dict] = None,
         should_create_timing_source: bool = True
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
@@ -36,6 +36,8 @@ class PlotWidgetTestWindow(QMainWindow):
             curve_configs:
         """
         super().__init__()
+        if opts is None:
+            opts = {}
         # Two Threads for Time and Data updates
         self.time_source_mock: Optional[MockTimingSource]
         if should_create_timing_source:
@@ -47,7 +49,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self.plot: ExPlotWidget = ExPlotWidget(
             timing_source=self.time_source_mock, config=plot_config
         )
-        self.item_to_add: Union[DataModelBasedItem, str] = item_to_add
+        self.item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = item_to_add
         self.opts: dict = opts
         self.add_item()
         self.resize(800, 600)
@@ -78,7 +80,7 @@ class MinimalTestWindow(QMainWindow):
 
     def __init__(
         self,
-        plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
+        plot_config: Optional[ExPlotWidgetConfig] = None,
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
 
@@ -86,7 +88,7 @@ class MinimalTestWindow(QMainWindow):
             plot_config (ExtendedPlotWidgetConfig): Configuration for the created plot widget
         """
         super().__init__()
-        self.plot_config: ExPlotWidgetConfig = plot_config
+        self.plot_config: ExPlotWidgetConfig = plot_config or ExPlotWidgetConfig()
         self.plot: ExPlotWidget = ExPlotWidget(config=plot_config)
         self.resize(800, 600)
         main_container = QWidget()

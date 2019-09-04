@@ -747,7 +747,7 @@ def _handle_numpy_error(err, flag):
     """
     if err == "invalid value" and flag == 8:
         global test_nan_values_in_scatter_plot_exception_flag
-        test_nan_values_in_scatter_plot_exception_flag = True
+        test_nan_values_in_scatter_plot_exception_flag = True  # type: ignore
 
 
 @pytest.mark.parametrize("data_sequence", [
@@ -773,7 +773,7 @@ def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, floa
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     global test_nan_values_in_scatter_plot_exception_flag
-    test_nan_values_in_scatter_plot_exception_flag = False
+    test_nan_values_in_scatter_plot_exception_flag = False  # type: ignore
     window = _prepare_minimal_test_window(qtbot)
     source = UpdateSource()
     # symbol -> pass data to symbol as well
@@ -785,7 +785,7 @@ def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, floa
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
         qtbot.wait(1)
         # See if the numpy error handler has been called with the invalid error
-        assert not test_nan_values_in_scatter_plot_exception_flag
+        assert not test_nan_values_in_scatter_plot_exception_flag  # type: ignore
 
 
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
@@ -817,7 +817,7 @@ def _prepare_sliding_pointer_plot_test_window(
 
 def _prepare_minimal_test_window(
         qtbot,
-        plotting_style: Optional[PlotWidgetStyle] = None,
+        plotting_style: int = PlotWidgetStyle.SCROLLING_PLOT,
         cycle_size: Optional[float] = None,
         time_progress_line: Optional[bool] = None,
 ) -> PlotWidgetTestWindow:
@@ -830,7 +830,7 @@ def _prepare_minimal_test_window(
         cycle_size (int): cycle size, how much data should be shown
     """
     plot_config = ExPlotWidgetConfig(
-        plotting_style=plotting_style or PlotWidgetStyle.SCROLLING_PLOT,
+        plotting_style=plotting_style,
         cycle_size=cycle_size or 10,
         time_progress_line=time_progress_line or False,
     )

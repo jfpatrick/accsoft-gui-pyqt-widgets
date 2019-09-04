@@ -6,7 +6,7 @@ import abc
 
 class PlottingCycle(metaclass=abc.ABCMeta):
     """
-    TODO: document
+    Base class for different plotting cycles
     """
 
     def __init__(self, x_range_offset: float = np.nan, start: float = 0.0, size: float = 10.0):
@@ -19,7 +19,7 @@ class PlottingCycle(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update_cycle(self, timestamp: float):
-        """TODO: document"""
+        """update the information holden by the cycle according to the passed timestamp"""
         pass
 
 

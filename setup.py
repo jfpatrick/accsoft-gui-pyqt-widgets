@@ -34,7 +34,7 @@ for package in PACKAGES:
     print(f"Search folder:                     {folder_to_search}")
     for root, directories, files in os.walk(
         folder_to_search,
-        onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),
+        onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),  # type: ignore
     ):
         for file in files:
             if DEV_DEPS_FILENAME == file:

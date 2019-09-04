@@ -104,18 +104,6 @@ def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.BaseDataM
     assert dm_util.check_datamodel(datamodel, 5, [1.0, np.nan, 2.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
-def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel]):
-    data_source_1: MockDataSource = MockDataSource()
-    datamodel = model_type(data_source=data_source_1, buffer_size=5)
-    data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, [0.0, 1.0, 2.0]))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 3.0))
-    assert dm_util.check_datamodel(datamodel, 5, [0.0, 1.0, 2.0, np.nan, 3.0])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 4.0))
-    assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
-
-
 @pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_sort_values_around_nan_value(model_type: Type[accgraph.BaseDataModel]):
     """Test sorting values right next to a NaN value"""
@@ -143,20 +131,6 @@ def test_append_nan_on_first_position(model_type: Type[accgraph.BaseDataModel]):
     data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
     data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 2.0))
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 1.0, 2.0])
-
-
-@pytest.mark.parametrize("model_type", datamodels_to_test)
-def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel]):
-    """First value after shift in databuffer is NaN"""
-    data_source_1: MockDataSource = MockDataSource()
-    datamodel = model_type(data_source=data_source_1, buffer_size=5)
-    data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, [0.0, 1.0, 2.0]))
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, np.nan))
-    assert dm_util.check_datamodel(datamodel, 5, [0.0, 1.0, 2.0, np.nan])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 3.0))
-    assert dm_util.check_datamodel(datamodel, 5, [0.0, 1.0, 2.0, np.nan, 3.0])
-    data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 4.0))
-    assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
 @pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
