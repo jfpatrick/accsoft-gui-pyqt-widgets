@@ -842,22 +842,22 @@ def _prepare_minimal_test_window(
 
 
 def _check_curves(
-    plot_item: SlidingPointerPlotCurve,
+    curve: SlidingPointerPlotCurve,
     expected_full: CurveDataWithTime,
     expected_old: CurveDataWithTime,
     expected_new: CurveDataWithTime,
 ):
     """
     Args:
-        plot_item (SlidingPointerPlotCurve):
+        curve (SlidingPointerPlotCurve):
         expected_full (CurveDataWithTime):
         expected_old (CurveDataWithTime):
         expected_new (CurveDataWithTime):
     """
     result = (
-        plot_item.get_full_buffer() == expected_full
-        and plot_item.get_new_curve_buffer() == expected_new
-        and plot_item.get_old_curve_buffer() == expected_old
+            curve.get_full_buffer() == expected_full
+            and curve.get_new_curve_buffer() == expected_new
+            and curve.get_old_curve_buffer() == expected_old
     )
     return result
 

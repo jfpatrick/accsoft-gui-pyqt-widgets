@@ -178,8 +178,8 @@ def test_layers_with_new_plotting_style(qtbot):
     for item in default_layer_items:
         assert item in (
             plot_item._time_line,
-            plot_item._cycle_start_line,
-            plot_item._cycle_end_line,
+            plot_item._cycle_start_boundary,
+            plot_item._cycle_end_boundary,
         )
     # Create new data and timing updates
     data_source_mock.create_new_value(timestamp=0.2, value=1.0)

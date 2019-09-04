@@ -78,19 +78,18 @@ def calc_intersection(
         dictionary will be returned
     """
     if point_2.x_value < point_1.x_value:
-        LOGGER.warning(
+        LOGGER.debug(
             "Parameters are in wrong order. This might hint, that a bug appeared in the code before. \n"
             f"Point 1:     {point_1} \n"
             f"Point 2:     {point_2} \n"
             f"X Position:  {new_point_x_position}"
         )
-        # Change order of points
         point_1, point_2 = point_2, point_1
     if (
         new_point_x_position > point_2.x_value
         or new_point_x_position < point_1.x_value
     ):
-        LOGGER.warning(
+        LOGGER.debug(
             "New position not between the passed points, listing their X positions: \n"
             f"New= {new_point_x_position}, P1= {point_1.x_value}, P2= {point_2.x_value}"
         )

@@ -211,6 +211,12 @@ def test_change_plot_config_on_running_plot(
         plotting_style_change=plotting_style_change[0],
         plotwidget=plotwidget,
     )
+    check_decorators(plot_item=plotwidget.plotItem)
+    items = [
+        plotwidget.plotItem._time_line,
+        plotwidget.plotItem._cycle_start_boundary,
+        plotwidget.plotItem._cycle_end_boundary,
+    ]
     plotwidget.update_configuration(plot_config_after_change)
     check_scrolling_plot_with_fixed_x_range(
         cycle_size_change=cycle_size_change[1],
@@ -218,6 +224,7 @@ def test_change_plot_config_on_running_plot(
         plotting_style_change=plotting_style_change[1],
         plotwidget=plotwidget,
     )
+    check_decorators(plot_item=plotwidget.plotItem, prior_items=items)
 
 
 @pytest.mark.parametrize("plotting_style", [
@@ -272,12 +279,53 @@ def test_set_view_range(qtbot, plotting_style):
         expected = [[0.0, 3.0], [0.0, 3.0]]
     elif plotting_style == PlotWidgetStyle.SLIDING_POINTER:
         expected = [
-            [plot_item._cycle_start_line.pos()[0], plot_item._cycle_end_line.pos()[0]],
+            [plot_item._cycle_start_boundary.pos()[0], plot_item._cycle_end_boundary.pos()[0]],
             [0.0, 3.0]
         ]
     source.sig_data_update[PointData].emit(PointData(4.0, 4.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected), atol=0.1)
+
+
+@pytest.mark.parametrize("config_style_change", [
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER),
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT)
+])
+def test_static_items_config_change(qtbot, config_style_change):
+    """
+    Test if live data items as well as pure pyqtgraph items are still
+    present after switching the plot-items configuration
+    """
+    config = ExPlotWidgetConfig(
+        plotting_style=config_style_change[0]
+    )
+    window = MinimalTestWindow(plot_config=config)
+    window.show()
+    qtbot.waitForWindowShown(window)
+    plot_widget = window.plot
+    plot_item = plot_widget.plotItem
+    source = UpdateSource()
+    items = [
+        plot_item.addCurve(data_source=source),
+        pg.PlotDataItem([0.0, 1.0, 2.0]),
+        pg.InfiniteLine(pos=0.0, angle=0)
+    ]
+    for item in items:
+        plot_item.addItem(item)
+    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
+    for item in items:
+        assert item in plot_item.vb.addedItems
+    config = ExPlotWidgetConfig(
+        plotting_style=config_style_change[1]
+    )
+    plot_item.update_configuration(config=config)
+    for item in items:
+        assert item in plot_item.vb.addedItems
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                           Checker Functions
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 def check_scrolling_plot_with_fixed_x_range(
@@ -304,6 +352,53 @@ def check_range(actual_range: List[List[float]], expected_range: List[List[float
             assert np.isclose(actual[0], expected[0], atol=absolute_tolerance)
         if not np.isnan(expected[1]):
             assert np.isclose(actual[1], expected[1], atol=absolute_tolerance)
+
+
+def check_decorators(plot_item: ExPlotItem, prior_items: List = [None, None, None]):
+    """Check if all possible decorators are drawn correctly"""
+    check_bottom_axis(plot_item=plot_item)
+    check_time_line(plot_item=plot_item, prior_item=prior_items[0])
+    check_sliding_pointer_cycle_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
+
+
+def check_bottom_axis(plot_item: ExPlotItem):
+    """Check if the bottom axis is the right one"""
+    expected = type(plot_item.create_fitting_axis_item(config_style=plot_item.plot_config.plotting_style))
+    assert isinstance(plot_item.getAxis("bottom"), expected)
+
+
+def check_time_line(plot_item: ExPlotItem, prior_item: pg.InfiniteLine = None):
+    """Check if the timeline is created according to the ExPlotItems config"""
+    time_line_drawn = plot_item.plot_config.time_progress_line
+    if time_line_drawn:
+        assert plot_item._time_line is not None
+        assert plot_item._time_line in plot_item.items
+        assert plot_item._time_line in plot_item.vb.addedItems
+    else:
+        assert plot_item._time_line is None
+        # Check if removal was done properly
+        if prior_item is not None:
+            assert prior_item not in plot_item.items
+            assert prior_item not in plot_item.vb.addedItems
+
+
+def check_sliding_pointer_cycle_boundaries(plot_item: ExPlotItem, prior_items: List = []):
+    """Check if the cycle boundaries on a sliding pointer plot are set correctly"""
+    boundaries_drawn = plot_item.plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
+    if boundaries_drawn:
+        assert (plot_item._cycle_start_boundary is not None and plot_item._cycle_end_boundary is not None)
+        assert plot_item._cycle_start_boundary in plot_item.items
+        assert plot_item._cycle_start_boundary in plot_item.vb.addedItems
+        assert plot_item._cycle_end_boundary  in plot_item.items
+        assert plot_item._cycle_end_boundary  in plot_item.vb.addedItems
+    else:
+        assert (plot_item._cycle_start_boundary is None and plot_item._cycle_end_boundary is None)
+        if prior_items:
+            assert (prior_items[0] is None and prior_items[0] is None) or (prior_items[0] is not None and prior_items[0] is not None)
+            for prior_item in prior_items:
+                if prior_item:
+                    assert prior_item not in plot_item.items
+                    assert prior_item not in plot_item.vb.addedItems
 
 
 def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):

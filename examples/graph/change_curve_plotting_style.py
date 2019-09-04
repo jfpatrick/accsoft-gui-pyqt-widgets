@@ -8,6 +8,7 @@ import numpy as np
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QComboBox, QSpinBox, QLabel, QCheckBox
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
+import pyqtgraph as pg
 import example_sources
 
 
@@ -34,6 +35,8 @@ class MainWindow(QMainWindow):
         self.plot.addCurve(data_source=data_source_1)
         self.plot.plotItem.add_layer(identifier="layer_1")
         self.plot.addCurve(data_source=data_source_2, layer_identifier="layer_1", sybol="o", symbolPen="g", pen="y")
+        line = pg.InfiniteLine(pos=0.0, angle=0)
+        self.plot.addItem(line)
         self.show()
         self.resize(800, 600)
         main_container = QWidget()
@@ -51,7 +54,7 @@ class MainWindow(QMainWindow):
         self.time_line_checkbox.stateChanged.connect(self.change_plot_config)
 
     def create_input(self, main_layout: QGridLayout, main_container: QWidget):
-        """"""
+        """Create input fields for different plot config parameters"""
         # Style Combobox
         self.style_combobox = QComboBox()
         label_1 = QLabel("Plot Style")
@@ -84,7 +87,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.time_line_checkbox)
 
     def change_plot_config(self, *args):
-        """Change the pltos configuration with the values from the inputs"""
+        """Change the plot's configuration with the values from the inputs"""
         cycle_size = self.cycle_size_input.value()
         offset = self.offset_input.value() if self.offset_checkbox.isChecked() else np.nan
         style = accgraph.PlotWidgetStyle.SLIDING_POINTER if self.style_combobox.currentText() == "Sliding" else accgraph.PlotWidgetStyle.SCROLLING_PLOT

@@ -2,37 +2,37 @@
 
 import abc
 import logging
-from typing import List, Optional
+from typing import List
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import BaseDataModel
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class DataModelBasedItem(metaclass=abc.ABCMeta):
 
-    """ Baseclass for DataSource based graphitems
+    """ Baseclass for data source / data model based graph items
 
-    Baseclass for attaching an pyqtgraph based item do a datasource.
+    Baseclass for attaching an pyqtgraph based item do a data source.
     By subclassing this class and implementing the mandatory functions the
-    item is attached to the datasource and can react to changes in its data
+    item is attached to the data source and can react to changes in its data
     """
 
     def __init__(
         self,
-        timing_source_attached: bool,
         data_model: BaseDataModel,
-        parent_plot_item: pyqtgraph.PlotItem,
+        parent_plot_item: 'ExPlotItem',
     ):
         self._data_model: BaseDataModel = data_model
         self._data_model.sig_model_has_changed.connect(self._data_model_change_handler)
-        self._last_timestamp: float = -1.0
-        self._timing_source_attached: bool = timing_source_attached
-        self._parent_plot_item: pyqtgraph.PlotItem = parent_plot_item
+        self._parent_plot_item: 'ExPlotItem' = parent_plot_item
         self._layer_identifier: str = ""
 
     def _data_model_change_handler(self):
@@ -47,13 +47,12 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         Returns:
             None
         """
-        if not self._timing_source_attached:
+        if not self._parent_plot_item.timing_source_attached:
             possible_ts = self._data_model.get_highest_primary_value()
             if possible_ts is not None and not np.isnan(possible_ts):
-                self._last_timestamp = possible_ts
-                self._parent_plot_item.handle_timing_update(self._last_timestamp)
-        elif self._timing_source_attached and self._last_timestamp != -1:
-            self.update_timestamp(self._last_timestamp)
+                self._parent_plot_item.handle_timing_update(possible_ts)
+        elif self._parent_plot_item.timing_source_attached and self._parent_plot_item.last_timestamp != -1.0:
+            self.update_item()
 
     def get_layer_identifier(self):
         """Get the identifier of the layer the object has been created in"""
@@ -68,15 +67,8 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     # ~~~~~ Functions mandatory to implement ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @abc.abstractmethod
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """ React to the new available timestamp
-
-        Args:
-            new_timestamp: The new timestamp that is supposed to used for plotting
-
-        Returns:
-            None
-        """
+    def update_item(self) -> None:
+        """Update item based on the plot items cycle information"""
         pass
 
     def set_layer_information(self, layer_identifier: str) -> None:
@@ -107,7 +99,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
             raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style}")
 
 
-class AbstractDataModelBasedItemMeta(type(pyqtgraph.GraphicsObject), type(DataModelBasedItem)):
+class AbstractDataModelBasedItemMeta(type(pg.GraphicsObject), type(DataModelBasedItem)):
 
     """ Metaclass to avoid metaclass conflicts
 
