@@ -1,7 +1,6 @@
 """Scrolling Bar Chart for live data plotting"""
 
 import sys
-import abc
 from typing import List, Union
 
 import pyqtgraph
@@ -16,10 +15,8 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import 
     AbstractDataModelBasedItemMeta
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle
 
 
 # which plotting style is achieved by which class
@@ -44,8 +41,6 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         *graphicsobjectargs,
         data_source: Union[UpdateSource, TimestampMarkerDataModel],
         plot_item: pyqtgraph.PlotItem,
-        plot_config: ExPlotWidgetConfig,
-        timing_source_attached: bool,
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ):
         """
@@ -66,20 +61,28 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
-            timing_source_attached=timing_source_attached,
             parent_plot_item=plot_item,
         )
-        self._plot_config: ExPlotWidgetConfig = plot_config
         self._line_elements: List[pyqtgraph.InfiniteLine] = []
 
     @staticmethod
     def create_from(
             *graphicsobjectargs,
-            plot_config: ExPlotWidgetConfig,
             object_to_create_from: "LiveTimestampMarker",
-            **kwargs,
     ):
-        """Factory method for creating curve object fitting the requested style"""
+        """
+        Recreate graph item from existing one. The datamodel is shared, but the new graph item
+        is fitted to the old graph item's parent plot item's style. If this one has changed
+        since the creation of the old graph item, the new graph item will have the new style.
+
+        Args:
+            *graphicsobjectargs: Positional arguments for the GraphicsObject base class
+            object_to_create_from: object which f.e. datamodel should be taken from
+
+        Returns:
+            New live data curve with the datamodel from the old passed one
+        """
+        plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
             supported_styles=LiveTimestampMarker.supported_plotting_styles
@@ -90,10 +93,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         return item_class(
             *graphicsobjectargs,
             plot_item=object_to_create_from._parent_plot_item,
-            plot_config=plot_config,
             data_source=object_to_create_from._data_model,
-            timing_source_attached=object_to_create_from._timing_source_attached,
-            **kwargs,
         )
 
     @staticmethod
@@ -104,34 +104,19 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ) -> "LiveTimestampMarker":
         """Factory method for creating line object fitting the passed plot"""
-        plot_config = plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_config,
+            plot_config=plot_item.plot_config,
             supported_styles=LiveTimestampMarker.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
             plot_item=plot_item,
-            plot_config=plot_config,
             data_source=data_source,
-            timing_source_attached=plot_item.timing_source_attached,
             buffer_size=buffer_size
         )
-
-    @abc.abstractmethod
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """ Update the timestamp and react to the update
-
-        Args:
-            new_timestamp: The new timestamp that is supposed to be reacted to
-
-        Returns:
-            None
-        """
-        pass
 
     def _clear_infinite_lines(self):
         for line in self._line_elements:
@@ -154,22 +139,25 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         self.getViewBox().addItem(infinite_line)
         self._line_elements.append(infinite_line)
 
-    # Override
     def flags(self):
-        """ ItemHasNoContents -> we do not have to provide a bounding rectangle for the ViewBox """
+        """
+        Overrides base's flags().
+        ItemHasNoContents -> we do not have to provide a bounding rectangle
+        for the ViewBox
+        """
         return QGraphicsItem.ItemHasNoContents
 
-    # Override
     def paint(self, *args):
         """
+        Overrides base's paint().
         paint function has to be implemented but this component only
         creates InfiniteLines and does not paint anything, so we can pass
         """
         pass
 
-    # Override
     def boundingRect(self):
         """
+        Overrides base's boundingRect().
         Since this component is not painting anything, it does not
         matter what we pass back as long as it is in the boundaries
         of the internal InfiniteLines Bounding Rectangle
@@ -187,38 +175,10 @@ class ScrollingTimestampMarker(LiveTimestampMarker):
     vertical colored line and a label.
     """
 
-    def __init__(self, *graphicsobjectargs, **kwargs):
-        super().__init__(*graphicsobjectargs, **kwargs)
-        self._cycle = ScrollingPlotCycle(
-            plot_config=self._plot_config,
-            size=self._plot_config.cycle_size
-        )
-
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """Handle a new timestamp
-
-        Handle a new arriving timestamp that determines what part of the
-        data is supposed to be shown.
-
-        Args:
-            new_timestamp (float): The new published timestamp
-        """
-        if new_timestamp >= self._last_timestamp:
-            self._last_timestamp = new_timestamp
-            self._cycle.number = (
-                int(new_timestamp - self._cycle.start) // self._cycle.size
-            )
-            self._update_lines()
-
-    def _update_lines(self):
-        """Redraw the data as bars
-
-        Select data according to the cycle size and the latest timestamp
-        and redraw the bars of the graph from this data.
-        """
-        self._cycle.update_cycle(self._last_timestamp)
+    def update_item(self) -> None:
+        """Update item based on the plot items cycle information"""
         curve_x, colors, labels = self._data_model.get_subset(
-            start=self._cycle.start, end=self._cycle.end
+            start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
         )
         if curve_x.size == colors.size == labels.size and curve_x.size > 0:
             self._clear_infinite_lines()

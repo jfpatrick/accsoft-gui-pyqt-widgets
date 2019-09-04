@@ -3,7 +3,7 @@ Extended Widget for custom plotting with simple configuration wrappers
 """
 
 import itertools
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 import pyqtgraph as pg
 
@@ -11,26 +11,14 @@ from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QGraphicsItem
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
-from accsoft_gui_pyqt_widgets.graph.widgets.axisitems import (
-    RelativeTimeAxisItem,
-    TimeAxisItem,
-)
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
-    PlotWidgetStyle,
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.bargraphitem import LiveBarGraphItem
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBarGraphItem
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
-
-# Mapping of plotting styles to a fitting axis style
-_STYLE_TO_AXIS_MAPPING: Dict[PlotWidgetStyle, Type[pg.AxisItem]] = {
-    PlotWidgetStyle.STATIC_PLOT: pg.AxisItem,
-    PlotWidgetStyle.SLIDING_POINTER: RelativeTimeAxisItem,
-    PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
-}
 
 
 class ExPlotWidget(pg.PlotWidget):
@@ -64,7 +52,6 @@ class ExPlotWidget(pg.PlotWidget):
         self._config = config
         self.plotItem: ExPlotItem
         axis_items = axis_items or {}
-        axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item())
         self.plotItem = ExPlotItem(
             axis_items=axis_items,
             config=config,
@@ -226,18 +213,3 @@ class ExPlotWidget(pg.PlotWidget):
     def singleCurveValueSlot(self, data):
         """Slot that allows to draw data """
         self.plotItem.handle_single_curve_value_slot(data)
-
-    def _create_fitting_axis_item(self) -> pg.AxisItem:
-        """Create an axis that fits the given plotting style
-
-        Create instance of the axis associated to the given plotting style in
-        STYLE_TO_AXIS_MAPPING. This axis-item can then be passed to the PlotItems
-        constructor.
-
-        Returns:
-            Instance of the fitting axis item
-        """
-        for style, axis in _STYLE_TO_AXIS_MAPPING.items():
-            if self._config.plotting_style == style:
-                return axis(orientation="bottom")
-        return pg.AxisItem(orientation="bottom")

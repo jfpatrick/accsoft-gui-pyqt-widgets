@@ -5,7 +5,7 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 import sys
 import logging
 from typing import Union, List, Tuple, Dict
-import abc
+from copy import deepcopy
 
 import numpy as np
 import pyqtgraph
@@ -24,12 +24,7 @@ from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
     SlidingPointerCurveData
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
     PlotWidgetStyle,
-)
-from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import (
-    ScrollingPlotCycle,
-    SlidingPointerCycle,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +57,7 @@ _plotdataitem_scatter_param_mapping = [
     ("antialias", "antialias"),
 ]
 
+
 class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
 
@@ -70,22 +66,18 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
     def __init__(
         self,
         plot_item: pyqtgraph.PlotItem,
-        plot_config: ExPlotWidgetConfig,
         data_source: Union[UpdateSource, CurveDataModel],
-        timing_source_attached: bool,
-        pen=DEFAULT_COLOR,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
+        pen=DEFAULT_COLOR,
         **plotdataitem_kwargs,
     ):
         """ Constructor for the base class
 
         Args:
             plot_item: plot item the curve should fit to
-            plot_config: configuration of the passed plot item
             data_source: source the curve receives data from
-            timing_source_attached: flag if a separate source for timing updates is attached to the plot item
-            pen: pen the curve should be drawn with
             buffer_size: count of values the curve's data model's buffer should hold at max
+            pen: pen the curve should be drawn with, is part of the plotdataitem baseclass parameters
             **plotdataitem_kwargs: keyword arguments fo the base class
         """
         if isinstance(data_source, UpdateSource):
@@ -101,14 +93,11 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             )
         DataModelBasedItem.__init__(
             self,
-            timing_source_attached=timing_source_attached,
             data_model=data_model,
             parent_plot_item=plot_item,
         )
         pyqtgraph.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
         self.opts["connect"] = "finite"
-        self._parent_plot_item = plot_item
-        self._plot_config: ExPlotWidgetConfig = plot_config
         # Save drawn data for testing purposes
         self._data_item_data: CurveData
         if pen is not None:
@@ -116,11 +105,22 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
 
     @staticmethod
     def create_from(
-        plot_config: ExPlotWidgetConfig,
         object_to_create_from: "LivePlotCurve",
         **plotdataitem_kwargs,
     ) -> "LivePlotCurve":
-        """Factory method for creating curve object fitting the requested style"""
+        """
+        Recreate graph item from existing one. The datamodel is shared, but the new graph item
+        is fitted to the old graph item's parent plot item's style. If this one has changed
+        since the creation of the old graph item, the new graph item will have the new style.
+
+        Args:
+            object_to_create_from: object which f.e. datamodel should be taken from
+            **plotdataitem_kwargs: Keyword arguments for the PlotDataItem base class
+
+        Returns:
+            New live data curve with the datamodel from the old passed one
+        """
+        plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
             supported_styles=LivePlotCurve.supported_plotting_styles
@@ -128,15 +128,13 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
-        if not plotdataitem_kwargs:
-            plotdataitem_kwargs = object_to_create_from.opts
+        # Take opts from old item except ones passed explicitly
+        kwargs = deepcopy(object_to_create_from.opts)
+        kwargs.update(plotdataitem_kwargs)
         return item_class(
-            start=object_to_create_from._cycle.start,
             plot_item=object_to_create_from._parent_plot_item,
-            plot_config=plot_config,
             data_source=object_to_create_from._data_model,
-            timing_source_attached=object_to_create_from._timing_source_attached,
-            **plotdataitem_kwargs,
+            **kwargs,
         )
 
     @staticmethod
@@ -156,25 +154,21 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             plot_item: plot item the item should fit to
             data_source: source the item receives data from
             buffer_size: count of values the item's datamodel's buffer should hold at max
-            curve_config: configuration object for the new item
             **buffer_size: keyword arguments for the items baseclass
 
         Returns:
             the created item
         """
-        plot_config = plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_config,
+            plot_config=plot_item.plot_config,
             supported_styles=LivePlotCurve.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
-            plot_config=plot_config,
             data_source=data_source,
-            timing_source_attached=plot_item.timing_source_attached,
             buffer_size=buffer_size,
             **plotdataitem_kwargs,
         )
@@ -239,17 +233,6 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         else:
             return x_values, y_values
 
-    # ~~~~~~~~~~~~~~~~~ Private functions ~~~~~~~~~~~~~~~~~
-
-    @abc.abstractmethod
-    def _redraw_curve(self) -> None:
-        """ Redraw the curve with the current parameters
-
-        Returns:
-            None
-        """
-        pass
-
 
 class SlidingPointerPlotCurve(LivePlotCurve):
     """PlotDataItem extension for the Sliding Pointer Plotting Style
@@ -263,23 +246,12 @@ class SlidingPointerPlotCurve(LivePlotCurve):
     so the area with the curve does not move.
     """
 
-    def __init__(
-            self,
-            plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
-            start: float = np.nan,
-            **kwargs
-    ):
+    def __init__(self, **kwargs):
         """Create a new SlidingPointer curve."""
-        super().__init__(plot_config=plot_config, **kwargs)
+        super().__init__(**kwargs)
         # Curves after clipping (data actually drawn)
         self._clipped_curve_old: CurveData = CurveData(np.array([]), np.array([]))
         self._clipped_curve_new: CurveData = CurveData(np.array([]), np.array([]))
-        size = plot_config.cycle_size
-        self._cycle: SlidingPointerCycle = SlidingPointerCycle(
-            start=start,
-            size=size
-        )
-        self._first_time_update = True
 
     def equals(self, other: "SlidingPointerPlotCurve") -> bool:
         """Compare two Sliding Pointer Curves's content
@@ -319,43 +291,12 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         except ValueError:
             return False
 
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """Handle a new timestamp
-
-        Handle a update in the current time triggered by f.e. the timing source.
-        With the new timestamp the data subset for the new and old curve are
-        updated, clipped and drawn. If the timestamp is older than the current
-        known one, it will be ignored and interpreted as delivered too late
-
-        Args:
-            new_timestamp (float): The new published timestamp
-        """
-        if new_timestamp >= self._last_timestamp:
-            self._last_timestamp = new_timestamp
-            self._handle_initial_time_update()
-            self._cycle.number = (
-                int(new_timestamp - self._cycle.start) // self._cycle.size
-            )
-            self._update_new_curve_data_item()
-            if self._cycle.number > 0:
-                self._update_old_curve_data_item()
-            self._redraw_curve()
-
-    def _handle_initial_time_update(self) -> None:
-        """Handle the first ever timing update received from the timing source
-
-        As soon as the first timestamp is available, cycle information like
-        start and end can be set.
-        """
-        if self._first_time_update:
-            self._first_time_update = False
-            if self._cycle.start == 0.0:
-                self._cycle.start = self._cycle.get_current_time_line_x_pos(
-                    self._last_timestamp
-                )
-                self._cycle.end = self._cycle.start + self._cycle.size * (
-                    self._cycle.number + 1
-                )
+    def update_item(self) -> None:
+        """Update item based on the plot items cycle information"""
+        self._update_new_curve_data_item()
+        if self._parent_plot_item.cycle.number > 0:
+            self._update_old_curve_data_item()
+        self._redraw_curve()
 
     def _redraw_curve(self) -> None:
         """ Redraw the curve with the current data
@@ -396,13 +337,13 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         point will be added if the the new point exceeds the current time
         (because of f.e. inaccurate timestamp)
         """
-        start = self._cycle.get_current_cycle_start_timestamp()
-        end = self._last_timestamp
+        start = self._parent_plot_item.cycle.current_cycle_start_timestamp
+        end = self._parent_plot_item.last_timestamp
         x_values, y_values = self._data_model.get_clipped_subset(
             start=start, end=end
         )
         self._clipped_curve_new = CurveData(
-            x_values=x_values - self._cycle.get_current_cycle_offset(),
+            x_values=x_values - self._parent_plot_item.cycle.current_cycle_offset,
             y_values=y_values,
         )
 
@@ -413,13 +354,13 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         point will be added if the the new point exceeds the current time
         (because of f.e. inaccurate timestamp)
         """
-        start = self._last_timestamp - self._cycle.size
-        end = self._cycle.get_previous_cycle_end_timestamp()
+        start = self._parent_plot_item.last_timestamp - self._parent_plot_item.cycle.size
+        end = self._parent_plot_item.cycle.previous_cycle_end_timestamp
         x_values, y_values = self._data_model.get_clipped_subset(
             start=start, end=end
         )
         self._clipped_curve_old = CurveData(
-            x_values=x_values - self._cycle.get_previous_cycle_offset(),
+            x_values=x_values - self._parent_plot_item.cycle.previous_cycle_offset,
             y_values=y_values,
         )
 
@@ -453,12 +394,12 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         from the data model that are part of the new curve.
         """
         x_values, y_values = self._data_model.get_subset(
-            start=self._cycle.get_current_cycle_start_timestamp(),
-            end=self._cycle.get_current_cycle_end_timestamp(),
+            start=self._parent_plot_item.cycle.current_cycle_start_timestamp,
+            end=self._parent_plot_item.cycle.current_cycle_end_timestamp,
         )
         return CurveDataWithTime(
             timestamps=x_values,
-            x_values=x_values - self._cycle.get_current_cycle_offset(),
+            x_values=x_values - self._parent_plot_item.cycle.current_cycle_offset,
             y_values=y_values,
         )
 
@@ -468,22 +409,18 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         from the data model that are part of the old curve.
         """
         x_values, y_values = self._data_model.get_subset(
-            start=self._cycle.get_previous_cycle_start_timestamp(),
-            end=self._cycle.get_previous_cycle_end_timestamp(),
+            start=self._parent_plot_item.cycle.previous_cycle_start_timestamp,
+            end=self._parent_plot_item.cycle.previous_cycle_end_timestamp,
         )
         return CurveDataWithTime(
             timestamps=x_values,
-            x_values=x_values - self._cycle.get_previous_cycle_offset(),
+            x_values=x_values - self._parent_plot_item.cycle.previous_cycle_offset,
             y_values=y_values,
         )
 
-    def get_cycle(self) -> "SlidingPointerCycle":
-        """return the object holding all information about the the cycle"""
-        return self._cycle
-
     def get_last_time_stamp(self) -> float:
         """Return last timestamp received by the curve"""
-        return self._last_timestamp
+        return self._parent_plot_item.last_timestamp
 
 
 class ScrollingPlotCurve(LivePlotCurve):
@@ -492,20 +429,6 @@ class ScrollingPlotCurve(LivePlotCurve):
     A single curve scrolling towards newer timestamps as new values arrive.
     The shown range has always the same length.
     """
-
-    def __init__(
-        self,
-        plot_config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
-        start: float = np.nan,
-        **kwargs
-    ):
-        """Create a new scrolling plot curve. Parameters are the same the ones from the baseclass."""
-        super().__init__(plot_config=plot_config, **kwargs)
-        self._cycle: ScrollingPlotCycle = ScrollingPlotCycle(
-            plot_config=self._plot_config,
-            start=start,
-            size=plot_config.cycle_size,
-        )
 
     def equals(self, other: "ScrollingPlotCurve") -> bool:
         """Compare two Scrolling Plot Curves's data
@@ -526,37 +449,17 @@ class ScrollingPlotCurve(LivePlotCurve):
             and self.get_last_drawn_data() == other.get_last_drawn_data()
         )
 
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """Handle a new published timestamp
-
-        Handle a new arriving timestamp and trigger changes in the shown data
-        according to new time-information..
-        The shown curve will be clipped on both ends according to the passed
-        timestamp.
-
-        Args:
-            new_timestamp (float): Current time as timestamp
-        """
-        if new_timestamp >= self._last_timestamp:
-            self._last_timestamp = new_timestamp
-            self._redraw_curve()
-
-    def _redraw_curve(self) -> None:
-        """Update the actual drawn data
-
-        Update the data for the inner PlotDataItem and clip the resulting
-        curves at the required positions for not overdrawing boundaries.
-        """
-        self._cycle.update_cycle(self._last_timestamp)
+    def update_item(self) -> None:
+        """Update item based on the plot items cycle information"""
         if self.opts.get("pen", None) is not None:
             # Subset for curve is clipped
             curve_x, curve_y = self._data_model.get_clipped_subset(
-                start=self._cycle.start, end=self._cycle.end
+                start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
             )
         else:
             # Clipping is not used for scatter plot
             curve_x, curve_y = self._data_model.get_subset(
-                start=self._cycle.start, end=self._cycle.end
+                start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
             )
         self._set_data(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)

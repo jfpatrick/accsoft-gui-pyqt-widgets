@@ -1,12 +1,11 @@
 """Scrolling Bar Chart for live-data plotting"""
 
 import sys
-import abc
 from typing import List, Union
+from copy import deepcopy
 
 import pyqtgraph
 import numpy as np
-from qtpy.QtGui import QPen
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import InjectionBarDataModel
@@ -17,10 +16,8 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import 
     AbstractDataModelBasedItemMeta
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle
 
 # which plotting style is achieved by which class
 plotting_style_to_class_mapping = {
@@ -38,8 +35,6 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         self,
         data_source: Union[UpdateSource, InjectionBarDataModel],
         plot_item: pyqtgraph.PlotItem,
-        plot_config: ExPlotWidgetConfig,
-        timing_source_attached: bool,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ):
@@ -65,10 +60,8 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
-            timing_source_attached=timing_source_attached,
             parent_plot_item=plot_item,
         )
-        self._plot_config: ExPlotWidgetConfig = plot_config
         # TextItems for the labels of the injection-bars
         self._text_labels: List[pyqtgraph.TextItem] = []
         self._label_texts: List[str] = []
@@ -93,14 +86,22 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
 
     @staticmethod
     def create_from(
-        plot_config: ExPlotWidgetConfig,
         object_to_create_from: "LiveInjectionBarGraphItem",
         **errorbaritem_kwargs,
     ) -> "LiveInjectionBarGraphItem":
-        """Factory method for creating curve object fitting the requested style
-
-
         """
+        Recreate graph item from existing one. The datamodel is shared, but the new graph item
+        is fitted to the old graph item's parent plot item's style. If this one has changed
+        since the creation of the old graph item, the new graph item will have the new style.
+
+        Args:
+            object_to_create_from: object which f.e. datamodel should be taken from
+            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItem base class
+
+        Returns:
+            New live data injection bar with the datamodel from the old passed one
+        """
+        plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
             supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
@@ -108,14 +109,13 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
-        if not errorbaritem_kwargs:
-            errorbaritem_kwargs = object_to_create_from.opts
+        # Take opts from old item except ones passed explicitly
+        kwargs = deepcopy(object_to_create_from.opts)
+        kwargs.update(errorbaritem_kwargs)
         return item_class(
             plot_item=object_to_create_from._parent_plot_item,
-            plot_config=plot_config,
             data_source=object_to_create_from._data_model,
-            timing_source_attached=object_to_create_from._timing_source_attached,
-            **errorbaritem_kwargs,
+            **kwargs,
         )
 
     @staticmethod
@@ -140,38 +140,22 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         Returns:
             the created item
         """
-        plot_config = plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_config,
+            plot_config=plot_item.plot_config,
             supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
             data_source=data_source,
-            plot_config=plot_config,
-            timing_source_attached=plot_item.timing_source_attached,
             buffer_size=buffer_size,
             **errorbaritem_kwargs,
         )
 
-    @abc.abstractmethod
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """ Update the timestamp and react to the update
-
-        Args:
-            new_timestamp: The new timestamp that is supposed to be reacted to
-
-        Returns:
-            None
-        """
-        pass
-
-    # Override
     def paint(self, p, *args):
-        """Add additional functionality to the ErrorBarItems paint function"""
+        """Overrides base's paint(). Add additional functionality to the ErrorBarItems paint function"""
         super().paint(p, *args)
         self.draw_injector_bar_labels()
 
@@ -205,38 +189,10 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
 
     """Scrolling Bar Graph"""
 
-    def __init__(self, **kwargs):
-        """Create a new scrolling injection-bar item, for parameters see baseclass"""
-        super().__init__(**kwargs)
-        self._cycle = ScrollingPlotCycle(
-            plot_config=self._plot_config, size=self._plot_config.cycle_size
-        )
-
-    def update_timestamp(self, new_timestamp: float) -> None:
-        """Handle a new timestamp
-
-        Handle a new arriving timestamp that determines what part of the
-        data is supposed to be shown.
-
-        Args:
-            new_timestamp (float): The new published timestamp
-        """
-        if new_timestamp >= self._last_timestamp:
-            self._last_timestamp = new_timestamp
-            self._cycle.number = (
-                int(new_timestamp - self._cycle.start) // self._cycle.size
-            )
-            self._redraw_bars()
-
-    def _redraw_bars(self):
-        """Redraw the data as bars
-
-        Select data according to the cycle size and the latest timestamp
-        and redraw the bars of the graph from this data.
-        """
-        self._cycle.update_cycle(self._last_timestamp)
+    def update_item(self) -> None:
+        """Update item based on the plot items cycle information"""
         curve_x, curve_y, height, width, labels = self._data_model.get_subset(
-            start=self._cycle.start, end=self._cycle.end
+            start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
         )
         self._label_texts = labels
         self._label_y_positions = []
