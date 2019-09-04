@@ -393,40 +393,6 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
 
     # ~~~~~~ Helper functions for more readable conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def _is_double_nan_append(
-        self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
-    ) -> bool:
-        """function for checking if array would lead to a double nan in the buffer"""
-        arrays_of_length_one = primary_values.size == 1
-        last_value_in_buffer_is_nan = self._next_free_slot > 0 and np.isnan(
-            self._primary_values[self._next_free_slot - 1]
-        )
-        next_value_to_add_is_nan = self._next_free_slot > 0 and np.isnan(
-            primary_values[0]
-        )
-        if self._next_free_slot > 0:
-            for secondary_values in secondary_values_list:
-                arrays_of_length_one = arrays_of_length_one and secondary_values.size == 1
-                for self_secondary_values in self._secondary_values_lists:
-                    if not isinstance(
-                        self_secondary_values[self._next_free_slot - 1], str
-                    ):
-                        last_value_in_buffer_is_nan = (
-                            last_value_in_buffer_is_nan
-                            and np.isnan(
-                                self_secondary_values[self._next_free_slot - 1]
-                            )
-                        )
-                if not isinstance(secondary_values[0], str):
-                    next_value_to_add_is_nan = next_value_to_add_is_nan and np.isnan(
-                        secondary_values[0]
-                    )
-        return (
-            arrays_of_length_one
-            and next_value_to_add_is_nan
-            and last_value_in_buffer_is_nan
-        )
-
     def _is_new_value_greater_than_all_others(
         self, primary_value: float, last_non_free_and_not_none_index: int
     ) -> bool:

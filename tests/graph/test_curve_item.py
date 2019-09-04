@@ -1,16 +1,14 @@
 # pylint: disable=missing-docstring
 
 from typing import List, Union, Optional, Tuple
-import warnings
 
-import pyqtgraph
 import pytest
 import numpy
 
 from accsoft_gui_pyqt_widgets.graph import (LivePlotCurve,
-                                            LivePlotCurveConfig,
                                             ExPlotWidgetConfig,
-                                            CurveDataWithTime, PlotWidgetStyle,
+                                            CurveDataWithTime,
+                                            PlotWidgetStyle,
                                             SlidingPointerPlotCurve,
                                             UpdateSource,
                                             PointData)
@@ -811,8 +809,7 @@ def _prepare_sliding_pointer_plot_test_window(
         cycle_size=cycle_size,
         time_progress_line=True,
     )
-    curve_config = LivePlotCurveConfig()
-    window = PlotWidgetTestWindow(plot_config, [curve_config], item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
+    window = PlotWidgetTestWindow(plot_config, item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
     window.show()
     qtbot.addWidget(window)
     return window

@@ -1,17 +1,16 @@
-from typing import List, Optional
+from typing import List
 
 import numpy
 import pyqtgraph as pg
 import pytest
 
-from accsoft_gui_pyqt_widgets.graph import (LivePlotCurveConfig,
-                                            PlotItemLayer,
-                                            ExPlotWidgetConfig,
-                                            CurveDataWithTime, PlotWidgetStyle,
-                                            SlidingPointerPlotCurve)
+from accsoft_gui_pyqt_widgets.graph import (
+    PlotItemLayer,
+    ExPlotWidgetConfig,
+    PlotWidgetStyle,
+)
 
 from .mock_utils.mock_data_source import MockDataSource
-from .mock_utils.mock_timing_source import MockTimingSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
 
 
@@ -168,13 +167,9 @@ def test_layers_with_new_plotting_style(qtbot):
     layer_1 = plot_item.add_layer("layer_1")
     layer_1_items = layer_1.view_box.addedItems
     default_layer_items = plot_item.get_layer_by_identifier("").view_box.addedItems
-    curve_config = LivePlotCurveConfig(
-        draw_vertical_line=True, draw_horizontal_line=True, draw_point=True
-    )
     data_source_mock = MockDataSource()
     layer_1_curve = plot_item.addCurve(
         layer_identifier="layer_1",
-        curve_config=curve_config,
         data_source=data_source_mock,
     )
     window.time_source_mock.create_new_value(0.0)
@@ -190,42 +185,28 @@ def test_layers_with_new_plotting_style(qtbot):
     data_source_mock.create_new_value(timestamp=0.2, value=1.0)
     data_source_mock.create_new_value(timestamp=0.5, value=1.0)
     window.time_source_mock.create_new_value(1.0)
-    layer_1_curve_decorators = (
-        layer_1_curve.get_decorators().get_all_decorators_as_list()
-    )
-    # Expected in Viewbox: Decorators + Curve
-    assert len(layer_1_items) == len(layer_1_curve_decorators) + 1
+    # Expected in Viewbox: Curve
+    assert len(layer_1_items) == 1
     assert len(default_layer_items) == empty_default_layer_items_count
     assert layer_1_curve in layer_1_items
     assert layer_1_curve not in default_layer_items
-    assert len(layer_1_curve_decorators) == 3
-    for decorator in layer_1_curve_decorators:
-        assert decorator in layer_1_items
-        assert decorator not in default_layer_items
     default_layer_curve = plot_item.addCurve(
-        curve_config=curve_config, data_source=data_source_mock
+        data_source=data_source_mock
     )
     # Create some updates for the new curve (without data no plotted curve)
     data_source_mock.create_new_value(timestamp=1.2, value=1.0)
     data_source_mock.create_new_value(timestamp=1.5, value=1.0)
     window.time_source_mock.create_new_value(2.0)
-    default_layer_curve_decorators = (
-        default_layer_curve.get_decorators().get_all_decorators_as_list()
-    )
     default_layer_items = plot_item.get_layer_by_identifier("").view_box.addedItems
     # Layer 1 should not be affected by the new curve
-    assert len(layer_1_items) == len(layer_1_curve_decorators) + 1
+    assert len(layer_1_items) == 1
     # The default layer should have the new items included
     assert (
         len(default_layer_items)
-        == empty_default_layer_items_count + len(default_layer_curve_decorators) + 1
+        == empty_default_layer_items_count + 1
     )
     assert default_layer_curve in default_layer_items
     assert default_layer_curve not in layer_1_items
-    assert len(default_layer_curve_decorators) == 3
-    for decorator in default_layer_curve_decorators:
-        assert decorator not in layer_1_items
-        assert decorator in default_layer_items
 
 
 def test_set_axis_range(qtbot):

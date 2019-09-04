@@ -21,11 +21,9 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import 
 from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
     CurveData,
     CurveDataWithTime,
-    CurveDecorators,
     SlidingPointerCurveData
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
-    LivePlotCurveConfig,
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
@@ -72,10 +70,8 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
     def __init__(
         self,
         plot_item: pyqtgraph.PlotItem,
-        curve_config: LivePlotCurveConfig,
         plot_config: ExPlotWidgetConfig,
         data_source: Union[UpdateSource, CurveDataModel],
-        decorators: CurveDecorators,
         timing_source_attached: bool,
         pen=DEFAULT_COLOR,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
@@ -85,10 +81,8 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
 
         Args:
             plot_item: plot item the curve should fit to
-            curve_config: configuration object for the curve decorators
             plot_config: configuration of the passed plot item
             data_source: source the curve receives data from
-            decorators: object wrapping all curve decorators
             timing_source_attached: flag if a separate source for timing updates is attached to the plot item
             pen: pen the curve should be drawn with
             buffer_size: count of values the curve's data model's buffer should hold at max
@@ -114,9 +108,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         pyqtgraph.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
         self.opts["connect"] = "finite"
         self._parent_plot_item = plot_item
-        self._curve_config: LivePlotCurveConfig = curve_config
         self._plot_config: ExPlotWidgetConfig = plot_config
-        self._decorators: CurveDecorators = decorators
         # Save drawn data for testing purposes
         self._data_item_data: CurveData
         if pen is not None:
@@ -141,10 +133,8 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         return item_class(
             start=object_to_create_from._cycle.start,
             plot_item=object_to_create_from._parent_plot_item,
-            curve_config=object_to_create_from._curve_config,
             plot_config=plot_config,
             data_source=object_to_create_from._data_model,
-            decorators=object_to_create_from._decorators,
             timing_source_attached=object_to_create_from._timing_source_attached,
             **plotdataitem_kwargs,
         )
@@ -153,7 +143,6 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
     def create(
         plot_item: "ExPlotItem",
         data_source: UpdateSource,
-        curve_config: LivePlotCurveConfig = LivePlotCurveConfig(),
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ) -> "LivePlotCurve":
@@ -183,10 +172,8 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         item_class: type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
-            curve_config=curve_config,
             plot_config=plot_config,
             data_source=data_source,
-            decorators=CurveDecorators(),
             timing_source_attached=plot_item.timing_source_attached,
             buffer_size=buffer_size,
             **plotdataitem_kwargs,
@@ -252,17 +239,6 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         else:
             return x_values, y_values
 
-    # ~~~~~~~~~~~~~~~~~ Getter functions ~~~~~~~~~~~~~~~~~~
-
-    # TODO: Convert to properties
-    def get_decorators(self) -> CurveDecorators:
-        """Return Curve Decorators associated to this curve"""
-        return self._decorators
-
-    def get_conf(self) -> LivePlotCurveConfig:
-        """Get configuration for this particular curve"""
-        return self._curve_config
-
     # ~~~~~~~~~~~~~~~~~ Private functions ~~~~~~~~~~~~~~~~~
 
     @abc.abstractmethod
@@ -273,38 +249,6 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             None
         """
         pass
-
-    def _redraw_decorators(self, curve: CurveData) -> None:
-        """Draw all decorators at the given position, if they have been created.
-
-        Args:
-            x_pos: X-Position to move the decorators to
-            y_pos: Y-Position to move the decorators to
-        """
-        x_pos = curve.x_values[-1] if curve.x_values.size != 0 else self._cycle.start
-        y_pos = curve.y_values[-1] if curve.y_values.size != 0 else 0
-        potential_pen = self.opts.get("pen", None)
-        if self._decorators.vertical_line is not None:
-            self._decorators.vertical_line.setValue(x_pos)
-            if (
-                self._decorators.vertical_line.currentPen != potential_pen
-                and potential_pen is not None
-            ):
-                self._decorators.vertical_line.setPen(potential_pen)
-        if self._decorators.horizontal_line is not None:
-            self._decorators.horizontal_line.setValue(y_pos)
-            if (
-                self._decorators.horizontal_line.currentPen != potential_pen
-                and potential_pen is not None
-            ):
-                self._decorators.horizontal_line.setPen(potential_pen)
-        if self._decorators.point is not None:
-            self._decorators.point.setData({"x": [x_pos], "y": [y_pos]})
-            if (
-                self._decorators.point.opts["symbolPen"] != potential_pen
-                and potential_pen is not None
-            ):
-                self._decorators.point.setSymbolPen(potential_pen)
 
 
 class SlidingPointerPlotCurve(LivePlotCurve):
@@ -396,13 +340,12 @@ class SlidingPointerPlotCurve(LivePlotCurve):
             if self._cycle.number > 0:
                 self._update_old_curve_data_item()
             self._redraw_curve()
-            self._redraw_decorators(self._clipped_curve_new)
 
     def _handle_initial_time_update(self) -> None:
         """Handle the first ever timing update received from the timing source
 
         As soon as the first timestamp is available, cycle information like
-        start and end can be set and according decorators are added.
+        start and end can be set.
         """
         if self._first_time_update:
             self._first_time_update = False
@@ -597,7 +540,6 @@ class ScrollingPlotCurve(LivePlotCurve):
         if new_timestamp >= self._last_timestamp:
             self._last_timestamp = new_timestamp
             self._redraw_curve()
-            self._redraw_decorators(self._data_item_data)
 
     def _redraw_curve(self) -> None:
         """Update the actual drawn data
