@@ -349,7 +349,7 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, cycle_size: int):
         cycle_size=cycle_size,
         time_progress_line=True,
     )
-    window = PlotWidgetTestWindow(plot_config, [])
+    window = PlotWidgetTestWindow(plot_config)
     window.show()
     qtbot.addWidget(window)
     return window

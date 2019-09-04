@@ -2,7 +2,7 @@
 
 import sys
 from typing import List, Union
-from copy import deepcopy
+from copy import copy
 
 import pyqtgraph
 import numpy as np
@@ -18,6 +18,9 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import 
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
 # which plotting style is achieved by which class
 plotting_style_to_class_mapping = {
@@ -29,12 +32,12 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
 
     """Baseclass for different live bar graph plots"""
 
-    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
 
     def __init__(
         self,
         data_source: Union[UpdateSource, InjectionBarDataModel],
-        plot_item: pyqtgraph.PlotItem,
+        plot_item: "ExPlotItem",
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ):
@@ -110,7 +113,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
-        kwargs = deepcopy(object_to_create_from.opts)
+        kwargs = copy(object_to_create_from.opts)
         kwargs.update(errorbaritem_kwargs)
         return item_class(
             plot_item=object_to_create_from._parent_plot_item,
@@ -121,7 +124,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
     @staticmethod
     def create(
         data_source: UpdateSource,
-        plot_item: pyqtgraph.PlotDataItem,
+        plot_item: "ExPlotItem",
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ) -> "LiveInjectionBarGraphItem":

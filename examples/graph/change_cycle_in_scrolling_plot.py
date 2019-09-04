@@ -36,7 +36,8 @@ class MainWindow(QMainWindow):
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
             cycle_size=cycle_size,
-            x_range_offset=0.0
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=0.0
         )
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         self.plot.addCurve(data_source=data_source_1, pen="b")
@@ -80,7 +81,8 @@ class MainWindow(QMainWindow):
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
             cycle_size=cycle_size,
-            x_range_offset=offset
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=offset
         )
         self.plot.update_configuration(config=plot_config)
 

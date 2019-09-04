@@ -3,7 +3,7 @@ Simple implementations for Data and Timing Sources for example purposes
 """
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 import numpy as np
@@ -60,7 +60,7 @@ class SinusCurveSource(accgraph.UpdateSource):
         y_offset: int,
         x_offset: float,
         updates_per_second: int = 60,
-        types_to_emit: List[SinusCurveSourceEmitTypes] = [SinusCurveSourceEmitTypes.POINT],
+        types_to_emit: Optional[List[SinusCurveSourceEmitTypes]] = None,
         *args,
         **kwargs
     ):
@@ -81,7 +81,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 / 180.0
             )
         ]
-        self.types_to_emit: List[SinusCurveSourceEmitTypes] = types_to_emit
+        self.types_to_emit: List[SinusCurveSourceEmitTypes] = types_to_emit or [SinusCurveSourceEmitTypes.POINT]
         self.pointer = 0
         self.label_counter = 0
         self.x_offset = x_offset

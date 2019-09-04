@@ -23,7 +23,8 @@ class MainWindow(QMainWindow):
             cycle_size=25,
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
-            x_range_offset=0
+            scrolling_plot_fixed_x_range=True,
+            scrolling_plot_fixed_x_range_offset=0
         )
         self.plot = accgraph.ExPlotWidget()
         self.plot.update_configuration(config=plot_config)

@@ -17,7 +17,9 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import 
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
 # which plotting style is achieved by which class
 plotting_style_to_class_mapping = {
@@ -34,13 +36,13 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
     to provide its own Bounding Rectangle.
     """
 
-    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
 
     def __init__(
         self,
         *graphicsobjectargs,
         data_source: Union[UpdateSource, TimestampMarkerDataModel],
-        plot_item: pyqtgraph.PlotItem,
+        plot_item: "ExPlotItem",
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ):
         """
@@ -100,7 +102,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
     def create(
         *graphicsobjectargs,
         data_source: UpdateSource,
-        plot_item: pyqtgraph.PlotDataItem,
+        plot_item: "ExPlotItem",
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ) -> "LiveTimestampMarker":
         """Factory method for creating line object fitting the passed plot"""

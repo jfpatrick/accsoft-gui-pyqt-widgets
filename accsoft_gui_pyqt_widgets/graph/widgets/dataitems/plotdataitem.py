@@ -5,7 +5,7 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 import sys
 import logging
 from typing import Union, List, Tuple, Dict
-from copy import deepcopy
+from copy import copy
 
 import numpy as np
 import pyqtgraph
@@ -26,6 +26,9 @@ from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,11 +64,11 @@ _plotdataitem_scatter_param_mapping = [
 class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
 
-    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
+    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
 
     def __init__(
         self,
-        plot_item: pyqtgraph.PlotItem,
+        plot_item: "ExPlotItem",
         data_source: Union[UpdateSource, CurveDataModel],
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         pen=DEFAULT_COLOR,
@@ -129,7 +132,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
         item_class: type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
-        kwargs = deepcopy(object_to_create_from.opts)
+        kwargs = copy(object_to_create_from.opts)
         kwargs.update(plotdataitem_kwargs)
         return item_class(
             plot_item=object_to_create_from._parent_plot_item,

@@ -31,7 +31,7 @@ class InvalidDataStructureWarning(Warning):
     pass
 
 
-class AbstractQObjectMeta(type(QObject), abc.ABCMeta):
+class AbstractQObjectMeta(type(QObject), abc.ABCMeta):  # type: ignore
 
     """ Metaclass for abstract classes based on QObject
 

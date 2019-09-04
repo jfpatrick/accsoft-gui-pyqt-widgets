@@ -5,7 +5,7 @@ that are able to safe different types and amount of data
 
 import abc
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import *
 from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
@@ -146,7 +146,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
     # ~~~~~ Add new entries to buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def add_values_to_buffer(
-        self, primary_value: float, secondary_values: List[float]
+        self, primary_value: float, secondary_values: List[Union[float, str]]
     ) -> None:
         """Append a new entry to the buffer
 
@@ -193,7 +193,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
     # ~~~~~ Preparation and Sorting in of new data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def _sort_in_point(
-        self, primary_value: float, secondary_values: List[float]
+        self, primary_value: float, secondary_values: List[Union[float, str]]
     ) -> None:
         """ Sort in a single point by its primary value
 

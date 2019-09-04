@@ -32,7 +32,6 @@ from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import (
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
-    SlidingPointerPlotCurve,
     ScrollingPlotCurve
 )
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
@@ -46,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Mapping of plotting styles to a fitting axis style
-_STYLE_TO_AXIS_MAPPING: Dict[PlotWidgetStyle, Type[pyqtgraph.AxisItem]] = {
+_STYLE_TO_AXIS_MAPPING: Dict[int, Type[pyqtgraph.AxisItem]] = {
     PlotWidgetStyle.STATIC_PLOT: CustomAxisItem,
     PlotWidgetStyle.SLIDING_POINTER: RelativeTimeAxisItem,
     PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
@@ -54,7 +53,7 @@ _STYLE_TO_AXIS_MAPPING: Dict[PlotWidgetStyle, Type[pyqtgraph.AxisItem]] = {
 
 
 # Mapping of plotting styles to a fitting cycle
-_STYLE_TO_CYCLE_MAPPING: Dict[PlotWidgetStyle, Optional[PlottingCycle]] = {
+_STYLE_TO_CYCLE_MAPPING: Dict[int, Optional[Type[PlottingCycle]]] = {
     PlotWidgetStyle.STATIC_PLOT: None,
     PlotWidgetStyle.SLIDING_POINTER: SlidingPointerCycle,
     PlotWidgetStyle.SCROLLING_PLOT: ScrollingPlotCycle,
@@ -66,7 +65,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     def __init__(
         self,
-        config: ExPlotWidgetConfig = ExPlotWidgetConfig(),
+        config: ExPlotWidgetConfig = None,
         timing_source: Optional[UpdateSource] = None,
         axis_items: Optional[Dict[str, pyqtgraph.AxisItem]] = None,
         **plotitem_kwargs,
@@ -79,6 +78,9 @@ class ExPlotItem(pyqtgraph.PlotItem):
             **plotitem_kwargs: Keyword Arguments that will be passed to PlotItem
         """
         # Pass modified axis for the multilayer movement to function properly
+        config = config or ExPlotWidgetConfig()
+        if axis_items is None:
+            axis_items = {}
         axis_items["left"] = CustomAxisItem(orientation="left")
         axis_items["bottom"] = axis_items.get("bottom", self.create_fitting_axis_item(config_style=config.plotting_style))
         super().__init__(
@@ -87,7 +89,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             **plotitem_kwargs
         )
         self._plot_config: ExPlotWidgetConfig = config
-        self._cycle: PlottingCycle = self.create_fitting_cycle()
+        self._cycle: Optional[PlottingCycle] = self.create_fitting_cycle()
         self._last_timestamp: float = -1.0
         self._time_line: Optional[pyqtgraph.InfiniteLine] = None
         self._style_specific_objects_already_drawn: bool = False
@@ -157,14 +159,14 @@ class ExPlotItem(pyqtgraph.PlotItem):
         if hasattr(self, "_plot_config") and self._plot_config is not None:
             if (
                 self._plot_config.cycle_size != config.cycle_size
-                or self._plot_config.x_range_offset != config.x_range_offset
+                or self._plot_config.scrolling_plot_fixed_x_range_offset != config.scrolling_plot_fixed_x_range_offset
                 or self._plot_config.plotting_style != config.plotting_style
             ):
                 self._plot_config = config
                 self._remove_child_items_affected_from_style_change()
                 self._recreate_child_items_with_new_config()
-                self._update_decorators()
                 self._cycle = self.create_fitting_cycle()
+                self._update_decorators()
                 self._update_bottom_axis_style(style=config.plotting_style)
             elif self.plot_config.time_progress_line != config.time_progress_line:
                 self._plot_config = config
@@ -190,9 +192,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
             if item.get_layer_identifier() == layer.identifier:
                 layer.view_box.removeItem(item)
         self.removeItem(self._time_line)
-        for item in [self._cycle_start_boundary, self._cycle_end_boundary]:
-            if item is not None:
-                self.removeItem(item)
+        if self._cycle is not None:
+            for item in [self._cycle_start_boundary, self._cycle_end_boundary]:
+                if item is not None:
+                    self.removeItem(item)
         self._time_line = None
         self._cycle_start_boundary = None
         self._cycle_end_boundary = None
@@ -222,7 +225,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
 
     @property
-    def plot_config(self):
+    def plot_config(self) -> ExPlotWidgetConfig:
         """Configuration of cycle sizes and other"""
         return self._plot_config
 
@@ -235,7 +238,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self,
         *args,
         clear: bool = False,
-        params: Optional[Dict] = None,
+        params: Optional[Dict[str, Any]] = None,
      ) -> None:
         """
         Plotting curves in the ExPlotItem should not be done with PlotItem.plot . For plotting
@@ -256,7 +259,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
     def addCurve(
         self,
         c: Optional[pyqtgraph.PlotDataItem] = None,
-        params: Optional = None,
+        params: Optional[Dict[str, Any]] = None,
         data_source: Optional[UpdateSource] = None,
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
@@ -289,15 +292,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
             if layer_identifier == "" or layer_identifier is None:
                 layer_identifier = PlotItemLayer.default_layer_identifier
             # create curve that is attached to live data
+            new_plot: pyqtgraph.PlotDataItem
             if data_source is not None:
-                new_plot: LivePlotCurve = LivePlotCurve.create(
+                new_plot = LivePlotCurve.create(
                     plot_item=self,
                     data_source=data_source,
                     buffer_size=buffer_size,
                     **plotdataitem_kwargs,
                 )
             elif data_source is None:
-                new_plot: pyqtgraph.PlotDataItem = pyqtgraph.PlotDataItem(
+                new_plot = pyqtgraph.PlotDataItem(
                     **plotdataitem_kwargs
                 )
             self.addItem(layer=layer_identifier, item=new_plot)
@@ -321,15 +325,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Returns:
             LiveBarGraphItem that was added to the plot
         """
+        new_plot: pyqtgraph.BarGraphItem
         if data_source is not None:
-            new_plot: LiveBarGraphItem = LiveBarGraphItem.create(
+            new_plot = LiveBarGraphItem.create(
                 plot_item=self,
                 data_source=data_source,
                 buffer_size=buffer_size,
                 **bargraph_kwargs,
             )
         else:
-            new_plot: pyqtgraph.BarGraphItem = pyqtgraph.BarGraphItem(
+             new_plot = pyqtgraph.BarGraphItem(
                 **bargraph_kwargs,
             )
         if not layer_identifier:
@@ -474,11 +479,14 @@ class ExPlotItem(pyqtgraph.PlotItem):
             self.items.append(item)
             self.dataItems.append(item)
             try:
-                item.set_layer_information(layer_identifier=layer)
+                if isinstance(layer, str):
+                    item.set_layer_information(layer_identifier=layer)
+                elif isinstance(layer, PlotItemLayer):
+                    item.set_layer_information(layer_identifier=layer.identifier)
             except AttributeError:
                 pass
             try:
-                if item.implements("plotData"):
+                if item.implements("plotData"):  # type: ignore
                     self.curves.append(item)
             except AttributeError:
                 pass
@@ -488,12 +496,13 @@ class ExPlotItem(pyqtgraph.PlotItem):
             layer.view_box.addItem(item=item, **kwargs)
 
     @staticmethod
-    def is_standard_layer(layer: str) -> bool:
+    def is_standard_layer(layer: Optional[Union[str, "PlotItemLayer"]]) -> bool:
         """Check if layer identifier is referencing the standard ."""
-        try:
-            return layer is None or layer == "" or layer == PlotItemLayer.default_layer_identifier
-        except:
-            return False
+        if isinstance(layer, str):
+            return layer == "" or layer == PlotItemLayer.default_layer_identifier
+        elif isinstance(layer, PlotItemLayer):
+            return layer.identifier == "" or layer.identifier == PlotItemLayer.default_layer_identifier
+        return layer is None
 
     def get_layer_by_identifier(self, layer_identifier: str) -> "PlotItemLayer":
         """Get layer by its identifier"""
@@ -520,17 +529,18 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Args:
             timestamp: Updated timestamp provided by the timing source
         """
-        self._init_time_line_decorator(timestamp=timestamp)
-        self._init_relative_time_axis_start(timestamp=timestamp)
-        if timestamp >= self._last_timestamp:
-            self._last_timestamp = timestamp
-            self._cycle.update_cycle(timestamp=self._last_timestamp)
-            self._handle_fixed_x_range_update()
-            self._update_time_line_decorator(
-                timestamp=timestamp, position=self._calc_timeline_drawing_position()
-            )
-        self._update_children_items_timing()
-        self._draw_style_specific_objects()
+        if self._cycle:
+            self._init_time_line_decorator(timestamp=timestamp)
+            self._init_relative_time_axis_start(timestamp=timestamp)
+            if timestamp >= self._last_timestamp:
+                self._last_timestamp = timestamp
+                self._cycle.update_cycle(timestamp=self._last_timestamp)
+                self._handle_fixed_x_range_update()
+                self._update_time_line_decorator(
+                    timestamp=timestamp, position=self._calc_timeline_drawing_position()
+                )
+            self._update_children_items_timing()
+            self._draw_style_specific_objects()
 
     # ~~~~~~~~~~~~~~~~~~~~ Decorator Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -543,6 +553,9 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """
         if self._plot_config.time_progress_line and (force or self._last_timestamp == -1.0):
             label_opts = {"movable": True, "position": 0.96}
+            if self._time_line is not None:
+                self.removeItem(self._time_line)
+                self._time_line = None
             self._time_line = self.addLine(
                 timestamp,
                 pen=(pyqtgraph.mkPen(80, 80, 80)),
@@ -574,23 +587,23 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     def _config_contains_scrolling_style_with_fixed_range(self):
         """Configuration for a scrolling plot with a fixed x range. """
-        x_range = not np.isnan(self._plot_config.x_range_offset)
-        scrolling_plot = (
-            self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT
+        return(
+            self._plot_config.scrolling_plot_fixed_x_range
+            and not np.isnan(self._plot_config.scrolling_plot_fixed_x_range_offset)
+            and (self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT)
         )
-        return x_range and scrolling_plot
 
     def _handle_fixed_x_range_update(self) -> None:
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
         if self._config_contains_scrolling_style_with_fixed_range():
-            x_range_min: float = self._last_timestamp - self._plot_config.cycle_size + self._plot_config.x_range_offset
-            x_range_max: float = self._last_timestamp + self._plot_config.x_range_offset
+            x_range_min: float = self._last_timestamp - self._plot_config.cycle_size + self._plot_config.scrolling_plot_fixed_x_range_offset
+            x_range_max: float = self._last_timestamp + self._plot_config.scrolling_plot_fixed_x_range_offset
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
             self.getViewBox().setRange(xRange=x_range, padding=0.0)
 
-    def _update_bottom_axis_style(self, style: PlotWidgetStyle):
-        new_axis: PlottingCycle = self.create_fitting_axis_item(config_style=style)
-        if isinstance(new_axis, RelativeTimeAxisItem):
+    def _update_bottom_axis_style(self, style: int):
+        new_axis: pyqtgraph.AxisItem = self.create_fitting_axis_item(config_style=style, parent=self)
+        if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._cycle, SlidingPointerCycle):
             new_axis.set_start_time(self._cycle.start)
         new_axis.linkToView(self.vb)
         # Make the axis update its ticks
@@ -604,12 +617,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
         new_axis.setZValue(-1000)
         new_axis.setFlag(new_axis.ItemNegativeZStacksBehindParent)
 
-    def create_fitting_axis_item(self, config_style: PlotWidgetStyle) -> pyqtgraph.AxisItem:
+    def create_fitting_axis_item(self, config_style: int, **axis_kwargs) -> pyqtgraph.AxisItem:
         """Create an axis that fits the given plotting style
 
         Create instance of the axis associated to the given plotting style in
         STYLE_TO_AXIS_MAPPING. This axis-item can then be passed to the PlotItems
         constructor.
+
+        Args:
+            config_style: Plotting style the axis is created for
+            **axis_kwargs: Keyword arguments for pyqtgraph.AxisItem's constructor
 
         Returns:
             Instance of the fitting axis item
@@ -636,7 +653,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             except AttributeError:
                 pass
             cycle_kwargs["size"] = self._plot_config.cycle_size
-            cycle_kwargs["x_range_offset"] = self._plot_config.x_range_offset
+            cycle_kwargs["x_range_offset"] = self._plot_config.scrolling_plot_fixed_x_range
             return cycle(**cycle_kwargs)
         return None
 
@@ -665,6 +682,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """
         if (
             self._plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
+            and self._last_timestamp != -1
             and not self._style_specific_objects_already_drawn
         ):
             start = self.cycle.start
@@ -954,11 +972,11 @@ class PlotItemLayerCollection:
         if change_is_manual is not None:
             modified = list(self._forward_range_change_to_other_layers)
             modified[0] = change_is_manual
-            self._forward_range_change_to_other_layers = tuple(modified)
+            self._forward_range_change_to_other_layers = tuple(modified)  # type: ignore
         if mouse_event_valid is not None:
             modified = list(self._forward_range_change_to_other_layers)
             modified[1] = mouse_event_valid
-            self._forward_range_change_to_other_layers = tuple(modified)
+            self._forward_range_change_to_other_layers = tuple(modified)  # type: ignore
 
     def reset_range_change_forwarding(self) -> None:
         """Set the flag that forwards range changes to true"""
@@ -1105,8 +1123,9 @@ class ExViewBox(pyqtgraph.ViewBox):
         """
         if not kwargs.get("padding"):
             kwargs["padding"] = 0.0
-        # If we call this explicitly we do not care about prior set flags for range changes
-        self._layer_collection.reset_range_change_forwarding()
+        if self._layer_collection is not None:
+            # If we call this explicitly we do not care about prior set flags for range changes
+            self._layer_collection.reset_range_change_forwarding()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         self.setRange(**kwargs)
 
@@ -1168,7 +1187,7 @@ class ExViewBox(pyqtgraph.ViewBox):
     def map_bounding_rectangle_to_other_viewbox(
             viewbox_to_map_from: "ExViewBox",
             viewbox_to_map_to: "ExViewBox",
-            items: List[pyqtgraph.GraphicsItem]
+            items: Optional[List[pyqtgraph.GraphicsItem]]
     ) -> QRectF:
         """
         Map a viewbox bounding rectangle to the coordinates of an other one.

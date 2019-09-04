@@ -50,7 +50,8 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, cycle_size: float, should_c
         plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
         cycle_size=cycle_size,
         time_progress_line=True,
-        x_range_offset=0.0
+        scrolling_plot_fixed_x_range=True,
+        scrolling_plot_fixed_x_range_offset=0.0
     )
     window = PlotWidgetTestWindow(
         plot_config,

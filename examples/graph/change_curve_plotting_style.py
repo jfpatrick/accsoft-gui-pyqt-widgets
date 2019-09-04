@@ -89,14 +89,16 @@ class MainWindow(QMainWindow):
     def change_plot_config(self, *args):
         """Change the plot's configuration with the values from the inputs"""
         cycle_size = self.cycle_size_input.value()
-        offset = self.offset_input.value() if self.offset_checkbox.isChecked() else np.nan
+        fixed_range = self.offset_checkbox.isChecked()
+        offset = self.offset_input.value() if fixed_range else np.nan
         style = accgraph.PlotWidgetStyle.SLIDING_POINTER if self.style_combobox.currentText() == "Sliding" else accgraph.PlotWidgetStyle.SCROLLING_PLOT
         # Create new configuration object
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=style,
             time_progress_line=self.time_line_checkbox.isChecked(),
             cycle_size=cycle_size,
-            x_range_offset=offset
+            scrolling_plot_fixed_x_range=fixed_range,
+            scrolling_plot_fixed_x_range_offset=offset
         )
         # update plot with the new configuration
         self.plot.update_configuration(config=plot_config)
