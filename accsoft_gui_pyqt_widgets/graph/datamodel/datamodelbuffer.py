@@ -5,9 +5,12 @@ that are able to safe different types and amount of data
 
 import abc
 import math
-from typing import Optional, Tuple, Union
+import logging
 
-from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import *
+import numpy as np
+from typing import Optional, Tuple, List, Union
+
+from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import calc_intersection
 from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
 
 DEFAULT_BUFFER_SIZE: int = 100000
@@ -17,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
     """
-    Baseclass for different data buffers.
+    Base class for different data buffers.
 
     Buffer for multiple arrays with data of different types.
     The buffer is containing one array of primary values which
@@ -545,7 +548,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get Subset of the data
 
-        Additional to the baseclass it is possible to clip the curve at the
+        Additional to the base class it is possible to clip the curve at the
         start and end, so the curve fills the whole area. The subset then
         contains points that are calculated by intersecting the curve with
         the given boundaries and adding these points to the end of the curve.

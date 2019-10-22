@@ -1,7 +1,7 @@
 """Scrolling Bar Chart for live data plotting"""
 
 import sys
-from typing import Union, List
+from typing import Union, List, Type
 from copy import copy
 
 import numpy as np
@@ -29,7 +29,7 @@ plotting_style_to_class_mapping = {
 
 class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
 
-    """Baseclass for different live bar graph plots"""
+    """Base class for different live bar graph plots"""
 
     supported_plotting_styles: List[int] = list(plotting_style_to_class_mapping.keys())
 
@@ -40,7 +40,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraphitem_kwargs,
     ):
-        """ Constructor for the baseclass
+        """ Constructor for the base class
 
         Args:
             data_source: Data Source which the DataModel will be based on
@@ -107,7 +107,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
         kwargs = copy(object_to_create_from.opts)
         kwargs.update(bargraph_kwargs)
@@ -134,7 +134,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             plot_item: plot item the item should fit to
             data_source: source the item receives data from
             buffer_size: count of values the item's data model's buffer should hold at max
-            **bargraph_kwargs: keyword arguments for the items baseclass
+            **bargraph_kwargs: keyword arguments for the items base class
 
         Returns:
             the created item
@@ -145,7 +145,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
             data_source=data_source,
@@ -159,14 +159,14 @@ class ScrollingBarGraphItem(LiveBarGraphItem):
     """Bar Graph Item to display arriving live data"""
 
     def update_item(self) -> None:
-        """Update item based on the plot items cycle information"""
+        """Update item based on the plot items time span information"""
         if self._fixed_bar_width == -1:
             smallest_distance = self._data_model.get_smallest_distance_between_x_values()
             width = 0.9 * smallest_distance if smallest_distance != np.inf else 1.0
         else:
             width = self._fixed_bar_width
         curve_x, curve_y, height = self._data_model.get_subset(
-            start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
+            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
         )
         if curve_x.size == curve_y.size and curve_x.size > 0:
             self.setOpts(x=curve_x, y=curve_y, height=height, width=width)

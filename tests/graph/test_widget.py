@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 from datetime import datetime
-from typing import Union, List, Tuple, Dict, Type, Optional
+from typing import Union, List, Tuple, Dict, Type
 import itertools
 
 import pytest
@@ -59,7 +59,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: int) -> bool:
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize("cycle_size", [2, 100])
+@pytest.mark.parametrize("time_span", [2, 100])
 @pytest.mark.parametrize("plotting_style", [
     PlotWidgetStyle.SCROLLING_PLOT,
     PlotWidgetStyle.SLIDING_POINTER
@@ -73,7 +73,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: int) -> bool:
 ])
 def test_all_available_widget_configurations(
     qtbot,
-    cycle_size: int,
+    time_span: int,
     plotting_style: int,
     time_line: bool,
     item_to_add: Tuple[Type[DataModelBasedItem], str, Dict]
@@ -83,7 +83,7 @@ def test_all_available_widget_configurations(
 
     Args:
         qtbot:
-        cycle_size: cycle size to use
+        time_span: time span size to use
         plotting_style: plotting style to use
         time_line: should a line at the current timestamp be drawn
         item_to_add: Type of data-item to add and the key for getting the fitting opts
@@ -91,7 +91,7 @@ def test_all_available_widget_configurations(
     # pylint: disable=too-many-locals,protected-access
 
     plot_config = ExPlotWidgetConfig(
-        cycle_size=cycle_size,
+        time_span=time_span,
         plotting_style=plotting_style,
         time_progress_line=time_line,
     )
@@ -117,14 +117,13 @@ def test_all_available_widget_configurations(
     assert check_axis_strings(plot_item, plotting_style)
 
 
-_test_change_plot_config_on_running_plot_cycle_size_change = list(itertools.product([10.0, 30.0], [10.0, 30.0]))
+_test_change_plot_config_on_running_plot_time_span_change = list(itertools.product([10.0, 30.0], [10.0, 30.0]))
 _test_change_plot_config_on_running_plot_x_offset_change = list(itertools.product([-5.0, 0.0, 5.0], [-5.0, 0.0, 5.0]))
 _test_change_plot_config_on_running_plot_plotting_style_change = list(itertools.product(
     [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER],
     [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER]
 ))
 _test_change_plot_config_on_running_plot_time_line_change = list(itertools.product([True, False], [True, False]))
-_test_change_plot_config_on_running_plot_use_set_property = [True, False]
 _test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, float]]] = {
     "curve": {
         "symbol": "o",
@@ -142,49 +141,37 @@ _test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, fl
 }
 
 
-@pytest.mark.parametrize("cycle_size_change", _test_change_plot_config_on_running_plot_cycle_size_change)
+@pytest.mark.parametrize("time_span_change", _test_change_plot_config_on_running_plot_time_span_change)
 @pytest.mark.parametrize("x_offset_change", _test_change_plot_config_on_running_plot_x_offset_change)
 @pytest.mark.parametrize("plotting_style_change", _test_change_plot_config_on_running_plot_plotting_style_change)
 @pytest.mark.parametrize("time_line_change", _test_change_plot_config_on_running_plot_time_line_change)
-@pytest.mark.parametrize("use_set_property", _test_change_plot_config_on_running_plot_use_set_property)
 def test_change_plot_config_on_running_plot(
     qtbot,
-    cycle_size_change: List[float],
+    time_span_change: List[float],
     x_offset_change: List[float],
     plotting_style_change: List[int],
     time_line_change: List[bool],
-    use_set_property: List[bool]
 ):
     """Test if changes in the configuration are applied correctly in an already running plot"""
-    if not use_set_property:
-        plot_config_before_change = ExPlotWidgetConfig(
-            cycle_size=cycle_size_change[0],
-            plotting_style=plotting_style_change[0],
-            time_progress_line=time_line_change[0],
-            scrolling_plot_fixed_x_range=True,
-            scrolling_plot_fixed_x_range_offset=x_offset_change[0]
-        )
-        window = MinimalTestWindow(
-            plot_config=plot_config_before_change,
-        )
-    else:
-        # Create the widget in the same way it would be done when loading from a file
-        # created with Qt Designer
-        window = MinimalTestWindow()
-        window.plot.setProperty("xRangeCycleSize", cycle_size_change[0])
-        window.plot.setProperty("plottingStyle", plotting_style_change[0])
-        window.plot.setProperty("showTimeProgressLine", time_line_change[0])
-        window.plot.setProperty("scrollingPlotFixedXRange", True)
-        window.plot.setProperty("scrollingPlotFixedXRangeOffset", x_offset_change[0])
+    plot_config_before_change = ExPlotWidgetConfig(
+        time_span=time_span_change[0],
+        plotting_style=plotting_style_change[0],
+        time_progress_line=time_line_change[0],
+        scrolling_plot_fixed_x_range=True,
+        scrolling_plot_fixed_x_range_offset=x_offset_change[0]
+    )
+    window = MinimalTestWindow(
+        plot_config=plot_config_before_change,
+    )
     qtbot.waitForWindowShown(window)
     plotwidget: ExPlotWidget = window.plot
     ds_curve = MockDataSource()
     ds_bar = MockDataSource()
     ds_injection = MockDataSource()
     ds_line = MockDataSource()
-    plotwidget.addCurve(  # type: ignore
+    plotwidget.addCurve(
         data_source=ds_curve,
-        **_test_change_plot_config_on_running_plot_opts["curve"]
+        **_test_change_plot_config_on_running_plot_opts["curve"]  # type: ignore[arg-type]
     )
     emit_fitting_value(LivePlotCurve, ds_curve, 10.0, 0.0)
     emit_fitting_value(LivePlotCurve, ds_curve, 20.0, 0.0)
@@ -195,7 +182,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.addBarGraph(  # type: ignore
             data_source=ds_bar,
             layer_identifier="layer_1",
-            **_test_change_plot_config_on_running_plot_opts["bargraph"]
+            **_test_change_plot_config_on_running_plot_opts["bargraph"]  # type: ignore[arg-type]
         )
         emit_fitting_value(LiveBarGraphItem, ds_bar, 10.0, 0.0)
         emit_fitting_value(LiveBarGraphItem, ds_bar, 20.0, 0.0)
@@ -205,7 +192,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.addInjectionBar(  # type: ignore
             data_source=ds_injection,
             layer_identifier="layer_2",
-            **_test_change_plot_config_on_running_plot_opts["injectionbar"]
+            **_test_change_plot_config_on_running_plot_opts["injectionbar"]  # type: ignore[arg-type]
         )
         emit_fitting_value(LiveInjectionBarGraphItem, ds_injection, 10.0, 0.0)
         emit_fitting_value(LiveInjectionBarGraphItem, ds_injection, 20.0, 0.0)
@@ -216,34 +203,27 @@ def test_change_plot_config_on_running_plot(
         emit_fitting_value(LiveTimestampMarker, ds_line, 20.0, 0.0)
         emit_fitting_value(LiveTimestampMarker, ds_line, 30.0, 0.0)
     check_scrolling_plot_with_fixed_x_range(
-        cycle_size_change=cycle_size_change[0],
-        x_offset_change=x_offset_change[0],
+        time_span_change=time_span_change[0],
+        x_offset_change=x_offset_change[0] if plotting_style_change[0] == PlotWidgetStyle.SCROLLING_PLOT else 0,
         plotting_style_change=plotting_style_change[0],
         plotwidget=plotwidget,
     )
     check_decorators(plot_item=plotwidget.plotItem)
     items = [
         plotwidget.plotItem._time_line,
-        plotwidget.plotItem._cycle_start_boundary,
-        plotwidget.plotItem._cycle_end_boundary,
+        plotwidget.plotItem._time_span_start_boundary,
+        plotwidget.plotItem._time_span_end_boundary,
     ]
-    if not use_set_property:
-        plot_config_after_change = ExPlotWidgetConfig(
-            cycle_size=cycle_size_change[1],
-            plotting_style=plotting_style_change[1],
-            time_progress_line=time_line_change[1],
-            scrolling_plot_fixed_x_range=True,
-            scrolling_plot_fixed_x_range_offset=x_offset_change[1]
-        )
-        plotwidget.update_configuration(plot_config_after_change)
-    else:
-        window.plot.setProperty("xRangeCycleSize", cycle_size_change[1])
-        window.plot.setProperty("plottingStyle", plotting_style_change[1])
-        window.plot.setProperty("showTimeProgressLine", time_line_change[1])
-        window.plot.setProperty("scrollingPlotFixedXRange", True)
-        window.plot.setProperty("scrollingPlotFixedXRangeOffset", x_offset_change[1])
+    plot_config_after_change = ExPlotWidgetConfig(
+        time_span=time_span_change[1],
+        plotting_style=plotting_style_change[1],
+        time_progress_line=time_line_change[1],
+        scrolling_plot_fixed_x_range=True,
+        scrolling_plot_fixed_x_range_offset=x_offset_change[1]
+    )
+    plotwidget.update_configuration(plot_config_after_change)
     check_scrolling_plot_with_fixed_x_range(
-        cycle_size_change=cycle_size_change[1],
+        time_span_change=time_span_change[1],
         x_offset_change=x_offset_change[1],
         plotting_style_change=plotting_style_change[1],
         plotwidget=plotwidget,
@@ -303,7 +283,7 @@ def test_set_view_range(qtbot, plotting_style):
         expected = [[0.0, 3.0], [0.0, 3.0]]
     elif plotting_style == PlotWidgetStyle.SLIDING_POINTER:
         expected = [
-            [plot_item._cycle_start_boundary.pos()[0], plot_item._cycle_end_boundary.pos()[0]],
+            [plot_item._time_span_start_boundary.pos()[0], plot_item._time_span_end_boundary.pos()[0]],
             [0.0, 3.0]
         ]
     source.sig_data_update[PointData].emit(PointData(4.0, 4.0))
@@ -353,7 +333,7 @@ def test_static_items_config_change(qtbot, config_style_change):
 
 
 def check_scrolling_plot_with_fixed_x_range(
-    cycle_size_change: float,
+    time_span_change: float,
     x_offset_change: float,
     plotting_style_change: int,
     plotwidget: ExPlotWidget,
@@ -362,7 +342,7 @@ def check_scrolling_plot_with_fixed_x_range(
     if plotting_style_change == PlotWidgetStyle.SCROLLING_PLOT:
         for vb in plotwidget.plotItem.get_all_viewboxes():
             check_range(actual_range=vb.targetRange(), expected_range=[
-                [(30.0 + x_offset_change)-cycle_size_change, 30.0 + x_offset_change],
+                [(30.0 + x_offset_change) - time_span_change, 30.0 + x_offset_change],
                 [np.nan, np.nan]
             ])
 
@@ -382,7 +362,7 @@ def check_decorators(plot_item: ExPlotItem, prior_items: List = [None, None, Non
     """Check if all possible decorators are drawn correctly"""
     check_bottom_axis(plot_item=plot_item)
     check_time_line(plot_item=plot_item, prior_item=prior_items[0])
-    check_sliding_pointer_cycle_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
+    check_sliding_pointer_time_span_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
 
 
 def check_bottom_axis(plot_item: ExPlotItem):
@@ -406,17 +386,17 @@ def check_time_line(plot_item: ExPlotItem, prior_item: pg.InfiniteLine = None):
             assert prior_item not in plot_item.vb.addedItems
 
 
-def check_sliding_pointer_cycle_boundaries(plot_item: ExPlotItem, prior_items: List = []):
-    """Check if the cycle boundaries on a sliding pointer plot are set correctly"""
+def check_sliding_pointer_time_span_boundaries(plot_item: ExPlotItem, prior_items: List = []):
+    """Check if the time span boundaries on a sliding pointer plot are set correctly"""
     boundaries_drawn = plot_item.plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
     if boundaries_drawn:
-        assert (plot_item._cycle_start_boundary is not None and plot_item._cycle_end_boundary is not None)
-        assert plot_item._cycle_start_boundary in plot_item.items
-        assert plot_item._cycle_start_boundary in plot_item.vb.addedItems
-        assert plot_item._cycle_end_boundary  in plot_item.items
-        assert plot_item._cycle_end_boundary  in plot_item.vb.addedItems
+        assert (plot_item._time_span_start_boundary is not None and plot_item._time_span_end_boundary is not None)
+        assert plot_item._time_span_start_boundary in plot_item.items
+        assert plot_item._time_span_start_boundary in plot_item.vb.addedItems
+        assert plot_item._time_span_end_boundary  in plot_item.items
+        assert plot_item._time_span_end_boundary  in plot_item.vb.addedItems
     else:
-        assert (plot_item._cycle_start_boundary is None and plot_item._cycle_end_boundary is None)
+        assert (plot_item._time_span_start_boundary is None and plot_item._time_span_end_boundary is None)
         if prior_items:
             assert (prior_items[0] is None and prior_items[0] is None) or (prior_items[0] is not None and prior_items[0] is not None)
             for prior_item in prior_items:

@@ -101,8 +101,8 @@ class RelativeTimeAxisItem(AxisItem):
             spacing: See AxisItem Documentation
 
         Returns:
-            A list of Formatted strings that represents the distance in time
-            from the cycle start
+            A list of formatted strings that represents the distance in time
+            from the time span start
         """
         return [
             ("+" if (value - self.start) > 0 else "")

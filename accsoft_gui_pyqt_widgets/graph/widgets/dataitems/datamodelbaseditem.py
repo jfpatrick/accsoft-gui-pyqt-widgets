@@ -1,15 +1,15 @@
-"""Module with baseclasses for attaching pyqtgraph based items to a datamodel"""
+"""Module with base classes for attaching pyqtgraph based items to a datamodel"""
 
 import abc
 import logging
 from typing import List
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pyqtgraph as pg
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import BaseDataModel
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
@@ -18,9 +18,9 @@ _LOGGER = logging.getLogger(__name__)
 
 class DataModelBasedItem(metaclass=abc.ABCMeta):
 
-    """ Baseclass for data source / data model based graph items
+    """ Base class for data source / data model based graph items
 
-    Baseclass for attaching an pyqtgraph based item do a data source.
+    Base class for attaching an pyqtgraph based item do a data source.
     By subclassing this class and implementing the mandatory functions the
     item is attached to the data source and can react to changes in its data
     """
@@ -28,11 +28,11 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     def __init__(
         self,
         data_model: BaseDataModel,
-        parent_plot_item: 'ExPlotItem',
+        parent_plot_item: "ExPlotItem",
     ):
         self._data_model: BaseDataModel = data_model
         self._data_model.sig_model_has_changed.connect(self._data_model_change_handler)
-        self._parent_plot_item: 'ExPlotItem' = parent_plot_item
+        self._parent_plot_item: "ExPlotItem" = parent_plot_item
         self._layer_identifier: str = ""
 
     def _data_model_change_handler(self):
@@ -68,7 +68,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update_item(self) -> None:
-        """Update item based on the plot items cycle information"""
+        """Update item based on the plot items time span information"""
         pass
 
     def set_layer_information(self, layer_identifier: str) -> None:

@@ -39,7 +39,7 @@ from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
-from accsoft_gui_pyqt_widgets.graph.widgets.plotcycle import ScrollingPlotCycle, SlidingPointerCycle, PlottingCycle
+from accsoft_gui_pyqt_widgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, SlidingPointerTimeSpan, PlottingTimeSpan
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,11 +52,11 @@ _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pyqtgraph.AxisItem]] = {
 }
 
 
-# Mapping of plotting styles to a fitting cycle
-_STYLE_TO_CYCLE_MAPPING: Dict[int, Optional[Type[PlottingCycle]]] = {
+# Mapping of plotting styles to a fitting time span
+_STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[PlottingTimeSpan]]] = {
     PlotWidgetStyle.STATIC_PLOT: None,
-    PlotWidgetStyle.SLIDING_POINTER: SlidingPointerCycle,
-    PlotWidgetStyle.SCROLLING_PLOT: ScrollingPlotCycle,
+    PlotWidgetStyle.SLIDING_POINTER: SlidingPointerTimeSpan,
+    PlotWidgetStyle.SCROLLING_PLOT: ScrollingPlotTimeSpan,
 }
 
 
@@ -82,22 +82,34 @@ class ExPlotItem(pyqtgraph.PlotItem):
         if axis_items is None:
             axis_items = {}
         axis_items["left"] = CustomAxisItem(orientation="left")
-        axis_items["bottom"] = axis_items.get("bottom", self.create_fitting_axis_item(config_style=config.plotting_style))
+        axis_items["right"] = CustomAxisItem(orientation="right")
+        axis_items["bottom"] = axis_items.get(
+            "bottom", self.create_fitting_axis_item(
+                config_style=config.plotting_style,
+                orientation="bottom"
+            )
+        )
+        axis_items["top"] = axis_items.get(
+            "top", self.create_fitting_axis_item(
+                config_style=config.plotting_style,
+                orientation="top"
+            )
+        )
         super().__init__(
             axisItems=axis_items,
             viewBox=ExViewBox(),
             **plotitem_kwargs
         )
         self._plot_config: ExPlotWidgetConfig = config
-        self._cycle: Optional[PlottingCycle] = self.create_fitting_cycle()
+        self._time_span: Optional[PlottingTimeSpan] = self.create_fitting_time_span()
         self._last_timestamp: float = -1.0
         self._time_line: Optional[pyqtgraph.InfiniteLine] = None
         self._style_specific_objects_already_drawn: bool = False
         self._layers: PlotItemLayerCollection
         self._timing_source_attached: bool
         # Needed for the Sliding Pointer Curve
-        self._cycle_start_boundary: Optional[pyqtgraph.InfiniteLine] = None
-        self._cycle_end_boundary: Optional[pyqtgraph.InfiniteLine] = None
+        self._time_span_start_boundary: Optional[pyqtgraph.InfiniteLine] = None
+        self._time_span_end_boundary: Optional[pyqtgraph.InfiniteLine] = None
         self._prepare_layers()
         self._prepare_timing_source_attachment(timing_source)
         self._prepare_scrolling_plot_fixed_scrolling_range()
@@ -158,16 +170,16 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """
         if hasattr(self, "_plot_config") and self._plot_config is not None:
             if (
-                self._plot_config.cycle_size != config.cycle_size
+                self._plot_config.time_span != config.time_span
                 or self._plot_config.scrolling_plot_fixed_x_range_offset != config.scrolling_plot_fixed_x_range_offset
                 or self._plot_config.plotting_style != config.plotting_style
             ):
                 self._plot_config = config
                 self._remove_child_items_affected_from_style_change()
                 self._recreate_child_items_with_new_config()
-                self._cycle = self.create_fitting_cycle()
+                self._time_span = self.create_fitting_time_span()
                 self._update_decorators()
-                self._update_bottom_axis_style(style=config.plotting_style)
+                self._update_bottom_and_top_axis_style(style=config.plotting_style)
             elif self.plot_config.time_progress_line != config.time_progress_line:
                 self._plot_config = config
                 if config.time_progress_line:
@@ -185,20 +197,20 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Remove all items attached to live data that depend on the plot item's PlottingStyle.
         Items in the plot that are not based on a datamodel and with that not attached to live
         data won't be removed (especially pure PyQtGraph items).
-        Additionally all plotting style specific elements like cycle boundaries or timing lines
+        Additionally all plotting style specific elements like time span boundaries or timing lines
         are removed.
         """
         for layer, item in product(self._layers.get_all(), self.get_all_data_model_based_items()):
             if item.get_layer_identifier() == layer.identifier:
                 layer.view_box.removeItem(item)
         self.removeItem(self._time_line)
-        if self._cycle is not None:
-            for item in [self._cycle_start_boundary, self._cycle_end_boundary]:
+        if self._time_span is not None:
+            for item in [self._time_span_start_boundary, self._time_span_end_boundary]:
                 if item is not None:
                     self.removeItem(item)
         self._time_line = None
-        self._cycle_start_boundary = None
-        self._cycle_end_boundary = None
+        self._time_span_start_boundary = None
+        self._time_span_end_boundary = None
 
     def _recreate_child_items_with_new_config(self):
         """
@@ -217,7 +229,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 self.removeItem(item)
 
     def _update_decorators(self) -> None:
-        """Update the decorators f.e. line representing current timestamp, cycle boundaries"""
+        """Update the decorators f.e. line representing current timestamp, time span boundaries"""
         if self._last_timestamp:
             self._style_specific_objects_already_drawn = False
             self._draw_style_specific_objects()
@@ -226,13 +238,13 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     @property
     def plot_config(self) -> ExPlotWidgetConfig:
-        """Configuration of cycle sizes and other"""
+        """Configuration of time span and other plot related parameters"""
         return self._plot_config
 
     @property
-    def cycle(self):
-        """Cycle for the current plot"""
-        return self._cycle
+    def time_span(self):
+        """time span for the current plot"""
+        return self._time_span
 
     def plot(
         self,
@@ -253,7 +265,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             params   - meta-parameters to associate with this data
         """
         _LOGGER.warning("PlotItem.plot should not be used for plotting curves with the ExPlotItem, "
-                     "please use ExPlotItem.addCurve for this purpose.")
+                        "please use ExPlotItem.addCurve for this purpose.")
         pyqtgraph.PlotItem.plot(*args, clear=clear, params=params)
 
     def addCurve(
@@ -285,7 +297,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
         if c and isinstance(c, pyqtgraph.PlotDataItem):
             _LOGGER.warning("Calling addCurve() for adding an already created PlotDataItem is deprecated, "
                             "please use addItem() for this purpose.")
-            self.addItem(c, params)
+            params = params or {}
+            self.addItem(c, **params)
             return c
         # Create new curve and add it
         else:
@@ -334,9 +347,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 **bargraph_kwargs,
             )
         else:
-             new_plot = pyqtgraph.BarGraphItem(
-                **bargraph_kwargs,
-            )
+            new_plot = pyqtgraph.BarGraphItem(**bargraph_kwargs)
         if not layer_identifier:
             layer_identifier = ""
         self.addItem(layer=layer_identifier, item=new_plot)
@@ -388,7 +399,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Args:
             data_source (UpdateSource): Source for data related updates,
             buffer_size: maximum count of values the datamodel buffer should hold
-            *graphicsobjectargs: Arguments passed to the GraphicsObject baseclass
+            *graphicsobjectargs: Arguments passed to the GraphicsObject base class
 
         Returns:
             New item that was created
@@ -407,8 +418,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
     def add_layer(
         self,
         identifier: str,
-        axis_kwargs: Dict[str, Any] = {},
-        axis_label_kwargs: Dict[str, Any] = {},
+        axis_kwargs: Dict[str, Any] = None,
+        axis_label_kwargs: Dict[str, Any] = None,
     ) -> "PlotItemLayer":
         """add a new layer to the plot for plotting a curve in a different range
 
@@ -420,8 +431,12 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Returns:
             New created layer instance
         """
+        if axis_kwargs is None:
+            axis_kwargs = {}
+        if axis_label_kwargs is None:
+            axis_label_kwargs = {}
         new_view_box = ExViewBox()
-        new_y_axis = CustomAxisItem("right", **axis_kwargs)
+        new_y_axis = CustomAxisItem("right", parent=self, **axis_kwargs)
         new_y_axis.setZValue(len(self._layers))
         new_layer = PlotItemLayer(
             plot_item=self,
@@ -452,7 +467,6 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Returns:
             True if the layer existed and was removed
         """
-
         if isinstance(layer, str) and layer != "":
             layer = self._layers.get(layer)
         if not isinstance(layer, PlotItemLayer):
@@ -461,7 +475,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 f"or the given identifier does not exist."
             )
         self.layout.removeItem(layer.axis_item)
+        layer.axis_item.deleteLater()
+        layer.axis_item.setParentItem(None)
         self.scene().removeItem(layer.view_box)
+        layer.view_box.setParentItem(None)
         return self._layers.remove(layer=layer)
 
     def addItem(
@@ -514,6 +531,13 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """Get all layers added to this plotlayer"""
         return self._layers.get_all()
 
+    def get_all_non_standard_layers(self) -> List["PlotItemLayer"]:
+        """
+        Get all layers added to this plotlayer except of the
+        layer containing the standard PlotItem ViewBox
+        """
+        return self._layers.get_all_except_default()
+
     def link_y_range_of_all_layers(self, link: bool = True) -> None:
         """Link y ranges of all layers's y axis"""
         self._layers.link_y_range_of_all_layers(link)
@@ -529,12 +553,12 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Args:
             timestamp: Updated timestamp provided by the timing source
         """
-        if self._cycle:
+        if self._time_span:
             self._init_time_line_decorator(timestamp=timestamp)
             self._init_relative_time_axis_start(timestamp=timestamp)
             if timestamp >= self._last_timestamp:
                 self._last_timestamp = timestamp
-                self._cycle.update_cycle(timestamp=self._last_timestamp)
+                self._time_span.update_time_span(timestamp=self._last_timestamp)
                 self._handle_fixed_x_range_update()
                 self._update_time_line_decorator(
                     timestamp=timestamp, position=self._calc_timeline_drawing_position()
@@ -596,28 +620,53 @@ class ExPlotItem(pyqtgraph.PlotItem):
     def _handle_fixed_x_range_update(self) -> None:
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
         if self._config_contains_scrolling_style_with_fixed_range():
-            x_range_min: float = self._last_timestamp - self._plot_config.cycle_size + self._plot_config.scrolling_plot_fixed_x_range_offset
+            x_range_min: float = self._last_timestamp - self._plot_config.time_span + self._plot_config.scrolling_plot_fixed_x_range_offset
             x_range_max: float = self._last_timestamp + self._plot_config.scrolling_plot_fixed_x_range_offset
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
             self.getViewBox().setRange(xRange=x_range, padding=0.0)
 
-    def _update_bottom_axis_style(self, style: int):
-        new_axis: pyqtgraph.AxisItem = self.create_fitting_axis_item(config_style=style, parent=self)
-        if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._cycle, SlidingPointerCycle):
-            new_axis.set_start_time(self._cycle.start)
-        new_axis.linkToView(self.vb)
-        # Make the axis update its ticks
-        new_axis.linkedViewChanged(view=self.vb)
-        old_axis = self.getAxis("bottom")
-        self.layout.removeItem(old_axis)
-        old_axis.deleteLater()
-        del old_axis
-        self.axes["bottom"] = {"item": new_axis, "pos": (3, 1)}
-        self.layout.addItem(new_axis, 3, 1)
-        new_axis.setZValue(-1000)
-        new_axis.setFlag(new_axis.ItemNegativeZStacksBehindParent)
+    def _update_bottom_and_top_axis_style(self, style: int):
+        """
+        Remove the old top and bottom axes and replace them with ones fitting to
+        the passed plotting style.
 
-    def create_fitting_axis_item(self, config_style: int, **axis_kwargs) -> pyqtgraph.AxisItem:
+        Args:
+            style: plotting style the new axes should fit to.
+        """
+        for pos in ["bottom", "top"]:
+            new_axis: pyqtgraph.AxisItem = self.create_fitting_axis_item(
+                config_style=style, orientation=pos, parent=self
+            )
+            if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._time_span, SlidingPointerTimeSpan):
+                new_axis.set_start_time(self._time_span.start)
+            new_axis.linkToView(self.vb)
+            # Make the axis update its ticks
+            new_axis.linkedViewChanged(view=self.vb)
+            old_axis = self.getAxis(pos)
+            visible = old_axis.isVisible()
+            self.layout.removeItem(old_axis)
+            # Remove ownership for the old axis
+            old_axis.setParentItem(parent=None)
+            old_axis.deleteLater()
+            del old_axis
+            row = 3 if pos == "bottom" else 1
+            self.axes[pos] = {"item": new_axis, "pos": (row, 1)}
+            self.layout.addItem(new_axis, row, 1)
+            new_axis.setZValue(-1000)
+            new_axis.setFlag(new_axis.ItemNegativeZStacksBehindParent)
+            # Transfer grid settings to the new axis
+            if self.ctrl.xGridCheck.isChecked():
+                self.updateGrid()
+            # Hide new axis if old one was
+            if not visible:
+                new_axis.hide()
+
+    def create_fitting_axis_item(
+            self,
+            config_style: int,
+            orientation: str = "bottom",
+            parent: Optional["ExPlotItem"] = None
+    ) -> pyqtgraph.AxisItem:
         """Create an axis that fits the given plotting style
 
         Create instance of the axis associated to the given plotting style in
@@ -626,7 +675,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
         Args:
             config_style: Plotting style the axis is created for
-            **axis_kwargs: Keyword arguments for pyqtgraph.AxisItem's constructor
+            orientation: orientation of the axis
+            parent: parent item passed to the axis
 
         Returns:
             Instance of the fitting axis item
@@ -634,27 +684,28 @@ class ExPlotItem(pyqtgraph.PlotItem):
         for style, axis in _STYLE_TO_AXIS_MAPPING.items():
             if config_style != style:
                 continue
-            return axis(orientation="bottom")
-        return CustomAxisItem(orientation="bottom", parent=self)
+            return axis(orientation=orientation, parent=parent)
+        return CustomAxisItem(orientation=orientation, parent=self)
 
-    def create_fitting_cycle(self) -> Optional[PlottingCycle]:
-        """Create a cycle object fitting to the passed config style.
+    def create_fitting_time_span(self) -> Optional[PlottingTimeSpan]:
+        """Create a time span object fitting to the passed config style.
 
-        Parameters like the cycle start are (if possible) taken from the old cycle.
+        Parameters like the time span start are (if possible) taken from the old time span.
         Other parameters are taken from the
         """
-        for style, cycle in _STYLE_TO_CYCLE_MAPPING.items():
+        for style, time_span in _STYLE_TO_TIMESPAN_MAPPING.items():
             if self._plot_config.plotting_style != style:
                 continue
-            cycle_kwargs = {}
+            time_span_kwargs = {}
             try:
-                if self._cycle is not None and self._cycle.start != 0:
-                    cycle_kwargs["start"] = self._cycle.start
+                if self._time_span is not None and self._time_span.start != 0:
+                    time_span_kwargs["start"] = self._time_span.start
             except AttributeError:
                 pass
-            cycle_kwargs["size"] = self._plot_config.cycle_size
-            cycle_kwargs["x_range_offset"] = self._plot_config.scrolling_plot_fixed_x_range
-            return cycle(**cycle_kwargs)
+            time_span_kwargs["size"] = self._plot_config.time_span
+            time_span_kwargs["x_range_offset"] = self._plot_config.scrolling_plot_fixed_x_range
+            if time_span:
+                return time_span(**time_span_kwargs)
         return None
 
     def _calc_timeline_drawing_position(self) -> float:
@@ -669,13 +720,13 @@ class ExPlotItem(pyqtgraph.PlotItem):
             position the timeline should be drawn at
         """
         if self._plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER:
-            return self.cycle.get_current_time_line_x_pos(self._last_timestamp)
+            return self.time_span.get_current_time_line_x_pos(self._last_timestamp)
         return self._last_timestamp
 
     def _draw_style_specific_objects(self) -> None:
         """Draw objects f.e. lines that are part of a specific plotting style
 
-        - **Sliding Pointer**: Line at the cycle start and end
+        - **Sliding Pointer**: Line at the time span start and end
 
         Returns:
             None
@@ -685,12 +736,12 @@ class ExPlotItem(pyqtgraph.PlotItem):
             and self._last_timestamp != -1
             and not self._style_specific_objects_already_drawn
         ):
-            start = self.cycle.start
-            end = start + self._plot_config.cycle_size
-            self._cycle_start_boundary = self.addLine(
+            start = self.time_span.start
+            end = start + self._plot_config.time_span
+            self._time_span_start_boundary = self.addLine(
                 x=start, pen=pyqtgraph.mkPen(128, 128, 128)
             )
-            self._cycle_end_boundary = self.addLine(
+            self._time_span_end_boundary = self.addLine(
                 x=end, pen=pyqtgraph.mkPen(128, 128, 128)
             )
             self._style_specific_objects_already_drawn = True
@@ -708,9 +759,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
             timestamp: timestamp to set the start time of the axis to
         """
         if self._last_timestamp == -1.0:
-            axis = self.getAxis("bottom")
-            if isinstance(axis, RelativeTimeAxisItem):
-                axis.set_start_time(timestamp)
+            for pos in ["bottom", "top"]:
+                axis = self.getAxis(pos)
+                if isinstance(axis, RelativeTimeAxisItem):
+                    axis.set_start_time(timestamp)
 
     def get_last_time_stamp(self) -> float:
         """ Get the latest known timestamp """
@@ -766,8 +818,17 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """Get a list of all ViewBoxes included in the Layer collection"""
         return self._layers.get_view_boxes()
 
-    def handle_single_curve_value_slot(self, data):
-        """Handle arriving data"""
+    def handle_add_data_to_single_curve(self, data):
+        """
+        This slot exposes the possibility to draw data on a
+        single curve in the plot. If this curve does not yet exist,
+        it will be created automatically . The data will be collected by
+        the curve and drawn. Further calls with other data will append it
+        to the existing one.
+
+        This slot will accept single integer and float values
+        and draw them at the timestamp of their arrival.
+        """
         if self.single_curve_value_slot_source is None:
             self.single_curve_value_slot_source = UpdateSource()
         if self.single_curve_value_slot_curve is None:
@@ -849,6 +910,12 @@ class PlotItemLayerCollection:
     def get_all(self) -> List[PlotItemLayer]:
         """Return a list of all layers"""
         return list(self._layers.values())
+
+    def get_all_except_default(self) -> List[PlotItemLayer]:
+        """Return a list of all layers except the default one"""
+        layers = self.get_all()
+        layers.remove(self.get(identifier=PlotItemLayer.default_layer_identifier))
+        return layers
 
     def add(self, layer: PlotItemLayer) -> None:
         """Add new layer to the collection. A key error is raised if an layer is already
@@ -1100,7 +1167,7 @@ class ExViewBox(pyqtgraph.ViewBox):
         """Create a new view box
 
         Args:
-            **viewbox_kwargs: Keyword arguments for the baseclass ViewBox
+            **viewbox_kwargs: Keyword arguments for the base class ViewBox
         """
         super().__init__(**viewbox_kwargs)
         self._layer_collection: Optional[PlotItemLayerCollection] = None

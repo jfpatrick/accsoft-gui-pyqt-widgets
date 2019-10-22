@@ -92,7 +92,7 @@ def test_plot_before_first_timing_update(qtbot):
 #    current time at the vertical line representing the current time
 # 2. Clipping of the old curve at the line representing the current
 #    time
-# 3. Clipping of the new and old curve at the cycle end
+# 3. Clipping of the new and old curve at the time span end
 # ================================================================
 
 
@@ -187,12 +187,12 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     )
 
 
-def test_clipping_points_ranging_into_next_cycle(qtbot):
+def test_clipping_points_ranging_into_next_time_span(qtbot):
     """Test connection between old and new curve
 
-    1. Points in front and after cycle end
+    1. Points in front and after time span end
 
-    2. Last point in curve is exactly on the cycle end
+    2. Last point in curve is exactly on the time span end
 
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
@@ -793,7 +793,7 @@ def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, floa
 
 def _prepare_sliding_pointer_plot_test_window(
         qtbot,
-        cycle_size: float,
+        time_span: float,
         should_create_timing_source: bool = True
 ) -> PlotWidgetTestWindow:
     """
@@ -802,11 +802,11 @@ def _prepare_sliding_pointer_plot_test_window(
 
     Args:
         qtbot: qtbot pytest fixture
-        cycle_size (int): cycle size, how much data should be shown
+        time_span (int): time span size, how much data should be shown
     """
     plot_config = ExPlotWidgetConfig(
         plotting_style=PlotWidgetStyle.SLIDING_POINTER,
-        cycle_size=cycle_size,
+        time_span=time_span,
         time_progress_line=True,
     )
     window = PlotWidgetTestWindow(plot_config, item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
@@ -818,7 +818,7 @@ def _prepare_sliding_pointer_plot_test_window(
 def _prepare_minimal_test_window(
         qtbot,
         plotting_style: int = PlotWidgetStyle.SCROLLING_PLOT,
-        cycle_size: Optional[float] = None,
+        time_span: Optional[float] = None,
         time_progress_line: Optional[bool] = None,
 ) -> PlotWidgetTestWindow:
     """
@@ -827,11 +827,11 @@ def _prepare_minimal_test_window(
 
     Args:
         qtbot: qtbot pytest fixture
-        cycle_size (int): cycle size, how much data should be shown
+        time_span (int): time span size, how much data should be shown
     """
     plot_config = ExPlotWidgetConfig(
         plotting_style=plotting_style,
-        cycle_size=cycle_size or 10,
+        time_span=time_span or 10,
         time_progress_line=time_progress_line or False,
     )
     window = MinimalTestWindow(plot_config)

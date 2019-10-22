@@ -173,13 +173,13 @@ def test_layers_with_new_plotting_style(qtbot):
         data_source=data_source_mock,
     )
     window.time_source_mock.create_new_value(0.0)
-    # Default layer already has elements in it (line at cycle start, cycle end, line for current time)
+    # Default layer already has elements in it (line at time span start, time span end, line for current time)
     empty_default_layer_items_count = len(default_layer_items)
     for item in default_layer_items:
         assert item in (
             plot_item._time_line,
-            plot_item._cycle_start_boundary,
-            plot_item._cycle_end_boundary,
+            plot_item._time_span_start_boundary,
+            plot_item._time_span_end_boundary,
         )
     # Create new data and timing updates
     data_source_mock.create_new_value(timestamp=0.2, value=1.0)
@@ -338,15 +338,15 @@ def manual_range_change(layer: PlotItemLayer, **kwargs):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def _prepare_sliding_pointer_plot_test_window(qtbot, cycle_size: int):
+def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: int):
     """ Create a simple test window
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
-        cycle_size (int): Cycle size for the PlotItem
+        time_span (int): time span size for the PlotItem
     """
     plot_config = ExPlotWidgetConfig(
         plotting_style=PlotWidgetStyle.SLIDING_POINTER,
-        cycle_size=cycle_size,
+        time_span=time_span,
         time_progress_line=True,
     )
     window = PlotWidgetTestWindow(plot_config)

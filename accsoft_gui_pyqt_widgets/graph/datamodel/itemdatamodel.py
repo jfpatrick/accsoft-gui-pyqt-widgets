@@ -33,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class BaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     """
-    Baseclass for different data models
+    Base class for different data models
     """
 
     # Signal  that is sent as soon as any data has changed

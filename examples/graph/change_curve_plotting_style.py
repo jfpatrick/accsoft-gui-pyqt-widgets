@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__()
-        self.cycle_size = 10.0
+        self.time_span = 10.0
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=20, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
         )
@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SLIDING_POINTER,
             time_progress_line=False,
-            cycle_size=self.cycle_size,
+            time_span=self.time_span,
         )
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         self.plot.addCurve(data_source=data_source_1)
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         main_container.setLayout(main_layout)
         # Connect for changes
         self.style_combobox.currentTextChanged.connect(self.change_plot_config)
-        self.cycle_size_input.valueChanged.connect(self.change_plot_config)
+        self.time_span_input.valueChanged.connect(self.change_plot_config)
         self.offset_input.valueChanged.connect(self.change_plot_config)
         self.offset_checkbox.stateChanged.connect(self.change_plot_config)
         self.time_line_checkbox.stateChanged.connect(self.change_plot_config)
@@ -61,15 +61,15 @@ class MainWindow(QMainWindow):
         self.style_combobox.addItems(["Sliding", "Scrolling"])
         main_layout.addWidget(self.style_combobox)
         main_layout.addWidget(label_1)
-        # Cycle Size Input
-        self.cycle_size_input = QSpinBox()
-        self.cycle_size_input.setValue(self.cycle_size)
-        self.cycle_size_input.setRange(1, 100)
-        label_2 = QLabel("s Cycle")
-        main_layout.addWidget(self.cycle_size_input)
+        # time span Size Input
+        self.time_span_input = QSpinBox()
+        self.time_span_input.setValue(self.time_span)
+        self.time_span_input.setRange(1, 100)
+        label_2 = QLabel("s Time Span")
+        main_layout.addWidget(self.time_span_input)
         main_layout.addWidget(label_2)
         main_container.setLayout(main_layout)
-        # Cycle Offset Input
+        # time span Offset Input
         self.offset_input = QSpinBox()
         self.offset_checkbox = QCheckBox()
         self.time_line_checkbox = QCheckBox()
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
 
     def change_plot_config(self, *args):
         """Change the plot's configuration with the values from the inputs"""
-        cycle_size = self.cycle_size_input.value()
+        time_span = self.time_span_input.value()
         fixed_range = self.offset_checkbox.isChecked()
         offset = self.offset_input.value() if fixed_range else np.nan
         style = accgraph.PlotWidgetStyle.SLIDING_POINTER if self.style_combobox.currentText() == "Sliding" else accgraph.PlotWidgetStyle.SCROLLING_PLOT
@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=style,
             time_progress_line=self.time_line_checkbox.isChecked(),
-            cycle_size=cycle_size,
+            time_span=time_span,
             scrolling_plot_fixed_x_range=fixed_range,
             scrolling_plot_fixed_x_range_offset=offset
         )

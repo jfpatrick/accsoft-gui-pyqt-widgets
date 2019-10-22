@@ -81,6 +81,7 @@ class MinimalTestWindow(QMainWindow):
     def __init__(
         self,
         plot_config: Optional[ExPlotWidgetConfig] = None,
+        plot_widget: Optional[ExPlotWidget] = None,
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
 
@@ -88,8 +89,14 @@ class MinimalTestWindow(QMainWindow):
             plot_config (ExtendedPlotWidgetConfig): Configuration for the created plot widget
         """
         super().__init__()
-        self.plot_config: ExPlotWidgetConfig = plot_config or ExPlotWidgetConfig()
-        self.plot: ExPlotWidget = ExPlotWidget(config=plot_config)
+        self.plot_config: ExPlotWidgetConfig
+        self.plot: ExPlotWidget
+        if plot_widget:
+            self.plot = plot_widget
+            self.plot_config = plot_widget._config
+        else:
+            self.plot_config = plot_config or ExPlotWidgetConfig()
+            self.plot = ExPlotWidget(config=plot_config)
         self.resize(800, 600)
         main_container = QWidget()
         self.setCentralWidget(main_container)

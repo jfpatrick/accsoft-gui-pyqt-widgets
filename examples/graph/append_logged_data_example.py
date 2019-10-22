@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         data_source_1 = example_sources.LoggingCurveDataSource(updates_per_second=60)
         plot_config = accgraph.ExPlotWidgetConfig(
-            cycle_size=25,
+            time_span=25,
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
             scrolling_plot_fixed_x_range=True,
