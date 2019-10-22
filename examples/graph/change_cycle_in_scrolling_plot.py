@@ -1,12 +1,10 @@
 """
-Example of changing the cycle size and offset in a running realtime-plot
+Example of changing the timeSpan size and offset in a running realtime-plot
 """
 
 import sys
-import time
 
-from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QComboBox, QSpinBox, QLabel
-from qtpy.QtCore import QTimer
+from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QSpinBox, QLabel
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
 import example_sources
@@ -19,7 +17,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__()
-        cycle_size = 10.0
+        time_span = 10.0
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=20, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
         )
@@ -35,7 +33,7 @@ class MainWindow(QMainWindow):
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
-            cycle_size=cycle_size,
+            time_span=time_span,
             scrolling_plot_fixed_x_range=True,
             scrolling_plot_fixed_x_range_offset=0.0
         )
@@ -53,15 +51,15 @@ class MainWindow(QMainWindow):
         main_layout = QGridLayout()
         main_layout.addWidget(self.plot, 0, 0, 1, 4)
         self.plot.plotItem.enableAutoRange()
-        # Cycle Size Input
-        self.cycle_size_input = QSpinBox()
-        self.cycle_size_input.setValue(cycle_size)
-        self.cycle_size_input.setRange(1, 100)
-        label_2 = QLabel("s Cycle")
-        main_layout.addWidget(self.cycle_size_input)
+        # time span input
+        self.time_span_input = QSpinBox()
+        self.time_span_input.setValue(time_span)
+        self.time_span_input.setRange(1, 100)
+        label_2 = QLabel("s Time Span")
+        main_layout.addWidget(self.time_span_input)
         main_layout.addWidget(label_2)
         main_container.setLayout(main_layout)
-        # Cycle Offset Input
+        # time span offset input
         self.offset_input = QSpinBox()
         self.offset_input.setRange(-10.0, 10.0)
         self.offset_input.setValue(0.0)
@@ -70,17 +68,17 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(label_3)
         main_container.setLayout(main_layout)
         # Connect for changes
-        self.cycle_size_input.valueChanged.connect(self.change_plot_config)
+        self.time_span_input.valueChanged.connect(self.change_plot_config)
         self.offset_input.valueChanged.connect(self.change_plot_config)
 
-
     def change_plot_config(self, *args):
-        cycle_size = self.cycle_size_input.value()
+        """Change plot configuration depending on the input"""
+        time_span = self.time_span_input.value()
         offset = self.offset_input.value()
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
-            cycle_size=cycle_size,
+            time_span=time_span,
             scrolling_plot_fixed_x_range=True,
             scrolling_plot_fixed_x_range_offset=offset
         )

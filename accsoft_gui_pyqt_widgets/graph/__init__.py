@@ -11,6 +11,6 @@ from .widgets.dataitems.timestampmarker import *
 from .widgets.dataitems.injectionbaritem import *
 from .widgets.dataitems.plotdataitem import *
 from .widgets.plotconfiguration import *
-from .widgets.plotcycle import *
+from .widgets.plottimespan import *
 from .widgets.plotitem import *
 from .widgets.plotwidget import *

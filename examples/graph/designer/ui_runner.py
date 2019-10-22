@@ -7,6 +7,7 @@ not added in Designer but by hand after loading the UI file.
 """
 
 import sys
+import os
 import random
 from datetime import datetime
 
@@ -21,31 +22,25 @@ class Ui(
     def __init__(self):
         super(Ui, self).__init__()
         # References to the plots from the ui file with typing info for auto completion
-        self.widget_1: accgraph.ExPlotWidget
-        self.widget_2: accgraph.ExPlotWidget
-        self.widget_3: accgraph.ExPlotWidget
+        self.static_plot: accgraph.StaticPlotWidget
+        self.scrolling_plot: accgraph.ScrollingPlotWidget
+        self.sliding_plot: accgraph.SlidingPlotWidget
         # Load UI file with given name
-        uic.loadUi('plot.ui', self)
+        file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "plot.ui")
+        uic.loadUi(file_path, self)
         # Create items to add to the plots
-        item = accgraph.LivePlotCurve.create(plot_item=self.widget_1.plotItem, data_source=RandomDataSource(50))
-        item_2 = accgraph.LivePlotCurve.create(plot_item=self.widget_2.plotItem, data_source=RandomDataSource(1000))
-        item_3 = accgraph.LivePlotCurve.create(plot_item=self.widget_2.plotItem, data_source=RandomDataSource(500))
-        item_4 = pyqtgraph.BarGraphItem(x=[0.0, 1.0, 2.0, 3.0], height=[1.0, 0.5, -0.5, 1.0], width=0.75)
-        item_5 = pyqtgraph.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
-        # Add layers
-        self.widget_2.plotItem.add_layer(identifier="2.1")
-        self.widget_3.plotItem.add_layer(identifier="3.1")
+        sliding_item = accgraph.LivePlotCurve.create(plot_item=self.sliding_plot.plotItem, data_source=RandomDataSource(500))
+        scrolling_item_1 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(1000))
+        scrolling_item_2 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(500))
+        static_item_1 = pyqtgraph.BarGraphItem(x=[0.0, 1.0, 2.0, 3.0], height=[1.0, 0.5, -0.5, 1.0], width=0.75)
+        static_item_2 = pyqtgraph.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
         # Add items
-        self.widget_1.plotItem.addItem(item)
-        self.widget_2.plotItem.addItem(item_2)
-        self.widget_2.plotItem.addItem(item_3, layer="2.1")
-        self.widget_3.plotItem.addItem(item_4, layer="3.1")
-        self.widget_3.plotItem.addItem(item_5)
+        self.static_plot.plotItem.addItem(static_item_1)
+        self.static_plot.plotItem.addItem(static_item_2, layer="layer_0")
+        self.scrolling_plot.plotItem.addItem(scrolling_item_1)
+        self.scrolling_plot.plotItem.addItem(scrolling_item_2, layer="layer_0")
+        self.sliding_plot.plotItem.addItem(sliding_item)
         # Set ranges for the plots
-        self.widget_1.plotItem.vb.setYRange(0.0, 11.0)
-        self.widget_2.plotItem.vb.setYRange(-10, 10)
-        self.widget_2.plotItem.get_layer_by_identifier(layer_identifier="2.1").view_box.setYRange(0.0, 20.0)
-        self.widget_3.plotItem.vb.setYRange(-1.0, 5.0)
         self.show()
 
 

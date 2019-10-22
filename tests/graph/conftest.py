@@ -20,6 +20,6 @@ def warn_always():
     After the test is done, the warning filters will be reset, so filters
     are not carried over into other tests.
     """
-    warnings.simplefilter('always', accgraph.InvalidDataStructureWarning)
+    warnings.simplefilter("always", accgraph.InvalidDataStructureWarning)
     yield  # Run actual test
     warnings.resetwarnings()

@@ -1,7 +1,7 @@
 """Scrolling Bar Chart for live data plotting"""
 
 import sys
-from typing import List, Union
+from typing import List, Union, Type
 
 import pyqtgraph
 from qtpy.QtWidgets import QGraphicsItem
@@ -29,7 +29,7 @@ plotting_style_to_class_mapping = {
 
 class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
 
-    """Baseclass for an InfiniteLine based marking of specific timestamps
+    """Base class for an InfiniteLine based marking of specific timestamps
 
     Since this class does only create InfiniteLines but does not paint itself,
     the right QtGraphicsItem Flags have to be set, so the class does not have
@@ -46,7 +46,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ):
         """
-        Constructor for baseclass, use constructors of subclasses
+        Constructor for base class, use constructors of subclasses
         """
         if isinstance(data_source, TimestampMarkerDataModel):
             data_model = data_source
@@ -91,7 +91,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
             plot_item=object_to_create_from._parent_plot_item,
@@ -112,7 +112,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
             plot_item=plot_item,
@@ -178,9 +178,9 @@ class ScrollingTimestampMarker(LiveTimestampMarker):
     """
 
     def update_item(self) -> None:
-        """Update item based on the plot items cycle information"""
+        """Update item based on the plot items time span information"""
         curve_x, colors, labels = self._data_model.get_subset(
-            start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
+            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
         )
         if curve_x.size == colors.size == labels.size and curve_x.size > 0:
             self._clear_infinite_lines()

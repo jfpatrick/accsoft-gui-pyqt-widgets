@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
         plot_config = accgraph.ExPlotWidgetConfig(
-            cycle_size=30,
+            time_span=30,
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
             scrolling_plot_fixed_x_range=True,

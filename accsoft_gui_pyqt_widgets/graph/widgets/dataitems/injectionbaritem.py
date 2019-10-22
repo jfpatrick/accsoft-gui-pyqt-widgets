@@ -1,7 +1,7 @@
 """Scrolling Bar Chart for live-data plotting"""
 
 import sys
-from typing import List, Union
+from typing import List, Union, Type
 from copy import copy
 
 import pyqtgraph
@@ -30,7 +30,7 @@ plotting_style_to_class_mapping = {
 
 class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, metaclass=AbstractDataModelBasedItemMeta):
 
-    """Baseclass for different live bar graph plots"""
+    """Base class for different live bar graph plots"""
 
     supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
 
@@ -41,7 +41,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ):
-        """ Constructor for baseclass, use constructors of subclasses
+        """ Constructor for base class, use constructors of subclasses
 
         Args:
             data_source: source the item receives data from
@@ -49,7 +49,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
             plot_config: configuration of the plot item
             timing_source_attached: is a source for timing updates attached to the plotitem
             buffer_size: count of values the items datamodel's buffer should hold at max
-            **errorbaritem_kwargs: keyword arguments for the baseclass
+            **errorbaritem_kwargs: keyword arguments for the base class
         """
         if isinstance(data_source, UpdateSource):
             data_model = InjectionBarDataModel(
@@ -111,7 +111,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
         kwargs = copy(object_to_create_from.opts)
         kwargs.update(errorbaritem_kwargs)
@@ -138,7 +138,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
             plot_item: plot item the item should fit to
             data_source: source the item receives data from
             buffer_size: count of values the item's datamodel's buffer should hold at max
-            **errorbaritem_kwargs: keyword arguments for the items baseclass
+            **errorbaritem_kwargs: keyword arguments for the items base class
 
         Returns:
             the created item
@@ -149,7 +149,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         )
         # get class fitting to plotting style and return instance
         class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
-        item_class: type = getattr(sys.modules[__name__], class_name)
+        item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
             data_source=data_source,
@@ -193,9 +193,9 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
     """Scrolling Bar Graph"""
 
     def update_item(self) -> None:
-        """Update item based on the plot items cycle information"""
+        """Update item based on the plot items time span information"""
         curve_x, curve_y, height, width, labels = self._data_model.get_subset(
-            start=self._parent_plot_item.cycle.start, end=self._parent_plot_item.cycle.end
+            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
         )
         self._label_texts = labels
         self._label_y_positions = []

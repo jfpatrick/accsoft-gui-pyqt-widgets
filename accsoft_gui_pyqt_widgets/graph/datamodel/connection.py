@@ -15,9 +15,9 @@ from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
 
 
 class UpdateSource(QObject):
-    """Baseclass for update-sources
+    """Base class for update-sources
 
-    Baseclass with predefined signals for timing and data updates.
+    Base class with predefined signals for timing and data updates.
     This can be subclassed to define own timing and data update sources.
     """
 

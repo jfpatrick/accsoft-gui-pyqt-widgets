@@ -261,7 +261,7 @@ class BarData(PlottingItemEntry):
 class BarCollectionData(PlottingItemEntry):
     """Collection of data for multiple bars
 
-    Emitting invalid bars to a bargraph will result in the invalid bars **being
+    Emitting invalid bars to a bar graph will result in the invalid bars **being
     dropped.** See :func:`BarCollectionData.is_valid` to see in which cases a point
     can be invalid.
     """
@@ -520,7 +520,7 @@ class TimestampMarkerData(PlottingItemEntry):
             label: str = "",
             parent=None
     ):
-        """Create a new injectionbar data structure"""
+        """Create a new injection bar data structure"""
         super().__init__(parent)
         self.x_value: float = x_value if x_value is not None else np.nan
         # Catch invalid colors and replace with the default color to prevent exceptions
@@ -590,7 +590,7 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
             labels: Union[List, np.ndarray],
             parent=None
     ):
-        """Create a new collection of infinitelines"""
+        """Create a new collection of infinite lines"""
         super().__init__(parent=parent)
         if isinstance(x_values, list):
             x_values = np.array(x_values)

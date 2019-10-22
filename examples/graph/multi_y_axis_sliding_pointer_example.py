@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         # Create configuration that describes the way the data is supposed to be plotted
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SLIDING_POINTER,
-            cycle_size=10,
+            time_span=10,
             time_progress_line=True,
         )
         self.plot = accgraph.ExPlotWidget(

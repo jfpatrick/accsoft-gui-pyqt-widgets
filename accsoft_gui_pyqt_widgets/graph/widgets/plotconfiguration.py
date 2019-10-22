@@ -34,7 +34,7 @@ class PlotWidgetStyle:
         value representing an integer value is found
         """
         for member in PlotWidgetStyle.__dict__.keys():
-            if not member.startswith('_') and getattr(PlotWidgetStyle, member) == number:
+            if not member.startswith("_") and getattr(PlotWidgetStyle, member) == number:
                 return member
         return "UNKNOWN PLOTTING STYLE"
 
@@ -42,13 +42,13 @@ class PlotWidgetStyle:
 class ExPlotWidgetConfig:
     """ Configuration for the PlotWidget
 
-    This configuration object holds information about the cycle and
+    This configuration object holds information about the time span and
     the visual representation of the data.
     """
 
     def __init__(
         self,
-        cycle_size: float = 60.0,
+        time_span: float = 60.0,
         time_progress_line: bool = False,
         plotting_style: int = PlotWidgetStyle.SCROLLING_PLOT,
         scrolling_plot_fixed_x_range: bool = False,
@@ -57,7 +57,7 @@ class ExPlotWidgetConfig:
         """Create a new configuration object for the PlotWidget
 
         Args:
-            cycle_size: cycle size that is used for drawing each curve
+            time_span: time span that each curve represents
             scrolling_plot_fixed_x_range: flag for a fixed scrolling x range,
                 will only be evaluated if the plotting style is SCROLLING_PLOT.
             scrolling_plot_fixed_x_range_offset: x range offset for scrolling x range,
@@ -69,16 +69,16 @@ class ExPlotWidgetConfig:
                 for the drawing of the curves in the plot
         """
         self._plotting_style: int = plotting_style
-        self._cycle_size: float = cycle_size
+        self._time_span: float = time_span
         self._time_progress_line: bool = time_progress_line
         self._scrolling_plot_fixed_x_range: bool = scrolling_plot_fixed_x_range
         self._scrolling_plot_fixed_x_range_offset = scrolling_plot_fixed_x_range_offset
 
     def __str__(self):
         return f"PlotWidgetStyle: ( " \
-            f"cycle size: {self.cycle_size}, " \
+            f"time span: {self.time_span}, " \
             f"time progress line: {self.time_progress_line}, " \
-            f"plotting_style: {self.plotting_style}, " \
+            f"plotting style: {self.plotting_style}, " \
             f"scrolling plot fixed x range: {self.scrolling_plot_fixed_x_range}, " \
             f"scrolling plot fixed x range offset: {self.scrolling_plot_fixed_x_range_offset})"
 
@@ -93,14 +93,14 @@ class ExPlotWidgetConfig:
         self._plotting_style = plotting_style
 
     @property
-    def cycle_size(self) -> float:
-        """Property for cycle size"""
-        return self._cycle_size
+    def time_span(self) -> float:
+        """Property for time span size"""
+        return self._time_span
 
-    @cycle_size.setter
-    def cycle_size(self, cycle_size: float):
-        """Property setter for cycle size"""
-        self._cycle_size = cycle_size
+    @time_span.setter
+    def time_span(self, time_span: float):
+        """Property setter for time span size"""
+        self._time_span = time_span
 
     @property
     def time_progress_line(self) -> bool:
