@@ -4,7 +4,7 @@ import sys
 from typing import List, Union, Type
 from copy import copy
 
-import pyqtgraph
+import pyqtgraph as pg
 import numpy as np
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
@@ -28,7 +28,7 @@ plotting_style_to_class_mapping = {
 }
 
 
-class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, metaclass=AbstractDataModelBasedItemMeta):
+class LiveInjectionBarGraphItem(DataModelBasedItem, pg.ErrorBarItem, metaclass=AbstractDataModelBasedItemMeta):
 
     """Base class for different live bar graph plots"""
 
@@ -59,14 +59,14 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
         elif isinstance(data_source, InjectionBarDataModel):
             data_model = data_source
         errorbaritem_kwargs = LiveInjectionBarGraphItem._prepare_error_bar_item_params(**errorbaritem_kwargs)
-        pyqtgraph.ErrorBarItem.__init__(self, **errorbaritem_kwargs)
+        pg.ErrorBarItem.__init__(self, **errorbaritem_kwargs)
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
             parent_plot_item=plot_item,
         )
         # TextItems for the labels of the injection-bars
-        self._text_labels: List[pyqtgraph.TextItem] = []
+        self._text_labels: List[pg.TextItem] = []
         self._label_texts: List[str] = []
         self._label_y_positions: List[float] = []
 
@@ -178,9 +178,9 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pyqtgraph.ErrorBarItem, meta
     def _draw_label_at_position(self, x_position, index):
         """Draw a label next to the actual ErrorBarItem at a given position"""
         if 0 <= index < len(self._label_texts):
-            self._text_labels.append(pyqtgraph.TextItem(text=self._label_texts[index]))
+            self._text_labels.append(pg.TextItem(text=self._label_texts[index]))
             try:
-                color = pyqtgraph.mkPen(self.opts.get("pen", "w") or "w").color()
+                color = pg.mkPen(self.opts.get("pen", "w") or "w").color()
             except ValueError:
                 color = "w"
             self._text_labels[index].setColor(color)

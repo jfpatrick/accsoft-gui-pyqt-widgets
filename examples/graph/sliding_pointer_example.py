@@ -4,7 +4,6 @@ Simple example for the usage of the ExtendPlotWidget
 
 import sys
 
-import pyqtgraph
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 
 import accsoft_gui_pyqt_widgets.graph as accgraph

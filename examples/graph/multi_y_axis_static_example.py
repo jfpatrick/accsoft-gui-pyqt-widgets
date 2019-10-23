@@ -4,7 +4,7 @@ Simple example for the usage of the ExtendPlotWidget
 
 import sys
 
-import pyqtgraph
+import pyqtgraph as pg
 from qtpy.QtWidgets import (QApplication, QGridLayout, QMainWindow,
                             QWidget)
 
@@ -32,14 +32,14 @@ class MainWindow(QMainWindow):
             axis_kwargs={"showValues": False, "maxTickLength": 0},
             axis_label_kwargs={"text": "Ω"},
         )
-        plot_item.addItem(pyqtgraph.PlotDataItem(x=[1, 2, 3], y=[101, 102, 103]))
+        plot_item.addItem(pg.PlotDataItem(x=[1, 2, 3], y=[101, 102, 103]))
         plot_item.addItem(
             layer="sigma_layer",
-            item=pyqtgraph.ScatterPlotItem(x=[1, 2, 3], y=[102, 103, 104]),
+            item=pg.ScatterPlotItem(x=[1, 2, 3], y=[102, 103, 104]),
         )
         plot_item.addItem(
             layer="omega_layer",
-            item=pyqtgraph.BarGraphItem(
+            item=pg.BarGraphItem(
                 x=[1, 2, 3], width=0.05, height=[101, 102, 103]
             ),
         )

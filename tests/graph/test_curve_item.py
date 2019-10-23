@@ -3,7 +3,7 @@
 from typing import List, Union, Optional, Tuple
 
 import pytest
-import numpy
+import numpy as np
 
 from accsoft_gui_pyqt_widgets.graph import (LivePlotCurve,
                                             ExPlotWidgetConfig,
@@ -34,7 +34,7 @@ def test_simple_linear_data_append(qtbot):
         current_dataset_timestamp,
         datasets_delta,
     )
-    expected_data = numpy.arange(
+    expected_data = np.arange(
         current_dataset_timestamp, timestamps[-1] + datasets_delta, datasets_delta
     )
     curves = window.plot.plotItem.get_live_data_curves()
@@ -42,8 +42,8 @@ def test_simple_linear_data_append(qtbot):
     curve = curves[0]
     assert isinstance(curve, SlidingPointerPlotCurve)
     assert curve.get_last_time_stamp() == 10.0
-    assert numpy.allclose(curve.get_full_buffer().timestamps, expected_data)
-    assert numpy.allclose(curve.get_full_buffer().y_values, expected_data)
+    assert np.allclose(curve.get_full_buffer().timestamps, expected_data)
+    assert np.allclose(curve.get_full_buffer().y_values, expected_data)
 
 
 def test_plot_after_first_timing_update(qtbot):
@@ -723,7 +723,7 @@ def test_plotdataitem_components_visible(qtbot, params):
     item: LivePlotCurve = window.plot.addCurve(data_source=source, **params)
     source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
     source.sig_data_update[PointData].emit(PointData(1.0, 1.0))
-    source.sig_data_update[PointData].emit(PointData(numpy.nan, numpy.nan))
+    source.sig_data_update[PointData].emit(PointData(np.nan, np.nan))
     source.sig_data_update[PointData].emit(PointData(2.0, 2.0))
     source.sig_data_update[PointData].emit(PointData(3.0, 3.0))
     # Condition as in PlotDataItem.updateItems()
@@ -752,12 +752,12 @@ def _handle_numpy_error(err, flag):
 
 @pytest.mark.parametrize("data_sequence", [
     [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (numpy.nan, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (0.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (1.2, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, numpy.nan), (2.1, numpy.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (numpy.nan, 4.0), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (np.nan, np.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (0.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (1.2, np.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
+    [(0.0, 0.0), (1.0, 1.0), (np.nan, 4.0), (2.0, 2.0), (3.0, 3.0)],
 ])
 def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, float]]):
     """ Test if passing nan to a curve and especially scatter plot
@@ -778,8 +778,8 @@ def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, floa
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     window.plot.addCurve(data_source=source, symbol="o")
-    numpy.seterrcall(_handle_numpy_error)
-    numpy.seterr(all="call")
+    np.seterrcall(_handle_numpy_error)
+    np.seterr(all="call")
     for point in data_sequence:
         source.sig_data_update.emit(PointData(point[0], point[1]))
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
@@ -864,10 +864,10 @@ def _check_curves(
 
 def _check_plot_data_items_data(
     curve: SlidingPointerPlotCurve,
-    expected_nc_x: Union[numpy.ndarray, List[float]] = None,
-    expected_nc_y: Union[numpy.ndarray, List[float]] = None,
-    expected_oc_x: Union[numpy.ndarray, List[float]] = None,
-    expected_oc_y: Union[numpy.ndarray, List[float]] = None,
+    expected_nc_x: Union[np.ndarray, List[float]] = None,
+    expected_nc_y: Union[np.ndarray, List[float]] = None,
+    expected_oc_x: Union[np.ndarray, List[float]] = None,
+    expected_oc_y: Union[np.ndarray, List[float]] = None,
 ):
     """
 
@@ -884,18 +884,18 @@ def _check_plot_data_items_data(
     try:
         data = curve.get_last_drawn_data()
         if isinstance(expected_nc_x, List):
-            expected_nc_x = numpy.array(expected_nc_x)
+            expected_nc_x = np.array(expected_nc_x)
         if isinstance(expected_nc_y, List):
-            expected_nc_y = numpy.array(expected_nc_y)
+            expected_nc_y = np.array(expected_nc_y)
         if isinstance(expected_oc_x, List):
-            expected_oc_x = numpy.array(expected_oc_x)
+            expected_oc_x = np.array(expected_oc_x)
         if isinstance(expected_oc_y, List):
-            expected_oc_y = numpy.array(expected_oc_y)
+            expected_oc_y = np.array(expected_oc_y)
         result = (
-            numpy.allclose(data.new_curve.x_values, expected_nc_x)
-            and numpy.allclose(data.new_curve.y_values, expected_nc_y)
-            and numpy.allclose(data.old_curve.x_values, expected_oc_x)
-            and numpy.allclose(data.old_curve.y_values, expected_oc_y)
+            np.allclose(data.new_curve.x_values, expected_nc_x)
+            and np.allclose(data.new_curve.y_values, expected_nc_y)
+            and np.allclose(data.old_curve.x_values, expected_oc_x)
+            and np.allclose(data.old_curve.y_values, expected_oc_y)
         )
     except:
         return False
