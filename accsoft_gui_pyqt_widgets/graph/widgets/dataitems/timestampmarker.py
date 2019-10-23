@@ -3,7 +3,7 @@
 import sys
 from typing import List, Union, Type
 
-import pyqtgraph
+import pyqtgraph as pg
 from qtpy.QtWidgets import QGraphicsItem
 from qtpy.QtCore import QRectF
 
@@ -27,7 +27,7 @@ plotting_style_to_class_mapping = {
 }
 
 
-class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
+class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
 
     """Base class for an InfiniteLine based marking of specific timestamps
 
@@ -59,13 +59,13 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
             raise ValueError(
                 f"Data Source of type {type(data_source)} can not be used as a source or model for data."
             )
-        pyqtgraph.GraphicsObject.__init__(self, *graphicsobjectargs)
+        pg.GraphicsObject.__init__(self, *graphicsobjectargs)
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
             parent_plot_item=plot_item,
         )
-        self._line_elements: List[pyqtgraph.InfiniteLine] = []
+        self._line_elements: List[pg.InfiniteLine] = []
 
     @staticmethod
     def create_from(
@@ -126,7 +126,7 @@ class LiveTimestampMarker(DataModelBasedItem, pyqtgraph.GraphicsObject, metaclas
         self._line_elements.clear()
 
     def _add_line_at_position(self, x_position: float, color: str, label: str):
-        infinite_line = pyqtgraph.InfiniteLine(
+        infinite_line = pg.InfiniteLine(
             pos=x_position,
             pen=color,
             label=label,

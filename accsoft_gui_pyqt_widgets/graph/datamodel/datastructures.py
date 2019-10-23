@@ -16,7 +16,7 @@ from typing import List, Union
 from collections import namedtuple
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
 from qtpy.QtCore import QObject
 
 _LOGGER = logging.getLogger(__name__)
@@ -525,7 +525,7 @@ class TimestampMarkerData(PlottingItemEntry):
         self.x_value: float = x_value if x_value is not None else np.nan
         # Catch invalid colors and replace with the default color to prevent exceptions
         try:
-            pyqtgraph.mkColor(color)
+            pg.mkColor(color)
         except (IndexError, Exception):
             _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
                             f"since '{color}' can not be used as a color.")
@@ -599,7 +599,7 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
             # Catch invalid colors and replace with the default color to prevent exceptions
             for index, color in enumerate(colors):
                 try:
-                    pyqtgraph.mkColor(color)
+                    pg.mkColor(color)
                 except (IndexError, Exception):
                     _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
                                     f"since '{color}' can not be used as a color.")

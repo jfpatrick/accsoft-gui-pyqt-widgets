@@ -1,6 +1,6 @@
 from typing import List
 
-import numpy
+import numpy as np
 import pyqtgraph as pg
 import pytest
 
@@ -319,8 +319,8 @@ def check_range(actual_range: List[List[float]], expected_range: List[List[float
     for actual, expected in list(zip(actual_range, expected_range)):
         # a bit of tolerance
         absolute_tolerance = 0.0025 * (expected[1] - expected[0])
-        assert numpy.isclose(actual[0], expected[0], atol=absolute_tolerance)
-        assert numpy.isclose(actual[1], expected[1], atol=absolute_tolerance)
+        assert np.isclose(actual[0], expected[0], atol=absolute_tolerance)
+        assert np.isclose(actual[1], expected[1], atol=absolute_tolerance)
 
 
 def manual_range_change(layer: PlotItemLayer, **kwargs):
@@ -356,6 +356,6 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: int):
 
 
 def _create_values(amount: int = 20):
-    x_values = numpy.random.randint(-amount, amount, amount)
-    y_values = numpy.arange(0, amount)
+    x_values = np.random.randint(-amount, amount, amount)
+    y_values = np.arange(0, amount)
     return x_values, y_values

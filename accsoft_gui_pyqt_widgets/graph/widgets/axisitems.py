@@ -21,11 +21,6 @@ class CustomAxisItem(AxisItem):
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().mouseDragEvent(event)
 
-    def mouseClickEvent(self, event):
-        """Make the mouse click event on the axis distinguishable from the ViewBox one"""
-        self.sig_vb_mouse_event_triggered_by_axis.emit(True)
-        super().mouseClickEvent(event)
-
     def wheelEvent(self, ev):
         """Make the mouse click event on the axis distinguishable from the ViewBox one"""
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)

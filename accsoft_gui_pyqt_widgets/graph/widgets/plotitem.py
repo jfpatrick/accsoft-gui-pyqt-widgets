@@ -8,8 +8,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union, Type
 from itertools import product
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
+from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal, Slot, QRectF
+from qtpy.QtWidgets import QGraphicsSceneWheelEvent
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -45,7 +47,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Mapping of plotting styles to a fitting axis style
-_STYLE_TO_AXIS_MAPPING: Dict[int, Type[pyqtgraph.AxisItem]] = {
+_STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {
     PlotWidgetStyle.STATIC_PLOT: CustomAxisItem,
     PlotWidgetStyle.SLIDING_POINTER: RelativeTimeAxisItem,
     PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
@@ -60,14 +62,14 @@ _STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[PlottingTimeSpan]]] = {
 }
 
 
-class ExPlotItem(pyqtgraph.PlotItem):
+class ExPlotItem(pg.PlotItem):
     """PlotItem with additional functionality"""
 
     def __init__(
         self,
         config: ExPlotWidgetConfig = None,
         timing_source: Optional[UpdateSource] = None,
-        axis_items: Optional[Dict[str, pyqtgraph.AxisItem]] = None,
+        axis_items: Optional[Dict[str, pg.AxisItem]] = None,
         **plotitem_kwargs,
     ):
         """Create a new plot item.
@@ -103,16 +105,19 @@ class ExPlotItem(pyqtgraph.PlotItem):
         self._plot_config: ExPlotWidgetConfig = config
         self._time_span: Optional[PlottingTimeSpan] = self.create_fitting_time_span()
         self._last_timestamp: float = -1.0
-        self._time_line: Optional[pyqtgraph.InfiniteLine] = None
+        self._time_line: Optional[pg.InfiniteLine] = None
         self._style_specific_objects_already_drawn: bool = False
         self._layers: PlotItemLayerCollection
         self._timing_source_attached: bool
         # Needed for the Sliding Pointer Curve
-        self._time_span_start_boundary: Optional[pyqtgraph.InfiniteLine] = None
-        self._time_span_end_boundary: Optional[pyqtgraph.InfiniteLine] = None
+        self._time_span_start_boundary: Optional[pg.InfiniteLine] = None
+        self._time_span_end_boundary: Optional[pg.InfiniteLine] = None
         self._prepare_layers()
         self._prepare_timing_source_attachment(timing_source)
-        self._prepare_scrolling_plot_fixed_scrolling_range()
+        # If set to false, this flag prevents the scrolling movement on an
+        # scrolling plot with a fixed range.
+        self._scrolling_fixed_x_range_activated: bool = True
+        self._prepare_scrolling_plot_fixed_x_range()
         # This will only be used in combination with the singleCurveValueSlot
         self.single_curve_value_slot_source: Optional[UpdateSource] = None
         self.single_curve_value_slot_curve: Optional[ScrollingPlotCurve] = None
@@ -151,13 +156,83 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """Return the latest timestamp that is known to the plot"""
         return self._last_timestamp
 
-    def _prepare_scrolling_plot_fixed_scrolling_range(self):
-        """Initialize everything for the scrolling plot scrolling movement"""
-        if self._config_contains_scrolling_style_with_fixed_range():
-            self.setMouseEnabled(x=False)
+    def _prepare_scrolling_plot_fixed_x_range(self) -> None:
+        """
+        In the scrolling style the PlotItem offers the possibility to set the
+        scrolling movement not by using PyQtGraph's auto ranging, but by setting
+        it manually to a fixed x range that moves as new data is appended. This
+        will require some modifications to the plot which would otherwise collide
+        with this behavior (mainly related to auto ranging).
+        """
+        self._scrolling_fixed_x_range_activated = True
+        if self._config_contains_scrolling_style_with_fixed_x_range():
+            self._set_scrolling_plot_fixed_x_range_modifications()
         else:
-            # Enable in case it was disabled with before a config change
-            self.setMouseEnabled(x=True)
+            self._reset_scrolling_plot_fixed_x_range_modifications()
+
+    def _set_scrolling_plot_fixed_x_range_modifications(self) -> None:
+        """
+        Activating the fixed x range on a plot item in the scrolling mode
+        will result in behavior modifications related to auto ranging.
+
+        These include:
+            - 'View All' context menu entry respects the manually set x range
+            - the small auto range button on the lower left corner of the plot does
+              not simply activate auto range but behaves as 'View All'
+        """
+        scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap('auto'), 14, self)
+        scrolling_range_reset_button.mode = 'auto'
+        scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_x_range)
+        self.vb.sigRangeChangedManually.connect(self._handle_zoom_with_scrolling_plot_fixed_x_range)
+        self._orig_autoBtn = self.autoBtn
+        self.autoBtn = scrolling_range_reset_button
+        try:
+            self.vb.menu.viewAll.triggered.disconnect(self.autoRange)
+        except TypeError:
+            pass
+        self.vb.menu.viewAll.triggered.connect(self._auto_range_with_scrolling_plot_fixed_x_range)
+
+    def _reset_scrolling_plot_fixed_x_range_modifications(self) -> None:
+        """
+        Activating the fixed x range on an plot item in the scrolling mode
+        will result in modifications related to auto ranging. This function
+        will revert all these made changes, if they were made.
+
+        Following modifications are reset:
+            - 'View All' context menu entry
+            - the small auto range button in the lower left corner of the plot
+        """
+        try:
+            self.autoBtn = self._orig_autoBtn
+            self.vb.sigRangeChangedManually.disconnect(self._handle_zoom_with_scrolling_plot_fixed_x_range)
+        # AttributeError -> self._orig_autoBtn
+        # TypeError      -> failed disconnect
+        except (AttributeError, TypeError):
+            pass
+        try:
+            self.vb.menu.viewAll.triggered.disconnect(self._auto_range_with_scrolling_plot_fixed_x_range)
+            self.vb.menu.viewAll.triggered.connect(self.autoRange)
+        # TypeError -> failed disconnect
+        except TypeError:
+            pass
+
+    def _auto_range_with_scrolling_plot_fixed_x_range(self):
+        """
+        autoRange does not know about the x range that has been set manually.
+        This function will automatically set the y range and will set the x range
+        fitting to the plots configuration.
+        """
+        self.autoRange(auto_range_x_axis=False)
+        self._scrolling_fixed_x_range_activated = True
+        self._handle_scrolling_plot_fixed_x_range_update()
+
+    def _handle_zoom_with_scrolling_plot_fixed_x_range(self) -> None:
+        """
+        If the range changes on a scrolling plot with a fixed x range, the scrolling
+        should be stopped. This function sets a flag, that prevents the plot from
+        scrolling on updates.
+        """
+        self._scrolling_fixed_x_range_activated = False
 
     def update_configuration(self, config: ExPlotWidgetConfig) -> None:
         """Update the plot widgets configuration
@@ -188,8 +263,8 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     self.removeItem(self._time_line)
                     self._time_line = None
         self._plot_config = config
-        self._prepare_scrolling_plot_fixed_scrolling_range()
-        self._handle_fixed_x_range_update()
+        self._prepare_scrolling_plot_fixed_x_range()
+        self._handle_scrolling_plot_fixed_x_range_update()
 
     def _remove_child_items_affected_from_style_change(self):
         """ Remove all items that are affected by a new configuration
@@ -266,17 +341,17 @@ class ExPlotItem(pyqtgraph.PlotItem):
         """
         _LOGGER.warning("PlotItem.plot should not be used for plotting curves with the ExPlotItem, "
                         "please use ExPlotItem.addCurve for this purpose.")
-        pyqtgraph.PlotItem.plot(*args, clear=clear, params=params)
+        pg.PlotItem.plot(*args, clear=clear, params=params)
 
     def addCurve(
         self,
-        c: Optional[pyqtgraph.PlotDataItem] = None,
+        c: Optional[pg.PlotDataItem] = None,
         params: Optional[Dict[str, Any]] = None,
         data_source: Optional[UpdateSource] = None,
         layer_identifier: Optional[str] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
-    ) -> pyqtgraph.PlotDataItem:
+    ) -> pg.PlotDataItem:
         """Add new curve for live data
 
         Create a new curve either from static data like PlotItem.plot or a curve
@@ -294,7 +369,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             PlotDataItem or LivePlotCurve instance depending on the passed parameters
         """
         # Catch calls from superclasses deprecated addCurve() expecting a PlotDataItem
-        if c and isinstance(c, pyqtgraph.PlotDataItem):
+        if c and isinstance(c, pg.PlotDataItem):
             _LOGGER.warning("Calling addCurve() for adding an already created PlotDataItem is deprecated, "
                             "please use addItem() for this purpose.")
             params = params or {}
@@ -305,7 +380,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             if layer_identifier == "" or layer_identifier is None:
                 layer_identifier = PlotItemLayer.default_layer_identifier
             # create curve that is attached to live data
-            new_plot: pyqtgraph.PlotDataItem
+            new_plot: pg.PlotDataItem
             if data_source is not None:
                 new_plot = LivePlotCurve.create(
                     plot_item=self,
@@ -314,7 +389,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     **plotdataitem_kwargs,
                 )
             elif data_source is None:
-                new_plot = pyqtgraph.PlotDataItem(
+                new_plot = pg.PlotDataItem(
                     **plotdataitem_kwargs
                 )
             self.addItem(layer=layer_identifier, item=new_plot)
@@ -338,7 +413,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
         Returns:
             LiveBarGraphItem that was added to the plot
         """
-        new_plot: pyqtgraph.BarGraphItem
+        new_plot: pg.BarGraphItem
         if data_source is not None:
             new_plot = LiveBarGraphItem.create(
                 plot_item=self,
@@ -347,7 +422,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 **bargraph_kwargs,
             )
         else:
-            new_plot = pyqtgraph.BarGraphItem(**bargraph_kwargs)
+            new_plot = pg.BarGraphItem(**bargraph_kwargs)
         if not layer_identifier:
             layer_identifier = ""
         self.addItem(layer=layer_identifier, item=new_plot)
@@ -412,6 +487,14 @@ class ExPlotItem(pyqtgraph.PlotItem):
         )
         self.addItem(layer="", item=new_plot)
         return new_plot
+
+    def clear(self):
+        """
+        Clear the PlotItem but reinitialize items that are part of the plot.
+        These items contain f.e. the time line decorator.
+        """
+        super().clear()
+        self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
 
     # ~~~~~~~~~~~~~~~~~~~~~~ Layers ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -483,7 +566,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
 
     def addItem(
         self,
-        item: Union[pyqtgraph.GraphicsObject, DataModelBasedItem],
+        item: Union[pg.GraphicsObject, DataModelBasedItem],
         layer: Optional[Union["PlotItemLayer", str]] = None,
         ignoreBounds: bool = False,
         **kwargs
@@ -528,12 +611,12 @@ class ExPlotItem(pyqtgraph.PlotItem):
         return self._layers.get(layer_identifier)
 
     def get_all_layers(self) -> List["PlotItemLayer"]:
-        """Get all layers added to this plotlayer"""
+        """Get all layers added to this plot layer"""
         return self._layers.get_all()
 
     def get_all_non_standard_layers(self) -> List["PlotItemLayer"]:
         """
-        Get all layers added to this plotlayer except of the
+        Get all layers added to this plot layer except of the
         layer containing the standard PlotItem ViewBox
         """
         return self._layers.get_all_except_default()
@@ -559,7 +642,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             if timestamp >= self._last_timestamp:
                 self._last_timestamp = timestamp
                 self._time_span.update_time_span(timestamp=self._last_timestamp)
-                self._handle_fixed_x_range_update()
+                self._handle_scrolling_plot_fixed_x_range_update()
                 self._update_time_line_decorator(
                     timestamp=timestamp, position=self._calc_timeline_drawing_position()
                 )
@@ -582,7 +665,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
                 self._time_line = None
             self._time_line = self.addLine(
                 timestamp,
-                pen=(pyqtgraph.mkPen(80, 80, 80)),
+                pen=(pg.mkPen(80, 80, 80)),
                 label=datetime.fromtimestamp(timestamp).strftime("%H:%M:%S"),
                 labelOpts=label_opts,
             )
@@ -609,17 +692,17 @@ class ExPlotItem(pyqtgraph.PlotItem):
                     datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
                 )
 
-    def _config_contains_scrolling_style_with_fixed_range(self):
-        """Configuration for a scrolling plot with a fixed x range. """
+    def _config_contains_scrolling_style_with_fixed_x_range(self) -> bool:
         return(
             self._plot_config.scrolling_plot_fixed_x_range
             and not np.isnan(self._plot_config.scrolling_plot_fixed_x_range_offset)
             and (self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT)
+            and self._scrolling_fixed_x_range_activated
         )
 
-    def _handle_fixed_x_range_update(self) -> None:
+    def _handle_scrolling_plot_fixed_x_range_update(self) -> None:
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
-        if self._config_contains_scrolling_style_with_fixed_range():
+        if self._config_contains_scrolling_style_with_fixed_x_range():
             x_range_min: float = self._last_timestamp - self._plot_config.time_span + self._plot_config.scrolling_plot_fixed_x_range_offset
             x_range_max: float = self._last_timestamp + self._plot_config.scrolling_plot_fixed_x_range_offset
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
@@ -634,7 +717,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             style: plotting style the new axes should fit to.
         """
         for pos in ["bottom", "top"]:
-            new_axis: pyqtgraph.AxisItem = self.create_fitting_axis_item(
+            new_axis: pg.AxisItem = self.create_fitting_axis_item(
                 config_style=style, orientation=pos, parent=self
             )
             if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._time_span, SlidingPointerTimeSpan):
@@ -666,7 +749,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             config_style: int,
             orientation: str = "bottom",
             parent: Optional["ExPlotItem"] = None
-    ) -> pyqtgraph.AxisItem:
+    ) -> pg.AxisItem:
         """Create an axis that fits the given plotting style
 
         Create instance of the axis associated to the given plotting style in
@@ -703,7 +786,7 @@ class ExPlotItem(pyqtgraph.PlotItem):
             except AttributeError:
                 pass
             time_span_kwargs["size"] = self._plot_config.time_span
-            time_span_kwargs["x_range_offset"] = self._plot_config.scrolling_plot_fixed_x_range
+            time_span_kwargs["x_range_offset"] = self._plot_config.scrolling_plot_fixed_x_range_offset
             if time_span:
                 return time_span(**time_span_kwargs)
         return None
@@ -739,10 +822,10 @@ class ExPlotItem(pyqtgraph.PlotItem):
             start = self.time_span.start
             end = start + self._plot_config.time_span
             self._time_span_start_boundary = self.addLine(
-                x=start, pen=pyqtgraph.mkPen(128, 128, 128)
+                x=start, pen=pg.mkPen(128, 128, 128)
             )
             self._time_span_end_boundary = self.addLine(
-                x=end, pen=pyqtgraph.mkPen(128, 128, 128)
+                x=end, pen=pg.mkPen(128, 128, 128)
             )
             self._style_specific_objects_already_drawn = True
 
@@ -850,13 +933,13 @@ class PlotItemLayer:
         self,
         plot_item: ExPlotItem,
         view_box: "ExViewBox",
-        axis_item: pyqtgraph.AxisItem,
+        axis_item: pg.AxisItem,
         identifier: str = default_layer_identifier,
     ):
         self.identifier: str = identifier
         self.view_box: ExViewBox = view_box
-        self.axis_item: pyqtgraph.AxisItem = axis_item
-        self.plot_item: pyqtgraph.PlotItem = plot_item
+        self.axis_item: pg.AxisItem = axis_item
+        self.plot_item: pg.PlotItem = plot_item
         # by default the plot will start in auto-range mode
         self.view_box.enableAutoRange(enable=True)
 
@@ -872,8 +955,8 @@ class PlotItemLayer:
 class PlotItemLayerCollection:
     """Collection for layers added to a plot items identified by a unique string identifier"""
 
-    def __init__(self, plot_item: pyqtgraph.PlotItem):
-        self._plot_item: pyqtgraph.PlotItem = plot_item
+    def __init__(self, plot_item: pg.PlotItem):
+        self._plot_item: pg.PlotItem = plot_item
         self._pot_item_viewbox_reference_range: Dict[
             str, List[float]
         ] = {}
@@ -961,7 +1044,7 @@ class PlotItemLayerCollection:
                 return True
         return False
 
-    def update_view_box_geometries(self, plot_item: pyqtgraph.PlotItem):
+    def update_view_box_geometries(self, plot_item: pg.PlotItem):
         """Update the viewboxes geometry"""
         for layer in self:
             # plot item view box has to be excluded to keep autoRange settings
@@ -1075,7 +1158,7 @@ class PlotItemLayerCollection:
 
     def _handle_layer_y_range_change(
             self,
-            moved_viewbox: pyqtgraph.ViewBox,
+            moved_viewbox: pg.ViewBox,
             new_range: Tuple[float, float],
             *args
     ) -> None:
@@ -1107,7 +1190,7 @@ class PlotItemLayerCollection:
 
     def apply_range_change_to_other_layers(
             self,
-            moved_viewbox: pyqtgraph.ViewBox,
+            moved_viewbox: pg.ViewBox,
             new_range: Tuple[float, float],
             moved_layer: PlotItemLayer
     ) -> None:
@@ -1159,7 +1242,7 @@ class PlotItemLayerCollection:
                 self._pot_item_viewbox_reference_range[layer.identifier][1] = layer_viewbox_new_max
 
 
-class ExViewBox(pyqtgraph.ViewBox):
+class ExViewBox(pg.ViewBox):
 
     """ViewBox with extra functionality for the multi-y-axis plotting"""
 
@@ -1199,8 +1282,9 @@ class ExViewBox(pyqtgraph.ViewBox):
     def autoRange(
         self,
         padding: float = None,
-        items: Optional[List[pyqtgraph.GraphicsItem]] = None,
-        item: Optional[pyqtgraph.GraphicsItem] = None
+        items: Optional[List[pg.GraphicsItem]] = None,
+        auto_range_x_axis: bool = True,
+        **kwargs
     ) -> None:
         """ Overwritten auto range
 
@@ -1212,18 +1296,17 @@ class ExViewBox(pyqtgraph.ViewBox):
         Args:
             padding: padding to use for the auto-range
             items: items to use for the auto ranging
-            item: deprecated!
+            auto_range_x_axis: should the x axis also be set to automatically?
+            **kwargs: Additional Keyword arguments. These won't be used and are only for
+                      swallowing f.e. deprecated parameters.
 
         Returns:
             None
         """
-        # Behavior of Superclass method
-        if item is not None:
-            _LOGGER.warning("ViewBox.autoRange(item=__) is deprecated. Use 'items' argument instead.")
-            bounds = self.mapFromItemToView(item, item.boundingRect()).boundingRect()
-            if bounds is not None:
-                self.setRange(bounds, padding=padding)
-        # View all for multiple layers
+        # item = deprecated param from superclass
+        item = kwargs.get("item")
+        if item and not items:
+            items = [item]
         if self._layer_collection is not None:
             if padding is None:
                 padding = 0.05
@@ -1248,13 +1331,20 @@ class ExViewBox(pyqtgraph.ViewBox):
                 # Get common bounding rectangle for all items in all layers
                 goal_range = goal_range.united(bound)
             # Setting the range with the manual signal will move all other layers accordingly
-            plot_item_view_box.set_range_manually(rect=goal_range, padding=padding)
+            if auto_range_x_axis:
+                plot_item_view_box.set_range_manually(rect=goal_range, padding=padding)
+            else:
+                y_range: Tuple[float, float] = (
+                    goal_range.bottom(),
+                    goal_range.top()
+                )
+                plot_item_view_box.set_range_manually(yRange=y_range, padding=padding)
 
     @staticmethod
     def map_bounding_rectangle_to_other_viewbox(
             viewbox_to_map_from: "ExViewBox",
             viewbox_to_map_to: "ExViewBox",
-            items: Optional[List[pyqtgraph.GraphicsItem]]
+            items: Optional[List[pg.GraphicsItem]]
     ) -> QRectF:
         """
         Map a viewbox bounding rectangle to the coordinates of an other one.
@@ -1333,3 +1423,39 @@ class ExViewBox(pyqtgraph.ViewBox):
                    (source_y_range[1] - source_y_range[0])
         c: float = destination_y_range[0] - m * source_y_range[0]
         return m * y_val_to_map + c
+
+    def wheelEvent(
+        self,
+        ev: QGraphicsSceneWheelEvent,
+        axis: Optional[int] = None
+    ) -> None:
+        """
+        Overwritten because we want to make sure the manual range
+        change signal comes first. To make sure no flags are set anymore
+        from the event we emit a range change signal with unmodified range.
+
+        Args:
+            ev: Wheel event that was detected
+            axis: integer representing an axis, 0 -> x, 1 -> y
+        """
+        self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
+        super().wheelEvent(ev=ev, axis=axis)
+        self.sigRangeChanged.emit(self, self.state['viewRange'])
+
+    def mouseDragEvent(
+        self,
+        ev: MouseDragEvent,
+        axis: Optional[int] = None
+    ) -> None:
+        """
+        Overwritten because we want to make sure the manual range
+        change signal comes first. To make sure no flags are set anymore
+        from the event we emit a range change signal with unmodified range.
+
+        Args:
+            ev: Mouse Drag event that was detected
+            axis: integer representing an axis, 0 -> x, 1 -> y
+        """
+        self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
+        super().mouseDragEvent(ev=ev, axis=axis)
+        self.sigRangeChanged.emit(self, self.state['viewRange'])

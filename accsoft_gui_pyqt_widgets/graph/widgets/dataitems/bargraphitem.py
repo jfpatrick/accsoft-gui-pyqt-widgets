@@ -5,7 +5,7 @@ from typing import Union, List, Type
 from copy import copy
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import BarGraphDataModel
@@ -27,7 +27,7 @@ plotting_style_to_class_mapping = {
 }
 
 
-class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
+class LiveBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
 
     """Base class for different live bar graph plots"""
 
@@ -61,7 +61,7 @@ class LiveBarGraphItem(DataModelBasedItem, pyqtgraph.BarGraphItem, metaclass=Abs
             )
         self._fixed_bar_width = bargraphitem_kwargs.get("width", -1)
         bargraphitem_kwargs = LiveBarGraphItem._prepare_bar_graph_item_params(**bargraphitem_kwargs)
-        pyqtgraph.BarGraphItem.__init__(self, **bargraphitem_kwargs)
+        pg.BarGraphItem.__init__(self, **bargraphitem_kwargs)
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,

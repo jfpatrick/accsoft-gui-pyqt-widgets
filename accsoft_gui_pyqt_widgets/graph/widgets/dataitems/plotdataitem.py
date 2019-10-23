@@ -8,7 +8,7 @@ from typing import Union, List, Tuple, Dict, Type
 from copy import copy
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import CurveDataModel
@@ -61,7 +61,7 @@ _plotdataitem_scatter_param_mapping = [
 ]
 
 
-class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
+class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
 
     supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
@@ -99,7 +99,7 @@ class LivePlotCurve(DataModelBasedItem, pyqtgraph.PlotDataItem, metaclass=Abstra
             data_model=data_model,
             parent_plot_item=plot_item,
         )
-        pyqtgraph.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
+        pg.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
         self.opts["connect"] = "finite"
         # Save drawn data for testing purposes
         self._data_item_data: CurveData

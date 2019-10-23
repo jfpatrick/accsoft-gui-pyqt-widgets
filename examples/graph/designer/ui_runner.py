@@ -13,7 +13,7 @@ from datetime import datetime
 
 from qtpy import QtWidgets, QtCore, uic
 import accsoft_gui_pyqt_widgets.graph as accgraph
-import pyqtgraph
+import pyqtgraph as pg
 
 
 class Ui(
@@ -32,8 +32,8 @@ class Ui(
         sliding_item = accgraph.LivePlotCurve.create(plot_item=self.sliding_plot.plotItem, data_source=RandomDataSource(500))
         scrolling_item_1 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(1000))
         scrolling_item_2 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(500))
-        static_item_1 = pyqtgraph.BarGraphItem(x=[0.0, 1.0, 2.0, 3.0], height=[1.0, 0.5, -0.5, 1.0], width=0.75)
-        static_item_2 = pyqtgraph.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
+        static_item_1 = pg.BarGraphItem(x=[0.0, 1.0, 2.0, 3.0], height=[1.0, 0.5, -0.5, 1.0], width=0.75)
+        static_item_2 = pg.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
         # Add items
         self.static_plot.plotItem.addItem(static_item_1)
         self.static_plot.plotItem.addItem(static_item_2, layer="layer_0")
