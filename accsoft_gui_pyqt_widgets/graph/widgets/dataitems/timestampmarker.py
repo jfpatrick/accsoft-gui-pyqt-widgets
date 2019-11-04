@@ -66,6 +66,10 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             parent_plot_item=plot_item,
         )
         self._line_elements: List[pg.InfiniteLine] = []
+        self.opts = {
+            # pen width shared among all pens for the InfiniteLines
+            "pen_width": 1
+        }
 
     @staticmethod
     def create_from(
@@ -126,9 +130,10 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         self._line_elements.clear()
 
     def _add_line_at_position(self, x_position: float, color: str, label: str):
+        pen = pg.mkPen(color=color, width=self.opts.get("pen_width"))
         infinite_line = pg.InfiniteLine(
             pos=x_position,
-            pen=color,
+            pen=pen,
             label=label,
             labelOpts={
                 "position": 0.95,
