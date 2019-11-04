@@ -496,6 +496,31 @@ class ExPlotItem(pg.PlotItem):
         super().clear()
         self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
 
+    def removeItem(self, item: pg.GraphicsObject):
+        """
+        Extend the remove item operation to search for
+        the right viewbox in the PlotItem when removing
+        the item.
+
+        Args:
+            item: item that will be removed from the plot
+        """
+        if item not in self.items:
+            return
+        self.items.remove(item)
+        if item in self.dataItems:
+            self.dataItems.remove(item)
+        if item.scene() is not None:
+            try:
+                view_box = next(vb for vb in self.get_all_viewboxes() if item in vb.addedItems)
+            except StopIteration:
+                view_box = self.vb
+            view_box.removeItem(item)
+        if item in self.curves:
+            self.curves.remove(item)
+            self.updateDecimation()
+            self.updateParamList()
+
     # ~~~~~~~~~~~~~~~~~~~~~~ Layers ~~~~~~~~~~~~~~~~~~~~~~~~
 
     def add_layer(
@@ -575,6 +600,10 @@ class ExPlotItem(pg.PlotItem):
         # Super implementation can be used if layer is not defined
         if self.is_standard_layer(layer=layer):
             super().addItem(item, ignoreBounds=ignoreBounds, **kwargs)
+            try:
+                item.set_layer_information(layer_identifier="")
+            except AttributeError:
+                pass
         else:
             self.items.append(item)
             self.dataItems.append(item)
