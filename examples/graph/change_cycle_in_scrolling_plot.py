@@ -40,9 +40,9 @@ class MainWindow(QMainWindow):
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         self.plot.addCurve(data_source=data_source_1, pen="b")
         self.plot.plotItem.add_layer(identifier="layer_1")
-        self.plot.addBarGraph(data_source=data_source_2, width=0.25, layer_identifier="layer_1", pen="g")
+        self.plot.addBarGraph(data_source=data_source_2, width=0.25, layer="layer_1", pen="g")
         self.plot.plotItem.add_layer(identifier="layer_2")
-        self.plot.addInjectionBar(data_source=data_source_3, layer_identifier="layer_2", pen="y")
+        self.plot.addInjectionBar(data_source=data_source_3, layer="layer_2", pen="y")
         self.plot.addTimestampMarker(data_source=data_source_4)
         self.show()
         self.resize(800, 600)
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
         self.time_span_input.valueChanged.connect(self.change_plot_config)
         self.offset_input.valueChanged.connect(self.change_plot_config)
 
-    def change_plot_config(self, *args):
+    def change_plot_config(self, *_):
         """Change plot configuration depending on the input"""
         time_span = self.time_span_input.value()
         offset = self.offset_input.value()

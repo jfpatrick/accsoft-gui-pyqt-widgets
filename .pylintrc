@@ -142,6 +142,9 @@ disable=print-statement,
         # Own disabled
         too-few-public-methods,
         logging-fstring-interpolation,
+        unnecessary-pass,
+        too-many-lines,
+        fixme,
         bad-continuation # Related to https://github.com/PyCQA/pylint/issues/289
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -316,7 +319,7 @@ indent-string='    '
 max-line-length=160
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=2000
 
 # List of optional constructs for which whitespace checking is disabled. `dict-
 # separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
@@ -503,10 +506,10 @@ valid-metaclass-classmethod-first-arg=cls
 [DESIGN]
 
 # Maximum number of arguments for function / method.
-max-args=8
+max-args=15
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=10
+max-attributes=15
 
 # Maximum number of boolean expressions in an if statement.
 max-bool-expr=5
@@ -521,7 +524,7 @@ max-locals=20
 max-parents=7
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=20
+max-public-methods=40
 
 # Maximum number of return / yield for function / method body.
 max-returns=6

@@ -15,15 +15,13 @@ import accsoft_gui_pyqt_widgets.graph as accgraph
 class LocalTimerTimingSource(accgraph.UpdateSource):
     """Class for sending timing-update signals based on a QTimer instance."""
 
-    def __init__(self, offset: float = 0.0, *args, **kwargs):
+    def __init__(self, offset: float = 0.0):
         """Create new instance of LocalTimerTimingSource.
 
         Args:
             offset: offset of the emitted time to the actual current time
-            *args: Delegated to superclass
-            **kwargs: Delegated to superclass
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.timer = QTimer(self)
         self.offset = offset
         self.timer.timeout.connect(self._create_new_value)
@@ -61,18 +59,14 @@ class SinusCurveSource(accgraph.UpdateSource):
         x_offset: float,
         updates_per_second: int = 60,
         types_to_emit: Optional[List[SinusCurveSourceEmitTypes]] = None,
-        *args,
-        **kwargs
     ):
         """Constructor
 
         Args:
             y_offset (int):
             x_offset (float):
-            *args: Arguments
-            **kwargs: Keyword Arguments
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.sinus_curve = [
             y_val + y_offset
             for y_val in np.sin(
@@ -91,24 +85,24 @@ class SinusCurveSource(accgraph.UpdateSource):
 
     def _create_new_values(self):
         """Create new values fitting to all requested value types"""
-        for type in self.types_to_emit:
-            self._create_new_value(type)
+        for emit_type in self.types_to_emit:
+            self._create_new_value(emit_type)
 
-    def _create_new_value(self, type: SinusCurveSourceEmitTypes) -> None:
-        if type == SinusCurveSourceEmitTypes.POINT:
+    def _create_new_value(self, emit_type: SinusCurveSourceEmitTypes) -> None:
+        if emit_type == SinusCurveSourceEmitTypes.POINT:
             new_data = accgraph.PointData(
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
             )
             self.sig_data_update[accgraph.PointData].emit(new_data)
-        elif type == SinusCurveSourceEmitTypes.BAR:
+        elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
                 height=self.sinus_curve[self.pointer],
             )
             self.sig_data_update[accgraph.BarData].emit(new_data)
-        elif type == SinusCurveSourceEmitTypes.INJECTIONBAR:
+        elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
@@ -118,16 +112,16 @@ class SinusCurveSource(accgraph.UpdateSource):
             )
             self.sig_data_update[accgraph.InjectionBarData].emit(new_data)
             self.label_counter += 1
-        elif type == SinusCurveSourceEmitTypes.INFINITELINE:
+        elif emit_type == SinusCurveSourceEmitTypes.INFINITELINE:
             if self.label_counter % 3 == 0:
                 color = "g"
-                label = "EARLY \n" + f"LEIRDUMP ({self.label_counter})"
+                label = f"EARLY \nLEIRDUMP ({self.label_counter})"
             elif self.label_counter % 3 == 1:
                 color = "y"
-                label = "MDEARLY \n" + f"LEIRDUMP ({self.label_counter})"
+                label = f"MDEARLY \nLEIRDUMP ({self.label_counter})"
             else:
                 color = "r"
-                label = "NOMINAL \n" + f"LEIRDUMP ({self.label_counter})"
+                label = f"NOMINAL \nLEIRDUMP ({self.label_counter})"
             new_data = accgraph.TimestampMarkerData(
                 x_value=datetime.now().timestamp() + self.x_offset,
                 color=color,
@@ -136,7 +130,7 @@ class SinusCurveSource(accgraph.UpdateSource):
             self.sig_data_update[accgraph.TimestampMarkerData].emit(new_data)
             self.label_counter += 1
         else:
-            raise ValueError(f"Unknown signal type: {self.types_to_emit}")
+            raise ValueError(f"Unknown signal emit_type: {self.types_to_emit}")
         self.pointer = (self.pointer + 1) % len(self.sinus_curve)
 
 
@@ -147,14 +141,14 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
     older data saved in a logging system that will be emitted on a later point.
     """
 
-    def __init__(self, updates_per_second: int = 60, *args, **kwargs):
+    def __init__(self, updates_per_second: int = 60):
         """Constructor
 
         Args:
-            *args: Arguments
-            **kwargs: Keyword Arguments
+            updates_per_second: How many updates per second should be emitted
+                                by the data source?
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.updates_per_second = updates_per_second
         self.timer_diff = 1000 / updates_per_second
         self.y_values_live: List[float] = list(

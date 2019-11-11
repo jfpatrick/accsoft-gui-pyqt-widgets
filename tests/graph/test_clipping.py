@@ -395,7 +395,7 @@ def test_intersect_empty_list():
 def test_intersect_different_length_arrays():
     x_values: List[float] = [1, 2, 3, 4, 5]
     y_values: List[float] = [1, 2, 3, 4]
-    with (pytest.raises(ValueError)):
+    with pytest.raises(ValueError):
         curve = _curve(x_values, y_values)
         line = 0
         clipping.intersect(curve, line)

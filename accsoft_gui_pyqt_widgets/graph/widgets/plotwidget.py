@@ -9,15 +9,16 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from qtpy.QtCore import Slot, Q_ENUM, Property
+from qtpy.QtCore import Slot, Property
 from qtpy.QtWidgets import QWidget
+from qtpy.QtGui import QPen
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem, PlotItemLayer
+from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem, PlotItemLayer, LayerIdentification
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.bargraphitem import LiveBarGraphItem
 from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBarGraphItem
@@ -27,7 +28,7 @@ from accsoft_gui_pyqt_widgets.graph.designer import designer_check
 _LOGGER = logging.getLogger(__name__)
 
 
-class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
+class ExPlotWidget(pg.PlotWidget):
     """Extended PlotWidget
 
     Extended version of PyQtGraphs PlotWidget with additional functionality
@@ -42,13 +43,11 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
     sheet.
     """
 
-    Q_ENUM(PlotWidgetStyle)
-
     def __init__(
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            config: ExPlotWidgetConfig = None,
+            config: Optional[ExPlotWidgetConfig] = None,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs,
@@ -93,8 +92,8 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
 
     def _init_ex_plot_item(
             self,
-            config: ExPlotWidgetConfig = None,
-            axis_items: Dict[str, pg.AxisItem] = None,
+            config: Optional[ExPlotWidgetConfig] = None,
+            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs
     ):
@@ -150,27 +149,66 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
     def add_layer(
             self,
             identifier: str,
-            axis_kwargs: Dict[str, Any] = None,
-            axis_label_kwargs: Dict[str, Any] = None,
-    ) -> PlotItemLayer:
+            y_range: Optional[Tuple[float, float]] = None,
+            y_range_padding: Optional[float] = None,
+            invert_y: bool = False,
+            pen: Optional[QPen] = None,
+            link_view: Optional[pg.ViewBox] = None,
+            max_tick_length: int = -5,
+            show_values: bool = True,
+            text: Optional[str] = None,
+            units: Optional[str] = None,
+            unit_prefix: Optional[str] = None,
+            **axis_label_css_kwargs
+    ) -> "PlotItemLayer":
         """add a new layer to the plot for plotting a curve in a different range
 
-        Args:
+        Layer Args:
             identifier: string identifier for the new layer
-            axis_kwargs: Dictionary with the keyword arguments for the new layer's AxisItem, see AxiItem constructor for more information
-            axis_label_kwargs: Dictionary with Keyword arguments passed to setLabel function of the new Axis
+
+        Range Setting Args:
+            y_range: set the view range of the new y axis on creation.
+                     This is equivalent to calling setYRange(layer=...)
+            y_range_padding: Padding to use when setting the y range
+            invert_y: Invert the y axis of the newly created layer. This
+                      is equivalent to calling invertY(layer=...)
+
+        Axis Item Args:
+            max_tick_length: maximum length of ticks to draw. Negative values
+                             draw into the plot, positive values draw outward.
+            link_view: causes the range of values displayed in the axis
+                       to be linked to the visible range of a ViewBox.
+            show_values: Whether to display values adjacent to ticks
+            pen: Pen used when drawing ticks.
+
+        Axis Label Args:
+            text: The text (excluding units) to display on the label for this
+                  axis
+            units: The units for this axis. Units should generally be given
+                   without any scaling prefix (eg, 'V' instead of 'mV'). The
+                   scaling prefix will be automatically prepended based on the
+                   range of data displayed.
+            unit_prefix: prefix used for units displayed on the axis
+            axis_label_css_kwargs: All extra keyword arguments become CSS style
+                                   options for the <span> tag which will surround
+                                   the axis label and units
 
         Returns:
             New created layer instance
         """
-        if axis_kwargs is None:
-            axis_kwargs = {}
-        if axis_label_kwargs is None:
-            axis_label_kwargs = {}
         return self.plotItem.add_layer(
             identifier=identifier,
-            axis_kwargs=axis_kwargs,
-            axis_label_kwargs=axis_label_kwargs
+            y_range=y_range,
+            y_range_padding=y_range_padding,
+            invert_y=invert_y,
+            pen=pen,
+            link_view=link_view,
+            max_tick_length=max_tick_length,
+            show_values=show_values,
+            text=text,
+            units=units,
+            unit_prefix=unit_prefix,
+            **axis_label_css_kwargs
         )
 
     def addCurve(  # pylint: disable=invalid-name
@@ -178,7 +216,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
             c: Optional[pg.PlotDataItem] = None,  # pylint: disable=invalid-name
             params: Optional[Any] = None,
             data_source: Optional[UpdateSource] = None,
-            layer_identifier: Optional[str] = None,
+            layer: Optional[LayerIdentification] = None,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
             **plotdataitem_kwargs,
     ) -> pg.PlotDataItem:
@@ -191,7 +229,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
             c: PlotDataItem instance that is added, for backwards compatibility to the original function
             params: params for c, for backwards compatibility to the original function
             data_source: source for new data that the curve should display
-            layer_identifier: identifier of the layer the new curve is supposed to be added to
+            layer: identifier of the layer the new curve is supposed to be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
 
@@ -202,7 +240,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
             c=c,
             params=params,
             data_source=data_source,
-            layer_identifier=layer_identifier,
+            layer=layer,
             buffer_size=buffer_size,
             **plotdataitem_kwargs,
         )
@@ -210,15 +248,15 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
     def addBarGraph(  # pylint: disable=invalid-name
             self,
             data_source: Optional[UpdateSource] = None,
-            layer_identifier: Optional[str] = None,
+            layer: Optional[LayerIdentification] = None,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
             **bargraph_kwargs
     ) -> LiveBarGraphItem:
         """Add a new bargraph attached to a live data source
 
         Args:
-            data_source (UpdateSource): Source emitting new data the graph should show
-            layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            data_source: Source emitting new data the graph should show
+            layer: Layer Identifier the curve should be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **bargraph_kwargs: keyword arguments for the BarGraphItem base class
 
@@ -227,7 +265,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
         """
         return self.plotItem.addBarGraph(
             data_source=data_source,
-            layer_identifier=layer_identifier,
+            layer=layer,
             buffer_size=buffer_size,
             **bargraph_kwargs
         )
@@ -235,7 +273,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
     def addInjectionBar(  # pylint: disable=invalid-name
             self,
             data_source: UpdateSource,
-            layer_identifier: Optional[str] = None,
+            layer: Optional[LayerIdentification] = None,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
             **errorbaritem_kwargs,
     ) -> LiveInjectionBarGraphItem:
@@ -245,8 +283,8 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
         be added to the plotitem
 
         Args:
-            data_source (UpdateSource): Source for data related updates
-            layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            data_source: Source for data related updates
+            layer: Layer Identifier the curve should be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
 
@@ -255,7 +293,7 @@ class ExPlotWidget(pg.PlotWidget, PlotWidgetStyle):
         """
         return self.plotItem.addInjectionBar(
             data_source=data_source,
-            layer_identifier=layer_identifier,
+            layer=layer,
             buffer_size=buffer_size,
             **errorbaritem_kwargs
         )
@@ -469,7 +507,7 @@ class ExPlotWidgetProperties:
                 self._set_layer_identifiers(new_val=self._layer_identifiers_from_property[:new_val])
             elif new_val > len(self._layer_identifiers_from_property):
                 id_number = 0
-                for num in range(len(self._layer_identifiers_from_property), new_val):
+                for _ in range(len(self._layer_identifiers_from_property), new_val):
                     while f"layer_{id_number}" in self._layer_identifiers_from_property:
                         id_number += 1
                     self._layer_identifiers_from_property.append(f"layer_{id_number}")
@@ -623,7 +661,7 @@ class ExPlotWidgetProperties:
                     self.plotItem.setLabel(axis=entry, text=f"{self._standard_axis_labels[entry]}")  # type: ignore[attr-defined]
             else:
                 try:
-                    layer = self.plotItem.get_layer_by_identifier(layer_identifier=entry)  # type: ignore[attr-defined]
+                    layer = self.plotItem.get_layer(layer_identifier=entry)  # type: ignore[attr-defined]
                     layer.axis_item.setLabel(f"{self._layer_axis_labels[entry]}")
                 except KeyError:
                     pass
@@ -641,7 +679,7 @@ class ExPlotWidgetProperties:
                 self.setYRange(*self._axis_ranges()[entry])  # type: ignore[attr-defined]
             else:
                 try:
-                    layer = self.plotItem.get_layer_by_identifier(layer_identifier=entry)  # type: ignore[attr-defined]
+                    layer = self.plotItem.get_layer(layer_identifier=entry)  # type: ignore[attr-defined]
                     layer.view_box.setYRange(min=self._axis_ranges()[entry][0], max=self._axis_ranges()[entry][1])
                 except KeyError:
                     pass
@@ -669,7 +707,7 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            config: ExPlotWidgetConfig = None,
+            config: Optional[ExPlotWidgetConfig] = None,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs,
@@ -739,7 +777,7 @@ class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[m
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            config: ExPlotWidgetConfig = None,
+            config: Optional[ExPlotWidgetConfig] = None,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs,
@@ -773,7 +811,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            config: ExPlotWidgetConfig = None,
+            config: Optional[ExPlotWidgetConfig] = None,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs,

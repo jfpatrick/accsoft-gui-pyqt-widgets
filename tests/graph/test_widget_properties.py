@@ -1,6 +1,7 @@
 """
 Tests for widget properties used by the designer plugin.
 """
+# pylint: disable=protected-access
 
 import pytest
 import json
@@ -18,7 +19,6 @@ from .mock_utils.widget_test_window import MinimalTestWindow
     StaticPlotWidget
 ])
 def test_title_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -33,7 +33,6 @@ def test_title_property(qtbot, widget):
     StaticPlotWidget
 ])
 def test_grid_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -58,7 +57,6 @@ def test_grid_property(qtbot, widget):
     SlidingPlotWidget,
 ])
 def test_time_line_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -75,7 +73,6 @@ def test_time_line_property(qtbot, widget):
     SlidingPlotWidget,
 ])
 def test_time_span_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -93,7 +90,6 @@ def test_time_span_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_bottom_axis_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -109,7 +105,6 @@ def test_bottom_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_top_axis_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -125,7 +120,6 @@ def test_top_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_right_axis_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -141,7 +135,6 @@ def test_right_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_left_axis_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -157,7 +150,6 @@ def test_left_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_axis_labels_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -179,7 +171,7 @@ def test_axis_labels_property(qtbot, widget):
     assert window.plot.plotItem.getAxis("bottom").labelText == "bottom"
     assert window.plot.plotItem.getAxis("left").labelText == "left"
     assert window.plot.plotItem.getAxis("right").labelText == ""
-    assert window.plot.plotItem.get_layer_by_identifier("0").axis_item.labelText == "0"
+    assert window.plot.plotItem.getAxis("0").labelText == "0"
     window.plot._set_show_top_axis(new_val=True)
     window.plot._set_show_bottom_axis(new_val=True)
     window.plot._set_show_right_axis(new_val=True)
@@ -188,7 +180,7 @@ def test_axis_labels_property(qtbot, widget):
     assert window.plot.plotItem.getAxis("bottom").labelText == "bottom"
     assert window.plot.plotItem.getAxis("left").labelText == "left"
     assert window.plot.plotItem.getAxis("right").labelText == "right"
-    assert window.plot.plotItem.get_layer_by_identifier("0").axis_item.labelText == "0"
+    assert window.plot.plotItem.getAxis("0").labelText == "0"
 
 
 @pytest.mark.parametrize("widget", [
@@ -197,7 +189,6 @@ def test_axis_labels_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_axis_ranges_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -217,7 +208,7 @@ def test_axis_ranges_property(qtbot, widget):
     actual = window.plot.plotItem.vb.targetRange()
     assert np.allclose(np.array(actual[0]), np.array([-5.0, 5.0]), atol=0.5)
     assert np.allclose(np.array(actual[1]), np.array([0.0, 10.0]), atol=0.5)
-    actual = window.plot.plotItem.get_layer_by_identifier(layer_identifier="0").view_box.targetRange()
+    actual = window.plot.plotItem.getViewBox(layer="0").targetRange()
     assert np.allclose(np.array(actual[1]), np.array([-10.0, 10.0]), atol=1.0)
     assert window.plot._get_axis_ranges() == json.dumps(ranges)
     # Change ranges again
@@ -230,7 +221,7 @@ def test_axis_ranges_property(qtbot, widget):
     actual = window.plot.plotItem.vb.targetRange()
     assert np.allclose(np.array(actual[0]), np.array([-1.0, 1.0]), atol=0.1)
     assert np.allclose(np.array(actual[1]), np.array([-10.0, 10.0]), atol=1.0)
-    actual = window.plot.plotItem.get_layer_by_identifier(layer_identifier="0").view_box.targetRange()
+    actual = window.plot.plotItem.getViewBox(layer="0").targetRange()
     assert np.allclose(np.array(actual[1]), np.array([-100.0, 100.0]), atol=10.0)
     # Add key that is non existing layer key
     ranges = {
@@ -243,7 +234,7 @@ def test_axis_ranges_property(qtbot, widget):
     actual = window.plot.plotItem.vb.targetRange()
     assert np.allclose(np.array(actual[0]), np.array([-1.0, 1.0]), atol=0.1)
     assert np.allclose(np.array(actual[1]), np.array([-10.0, 10.0]), atol=1.0)
-    actual = window.plot.plotItem.get_layer_by_identifier(layer_identifier="0").view_box.targetRange()
+    actual = window.plot.plotItem.getViewBox(layer="0").targetRange()
     assert np.allclose(np.array(actual[1]), np.array([-100.0, 100.0]), atol=10.0)
 
 # ~~~~~~~~~~~~~~ Tests for layer property synchronization ~~~~~~~~~~~~~~~~~~~~~
@@ -255,7 +246,6 @@ def test_axis_ranges_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_additional_layer_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -286,7 +276,6 @@ def test_additional_layer_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_identifiers_property(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -314,7 +303,6 @@ def test_layer_identifiers_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_rename(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -362,7 +350,6 @@ def test_layer_rename(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_removal(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -409,7 +396,6 @@ def test_layer_removal(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_removal_and_rename(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )
@@ -450,7 +436,6 @@ def test_layer_removal_and_rename(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_shuffle_layers(qtbot, widget):
-    # pylint: disable=protected-access
     window = MinimalTestWindow(
         plot_widget=widget()
     )

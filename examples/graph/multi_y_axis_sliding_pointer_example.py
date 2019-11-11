@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         )
         self.plot.plotItem.add_layer(identifier="new axis")
         self.plot.plotItem.addCurve(
-            data_source=data_source_1, layer_identifier="new axis", pen="r"
+            data_source=data_source_1, layer="new axis", pen="r"
         )
         self.plot.addCurve(data_source=data_source_2, pen="y")
         self.show()

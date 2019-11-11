@@ -1,3 +1,7 @@
+"""
+Module containing QtDesigner plugin for different type of graphs.
+"""
+
 from accsoft_gui_pyqt_widgets.graph import ScrollingPlotWidget, SlidingPlotWidget, StaticPlotWidget
 import designer_base
 

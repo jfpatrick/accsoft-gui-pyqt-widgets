@@ -1,7 +1,7 @@
 """Module for time span of different live data plots"""
 
-import numpy as np
 import abc
+import numpy as np
 
 
 class PlottingTimeSpan(metaclass=abc.ABCMeta):

@@ -10,32 +10,32 @@ import accsoft_gui_pyqt_widgets.graph as accgraph
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
 def test_valid_curves(qtbot, minimal_test_window, warn_always, recwarn, missing_value):
-    ds = accgraph.UpdateSource()
-    minimal_test_window.plot.addCurve(data_source=ds, pen="r")
+    data_source = accgraph.UpdateSource()
+    minimal_test_window.plot.addCurve(data_source=data_source, pen="r")
     model: accgraph.CurveDataModel = minimal_test_window.plot.plotItem.get_live_data_curves()[0].get_data_model()
     buffer: accgraph.SortedCurveDataBuffer = model.get_full_data_buffer()
     np.testing.assert_equal(buffer[0], [])
     np.testing.assert_equal(buffer[1], [])
     # valid
-    ds.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=2.0))
+    data_source.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=2.0))
     assert len(recwarn) == 0
     buffer = model.get_full_data_buffer()
     np.testing.assert_equal(buffer[0], [0.0])
     np.testing.assert_equal(buffer[1], [2.0])
     # valid
-    ds.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=1.0, y_value=missing_value))
+    data_source.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=1.0, y_value=missing_value))
     assert len(recwarn) == 0
     buffer = model.get_full_data_buffer()
     np.testing.assert_equal(buffer[0], [0.0, 1.0])
     np.testing.assert_equal(buffer[1], [2.0, np.nan])
     # valid
-    ds.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=missing_value, y_value=missing_value))
+    data_source.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=missing_value, y_value=missing_value))
     assert len(recwarn) == 0
     buffer = model.get_full_data_buffer()
     np.testing.assert_equal(buffer[0], [0.0, 1.0, np.nan])
     np.testing.assert_equal(buffer[1], [2.0, np.nan, np.nan])
     # valid
-    ds.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=missing_value))
+    data_source.sig_data_update[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=missing_value))
     assert len(recwarn) == 0
     buffer = model.get_full_data_buffer()
     np.testing.assert_equal(buffer[0], [0.0, 0.0, 1.0, np.nan])

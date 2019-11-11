@@ -2,10 +2,11 @@
 
 Configuration classes for wrapping widget and curve parameters
 """
+from enum import IntEnum
 import numpy as np
 
 
-class PlotWidgetStyle:
+class PlotWidgetStyle(IntEnum):
     """
     Enumeration for the different available styles for the widgets
     Subclassing python Enum will lead to errors with the Designer plugin.
@@ -26,18 +27,6 @@ class PlotWidgetStyle:
     direction since its x range is fixed.
     """
 
-    @staticmethod
-    def get_name(number: int) -> str:
-        """
-        Checks for all class members that are integer values, if one value
-        matches the given integer, its style name will be returned. If no
-        value representing an integer value is found
-        """
-        for member in PlotWidgetStyle.__dict__.keys():
-            if not member.startswith("_") and getattr(PlotWidgetStyle, member) == number:
-                return member
-        return "UNKNOWN PLOTTING STYLE"
-
 
 class ExPlotWidgetConfig:
     """ Configuration for the PlotWidget
@@ -50,7 +39,7 @@ class ExPlotWidgetConfig:
         self,
         time_span: float = 60.0,
         time_progress_line: bool = False,
-        plotting_style: int = PlotWidgetStyle.SCROLLING_PLOT,
+        plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
         scrolling_plot_fixed_x_range: bool = False,
         scrolling_plot_fixed_x_range_offset: float = np.nan,
     ):
@@ -68,7 +57,7 @@ class ExPlotWidgetConfig:
             plotting_style: style that is supposed to be used
                 for the drawing of the curves in the plot
         """
-        self._plotting_style: int = plotting_style
+        self._plotting_style: PlotWidgetStyle = plotting_style
         self._time_span: float = time_span
         self._time_progress_line: bool = time_progress_line
         self._scrolling_plot_fixed_x_range: bool = scrolling_plot_fixed_x_range
@@ -83,12 +72,12 @@ class ExPlotWidgetConfig:
             f"scrolling plot fixed x range offset: {self.scrolling_plot_fixed_x_range_offset})"
 
     @property
-    def plotting_style(self) -> int:
+    def plotting_style(self) -> PlotWidgetStyle:
         """Property for plotting style"""
         return self._plotting_style
 
     @plotting_style.setter
-    def plotting_style(self, plotting_style: int):
+    def plotting_style(self, plotting_style: PlotWidgetStyle):
         """Property setter for plotting style"""
         self._plotting_style = plotting_style
 
@@ -107,8 +96,7 @@ class ExPlotWidgetConfig:
         """Property for time progress line"""
         if self.plotting_style != PlotWidgetStyle.STATIC_PLOT:
             return self._time_progress_line
-        else:
-            return False
+        return False
 
     @time_progress_line.setter
     def time_progress_line(self, time_progress_line: bool):
@@ -120,8 +108,7 @@ class ExPlotWidgetConfig:
         """Property for fixed scrolling x range"""
         if self.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
             return self._scrolling_plot_fixed_x_range
-        else:
-            return False
+        return False
 
     @scrolling_plot_fixed_x_range.setter
     def scrolling_plot_fixed_x_range(self, scrolling_plot_fixed_x_range: bool):
@@ -135,8 +122,7 @@ class ExPlotWidgetConfig:
             if np.isnan(self._scrolling_plot_fixed_x_range_offset):
                 return 0.0
             return self._scrolling_plot_fixed_x_range_offset
-        else:
-            return np.nan
+        return np.nan
 
     @scrolling_plot_fixed_x_range_offset.setter
     def scrolling_plot_fixed_x_range_offset(self, scrolling_plot_fixed_x_range_offset: float):

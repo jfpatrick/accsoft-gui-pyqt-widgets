@@ -6,9 +6,9 @@ that are able to safe different types and amount of data
 import abc
 import math
 import logging
+from typing import Optional, Tuple, List, Union
 
 import numpy as np
-from typing import Optional, Tuple, List, Union
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import calc_intersection
 from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
@@ -543,7 +543,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             primary_values=x_values, secondary_values_list=[y_values]
         )
 
-    def get_subset(
+    def get_subset(  # pylint: disable=arguments-differ
         self, start: float, end: float, clip_at_boundaries: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get Subset of the data

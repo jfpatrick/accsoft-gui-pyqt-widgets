@@ -12,7 +12,7 @@ different length arrays into an .
 import warnings
 import logging
 import abc
-from typing import List, Union
+from typing import List, Union, Optional
 from collections import namedtuple
 
 import numpy as np
@@ -178,9 +178,9 @@ class CurveData(PlottingItemEntry):
         """
         problems: List[str] = []
         valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x, y) in enumerate(zip(self.x_values, self.y_values)):
-            if (x is None or np.isnan(x)) and (y is not None and not np.isnan(y)):
-                problems.append(f"Point {index}: (x={x}, y={y})")
+        for index, (x_data, y_data) in enumerate(zip(self.x_values, self.y_values)):
+            if (x_data is None or np.isnan(x_data)) and (y_data is not None and not np.isnan(y_data)):
+                problems.append(f"Point {index}: (x={x_data}, y={y_data})")
                 valid_indices[index] = False
         if problems and warn:
             msg = "Points in CurveData with NaN as the x value and a value other than NaN " \
@@ -280,7 +280,7 @@ class BarCollectionData(PlottingItemEntry):
             y_values = np.array(y_values)
         if isinstance(heights, list):
             heights = np.array(heights)
-        if not (x_values.size == y_values.size == heights.size):
+        if not x_values.size == y_values.size == heights.size:
             raise ValueError(f"The bar collection cannot be created with different length "
                              f"parameters: ({x_values.size}, {y_values.size}, {heights.size}).")
         self.x_values: np.ndarray = x_values
@@ -325,9 +325,9 @@ class BarCollectionData(PlottingItemEntry):
         """
         problems: List[str] = []
         valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x, y, height) in enumerate(zip(self.x_values, self.y_values, self.heights)):
-            if (x is None or np.isnan(x)) or (height is None or np.isnan(height)):
-                problems.append(f"Bar {index}: (x={x}, y={y}, height={height})")
+        for index, (x_data, y_data, height) in enumerate(zip(self.x_values, self.y_values, self.heights)):
+            if (x_data is None or np.isnan(x_data)) or (height is None or np.isnan(height)):
+                problems.append(f"Bar {index}: (x={x_data}, y={y_data}, height={height})")
                 valid_indices[index] = False
         if problems and warn:
             msg = "Bars with NaN as x value or height are invalid." \
@@ -353,7 +353,7 @@ class InjectionBarData(PlottingItemEntry):
         height: float = np.nan,
         width: float = np.nan,
         label: str = "",
-        parent: QObject = None,
+        parent: Optional[QObject] = None,
     ):
         super().__init__(parent)
         self.x_value: float = x_value if x_value is not None else np.nan
@@ -426,7 +426,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
         heights: Union[List, np.ndarray],
         widths: Union[List, np.ndarray],
         labels: Union[List, np.ndarray],
-        parent: QObject = None,
+        parent: Optional[QObject] = None,
     ):
         super().__init__(parent)
         if isinstance(x_values, list):
@@ -439,7 +439,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
             widths = np.array(widths)
         if isinstance(labels, list):
             labels = np.array(labels)
-        if not (x_values.size == y_values.size == heights.size == widths.size == labels.size):
+        if not x_values.size == y_values.size == heights.size == widths.size == labels.size:
             raise ValueError(f"The injection bar collection cannot be created with different length "
                              f"parameters: ({x_values.size}, {y_values.size}, {heights.size},"
                              f"{widths.size}, {labels.size}).")
@@ -489,9 +489,9 @@ class InjectionBarCollectionData(PlottingItemEntry):
         """
         problems: List[str] = []
         valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x, y, height, width, label) in enumerate(zip(self.x_values, self.y_values, self.heights, self.widths, self.labels)):
-            if x is None or np.isnan(x) or y is None or np.isnan(y):
-                problems.append(f"InjectionBarData {index}: (x={x}, y={y}, height={height}, width={width}, labels={label})")
+        for index, (x_data, y_data, height, width, label) in enumerate(zip(self.x_values, self.y_values, self.heights, self.widths, self.labels)):
+            if x_data is None or np.isnan(x_data) or y_data is None or np.isnan(y_data):
+                problems.append(f"InjectionBarData {index}: (x={x_data}, y={y_data}, height={height}, width={width}, labels={label})")
                 valid_indices[index] = False
         if problems and warn:
             msg = "InjectionBars in InjectionBarData with NaN as x or y value are invalid." \
@@ -526,7 +526,9 @@ class TimestampMarkerData(PlottingItemEntry):
         # Catch invalid colors and replace with the default color to prevent exceptions
         try:
             pg.mkColor(color)
-        except (IndexError, Exception):
+        except Exception:  # pylint: disable=broad-except
+            # mkColor() raises Exception every time it can not interpret the passed color
+            # In these cases we want to fall back to our default color
             _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
                             f"since '{color}' can not be used as a color.")
             color = DEFAULT_COLOR
@@ -600,13 +602,15 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
             for index, color in enumerate(colors):
                 try:
                     pg.mkColor(color)
-                except (IndexError, Exception):
+                except Exception:  # pylint: disable=broad-except
+                    # mkColor() raises Exception every time it can not interpret the passed color
+                    # In these cases we want to fall back to our default color
                     _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
                                     f"since '{color}' can not be used as a color.")
                     colors[index] = DEFAULT_COLOR
         if isinstance(labels, list):
             labels = np.array(labels)
-        if not (x_values.size == colors.size == labels.size):
+        if not x_values.size == colors.size == labels.size:
             raise ValueError(f"The timestamp marker collection cannot be created with different length "
                              f"parameters: ({x_values.size}, {colors.size}, {labels.size})")
         self.x_values: np.ndarray = x_values
@@ -649,9 +653,9 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
         """
         problems: List[str] = []
         valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x, color, label) in enumerate(zip(self.x_values, self.colors, self.labels)):
-            if x is None or np.isnan(x):
-                problems.append(f"TimestampMarker {index}: (x={x}, color={color}, labels={label})")
+        for index, (x_data, color, label) in enumerate(zip(self.x_values, self.colors, self.labels)):
+            if x_data is None or np.isnan(x_data):
+                problems.append(f"TimestampMarker {index}: (x={x_data}, color={color}, labels={label})")
                 valid_indices[index] = False
         if problems and warn:
             msg = "Timestamp markers with NaN as x are invalid." \

@@ -31,7 +31,7 @@ class LiveBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDa
 
     """Base class for different live bar graph plots"""
 
-    supported_plotting_styles: List[int] = list(plotting_style_to_class_mapping.keys())
+    supported_plotting_styles: List[PlotWidgetStyle] = list(plotting_style_to_class_mapping.keys())
 
     def __init__(
         self,

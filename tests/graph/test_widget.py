@@ -1,7 +1,7 @@
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring, protected-access
 
 from datetime import datetime
-from typing import Union, List, Tuple, Dict, Type
+from typing import Union, List, Tuple, Dict, Type, Optional
 import itertools
 
 import pytest
@@ -30,13 +30,13 @@ from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
 
 
-def check_axis_strings(plot_item: ExPlotItem, style: int) -> bool:
+def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
     """
     Check if the axes are showing the expected text at each tick
 
     Args:
-        plot_item (ExPlotItem):
-        style (PlotWidgetStyle):
+        plot_item: Plot item which's axes should be checked
+        style: Expected style for the plot item which the axes depend on
 
     Returns:
         True, if the Axis item processes the values as expected
@@ -74,7 +74,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: int) -> bool:
 def test_all_available_widget_configurations(
     qtbot,
     time_span: int,
-    plotting_style: int,
+    plotting_style: PlotWidgetStyle,
     time_line: bool,
     item_to_add: Tuple[Type[DataModelBasedItem], str, Dict]
 ):
@@ -88,7 +88,7 @@ def test_all_available_widget_configurations(
         time_line: should a line at the current timestamp be drawn
         item_to_add: Type of data-item to add and the key for getting the fitting opts
     """
-    # pylint: disable=too-many-locals,protected-access
+    # pylint: disable=too-many-locals
 
     plot_config = ExPlotWidgetConfig(
         time_span=time_span,
@@ -149,7 +149,7 @@ def test_change_plot_config_on_running_plot(
     qtbot,
     time_span_change: List[float],
     x_offset_change: List[float],
-    plotting_style_change: List[int],
+    plotting_style_change: List[PlotWidgetStyle],
     time_line_change: List[bool],
 ):
     """Test if changes in the configuration are applied correctly in an already running plot"""
@@ -181,7 +181,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.add_layer(identifier="layer_1")
         plotwidget.addBarGraph(  # type: ignore
             data_source=ds_bar,
-            layer_identifier="layer_1",
+            layer="layer_1",
             **_test_change_plot_config_on_running_plot_opts["bargraph"]  # type: ignore[arg-type]
         )
         emit_fitting_value(LiveBarGraphItem, ds_bar, 10.0, 0.0)
@@ -191,7 +191,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.add_layer(identifier="layer_2")
         plotwidget.addInjectionBar(  # type: ignore
             data_source=ds_injection,
-            layer_identifier="layer_2",
+            layer="layer_2",
             **_test_change_plot_config_on_running_plot_opts["injectionbar"]  # type: ignore[arg-type]
         )
         emit_fitting_value(LiveInjectionBarGraphItem, ds_injection, 10.0, 0.0)
@@ -235,7 +235,7 @@ def test_change_plot_config_on_running_plot(
     PlotWidgetStyle.SCROLLING_PLOT,
     PlotWidgetStyle.SLIDING_POINTER
 ])
-def test_set_view_range(qtbot, plotting_style):
+def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     """
     Test if the ViewRange can be set as expected from the PlotWidget
     as well as from the PlotItem
@@ -249,7 +249,7 @@ def test_set_view_range(qtbot, plotting_style):
     plot_widget = window.plot
     plot_item = plot_widget.plotItem
     source = UpdateSource()
-    curve: LivePlotCurve = plot_item.addCurve(data_source=source)
+    plot_item.addCurve(data_source=source)
     source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
     # Set Range on PlotWidget
     expected = [[-2.5, 2.5], [-1.5, 1.5]]
@@ -335,13 +335,13 @@ def test_static_items_config_change(qtbot, config_style_change):
 def check_scrolling_plot_with_fixed_x_range(
     time_span_change: float,
     x_offset_change: float,
-    plotting_style_change: int,
+    plotting_style_change: PlotWidgetStyle,
     plotwidget: ExPlotWidget,
 ):
     """Check (if the config fits) if the fixed x range on the scrolling plot is set right."""
     if plotting_style_change == PlotWidgetStyle.SCROLLING_PLOT:
-        for vb in plotwidget.plotItem.get_all_viewboxes():
-            check_range(actual_range=vb.targetRange(), expected_range=[
+        for view_box in plotwidget.plotItem.get_all_viewboxes():
+            check_range(actual_range=view_box.targetRange(), expected_range=[
                 [(30.0 + x_offset_change) - time_span_change, 30.0 + x_offset_change],
                 [np.nan, np.nan]
             ])
@@ -358,8 +358,13 @@ def check_range(actual_range: List[List[float]], expected_range: List[List[float
             assert np.isclose(actual[1], expected[1], atol=absolute_tolerance)
 
 
-def check_decorators(plot_item: ExPlotItem, prior_items: List = [None, None, None]):
+def check_decorators(
+        plot_item: ExPlotItem,
+        prior_items: Optional[List] = None,
+):
     """Check if all possible decorators are drawn correctly"""
+    if prior_items is None:
+        prior_items = [None, None, None]
     check_bottom_axis(plot_item=plot_item)
     check_time_line(plot_item=plot_item, prior_item=prior_items[0])
     check_sliding_pointer_time_span_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
@@ -371,7 +376,10 @@ def check_bottom_axis(plot_item: ExPlotItem):
     assert isinstance(plot_item.getAxis("bottom"), expected)
 
 
-def check_time_line(plot_item: ExPlotItem, prior_item: pg.InfiniteLine = None):
+def check_time_line(
+        plot_item: ExPlotItem,
+        prior_item: Optional[pg.InfiniteLine] = None,
+):
     """Check if the timeline is created according to the ExPlotItems config"""
     time_line_drawn = plot_item.plot_config.time_progress_line
     if time_line_drawn:
@@ -386,8 +394,13 @@ def check_time_line(plot_item: ExPlotItem, prior_item: pg.InfiniteLine = None):
             assert prior_item not in plot_item.vb.addedItems
 
 
-def check_sliding_pointer_time_span_boundaries(plot_item: ExPlotItem, prior_items: List = []):
+def check_sliding_pointer_time_span_boundaries(
+        plot_item: ExPlotItem,
+        prior_items: Optional[List] = None,
+):
     """Check if the time span boundaries on a sliding pointer plot are set correctly"""
+    if prior_items is None:
+        prior_items = []
     boundaries_drawn = plot_item.plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
     if boundaries_drawn:
         assert (plot_item._time_span_start_boundary is not None and plot_item._time_span_end_boundary is not None)

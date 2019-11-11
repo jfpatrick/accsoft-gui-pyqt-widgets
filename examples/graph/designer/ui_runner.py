@@ -12,13 +12,19 @@ import random
 from datetime import datetime
 
 from qtpy import QtWidgets, QtCore, uic
-import accsoft_gui_pyqt_widgets.graph as accgraph
 import pyqtgraph as pg
+
+import accsoft_gui_pyqt_widgets.graph as accgraph
 
 
 class Ui(
     QtWidgets.QMainWindow,
 ):
+
+    """
+    Window which's content is loaded from the 'plot.ui' UI File created with Qt Designer.
+    """
+
     def __init__(self):
         super(Ui, self).__init__()
         # References to the plots from the ui file with typing info for auto completion
@@ -62,6 +68,13 @@ class RandomDataSource(accgraph.UpdateSource):
             )
         )
 
-app = QtWidgets.QApplication(sys.argv)
-window = Ui()
-app.exec_()
+
+def run():
+    """Run Application"""
+    app = QtWidgets.QApplication(sys.argv)
+    _ = Ui()
+    app.exec_()
+
+
+if __name__ == "__main__":
+    run()

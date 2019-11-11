@@ -78,7 +78,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     @staticmethod
     def check_plotting_style_support(
             plot_config: ExPlotWidgetConfig,
-            supported_styles: List[int]
+            supported_styles: List[PlotWidgetStyle]
     ) -> None:
         """ Check an items plotting style compatibility
 
@@ -96,7 +96,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         if not supported_styles:
             return
         if plot_config.plotting_style not in supported_styles:
-            raise TypeError(f"Unsupported plotting style: {PlotWidgetStyle.get_name(plot_config.plotting_style)}")
+            raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style.name}")
 
 
 class AbstractDataModelBasedItemMeta(type(pg.GraphicsObject), type(DataModelBasedItem)):  # type: ignore

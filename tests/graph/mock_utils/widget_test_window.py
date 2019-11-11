@@ -25,7 +25,7 @@ class PlotWidgetTestWindow(QMainWindow):
     def __init__(
         self,
         plot_config: ExPlotWidgetConfig,
-        item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = None,
+        item_to_add: Union[Type[DataModelBasedItem], str, None] = None,
         opts: Optional[Dict] = None,
         should_create_timing_source: bool = True
     ):
@@ -49,7 +49,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self.plot: ExPlotWidget = ExPlotWidget(
             timing_source=self.time_source_mock, config=plot_config
         )
-        self.item_to_add: Optional[Union[Type[DataModelBasedItem], str]] = item_to_add
+        self.item_to_add: Union[Type[DataModelBasedItem], str, None] = item_to_add
         self.opts: dict = opts
         self.add_item()
         self.resize(800, 600)

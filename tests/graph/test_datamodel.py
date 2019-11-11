@@ -15,7 +15,7 @@ import accsoft_gui_pyqt_widgets.graph as accgraph
 from .mock_utils import datamodel_generalization_util as dm_util
 from .mock_utils.mock_data_source import MockDataSource
 
-datamodels_to_test = [
+DATAMODELS_TO_TEST = [
     accgraph.CurveDataModel,
     accgraph.BarGraphDataModel,
     accgraph.InjectionBarDataModel,
@@ -25,7 +25,7 @@ datamodels_to_test = [
 # ~~~~~ Simple ordering for different datamodels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_datamodel_is_empty(model_type: Type[accgraph.BaseDataModel]):
     """ Check if datamodel is empty is correct """
     data_source: MockDataSource = MockDataSource()
@@ -39,7 +39,7 @@ def test_datamodel_is_empty(model_type: Type[accgraph.BaseDataModel]):
     assert not datamodel.is_empty()
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_data_source_replacement(model_type: Type[accgraph.BaseDataModel]):
     """Check replacement of data source with and without buffer clearing"""
     data_source_1: MockDataSource = MockDataSource()
@@ -64,16 +64,18 @@ def test_data_source_replacement(model_type: Type[accgraph.BaseDataModel]):
 
 # ~~~~~ Databuffer tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_append_long_list_of_simple_values(model_type: Type[accgraph.BaseDataModel]):
+    """Append a long list of simple values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
     data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, np.arange(start=0.0, stop=101.0)))
     assert dm_util.check_datamodel(datamodel, 5, [98.0, 99.0, 100.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type: Type[accgraph.BaseDataModel]):
+    """Append a long list that is longer than the buffers overall size"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
     data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, np.arange(start=5.0, stop=10.0)))
@@ -82,8 +84,9 @@ def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type
     assert dm_util.check_datamodel(datamodel, 5, [98.0, 99.0, 100.0])
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_type: Type[accgraph.BaseDataModel]):
+    """Append a long list that is longer than the buffers overall size while the buffer is already filled to a part"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
     data_source_1.emit_new_object(dm_util.create_fitting_object_collection(datamodel, np.arange(start=7.0, stop=10.0)))
@@ -94,6 +97,7 @@ def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_ty
 
 @pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
 def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.BaseDataModel]):
+    """Append a nan value to represent a split in a line"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
     data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
@@ -162,7 +166,7 @@ def test_append_list_containing_nan(model_type: Type[accgraph.BaseDataModel]):
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does not contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
@@ -274,37 +278,37 @@ def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_
 # ~~~~~ Other datamodel related tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_smallest_distance_between_primary_values(model_type: Type[accgraph.BaseDataModel]):
     """Test subset creation from datamodel that does contain any nan values"""
-    ds: MockDataSource = MockDataSource()
-    dm = model_type(data_source=ds, buffer_size=5)
-    assert dm.get_smallest_distance_between_x_values() == np.inf
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 1.0))
-    assert dm.get_smallest_distance_between_x_values() == np.inf
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 3.2))
-    assert dm.get_smallest_distance_between_x_values() == 3.2 - 1.0
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 2.0))
-    assert dm.get_smallest_distance_between_x_values() == 2.0 - 1.0
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 4.0))
-    assert dm.get_smallest_distance_between_x_values() == 4.0 - 3.2
+    data_source: MockDataSource = MockDataSource()
+    data_model = model_type(data_source=data_source, buffer_size=5)
+    assert data_model.get_smallest_distance_between_x_values() == np.inf
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 1.0))
+    assert data_model.get_smallest_distance_between_x_values() == np.inf
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 3.2))
+    assert data_model.get_smallest_distance_between_x_values() == 3.2 - 1.0
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 2.0))
+    assert data_model.get_smallest_distance_between_x_values() == 2.0 - 1.0
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 4.0))
+    assert data_model.get_smallest_distance_between_x_values() == 4.0 - 3.2
 
 
-@pytest.mark.parametrize("model_type", datamodels_to_test)
+@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
 def test_get_highest_primary_value(model_type: Type[accgraph.BaseDataModel]):
     """Test subset creation from datamodel that does contain any nan values"""
-    ds: MockDataSource = MockDataSource()
-    dm = model_type(data_source=ds, buffer_size=5)
-    assert dm.get_highest_primary_value() is None
-    ds.emit_new_object(dm_util.create_fitting_object(dm, np.nan))
-    assert dm.get_highest_primary_value() is None
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 1.0))
-    assert dm.get_highest_primary_value() == 1.0
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 3.2))
-    assert dm.get_highest_primary_value() == 3.2
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 2.0))
-    assert dm.get_highest_primary_value() == 3.2
-    ds.emit_new_object(dm_util.create_fitting_object(dm, 4.0))
-    assert dm.get_highest_primary_value() == 4.0
-    ds.emit_new_object(dm_util.create_fitting_object(dm, np.nan))
-    assert dm.get_highest_primary_value() == 4.0
+    data_source: MockDataSource = MockDataSource()
+    data_model = model_type(data_source=data_source, buffer_size=5)
+    assert data_model.get_highest_primary_value() is None
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    assert data_model.get_highest_primary_value() is None
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 1.0))
+    assert data_model.get_highest_primary_value() == 1.0
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 3.2))
+    assert data_model.get_highest_primary_value() == 3.2
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 2.0))
+    assert data_model.get_highest_primary_value() == 3.2
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, 4.0))
+    assert data_model.get_highest_primary_value() == 4.0
+    data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    assert data_model.get_highest_primary_value() == 4.0
