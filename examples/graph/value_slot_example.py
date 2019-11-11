@@ -3,12 +3,12 @@ Simple example for the usage of the ExtendPlotWidget
 """
 
 import sys
+import random
 
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from qtpy.QtCore import QTimer, QObject, Signal
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
-import random
 
 
 class MainWindow(QMainWindow):

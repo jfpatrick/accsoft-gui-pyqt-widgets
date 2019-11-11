@@ -31,13 +31,15 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
     this plugin which will result in an error message.
     """
 
+    # pylint: disable=invalid-name, no-self-use
+
     def __init__(self, widget_class: Type):
         designer_check.set_designer()
         QPyDesignerCustomWidgetPlugin.__init__(self)
         self.initialized = False
         self._widget_class: Type = widget_class
 
-    def initialize(self, core: QDesignerFormEditorInterface) -> None:
+    def initialize(self, _: QDesignerFormEditorInterface) -> None:
         """
         Implemented from interface, for initializing the plugin exactly once.
         """
@@ -133,6 +135,8 @@ def ex_plot_widget_plugin_factory(widget_class: Type):
     """
 
     class Plugin(ExPlotWidgetPluginBase):
+
+        """Plugin Template for creating plugin classes for different widgets"""
 
         __doc__ = "QtDesigner Plugin for {}".format(widget_class.__name__)
 

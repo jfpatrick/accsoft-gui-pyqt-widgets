@@ -12,6 +12,7 @@ import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal, Slot, QRectF
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent
+from qtpy.QtGui import QPen
 
 from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
 from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -67,7 +68,7 @@ class ExPlotItem(pg.PlotItem):
 
     def __init__(
         self,
-        config: ExPlotWidgetConfig = None,
+        config: Optional[ExPlotWidgetConfig] = None,
         timing_source: Optional[UpdateSource] = None,
         axis_items: Optional[Dict[str, pg.AxisItem]] = None,
         **plotitem_kwargs,
@@ -117,6 +118,8 @@ class ExPlotItem(pg.PlotItem):
         # If set to false, this flag prevents the scrolling movement on an
         # scrolling plot with a fixed range.
         self._scrolling_fixed_x_range_activated: bool = True
+        self.autoBtn: pg.ButtonItem
+        self._orig_auto_btn: Optional[pg.ButtonItem] = None
         self._prepare_scrolling_plot_fixed_x_range()
         # This will only be used in combination with the singleCurveValueSlot
         self.single_curve_value_slot_source: Optional[UpdateSource] = None
@@ -184,7 +187,7 @@ class ExPlotItem(pg.PlotItem):
         scrolling_range_reset_button.mode = 'auto'
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_x_range)
         self.vb.sigRangeChangedManually.connect(self._handle_zoom_with_scrolling_plot_fixed_x_range)
-        self._orig_autoBtn = self.autoBtn
+        self._orig_auto_btn = self.autoBtn
         self.autoBtn = scrolling_range_reset_button
         try:
             self.vb.menu.viewAll.triggered.disconnect(self.autoRange)
@@ -202,18 +205,18 @@ class ExPlotItem(pg.PlotItem):
             - 'View All' context menu entry
             - the small auto range button in the lower left corner of the plot
         """
+        if self._orig_auto_btn:
+            self.autoBtn = self._orig_auto_btn
         try:
-            self.autoBtn = self._orig_autoBtn
             self.vb.sigRangeChangedManually.disconnect(self._handle_zoom_with_scrolling_plot_fixed_x_range)
-        # AttributeError -> self._orig_autoBtn
-        # TypeError      -> failed disconnect
-        except (AttributeError, TypeError):
+        except TypeError:
+            # TypeError -> failed disconnect
             pass
         try:
             self.vb.menu.viewAll.triggered.disconnect(self._auto_range_with_scrolling_plot_fixed_x_range)
             self.vb.menu.viewAll.triggered.connect(self.autoRange)
-        # TypeError -> failed disconnect
         except TypeError:
+            # TypeError -> failed disconnect
             pass
 
     def _auto_range_with_scrolling_plot_fixed_x_range(self):
@@ -321,7 +324,7 @@ class ExPlotItem(pg.PlotItem):
         """time span for the current plot"""
         return self._time_span
 
-    def plot(
+    def plot(  # pylint: disable=arguments-differ
         self,
         *args,
         clear: bool = False,
@@ -343,12 +346,12 @@ class ExPlotItem(pg.PlotItem):
                         "please use ExPlotItem.addCurve for this purpose.")
         pg.PlotItem.plot(*args, clear=clear, params=params)
 
-    def addCurve(
+    def addCurve(  # pylint: disable=arguments-differ
         self,
         c: Optional[pg.PlotDataItem] = None,
         params: Optional[Dict[str, Any]] = None,
         data_source: Optional[UpdateSource] = None,
-        layer_identifier: Optional[str] = None,
+        layer: Optional["LayerIdentification"] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **plotdataitem_kwargs,
     ) -> pg.PlotDataItem:
@@ -361,7 +364,7 @@ class ExPlotItem(pg.PlotItem):
             c: PlotDataItem instance that is added, for backwards compatibility to the original function
             params: params for c, for backwards compatibility to the original function
             data_source: source for new data that the curve should display
-            layer_identifier: identifier of the layer the new curve is supposed to be added to
+            layer: identifier of the layer the new curve is supposed to be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
 
@@ -373,65 +376,50 @@ class ExPlotItem(pg.PlotItem):
             _LOGGER.warning("Calling addCurve() for adding an already created PlotDataItem is deprecated, "
                             "please use addItem() for this purpose.")
             params = params or {}
-            self.addItem(c, **params)
+            self.addItem(item=c, **params)
             return c
-        # Create new curve and add it
-        else:
-            if layer_identifier == "" or layer_identifier is None:
-                layer_identifier = PlotItemLayer.default_layer_identifier
-            # create curve that is attached to live data
-            new_plot: pg.PlotDataItem
-            if data_source is not None:
-                new_plot = LivePlotCurve.create(
-                    plot_item=self,
-                    data_source=data_source,
-                    buffer_size=buffer_size,
-                    **plotdataitem_kwargs,
-                )
-            elif data_source is None:
-                new_plot = pg.PlotDataItem(
-                    **plotdataitem_kwargs
-                )
-            self.addItem(layer=layer_identifier, item=new_plot)
-            return new_plot
+        new_plot = pg.PlotDataItem(**plotdataitem_kwargs) if data_source is None else \
+            LivePlotCurve.create(
+                plot_item=self,
+                data_source=data_source,
+                buffer_size=buffer_size,
+                **plotdataitem_kwargs,
+            )
+        self.addItem(layer=layer, item=new_plot)
+        return new_plot
 
-    def addBarGraph(
+    def addBarGraph(  # pylint: disable=invalid-name
         self,
         data_source: Optional[UpdateSource] = None,
-        layer_identifier: Optional[str] = None,
+        layer: Optional["LayerIdentification"] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **bargraph_kwargs,
     ) -> LiveBarGraphItem:
         """Add a new bargraph attached to a live data source
 
         Args:
-            data_source (UpdateSource): Source emmiting new data the graph should show
-            layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            data_source (UpdateSource): Source emitting new data the graph should show
+            layer (Optional[str]): Layer Identifier the curve should be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **bargraph_kwargs: keyword arguments for the BarGraphItem base class
 
         Returns:
             LiveBarGraphItem that was added to the plot
         """
-        new_plot: pg.BarGraphItem
-        if data_source is not None:
-            new_plot = LiveBarGraphItem.create(
+        new_plot: pg.BarGraphItem = pg.BarGraphItem(**bargraph_kwargs) if data_source is None else \
+            LiveBarGraphItem.create(
                 plot_item=self,
                 data_source=data_source,
                 buffer_size=buffer_size,
                 **bargraph_kwargs,
             )
-        else:
-            new_plot = pg.BarGraphItem(**bargraph_kwargs)
-        if not layer_identifier:
-            layer_identifier = ""
-        self.addItem(layer=layer_identifier, item=new_plot)
+        self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addInjectionBar(
+    def addInjectionBar(  # pylint: disable=invalid-name
         self,
         data_source: UpdateSource,
-        layer_identifier: Optional[str] = None,
+        layer: Optional["LayerIdentification"] = None,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         **errorbaritem_kwargs,
     ) -> LiveInjectionBarGraphItem:
@@ -442,7 +430,7 @@ class ExPlotItem(pg.PlotItem):
 
         Args:
             data_source (UpdateSource): Source for data related updates
-            layer_identifier (Optional[str]): Layer Identifier the curve should be added to
+            layer (Optional[str]): Layer Identifier the curve should be added to
             buffer_size: maximum count of values the datamodel buffer should hold
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
 
@@ -455,12 +443,10 @@ class ExPlotItem(pg.PlotItem):
             buffer_size=buffer_size,
             **errorbaritem_kwargs,
         )
-        if not layer_identifier:
-            layer_identifier = ""
-        self.addItem(layer=layer_identifier, item=new_plot)
+        self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addTimestampMarker(
+    def addTimestampMarker(  # pylint: disable=invalid-name
         self,
         *graphicsobjectargs,
         data_source: UpdateSource,
@@ -485,7 +471,7 @@ class ExPlotItem(pg.PlotItem):
             data_source=data_source,
             buffer_size=buffer_size
         )
-        self.addItem(layer="", item=new_plot)
+        self.addItem(layer=None, item=new_plot)
         return new_plot
 
     def clear(self):
@@ -521,30 +507,82 @@ class ExPlotItem(pg.PlotItem):
             self.updateDecimation()
             self.updateParamList()
 
+    def updateButtons(self):
+        """Update the visibility of the auto button."""
+        try:
+            show_button = self._exportOpts is False and \
+                          self.mouseHovering and \
+                          not self.buttonsHidden and \
+                          (not all(self.vb.autoRangeEnabled()) or
+                           not all([l.view_box.autoRangeEnabled()[1]
+                                   for l in self.get_all_non_standard_layers()]))
+            if show_button:
+                self.autoBtn.show()
+            else:
+                self.autoBtn.hide()
+        except RuntimeError:
+            pass  # this can happen if the plot has been deleted.
+
     # ~~~~~~~~~~~~~~~~~~~~~~ Layers ~~~~~~~~~~~~~~~~~~~~~~~~
 
     def add_layer(
         self,
         identifier: str,
-        axis_kwargs: Dict[str, Any] = None,
-        axis_label_kwargs: Dict[str, Any] = None,
+        y_range: Optional[Tuple[float, float]] = None,
+        y_range_padding: Optional[float] = None,
+        invert_y: bool = False,
+        pen: Optional[QPen] = None,
+        link_view: Optional[pg.ViewBox] = None,
+        max_tick_length: int = -5,
+        show_values: bool = True,
+        text: Optional[str] = None,
+        units: Optional[str] = None,
+        unit_prefix: Optional[str] = None,
+        **axis_label_css_kwargs
     ) -> "PlotItemLayer":
         """add a new layer to the plot for plotting a curve in a different range
 
         Args:
             identifier: string identifier for the new layer
-            axis_kwargs: Dictionary with the keyword arguments for the new layer's AxisItem, see AxiItem constructor for more information
-            axis_label_kwargs: Dictionary with Keyword arguments passed to setLabel function of the new Axis
+
+            y_range: set the view range of the new y axis on creation.
+                     This is equivalent to calling setYRange(layer=...)
+            y_range_padding: Padding to use when setting the y range
+            invert_y: Invert the y axis of the newly created layer. This
+                      is equivalent to calling invertY(layer=...)
+
+            max_tick_length: maximum length of ticks to draw. Negative values
+                             draw into the plot, positive values draw outward.
+            link_view: causes the range of values displayed in the axis
+                       to be linked to the visible range of a ViewBox.
+            show_values: Whether to display values adjacent to ticks
+            pen: Pen used when drawing ticks.
+
+            text: The text (excluding units) to display on the label for this
+                  axis
+            units: The units for this axis. Units should generally be given
+                   without any scaling prefix (eg, 'V' instead of 'mV'). The
+                   scaling prefix will be automatically prepended based on the
+                   range of data displayed.
+            unit_prefix: prefix used for units displayed on the axis
+            axis_label_css_kwargs: All extra keyword arguments become CSS style
+                                   options for the <span> tag which will surround
+                                   the axis label and units
 
         Returns:
             New created layer instance
         """
-        if axis_kwargs is None:
-            axis_kwargs = {}
-        if axis_label_kwargs is None:
-            axis_label_kwargs = {}
         new_view_box = ExViewBox()
-        new_y_axis = CustomAxisItem("right", parent=self, **axis_kwargs)
+        new_y_axis_orientation = "right"
+        new_y_axis = CustomAxisItem(
+            orientation=new_y_axis_orientation,
+            parent=self,
+            pen=pen,
+            linkView=link_view,
+            maxTickLength=max_tick_length,
+            showValues=show_values,
+        )
+        new_y_axis_position = (2, 2 + len(self._layers))
         new_y_axis.setZValue(len(self._layers))
         new_layer = PlotItemLayer(
             plot_item=self,
@@ -553,18 +591,32 @@ class ExPlotItem(pg.PlotItem):
             axis_item=new_y_axis,
         )
         self._layers.add(new_layer)
-        self.layout.addItem(new_y_axis, 2, 2 + len(self._layers))
+        self.layout.addItem(new_y_axis, *new_y_axis_position)
+        self.axes[identifier] = {
+            "item": new_y_axis,
+            "pos": (new_y_axis_orientation, new_y_axis_position)
+        }
         self.scene().addItem(new_view_box)
         new_y_axis.linkToView(new_view_box)
         new_view_box.setXLink(self)
-        new_y_axis.setLabel(**axis_label_kwargs)
+        new_y_axis.setLabel(
+            text=text,
+            units=units,
+            unitPrefix=unit_prefix,
+            **axis_label_css_kwargs
+        )
+        new_view_box.sigStateChanged.connect(self.viewStateChanged)
+        if y_range is not None:
+            self.setYRange(min=y_range[0], max=y_range[1], padding=y_range_padding, layer=new_layer)
+        if invert_y:
+            self.invertY(invert_y, layer=new_layer)
         return new_layer
 
     def update_layers(self) -> None:
         """Update the other layer's viewbox geometry to fit the PlotItem ones"""
         self._layers.update_view_box_geometries(self)
 
-    def remove_layer(self, layer: Union["PlotItemLayer", str] = "") -> bool:
+    def remove_layer(self, layer: "LayerIdentification") -> bool:
         """ Remove a existing layer from the PlotItem
 
         This function need either the layer object as a parameter or the identifier of the object.
@@ -589,10 +641,165 @@ class ExPlotItem(pg.PlotItem):
         layer.view_box.setParentItem(None)
         return self._layers.remove(layer=layer)
 
-    def addItem(
+    def setRange(  # pylint: disable=invalid-name
+        self,
+        rect: Optional[QRectF] = None,
+        xRange: Optional[Tuple[float, float]] = None,  # pylint: disable=invalid-name
+        yRange: Optional[Tuple[float, float]] = None,  # pylint: disable=invalid-name
+        padding: Optional[float] = None,
+        update: bool = True,
+        disableAutoRange: bool = True,  # pylint: disable=invalid-name
+        layer: Optional["LayerIdentification"] = None
+    ) -> None:
+        """
+        Set the visible Y range of the view. When supplying no layer,
+        the range of the default y axis will be moved. By passing a
+        layer, the range of the y axis of the layer will be moved.
+
+        Args:
+            rect: The full range that should be visible in the view box.
+            xRange: The range that should be visible along the x-axis.
+            yRange: The range that should be visible along the y-axis.
+            padding: Expand the view by a fraction of the requested range.
+                     By default, this value is set between 0.02 and 0.1 depending on
+                     the size of the ViewBox.
+            update: If True, update the range of the ViewBox immediately.
+                    Otherwise, the update is deferred until before the next render.
+            disableAutoRange: If True, auto-ranging is disabled. Otherwise, it is left
+                              unchanged.
+            layer: optional identifier or layer in which the range should be set
+        """
+        self.getViewBox(layer=layer).setRange(
+            rect=rect,
+            xRange=xRange,
+            yRange=yRange,
+            padding=padding,
+            update=update,
+            disableAutoRange=disableAutoRange
+        )
+
+    def setYRange(  # pylint: disable=invalid-name
+        self,
+        min: float,  # pylint: disable=redefined-builtin
+        max: float,  # pylint: disable=redefined-builtin
+        padding: Optional[float] = None,
+        update: bool = True,
+        layer: Optional["LayerIdentification"] = None
+    ) -> None:
+        """
+        Set the visible Y range of the view. When supplying no layer,
+        the range of the default y axis will be moved. By passing a
+        layer, the range of the y axis of the layer will be moved.
+
+        Args:
+            min: smallest visible value
+            max: highest visible value
+            padding: padding around the visible range
+            update: should the ViewBox be updated immediately
+            layer: identifier or layer of which the
+        """
+        self.getViewBox(layer=layer).setYRange(
+            min=min,
+            max=max,
+            padding=padding,
+            update=update
+        )
+
+    def invertY(  # pylint: disable=invalid-name
+        self,
+        b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
+        layer: Optional["LayerIdentification"] = None
+    ) -> None:
+        """
+        Invert the Y axis. If a layer is passed, invert the y axis of
+        the passed layer.
+
+        Args:
+            b: if True, the axis will be inverted
+            layer: optional layer of which the y axis should be inverted
+        """
+        self.getViewBox(layer=layer).invertY(b)
+
+    def setYLink(  # pylint: disable=invalid-name
+        self,
+        view: pg.ViewBox,
+        layer: Optional["LayerIdentification"] = None
+    ) -> None:
+        """
+        Link the y axis movements to another ViewBox.
+
+        Args:
+            view: View that the movements in y direction should
+                  be transferred to
+            layer: In which layer is the y axis which movement should be
+                   transferred. If empty, the standard y axis is used.
+        """
+        self.getViewBox(layer=layer).setYLink(view=view)
+
+    def enableAutoRange(  # pylint: disable=invalid-name
+            self,
+            axis: Union[int, str, None] = None,
+            enable: Union[bool, float] = True,
+            x: Union[bool, float, None] = None,  # pylint: disable=invalid-name
+            y: Union[bool, float, None] = None,  # pylint: disable=invalid-name
+            **layers_y
+    ) -> None:
+        """
+        Extend the PlotItem's standard enableAutoRange for the y axes of
+        all layers. First, you can specify the axis by passing the layer's
+        identifier as axis in combination with the enable parameter.
+        Additionally you can enable / disable autoRange for multiple axes by
+        passing keyword arguments with the key being the layer's identifier.
+
+        Args:
+            axis: Either an integer representing an axis (see f.e.
+                  pg.Viewbox.XAxis) or the identifier of an layer which y
+                  axis should be ranged automatically
+            enable: True / False or a float from 0.0 to 1.0 of what amount
+                    of the curve should be visible
+            x: Instead of axis & enable, you can pass the enable value directly
+               here, this allows auto ranging multiple axes with one call
+            y: Instead of axis & enable, you can pass the enable value directly
+               here, this allows auto ranging multiple axes with one call
+            layers_y: Keyword arguments to enable autoRange for the y axes
+                      of different layer, as key the layer's identifier is
+                      used. This works like the x and y parameter of this
+                      function
+        """
+        # enable auto range for the standard x and y axes
+        super().enableAutoRange(
+            axis=axis,
+            enable=enable,
+            x=x,
+            y=y
+        )
+        if axis is None and x is None and y is None and not layers_y:
+            layers_y = {layer.identifier: True for layer in self.get_all_non_standard_layers()}
+        if layers_y is not None and layers_y:
+            for key, value in layers_y.items():
+                self.getViewBox(layer=key).enableAutoRange(
+                    axis=pg.ViewBox.YAxis,
+                    enable=value
+                )
+
+    def getViewBox(  # pylint: disable=arguments-differ
+            self,
+            layer: Optional["LayerIdentification"] = None
+    ) -> pg.ViewBox:
+        """
+        Extend the PlotItem's getViewBox method to also return viewboxes
+        of layers if the layer or its identifier is provided.
+        """
+        if not layer:
+            return super().getViewBox()
+        if isinstance(layer, str):
+            layer = self.get_layer(layer_identifier=layer)
+        return layer.view_box
+
+    def addItem(  # pylint: disable=arguments-differ
         self,
         item: Union[pg.GraphicsObject, DataModelBasedItem],
-        layer: Optional[Union["PlotItemLayer", str]] = None,
+        layer: Optional["LayerIdentification"] = None,
         ignoreBounds: bool = False,
         **kwargs
     ) -> None:
@@ -608,10 +815,9 @@ class ExPlotItem(pg.PlotItem):
             self.items.append(item)
             self.dataItems.append(item)
             try:
-                if isinstance(layer, str):
-                    item.set_layer_information(layer_identifier=layer)
-                elif isinstance(layer, PlotItemLayer):
-                    item.set_layer_information(layer_identifier=layer.identifier)
+                layer = layer if isinstance(layer, PlotItemLayer) else \
+                    self.get_layer(layer_identifier=layer)
+                item.set_layer_information(layer_identifier=layer.identifier)
             except AttributeError:
                 pass
             try:
@@ -619,23 +825,20 @@ class ExPlotItem(pg.PlotItem):
                     self.curves.append(item)
             except AttributeError:
                 pass
-            if layer is None or isinstance(layer, str):
-                layer = self._layers.get(identifier=layer)
-            # add to the layer of the ViewBox that we actually want
-            layer.view_box.addItem(item=item, **kwargs)
+            self.getViewBox(layer=layer).addItem(item=item, **kwargs)
 
     @staticmethod
-    def is_standard_layer(layer: Optional[Union[str, "PlotItemLayer"]]) -> bool:
+    def is_standard_layer(layer: Optional["LayerIdentification"]) -> bool:
         """Check if layer identifier is referencing the standard ."""
         if isinstance(layer, str):
-            return layer == "" or layer == PlotItemLayer.default_layer_identifier
-        elif isinstance(layer, PlotItemLayer):
-            return layer.identifier == "" or layer.identifier == PlotItemLayer.default_layer_identifier
+            return layer in ("", PlotItemLayer.default_layer_identifier)
+        if isinstance(layer, PlotItemLayer):
+            return layer.identifier in ("", PlotItemLayer.default_layer_identifier)
         return layer is None
 
-    def get_layer_by_identifier(self, layer_identifier: str) -> "PlotItemLayer":
+    def get_layer(self, layer_identifier: Optional[str] = None) -> "PlotItemLayer":
         """Get layer by its identifier"""
-        if layer_identifier == "":
+        if layer_identifier == "" or layer_identifier is None:
             layer_identifier = PlotItemLayer.default_layer_identifier
         return self._layers.get(layer_identifier)
 
@@ -699,7 +902,11 @@ class ExPlotItem(pg.PlotItem):
                 labelOpts=label_opts,
             )
 
-    def _update_time_line_decorator(self, timestamp: float, position: float = None) -> None:
+    def _update_time_line_decorator(
+            self,
+            timestamp: float,
+            position: Optional[float] = None
+    ) -> None:
         """Move the vertical line representing the current time to a new position
 
         Redraw the timing line according to a passed timestamp. Alternatively
@@ -737,7 +944,7 @@ class ExPlotItem(pg.PlotItem):
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
             self.getViewBox().setRange(xRange=x_range, padding=0.0)
 
-    def _update_bottom_and_top_axis_style(self, style: int):
+    def _update_bottom_and_top_axis_style(self, style: PlotWidgetStyle):
         """
         Remove the old top and bottom axes and replace them with ones fitting to
         the passed plotting style.
@@ -775,7 +982,7 @@ class ExPlotItem(pg.PlotItem):
 
     def create_fitting_axis_item(
             self,
-            config_style: int,
+            config_style: PlotWidgetStyle,
             orientation: str = "bottom",
             parent: Optional["ExPlotItem"] = None
     ) -> pg.AxisItem:
@@ -981,6 +1188,12 @@ class PlotItemLayer:
         return False
 
 
+# For the identification of an PlotItemLayer we can either use the
+# layer instance itself or its identifier. This Union can be used
+# as a type hints for these scenarios.
+LayerIdentification = Union[PlotItemLayer, str]
+
+
 class PlotItemLayerCollection:
     """Collection for layers added to a plot items identified by a unique string identifier"""
 
@@ -1051,7 +1264,7 @@ class PlotItemLayerCollection:
         self._layers[layer.identifier] = layer
         self._pot_item_viewbox_reference_range[layer.identifier] = layer.axis_item.range
 
-    def remove(self, layer: Union[PlotItemLayer, str] = None) -> bool:
+    def remove(self, layer: Optional[LayerIdentification] = None) -> bool:
         """ Remove a layer from this collection
 
         Args:
@@ -1308,9 +1521,9 @@ class ExViewBox(pg.ViewBox):
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         self.setRange(**kwargs)
 
-    def autoRange(
+    def autoRange(  # pylint: disable=arguments-differ
         self,
-        padding: float = None,
+        padding: Optional[float] = None,
         items: Optional[List[pg.GraphicsItem]] = None,
         auto_range_x_axis: bool = True,
         **kwargs
@@ -1350,9 +1563,9 @@ class ExViewBox(pg.ViewBox):
             )
             goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
             bounds_list: List[QRectF] = []
-            for vb in other_viewboxes:
+            for view_box in other_viewboxes:
                 bounds_list.append(ExViewBox.map_bounding_rectangle_to_other_viewbox(
-                    viewbox_to_map_from=vb,
+                    viewbox_to_map_from=view_box,
                     viewbox_to_map_to=plot_item_view_box,
                     items=items
                 ))
@@ -1448,6 +1661,7 @@ class ExViewBox(pg.ViewBox):
         Returns:
             Y coordinate in the destinations ViewBox
         """
+        # pylint: disable=invalid-name
         m: float = (destination_y_range[1] - destination_y_range[0]) / \
                    (source_y_range[1] - source_y_range[0])
         c: float = destination_y_range[0] - m * source_y_range[0]

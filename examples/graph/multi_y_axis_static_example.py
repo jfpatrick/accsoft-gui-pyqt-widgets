@@ -25,12 +25,13 @@ class MainWindow(QMainWindow):
         plot_item.getAxis("left").setLabel("Δ")
         plot_item.add_layer(
             identifier="sigma_layer",
-            axis_label_kwargs={"text": "Σ"},
+            text="Σ",
         )
         plot_item.add_layer(
             identifier="omega_layer",
-            axis_kwargs={"showValues": False, "maxTickLength": 0},
-            axis_label_kwargs={"text": "Ω"},
+            showValues=False,
+            maxTickLength=0,
+            text="Ω",
         )
         plot_item.addItem(pg.PlotDataItem(x=[1, 2, 3], y=[101, 102, 103]))
         plot_item.addItem(
@@ -43,13 +44,9 @@ class MainWindow(QMainWindow):
                 x=[1, 2, 3], width=0.05, height=[101, 102, 103]
             ),
         )
-        plot_item.vb.setRange(yRange=[100, 104])
-        plot_item.get_layer_by_identifier("sigma_layer").view_box.setRange(
-            yRange=[100, 105]
-        )
-        plot_item.get_layer_by_identifier("omega_layer").view_box.setRange(
-            yRange=[-110, 110]
-        )
+        self.plot.setRange(yRange=(100.0, 104.0))
+        self.plot.setRange(yRange=(100.0, 105.0), layer="sigma_layer")
+        self.plot.setRange(yRange=(-110.0, 110.0), layer="omega_layer")
         self.show()
         self.resize(800, 600)
         main_container = QWidget()

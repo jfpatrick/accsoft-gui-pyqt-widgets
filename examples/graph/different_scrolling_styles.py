@@ -53,14 +53,14 @@ class MainWindow(QMainWindow):
         )
         # Add graph items to the plot
         bargraph = self.plot.addBarGraph(
-            layer_identifier="layer_1",
+            layer="layer_1",
             data_source=data_source_3,
             brush="g",
             pen="b",
             width=0.75
         )
         injectionbar = self.plot.addInjectionBar(
-            layer_identifier="layer_1",
+            layer="layer_1",
             data_source=data_source_4,
             pen={"color": "b", "width": 3}
         )

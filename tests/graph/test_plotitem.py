@@ -218,7 +218,7 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: float, should_cr
     return window
 
 
-def check_range(actual_range: List[List[float]], expected_range: List[List[float]], add_padding_to_exp: bool = False):
+def check_range(actual_range: List[List[float]], expected_range: List[List[float]]):
     """Compare a viewboxes range with an expected range"""
     result = True
     for actual, expected in list(zip(actual_range, expected_range)):

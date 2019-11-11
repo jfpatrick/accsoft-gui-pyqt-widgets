@@ -33,13 +33,13 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 # which plotting style is achieved by which class
-plotting_style_to_class_mapping = {
+PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingPlotCurve",
     PlotWidgetStyle.SLIDING_POINTER: "SlidingPointerPlotCurve",
 }
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
-_plotdataitem_curve_param_mapping = [
+_PLOTDATAITEM_CURVE_PARAM_MAPPING = [
     ("pen", "pen"),
     ("shadowPen", "shadowPen"),
     ("fillLevel", "fillLevel"),
@@ -50,7 +50,7 @@ _plotdataitem_curve_param_mapping = [
 ]
 
 # params accepted by the plotdataitem and their fitting params in the scatter-plot-item
-_plotdataitem_scatter_param_mapping = [
+_PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
     ("symbolPen", "pen"),
     ("symbolBrush", "brush"),
     ("symbol", "symbol"),
@@ -64,7 +64,7 @@ _plotdataitem_scatter_param_mapping = [
 class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
     """Base class for different live data curves."""
 
-    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
+    supported_plotting_styles: List[PlotWidgetStyle] = [*PLOTTING_STYLE_TO_CLASS_MAPPING]
 
     def __init__(
         self,
@@ -129,7 +129,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             supported_styles=LivePlotCurve.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
         kwargs = copy(object_to_create_from.opts)
@@ -167,7 +167,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             supported_styles=LivePlotCurve.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
+        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             plot_item=plot_item,
@@ -191,10 +191,10 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         """
         # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
         curve_arguments: Dict = {}
-        for orig_key, curve_key in _plotdataitem_curve_param_mapping:
+        for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
             curve_arguments[curve_key] = self.opts[orig_key]
         scatter_arguments: Dict = {}
-        for orig_key, scatter_key in _plotdataitem_scatter_param_mapping:
+        for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
             if orig_key in self.opts:
                 scatter_arguments[scatter_key] = self.opts[orig_key]
         if self.opts.get("pen") is not None or (self.opts.get("brush") is not None and self.opts.get("fillLevel") is not None):

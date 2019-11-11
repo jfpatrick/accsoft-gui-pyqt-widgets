@@ -1,5 +1,8 @@
-import pytest
+"""Configuration File for pytest that introduces custom fixtures"""
+
 import warnings
+
+import pytest
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
 from tests.graph.mock_utils.widget_test_window import MinimalTestWindow

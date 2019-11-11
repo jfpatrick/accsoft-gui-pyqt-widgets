@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
 
 # which plotting style is achieved by which class
-plotting_style_to_class_mapping = {
+PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingTimestampMarker",
 }
 
@@ -36,7 +36,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
     to provide its own Bounding Rectangle.
     """
 
-    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
+    supported_plotting_styles: List[PlotWidgetStyle] = [*PLOTTING_STYLE_TO_CLASS_MAPPING]
 
     def __init__(
         self,
@@ -94,7 +94,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             supported_styles=LiveTimestampMarker.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_config.plotting_style]
+        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
@@ -115,7 +115,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             supported_styles=LiveTimestampMarker.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = plotting_style_to_class_mapping[plot_item.plot_config.plotting_style]
+        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
@@ -142,8 +142,10 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             },
         )
         infinite_line.label.anchors = [(0.5, 0.5), (0.5, 0.5)]
-        infinite_line.setParentItem(parent=self._parent_plot_item)
-        self.getViewBox().addItem(infinite_line)
+        # When setting a parent, the new infinite line is automatically added
+        # to the parent's scene. This makes sure all created infinite lines
+        # are properly removed when the parent is removed from a scene.
+        infinite_line.setParentItem(self)
         self._line_elements.append(infinite_line)
 
     def flags(self):

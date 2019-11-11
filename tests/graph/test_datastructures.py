@@ -4,9 +4,9 @@ The tests rely on warnings being emitted on creating the data structures.
 """
 
 from collections import namedtuple
-import pytest
 import itertools
 
+import pytest
 import numpy as np
 import accsoft_gui_pyqt_widgets.graph as accgraph
 
@@ -25,7 +25,7 @@ TimestampMarkerNamedTuple = namedtuple("TimestampMarkerNamedTuple", "x c l")
     PointNamedTuple(0.0, np.nan),
     PointNamedTuple(0.0, None),
 ])
-def test_valid_point_data(qtbot, recwarn, warn_always, combinations: PointNamedTuple):
+def test_valid_point_data(recwarn, warn_always, combinations: PointNamedTuple):
     _ = accgraph.PointData(
         x_value=combinations.x,
         y_value=combinations.y,
@@ -37,7 +37,7 @@ def test_valid_point_data(qtbot, recwarn, warn_always, combinations: PointNamedT
     PointNamedTuple(np.nan, 0.0),
     PointNamedTuple(None, 0.0),
 ])
-def test_invalid_point_data(qtbot, warn_always, combinations):
+def test_invalid_point_data(warn_always, combinations):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.PointData(
             x_value=combinations.x,
@@ -49,7 +49,7 @@ def test_invalid_point_data(qtbot, warn_always, combinations):
     PointNamedTuple([0.0, np.nan, 1.0, 2.0, 3.0], [0.0, np.nan, 1.0, np.nan, 2.0]),
     PointNamedTuple([0.0, None, 1.0, 2.0, 3.0], [0.0, None, 1.0, None, 2.0]),
 ])
-def test_valid_curve_data(qtbot, recwarn, warn_always, combinations: PointNamedTuple):
+def test_valid_curve_data(recwarn, warn_always, combinations: PointNamedTuple):
     curve = accgraph.CurveData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -62,7 +62,7 @@ def test_valid_curve_data(qtbot, recwarn, warn_always, combinations: PointNamedT
     PointNamedTuple([0.0, np.nan, np.nan, 3.0], [0.0, 1.0, np.nan, np.nan]),
     PointNamedTuple([0.0, None, None, 3.0], [0.0, 1.0, None, None]),
 ])
-def test_invalid_curve_data(qtbot, recwarn, warn_always, combinations: PointNamedTuple):
+def test_invalid_curve_data(recwarn, warn_always, combinations: PointNamedTuple):
     curve = accgraph.CurveData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -75,7 +75,7 @@ def test_invalid_curve_data(qtbot, recwarn, warn_always, combinations: PointName
 @pytest.mark.parametrize("combinations", list(
     PointNamedTuple(p[0], p[1]) for p in itertools.permutations([[0.0], [0.0, 1.0]], 2)
 ))
-def test_curve_data_one_different_length(qtbot, combinations: PointNamedTuple):
+def test_curve_data_one_different_length(combinations: PointNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.CurveData(
             x_values=combinations.x,
@@ -91,7 +91,7 @@ def test_curve_data_one_different_length(qtbot, combinations: PointNamedTuple):
     BarNamedTuple(0.0, np.nan, 2.0),
     BarNamedTuple(0.0, None, 2.0),
 ])
-def test_valid_bar_data(qtbot, recwarn, warn_always, combinations: BarNamedTuple):
+def test_valid_bar_data(recwarn, warn_always, combinations: BarNamedTuple):
     _ = accgraph.BarData(
         x_value=combinations.x,
         y_value=combinations.y,
@@ -114,7 +114,7 @@ def test_valid_bar_data(qtbot, recwarn, warn_always, combinations: BarNamedTuple
     BarNamedTuple(np.nan, np.nan, np.nan),
     BarNamedTuple(None, None, None),
 ])
-def test_invalid_bar_data(qtbot, warn_always, combinations: BarNamedTuple):
+def test_invalid_bar_data(warn_always, combinations: BarNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.BarData(
             x_value=combinations.x,
@@ -127,7 +127,7 @@ def test_invalid_bar_data(qtbot, warn_always, combinations: BarNamedTuple):
     BarNamedTuple([0.0, 0.0], [1.0, np.nan], [2.0, 2.0]),
     BarNamedTuple([0.0, 0.0], [1.0, None], [2.0, 2.0]),
 ])
-def test_valid_bar_collection_data(qtbot, recwarn, warn_always, combinations: BarNamedTuple):
+def test_valid_bar_collection_data(recwarn, warn_always, combinations: BarNamedTuple):
     bar_collection = accgraph.BarCollectionData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -149,7 +149,7 @@ def test_valid_bar_collection_data(qtbot, recwarn, warn_always, combinations: Ba
         [2.0, 2.0, None, None, None, 2.0, 2.0, None]
     ),
 ])
-def test_invalid_bar_collection_data(qtbot, recwarn, warn_always, combinations: BarNamedTuple):
+def test_invalid_bar_collection_data(recwarn, warn_always, combinations: BarNamedTuple):
     bar_collection = accgraph.BarCollectionData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -163,7 +163,7 @@ def test_invalid_bar_collection_data(qtbot, recwarn, warn_always, combinations: 
 @pytest.mark.parametrize("combinations", list(
     BarNamedTuple(p[0], p[1], p[2]) for p in itertools.permutations([[], [0.0], [0.0, 1.0]], 3)
 ))
-def test_bar_collection_data_multiple_different_length(qtbot, combinations):
+def test_bar_collection_data_multiple_different_length(combinations):
     with pytest.raises(ValueError):
         _ = accgraph.BarCollectionData(
             x_values=combinations.x,
@@ -175,7 +175,7 @@ def test_bar_collection_data_multiple_different_length(qtbot, combinations):
 @pytest.mark.parametrize("combinations", list(
     BarNamedTuple(p[0], p[1], p[2]) for p in itertools.permutations([[0.0], [0.0], [0.0, 1.0]], 3)
 ))
-def test_bar_collection_data_one_different_length(qtbot, combinations):
+def test_bar_collection_data_one_different_length(combinations):
     with pytest.raises(ValueError):
         _ = accgraph.BarCollectionData(
             x_values=combinations.x,
@@ -195,7 +195,7 @@ def test_bar_collection_data_one_different_length(qtbot, combinations):
     InjectionBarNamedTuple(0.0, 1.0, np.nan, np.nan, ""),
     InjectionBarNamedTuple(0.0, 1.0, None, None, ""),
 ])
-def test_valid_injection_bar_data(qtbot, recwarn, warn_always, combinations: InjectionBarNamedTuple):
+def test_valid_injection_bar_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
     _ = accgraph.InjectionBarData(
         x_value=combinations.x,
         y_value=combinations.y,
@@ -232,7 +232,7 @@ def test_valid_injection_bar_data(qtbot, recwarn, warn_always, combinations: Inj
     InjectionBarNamedTuple(np.nan, np.nan, np.nan, np.nan, ""),
     InjectionBarNamedTuple(None, None, None, None, ""),
 ])
-def test_invalid_injection_bar_data(qtbot, warn_always, combinations: InjectionBarNamedTuple):
+def test_invalid_injection_bar_data(warn_always, combinations: InjectionBarNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.InjectionBarData(
             x_value=combinations.x,
@@ -259,7 +259,7 @@ def test_invalid_injection_bar_data(qtbot, warn_always, combinations: InjectionB
         ["", "", "", ""]
     ),
 ])
-def test_valid_injection_bar_collection_data(qtbot, recwarn, warn_always, combinations: InjectionBarNamedTuple):
+def test_valid_injection_bar_collection_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
     bar_collection = accgraph.InjectionBarCollectionData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -287,7 +287,7 @@ def test_valid_injection_bar_collection_data(qtbot, recwarn, warn_always, combin
         ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
     ),
 ])
-def test_invalid_injection_bar_collection_data(qtbot, recwarn, warn_always, combinations: InjectionBarNamedTuple):
+def test_invalid_injection_bar_collection_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
     bar_collection = accgraph.InjectionBarCollectionData(
         x_values=combinations.x,
         y_values=combinations.y,
@@ -304,7 +304,7 @@ def test_invalid_injection_bar_collection_data(qtbot, recwarn, warn_always, comb
 @pytest.mark.parametrize("combinations", list(
     InjectionBarNamedTuple(p[0], p[1], p[2], p[3], [""]) for p in itertools.permutations([[], [0.0], [0.0, 1.0], [0.0, 1.0]], 4)
 ))
-def test_injection_bar_collection_data_multiple_different_length(qtbot, combinations: InjectionBarNamedTuple):
+def test_injection_bar_collection_data_multiple_different_length(combinations: InjectionBarNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.InjectionBarCollectionData(
             x_values=combinations.x,
@@ -318,7 +318,7 @@ def test_injection_bar_collection_data_multiple_different_length(qtbot, combinat
 @pytest.mark.parametrize("combinations", list(
     InjectionBarNamedTuple(p[0], p[1], p[2], p[3], [""]) for p in itertools.permutations([[0.0], [0.0], [0.0], [0.0, 1.0]], 4)
 ))
-def test_injection_bar_collection_data_one_different_length(qtbot, combinations: InjectionBarNamedTuple):
+def test_injection_bar_collection_data_one_different_length(combinations: InjectionBarNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.InjectionBarCollectionData(
             x_values=combinations.x,
@@ -336,7 +336,7 @@ def test_injection_bar_collection_data_one_different_length(qtbot, combinations:
     TimestampMarkerNamedTuple(0.0, None, ""),
     TimestampMarkerNamedTuple(0.0, None, ""),
 ])
-def test_valid_timestamp_marker_data(qtbot, recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+def test_valid_timestamp_marker_data(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
     _ = accgraph.TimestampMarkerData(
         x_value=combinations.x,
         color=combinations.c,
@@ -351,7 +351,7 @@ def test_valid_timestamp_marker_data(qtbot, recwarn, warn_always, combinations: 
     TimestampMarkerNamedTuple(0.0, None, "label"),
     TimestampMarkerNamedTuple(0.0, "red, comrade, use red", "label"),
 ])
-def test_invalid_timestamp_marker_color(qtbot, recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_color(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
     data = accgraph.TimestampMarkerData(
         x_value=combinations.x,
         color=combinations.c,
@@ -368,7 +368,7 @@ def test_invalid_timestamp_marker_color(qtbot, recwarn, warn_always, combination
         ["label 0", "label 1", "label 2", "label 3"],
     )
 ])
-def test_invalid_timestamp_marker_collection_color(qtbot, recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_collection_color(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
     data = accgraph.TimestampMarkerCollectionData(
         x_values=combinations.x,
         colors=combinations.c,
@@ -382,7 +382,7 @@ def test_invalid_timestamp_marker_collection_color(qtbot, recwarn, warn_always, 
     TimestampMarkerNamedTuple(np.nan, "r", ""),
     TimestampMarkerNamedTuple(None, "r", ""),
 ])
-def test_invalid_timestamp_marker_data(qtbot, warn_always, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_data(warn_always, combinations: TimestampMarkerNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.TimestampMarkerData(
             x_value=combinations.x,
@@ -391,7 +391,7 @@ def test_invalid_timestamp_marker_data(qtbot, warn_always, combinations: Timesta
         )
 
 
-def test_valid_timestamp_marker_collection_data(qtbot, recwarn, warn_always):
+def test_valid_timestamp_marker_collection_data(recwarn, warn_always):
     bar_collection = accgraph.TimestampMarkerCollectionData(
         x_values=[0.0],
         colors=["r"],
@@ -413,7 +413,7 @@ def test_valid_timestamp_marker_collection_data(qtbot, recwarn, warn_always):
         ["", "", ""],
     ),
 ])
-def test_invalid_timestamp_marker_collection_data(qtbot, recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_collection_data(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
     bar_collection = accgraph.TimestampMarkerCollectionData(
         x_values=combinations.x,
         colors=combinations.c,
@@ -428,7 +428,7 @@ def test_invalid_timestamp_marker_collection_data(qtbot, recwarn, warn_always, c
     TimestampMarkerNamedTuple([np.nan], [], ["label_1", "label_2"]),
     TimestampMarkerNamedTuple([], ["r"], ["label_1", "label_2"]),
 ])
-def test_timestamp_marker_collection_data_multiple_different_length(qtbot, combinations: TimestampMarkerNamedTuple):
+def test_timestamp_marker_collection_data_multiple_different_length(combinations: TimestampMarkerNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.TimestampMarkerCollectionData(
             x_values=combinations.x,
@@ -441,7 +441,7 @@ def test_timestamp_marker_collection_data_multiple_different_length(qtbot, combi
     TimestampMarkerNamedTuple([np.nan], ["r"], ["label_1", "label_2"]),
     TimestampMarkerNamedTuple([], [], ["label_1"]),
 ])
-def test_timestamp_marker_collection_data_one_different_length(qtbot, combinations: TimestampMarkerNamedTuple):
+def test_timestamp_marker_collection_data_one_different_length(combinations: TimestampMarkerNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.TimestampMarkerCollectionData(
             x_values=combinations.x,

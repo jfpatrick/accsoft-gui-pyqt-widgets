@@ -32,7 +32,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pg.ErrorBarItem, metaclass=A
 
     """Base class for different live bar graph plots"""
 
-    supported_plotting_styles: List[int] = [*plotting_style_to_class_mapping]
+    supported_plotting_styles: List[PlotWidgetStyle] = [*plotting_style_to_class_mapping]
 
     def __init__(
         self,

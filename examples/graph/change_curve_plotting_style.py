@@ -6,9 +6,9 @@ import sys
 
 import numpy as np
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QComboBox, QSpinBox, QLabel, QCheckBox, QFrame
+import pyqtgraph as pg
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
-import pyqtgraph as pg
 import example_sources
 
 
@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self.plot = accgraph.ExPlotWidget(config=plot_config)
         self.plot.addCurve(data_source=data_source_1)
         self.plot.plotItem.add_layer(identifier="layer_1")
-        self.plot.addCurve(data_source=data_source_2, layer_identifier="layer_1", sybol="o", symbolPen="g", pen="y")
+        self.plot.addCurve(data_source=data_source_2, layer="layer_1", sybol="o", symbolPen="g", pen="y")
         line = pg.InfiniteLine(pos=0.0, angle=0)
         self.plot.addItem(line)
         self.show()
@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(line)
 
-    def change_plot_config(self, *args):
+    def change_plot_config(self, *_):
         """Change the plot's configuration with the values from the inputs"""
         time_span = self.time_span_input.value()
         fixed_range = self.offset_checkbox.isChecked()

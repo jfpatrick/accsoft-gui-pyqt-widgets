@@ -1,12 +1,14 @@
 """Tests for the Sorting functionality of the buffers as well as CurveDataBuffer."""
+# pylint: disable=protected-access
 
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import numpy as np
 import pytest
 
 import accsoft_gui_pyqt_widgets.graph as accgraph
 from .mock_utils.widget_test_window import MinimalTestWindow
+
 
 # ~~~ Sorting Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -232,6 +234,7 @@ def test_buffer_size_configurability(
         item_to_add: Tuple[accgraph.DataModelBasedItem, str],
         use_convenience_functions: bool
 ):
+    """Test if the datamodels buffer size is properly configurable."""
     window = MinimalTestWindow()
     window.show()
     qtbot.addWidget(window)

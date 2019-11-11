@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 
-from typing import List, Union, Optional, Tuple
+from typing import List, Union, Optional, Tuple, Type
 
 import pytest
 import numpy as np
@@ -11,7 +11,8 @@ from accsoft_gui_pyqt_widgets.graph import (LivePlotCurve,
                                             PlotWidgetStyle,
                                             SlidingPointerPlotCurve,
                                             UpdateSource,
-                                            PointData)
+                                            PointData,
+                                            InvalidDataStructureWarning)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.mock_timing_source import MockTimingSource
@@ -739,27 +740,21 @@ def test_plotdataitem_components_visible(qtbot, params):
 
 # ~~~~~~~~~~~~~~ Test numpy RuntimeWarning when passing NaN to ScatterPlotItem ~~~~~~~~~~~~~~~
 
-def _handle_numpy_error(err, flag):
-    """
-    Handle numpy error that is expected from the ScatterPlotItem's paint function
-    when passing data that contains NaN entries. If the exception is detected
-    a flag is set that fails the test_nan_values_in_scatter_plot().
-    """
-    if err == "invalid value" and flag == 8:
-        global test_nan_values_in_scatter_plot_exception_flag
-        test_nan_values_in_scatter_plot_exception_flag = True  # type: ignore
 
-
-@pytest.mark.parametrize("data_sequence", [
-    [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (np.nan, np.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (0.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (1.2, np.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.1, np.nan), (2.0, 2.0), (3.0, 3.0)],
-    [(0.0, 0.0), (1.0, 1.0), (np.nan, 4.0), (2.0, 2.0), (3.0, 3.0)],
+@pytest.mark.parametrize("data_and_exp_warnings", [
+    ([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (np.nan, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (0.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (1.2, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
+    ([(0.0, 0.0), (1.0, 1.0), (np.nan, 4.0), (2.0, 2.0), (3.0, 3.0)], [InvalidDataStructureWarning]),
 ])
-def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, float]]):
+def test_nan_values_in_scatter_plot(
+        qtbot,
+        recwarn,
+        data_and_exp_warnings: Tuple[List[Tuple[float, float]], List[Type]]
+):
     """ Test if passing nan to a curve and especially scatter plot
     raises an error.
 
@@ -772,20 +767,20 @@ def test_nan_values_in_scatter_plot(qtbot, data_sequence: List[Tuple[float, floa
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    global test_nan_values_in_scatter_plot_exception_flag
-    test_nan_values_in_scatter_plot_exception_flag = False  # type: ignore
+    data_sequence: List[Tuple[float, float]] = data_and_exp_warnings[0]
+    expected_warnings: List[Type] = data_and_exp_warnings[1]
     window = _prepare_minimal_test_window(qtbot)
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     window.plot.addCurve(data_source=source, symbol="o")
-    np.seterrcall(_handle_numpy_error)
-    np.seterr(all="call")
     for point in data_sequence:
         source.sig_data_update.emit(PointData(point[0], point[1]))
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
         qtbot.wait(1)
-        # See if the numpy error handler has been called with the invalid error
-        assert not test_nan_values_in_scatter_plot_exception_flag  # type: ignore
+    for expected in expected_warnings:
+        warning = recwarn.pop(expected)
+        assert issubclass(warning.category, expected)
+    assert len(recwarn) == 0
 
 
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
@@ -817,7 +812,7 @@ def _prepare_sliding_pointer_plot_test_window(
 
 def _prepare_minimal_test_window(
         qtbot,
-        plotting_style: int = PlotWidgetStyle.SCROLLING_PLOT,
+        plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
         time_span: Optional[float] = None,
         time_progress_line: Optional[bool] = None,
 ) -> PlotWidgetTestWindow:
@@ -864,10 +859,10 @@ def _check_curves(
 
 def _check_plot_data_items_data(
     curve: SlidingPointerPlotCurve,
-    expected_nc_x: Union[np.ndarray, List[float]] = None,
-    expected_nc_y: Union[np.ndarray, List[float]] = None,
-    expected_oc_x: Union[np.ndarray, List[float]] = None,
-    expected_oc_y: Union[np.ndarray, List[float]] = None,
+    expected_nc_x: Union[np.ndarray, List[float], None] = None,
+    expected_nc_y: Union[np.ndarray, List[float], None] = None,
+    expected_oc_x: Union[np.ndarray, List[float], None] = None,
+    expected_oc_y: Union[np.ndarray, List[float], None] = None,
 ):
     """
 
@@ -897,7 +892,7 @@ def _check_plot_data_items_data(
             and np.allclose(data.old_curve.x_values, expected_oc_x)
             and np.allclose(data.old_curve.y_values, expected_oc_y)
         )
-    except:
+    except:   # pylint: disable=bare-except
         return False
     return result
 
