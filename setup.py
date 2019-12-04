@@ -66,10 +66,31 @@ for dev_dep_file in FOUND_DEV_DEPS_FILES:
         print(f"Collecting developer dependencies: {deps}")
         EXTRA_REQUIRES["testing"] += deps
 
-print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Result of Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print(f"Combined user dependencies:        {INSTALL_REQUIRES}")
-print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
-
+EXTRA_REQUIRES["linting"] = [
+    "mypy~=0.720",
+    "pylint>=2.3.1&&<3",
+    "pylint-unittest>=0.1.3&&<2",
+    "flake8>=3.7.8&&<4",
+    "flake8-quotes>=2.1.0&&<3",
+    "flake8-commas>=2&&<3",
+    "flake8-colors>=0.1.6&&<2",
+    "flake8-rst>=0.7.1&&<2",
+    "flake8-breakpoint>=1.1.0&&<2",
+    "flake8-pyi>=19.3.0&&<20",
+    "flake8-comprehensions>=2.2.0&&<3",
+    "flake8-builtins-unleashed>=1.3.1&&<2",
+    "flake8-blind-except>=0.1.1&&<2",
+    "flake8-bugbear>=19.8.0&&<20",
+]
+EXTRA_REQUIRES["docs"] = [
+    "Sphinx~=2.1.2",
+    "recommonmark~=0.6.0",
+    "sphinx-rtd-theme~=0.4.3",
+]
+EXTRA_REQUIRES["release"] = [
+    "twine~=1.13.0",
+    "wheel~=0.33.4",
+]
 
 curr_dir: Path = Path(__file__).parent.absolute()
 
