@@ -6,12 +6,12 @@ import pyqtgraph as pg
 import pytest
 from qtpy.QtWidgets import QAction
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
 
 
-def test_scrolling_plot_fixed_scrolling_x_range(qtbot):
+def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
     """ Test the fixed x range option on the scrolling plot
 
     Args:
@@ -74,7 +74,7 @@ class TransformRangeOperation(Enum):
     TransformRangeOperation.transform_y,
     TransformRangeOperation.transform_xy,
 ])
-def test_scrolling_plot_fixed_scrolling_x_range_zoom(
+def test_scrolling_plot_fixed_scrolling_xrange_zoom(
         qtbot,
         resume_operation: ResumeRangeOperation,
         transform_operation: TransformRangeOperation
@@ -205,8 +205,8 @@ def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: float, should_cr
         plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
         time_span=time_span,
         time_progress_line=True,
-        scrolling_plot_fixed_x_range=True,
-        scrolling_plot_fixed_x_range_offset=0.0
+        is_xrange_fixed=True,
+        fixed_xrange_offset=0.0
     )
     window = PlotWidgetTestWindow(
         plot_config,

@@ -8,23 +8,23 @@ import pytest
 import pyqtgraph as pg
 import numpy as np
 
-from accsoft_gui_pyqt_widgets.graph import (LiveBarGraphItem,
-                                            LiveTimestampMarker,
-                                            LiveInjectionBarGraphItem,
-                                            LivePlotCurve,
-                                            ExPlotItem, ExPlotWidget,
-                                            ExPlotWidgetConfig, BarData,
-                                            DataModelBasedItem,
-                                            TimestampMarkerData, InjectionBarData,
-                                            PlotWidgetStyle, PointData,
-                                            RelativeTimeAxisItem,
-                                            ScrollingBarGraphItem,
-                                            ScrollingTimestampMarker,
-                                            ScrollingInjectionBarGraphItem,
-                                            ScrollingPlotCurve,
-                                            SlidingPointerPlotCurve,
-                                            TimeAxisItem,
-                                            UpdateSource)
+from accwidgets.graph import (LiveBarGraphItem,
+                              LiveTimestampMarker,
+                              LiveInjectionBarGraphItem,
+                              LivePlotCurve,
+                              ExPlotItem, ExPlotWidget,
+                              ExPlotWidgetConfig, BarData,
+                              DataModelBasedItem,
+                              TimestampMarkerData, InjectionBarData,
+                              PlotWidgetStyle, PointData,
+                              RelativeTimeAxisItem,
+                              ScrollingBarGraphItem,
+                              ScrollingTimestampMarker,
+                              ScrollingInjectionBarGraphItem,
+                              ScrollingPlotCurve,
+                              SlidingPointerPlotCurve,
+                              TimeAxisItem,
+                              UpdateSource)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
@@ -157,8 +157,8 @@ def test_change_plot_config_on_running_plot(
         time_span=time_span_change[0],
         plotting_style=plotting_style_change[0],
         time_progress_line=time_line_change[0],
-        scrolling_plot_fixed_x_range=True,
-        scrolling_plot_fixed_x_range_offset=x_offset_change[0]
+        is_xrange_fixed=True,
+        fixed_xrange_offset=x_offset_change[0]
     )
     window = MinimalTestWindow(
         plot_config=plot_config_before_change,
@@ -178,7 +178,7 @@ def test_change_plot_config_on_running_plot(
     emit_fitting_value(LivePlotCurve, ds_curve, 30.0, 0.0)
     if PlotWidgetStyle.SLIDING_POINTER not in plotting_style_change:
         # Bar graph in its own layer
-        plotwidget.add_layer(identifier="layer_1")
+        plotwidget.add_layer(layer_id="layer_1")
         plotwidget.addBarGraph(  # type: ignore
             data_source=ds_bar,
             layer="layer_1",
@@ -188,7 +188,7 @@ def test_change_plot_config_on_running_plot(
         emit_fitting_value(LiveBarGraphItem, ds_bar, 20.0, 0.0)
         emit_fitting_value(LiveBarGraphItem, ds_bar, 30.0, 0.0)
         # Injection bar Graph in its own layer
-        plotwidget.add_layer(identifier="layer_2")
+        plotwidget.add_layer(layer_id="layer_2")
         plotwidget.addInjectionBar(  # type: ignore
             data_source=ds_injection,
             layer="layer_2",
@@ -202,7 +202,7 @@ def test_change_plot_config_on_running_plot(
         emit_fitting_value(LiveTimestampMarker, ds_line, 10.0, 0.0)
         emit_fitting_value(LiveTimestampMarker, ds_line, 20.0, 0.0)
         emit_fitting_value(LiveTimestampMarker, ds_line, 30.0, 0.0)
-    check_scrolling_plot_with_fixed_x_range(
+    check_scrolling_plot_with_fixed_xrange(
         time_span_change=time_span_change[0],
         x_offset_change=x_offset_change[0] if plotting_style_change[0] == PlotWidgetStyle.SCROLLING_PLOT else 0,
         plotting_style_change=plotting_style_change[0],
@@ -218,11 +218,11 @@ def test_change_plot_config_on_running_plot(
         time_span=time_span_change[1],
         plotting_style=plotting_style_change[1],
         time_progress_line=time_line_change[1],
-        scrolling_plot_fixed_x_range=True,
-        scrolling_plot_fixed_x_range_offset=x_offset_change[1]
+        is_xrange_fixed=True,
+        fixed_xrange_offset=x_offset_change[1]
     )
-    plotwidget.update_configuration(plot_config_after_change)
-    check_scrolling_plot_with_fixed_x_range(
+    plotwidget.update_config(plot_config_after_change)
+    check_scrolling_plot_with_fixed_xrange(
         time_span_change=time_span_change[1],
         x_offset_change=x_offset_change[1],
         plotting_style_change=plotting_style_change[1],
@@ -250,31 +250,31 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     plot_item = plot_widget.plotItem
     source = UpdateSource()
     plot_item.addCurve(data_source=source)
-    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
+    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
     # Set Range on PlotWidget
     expected = [[-2.5, 2.5], [-1.5, 1.5]]
     plot_widget.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_widget.setYRange(expected[1][0], expected[1][1], padding=0.0)
-    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
+    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
     expected = [[-4.5, 4.5], [-3.5, 3.5]]
     plot_item.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_item.setYRange(expected[1][0], expected[1][1], padding=0.0)
-    source.sig_data_update[PointData].emit(PointData(1.0, 1.0))
+    source.sig_new_data[PointData].emit(PointData(1.0, 1.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
     expected = [[-2.5, 2.5], [-1.5, 1.5]]
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
-    source.sig_data_update[PointData].emit(PointData(2.0, 2.0))
+    source.sig_new_data[PointData].emit(PointData(2.0, 2.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotWidget
     expected = [[-4.5, 4.5], [-3.5, 3.5]]
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
-    source.sig_data_update[PointData].emit(PointData(3.0, 3.0))
+    source.sig_new_data[PointData].emit(PointData(3.0, 3.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Auto Range (to see if still possible after setting range by hand)
@@ -286,7 +286,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
             [plot_item._time_span_start_boundary.pos()[0], plot_item._time_span_end_boundary.pos()[0]],
             [0.0, 3.0]
         ]
-    source.sig_data_update[PointData].emit(PointData(4.0, 4.0))
+    source.sig_new_data[PointData].emit(PointData(4.0, 4.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected), atol=0.1)
 
@@ -316,13 +316,13 @@ def test_static_items_config_change(qtbot, config_style_change):
     ]
     for item in items:
         plot_item.addItem(item)
-    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
+    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
     for item in items:
         assert item in plot_item.vb.addedItems
     config = ExPlotWidgetConfig(
         plotting_style=config_style_change[1]
     )
-    plot_item.update_configuration(config=config)
+    plot_item.update_config(config=config)
     for item in items:
         assert item in plot_item.vb.addedItems
 
@@ -332,7 +332,7 @@ def test_static_items_config_change(qtbot, config_style_change):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def check_scrolling_plot_with_fixed_x_range(
+def check_scrolling_plot_with_fixed_xrange(
     time_span_change: float,
     x_offset_change: float,
     plotting_style_change: PlotWidgetStyle,
@@ -340,7 +340,7 @@ def check_scrolling_plot_with_fixed_x_range(
 ):
     """Check (if the config fits) if the fixed x range on the scrolling plot is set right."""
     if plotting_style_change == PlotWidgetStyle.SCROLLING_PLOT:
-        for view_box in plotwidget.plotItem.get_all_viewboxes():
+        for view_box in plotwidget.plotItem.view_boxes:
             check_range(actual_range=view_box.targetRange(), expected_range=[
                 [(30.0 + x_offset_change) - time_span_change, 30.0 + x_offset_change],
                 [np.nan, np.nan]
@@ -372,7 +372,7 @@ def check_decorators(
 
 def check_bottom_axis(plot_item: ExPlotItem):
     """Check if the bottom axis is the right one"""
-    expected = type(plot_item.create_fitting_axis_item(config_style=plot_item.plot_config.plotting_style))
+    expected = type(plot_item._create_fitting_axis_item(config_style=plot_item.plot_config.plotting_style))
     assert isinstance(plot_item.getAxis("bottom"), expected)
 
 
@@ -458,11 +458,11 @@ def check_plot_curves(
 ):
     """Check if the curve is created correctly"""
     if item_to_add == LivePlotCurve or isinstance(item_to_add, str) and item_to_add == "ScatterPlot":
-        assert len(plot_item.get_live_data_bar_graphs()) == 0
-        assert len(plot_item.get_live_data_injection_bars()) == 0
-        assert len(plot_item.get_timestamp_markers()) == 0
-        assert len(plot_item.get_live_data_curves()) == 1
-        curve: LivePlotCurve = plot_item.get_live_data_curves()[0]
+        assert len(plot_item.live_bar_graphs) == 0
+        assert len(plot_item.live_injection_bars) == 0
+        assert len(plot_item.live_timestamp_markers) == 0
+        assert len(plot_item.live_curves) == 1
+        curve: LivePlotCurve = plot_item.live_curves[0]
         # Check if all opts are set properly and also kept after change
         # These carry information like color over to the changed item
         for opt in _test_change_plot_config_on_running_plot_opts["curve"]:
@@ -483,11 +483,11 @@ def check_bargraph(
 ):
     """Check if the bargraph is created correctly"""
     if item_to_add == LiveBarGraphItem and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
-        assert len(plot_item.get_live_data_curves()) == 0
-        assert len(plot_item.get_live_data_bar_graphs()) == 1
-        assert len(plot_item.get_live_data_injection_bars()) == 0
-        assert len(plot_item.get_timestamp_markers()) == 0
-        bargraph: LiveBarGraphItem = plot_item.get_live_data_bar_graphs()[0]
+        assert len(plot_item.live_curves) == 0
+        assert len(plot_item.live_bar_graphs) == 1
+        assert len(plot_item.live_injection_bars) == 0
+        assert len(plot_item.live_timestamp_markers) == 0
+        bargraph: LiveBarGraphItem = plot_item.live_bar_graphs[0]
         assert isinstance(bargraph, ScrollingBarGraphItem)
         assert isinstance(plot_item._time_line, pg.InfiniteLine)
         assert plot_item._time_line.value() == time_2
@@ -507,11 +507,11 @@ def check_injectionbar_graph(
 ):
     """Check if the injection are created correctly"""
     if item_to_add == LiveInjectionBarGraphItem and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
-        assert len(plot_item.get_live_data_curves()) == 0
-        assert len(plot_item.get_live_data_bar_graphs()) == 0
-        assert len(plot_item.get_live_data_injection_bars()) == 1
-        assert len(plot_item.get_timestamp_markers()) == 0
-        injection_bargraph: LiveInjectionBarGraphItem = plot_item.get_live_data_injection_bars()[0]
+        assert len(plot_item.live_curves) == 0
+        assert len(plot_item.live_bar_graphs) == 0
+        assert len(plot_item.live_injection_bars) == 1
+        assert len(plot_item.live_timestamp_markers) == 0
+        injection_bargraph: LiveInjectionBarGraphItem = plot_item.live_injection_bars[0]
         assert isinstance(injection_bargraph, ScrollingInjectionBarGraphItem)
         assert isinstance(plot_item._time_line, pg.InfiniteLine)
         assert plot_item._time_line.value() == time_2
@@ -529,11 +529,11 @@ def check_timestamp_markers(
 ):
     """Check if the timestamp markers are created correctly"""
     if item_to_add == LiveTimestampMarker and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
-        assert len(plot_item.get_live_data_curves()) == 0
-        assert len(plot_item.get_live_data_bar_graphs()) == 0
-        assert len(plot_item.get_live_data_injection_bars()) == 0
-        assert len(plot_item.get_timestamp_markers()) == 1
-        infinite_lines: LiveTimestampMarker = plot_item.get_timestamp_markers()[0]
+        assert len(plot_item.live_curves) == 0
+        assert len(plot_item.live_bar_graphs) == 0
+        assert len(plot_item.live_injection_bars) == 0
+        assert len(plot_item.live_timestamp_markers) == 1
+        infinite_lines: LiveTimestampMarker = plot_item.live_timestamp_markers[0]
         assert isinstance(infinite_lines, ScrollingTimestampMarker)
         assert isinstance(plot_item._time_line, pg.InfiniteLine)
         assert plot_item._time_line.value() == time_2

@@ -2,6 +2,6 @@
 max-line-length=140
 per-file-ignores =
     # Ignore unused imports and "unable to detect undefined names" with start imports
-    accsoft_gui_pyqt_widgets/graph/__init__.py:F401,F403
+    accwidgets/graph/__init__.py:F401,F403
     # Somehow misinterprets all the type: ignore[...] comments as code and checks them
-    accsoft_gui_pyqt_widgets/graph/widgets/plotwidget.py: F821
+    accwidgets/graph/widgets/plotwidget.py: F821

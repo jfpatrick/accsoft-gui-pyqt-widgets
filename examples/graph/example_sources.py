@@ -1,5 +1,11 @@
 """
-Simple implementations for Data and Timing Sources for example purposes
+UpdateSource is in general the connection between any item
+shown in a plot and any source data is coming from. Where
+and how which data is acquired is entirely dependent on the
+implementation of the Update Source.
+For our examples we just create a sinus curve locally. These
+implementations then emit single points or parts of the curve
+in a passed frequency.
 """
 
 from datetime import datetime
@@ -9,39 +15,15 @@ from enum import Enum
 import numpy as np
 from qtpy.QtCore import QTimer
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
-
-
-class LocalTimerTimingSource(accgraph.UpdateSource):
-    """Class for sending timing-update signals based on a QTimer instance."""
-
-    def __init__(self, offset: float = 0.0):
-        """Create new instance of LocalTimerTimingSource.
-
-        Args:
-            offset: offset of the emitted time to the actual current time
-        """
-        super().__init__()
-        self.timer = QTimer(self)
-        self.offset = offset
-        self.timer.timeout.connect(self._create_new_value)
-        self.timer.start(1000 / 60)
-
-    def _create_new_value(self) -> None:
-        """Emit new timestamp.
-
-        Returns:
-            None
-        """
-        self.sig_timing_update.emit(datetime.now().timestamp() + self.offset)
+from accwidgets import graph as accgraph
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Data Sources ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                  Data Sources
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class SinusCurveSourceEmitTypes(Enum):
-    """Enumeration for different emitable types ba the SinusCurveSource"""
+    """Enumeration for different emitable types by the SinusCurveSource"""
     POINT = 1
     BAR = 2
     INJECTIONBAR = 3
@@ -49,8 +31,10 @@ class SinusCurveSourceEmitTypes(Enum):
 
 
 class SinusCurveSource(accgraph.UpdateSource):
-    """Class for sending data-update signals based on random numbers timed by a
-    QTimer instance.
+    """
+    Example implementation of an UpdateSource for emitting points,
+    bars, injection bars in a sinus curve as well as timestamp markers
+    in a given frequency.
     """
 
     def __init__(
@@ -60,11 +44,12 @@ class SinusCurveSource(accgraph.UpdateSource):
         updates_per_second: int = 60,
         types_to_emit: Optional[List[SinusCurveSourceEmitTypes]] = None,
     ):
-        """Constructor
+        """Create a new UpdateSource emitting a sinus curve over time.
 
         Args:
-            y_offset (int):
-            x_offset (float):
+            y_offset: move all points in the created sinus curve in y direction
+            x_offset: Move all points in the created sinus curve in x direction
+            updates_per_second: How many points should be emitted per second
         """
         super().__init__()
         self.sinus_curve = [
@@ -83,7 +68,7 @@ class SinusCurveSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_values)
         self.timer.start(1000 / updates_per_second)
 
-    def _create_new_values(self):
+    def _create_new_values(self) -> None:
         """Create new values fitting to all requested value types"""
         for emit_type in self.types_to_emit:
             self._create_new_value(emit_type)
@@ -94,14 +79,14 @@ class SinusCurveSource(accgraph.UpdateSource):
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
             )
-            self.sig_data_update[accgraph.PointData].emit(new_data)
+            self.sig_new_data[accgraph.PointData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
                 y_value=self.sinus_curve[self.pointer],
                 height=self.sinus_curve[self.pointer],
             )
-            self.sig_data_update[accgraph.BarData].emit(new_data)
+            self.sig_new_data[accgraph.BarData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
@@ -110,7 +95,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 width=0.0,
                 label=str(self.label_counter),
             )
-            self.sig_data_update[accgraph.InjectionBarData].emit(new_data)
+            self.sig_new_data[accgraph.InjectionBarData].emit(new_data)
             self.label_counter += 1
         elif emit_type == SinusCurveSourceEmitTypes.INFINITELINE:
             if self.label_counter % 3 == 0:
@@ -127,7 +112,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 color=color,
                 label=label,
             )
-            self.sig_data_update[accgraph.TimestampMarkerData].emit(new_data)
+            self.sig_new_data[accgraph.TimestampMarkerData].emit(new_data)
             self.label_counter += 1
         else:
             raise ValueError(f"Unknown signal emit_type: {self.types_to_emit}")
@@ -177,7 +162,7 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_value)
         self.timer.start(self.timer_diff)
 
-    def _update_data(self):
+    def _update_data(self) -> None:
         last_timestamp = (
             self.x_values_live[-1] if self.x_values_live else datetime.now().timestamp()
         )
@@ -197,7 +182,7 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
             for index, value in enumerate(self.y_values_live)
         ]
 
-    def _create_new_value(self):
+    def _create_new_value(self) -> None:
         if self.current_index < self.data_length:
             self._emit_next_live_point()
             self.current_index += 1
@@ -207,79 +192,45 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
             self.current_index = 0
             self._update_data()
 
-    def _emit_next_live_point(self):
+    def _emit_next_live_point(self) -> None:
         new_data = accgraph.PointData(
             x_value=self.x_values_live[self.current_index],
             y_value=self.y_values_live[self.current_index],
         )
-        self.sig_data_update[accgraph.PointData].emit(new_data)
+        self.sig_new_data[accgraph.PointData].emit(new_data)
 
-    def _emit_separator(self):
+    def _emit_separator(self) -> None:
         separator = accgraph.PointData(x_value=np.nan, y_value=np.nan)
-        self.sig_data_update[accgraph.PointData].emit(separator)
+        self.sig_new_data[accgraph.PointData].emit(separator)
 
-    def _emit_data_from_logging_system(self):
+    def _emit_data_from_logging_system(self) -> None:
         curve = accgraph.CurveData(
             x_values=np.array(self.x_values_logging),
             y_values=np.array(self.y_values_logging),
         )
-        self.sig_data_update[accgraph.CurveData].emit(curve)
+        self.sig_new_data[accgraph.CurveData].emit(curve)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                 Timing Source
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class ManualDataSource(accgraph.UpdateSource):
-    """Data Source for Testing purposes
+class LocalTimerTimingSource(accgraph.UpdateSource):
+    """Class for sending timing-update signals based on a QTimer instance."""
 
-    Class for sending the right signals to the ExtendedPlotWidget. This
-    allows precise control over updates that are sent to the widget compared to
-    timer based solutions.
-    """
-
-    def create_new_value(self, timestamp: float, value: float) -> None:
-        """Manually emit a signal with a given new value.
+    def __init__(self, offset: float = 0.0):
+        """Create new instance of LocalTimerTimingSource.
 
         Args:
-            timestamp (float): timestamp to emit
-            value (float): value to emit
+            offset: offset of the emitted time to the actual current time
         """
-        new_data = accgraph.PointData(x_value=timestamp, y_value=value)
-        self.sig_data_update[accgraph.PointData].emit(new_data)
+        super().__init__()
+        self.timer = QTimer(self)
+        self.offset = offset
+        self.timer.timeout.connect(self._create_new_value)
+        self.timer.start(1000 / 60)
 
-    def create_new_injectionbar_data(self, x_value, y_value, height, width, label) -> None:
-        """Manually emit a signal with a given new value."""
-        new_data = accgraph.InjectionBarData(
-            x_value=x_value,
-            y_value=y_value,
-            height=height,
-            width=width,
-            label=label
-        )
-        self.sig_data_update[accgraph.InjectionBarData].emit(new_data)
-
-    def create_new_infinite_line_data(self, x_value, color, label):
-        """Manually emit a signal with a given new value."""
-        new_data = accgraph.TimestampMarkerData(
-            x_value=x_value,
-            color=color,
-            label=label
-        )
-        self.sig_data_update[accgraph.TimestampMarkerData].emit(new_data)
-
-
-class ManualTimingSource(accgraph.UpdateSource):
-    """Timing Source for Testing Purposes
-
-    Class for sending the right signals to the ExtendedPlotWidget. This
-    allows precise control over updates that are sent to the widget compared to
-    timer based solutions.
-    """
-
-    def create_new_value(self, timestamp: float) -> None:
-        """Manually emit timestamp
-
-        Args:
-            timestamp (float): timestamp to emit
-        """
-        self.sig_timing_update.emit(timestamp)
+    def _create_new_value(self) -> None:
+        """Emit new timestamp."""
+        self.sig_new_timestamp.emit(datetime.now().timestamp() + self.offset)

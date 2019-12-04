@@ -5,8 +5,8 @@ from typing import List
 import numpy as np
 import pytest
 
-from accsoft_gui_pyqt_widgets.graph import CurveData, PointData
-import accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping as clipping
+from accwidgets.graph import CurveData, PointData
+import accwidgets.graph.datamodel.datamodelclipping as clipping
 
 
 def _point(x_val, y_val) -> PointData:
@@ -329,7 +329,7 @@ def test_intersect_before_first_element():
     result = clipping.intersect(curve, line)
     assert result["last_before_index"] == -1
     assert result["first_after_index"] == 0
-    assert result["intersection"].contains_nan()
+    assert result["intersection"].is_nan
 
 
 def test_intersect_on_last_element():
@@ -356,7 +356,7 @@ def test_intersect_after_last_element():
     result = clipping.intersect(curve, line)
     assert result["last_before_index"] == 4
     assert result["first_after_index"] == -1
-    assert result["intersection"].contains_nan()
+    assert result["intersection"].is_nan
 
 
 def test_intersect_one_point_line_after():
@@ -367,7 +367,7 @@ def test_intersect_one_point_line_after():
     result = clipping.intersect(curve, line)
     assert result["last_before_index"] == 0
     assert result["first_after_index"] == -1
-    assert result["intersection"].contains_nan()
+    assert result["intersection"].is_nan
 
 
 def test_intersect_one_point_line_before():
@@ -378,7 +378,7 @@ def test_intersect_one_point_line_before():
     result = clipping.intersect(curve, line)
     assert result["last_before_index"] == -1
     assert result["first_after_index"] == 0
-    assert result["intersection"].contains_nan()
+    assert result["intersection"].is_nan
 
 
 def test_intersect_empty_list():
@@ -389,7 +389,7 @@ def test_intersect_empty_list():
     result = clipping.intersect(curve, line)
     assert result["last_before_index"] == -1
     assert result["first_after_index"] == -1
-    assert result["intersection"].contains_nan()
+    assert result["intersection"].is_nan
 
 
 def test_intersect_different_length_arrays():

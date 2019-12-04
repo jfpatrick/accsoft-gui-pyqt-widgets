@@ -12,8 +12,7 @@ different length arrays into an .
 import warnings
 import logging
 import abc
-from typing import List, Union, Optional
-from collections import namedtuple
+from typing import List, Union, Optional, Any, NamedTuple
 
 import numpy as np
 import pyqtgraph as pg
@@ -24,7 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class InvalidDataStructureWarning(Warning):
     """
-    Warning for an invalid Data Structure. DataStructures should emit
+    Warning for an invalid Data Structure. PlottingItemDataStructure should emit
     this if they are invalid, which means that they can not be drawn
     in their fitting graph-type.
     """
@@ -45,7 +44,7 @@ class AbstractQObjectMeta(type(QObject), abc.ABCMeta):  # type: ignore
     pass
 
 
-class PlottingItemEntry(QObject, metaclass=AbstractQObjectMeta):
+class PlottingItemData(QObject, metaclass=AbstractQObjectMeta):
 
     """Base class for the plotting item entry/entries, f.e. a point/points in a curve
 
@@ -60,7 +59,7 @@ class PlottingItemEntry(QObject, metaclass=AbstractQObjectMeta):
         """Check if the entry with the given values is valid and will be plotted
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             True / Array true at the position, where the entry / entries is valid
@@ -72,29 +71,35 @@ class PlottingItemEntry(QObject, metaclass=AbstractQObjectMeta):
 DEFAULT_COLOR = "w"
 
 
-class PointData(PlottingItemEntry):
-    """Data for a 2D point with x and y value
-
-    Emitting and invalid point to a curve will result in the point **being
-    dropped.** See :func:`PointData.is_valid` to see in which cases a PointData
-    can be invalid.
-    """
+class PointData(PlottingItemData):
 
     def __init__(self, x_value: float = np.nan, y_value: float = np.nan, parent=None):
+        """
+        Data for a 2D point with x and y value
+
+        Emitting and invalid point to a curve will result in the point **being
+        dropped.** See :func:`PointData.is_valid` to see in which cases a PointData
+        can be invalid.
+
+        Args:
+            x_value: x-value of the point.
+            y_value: y-value of the point.
+            parent: Parent object for the base class
+        """
         super().__init__(parent=parent)
         self.x_value: float = x_value if x_value is not None else np.nan
         self.y_value: float = y_value if y_value is not None else np.nan
         # Check validity on creation to warn user in case the point is invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ == other.__class__
             and self.x_value == other.x_value
             and self.y_value == other.y_value
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value})"
 
     def is_valid(self, warn: bool = False) -> bool:
@@ -104,7 +109,7 @@ class PointData(PlottingItemEntry):
             - x value is NaN and y value is not NaN
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             True if the point is valid
@@ -118,18 +123,13 @@ class PointData(PlottingItemEntry):
             return False
         return True
 
-    def contains_nan(self):
-        """Check if one of the values representing the point is nan."""
+    @property
+    def is_nan(self) -> bool:
+        """Either the x value or the y value is nan."""
         return np.isnan(self.x_value) or np.isnan(self.y_value)
 
 
-class CurveData(PlottingItemEntry):
-    """Collection of data for points representing a curve.
-
-    Emitting invalid points to a curve will result in the invalid points **being
-    dropped.** See :func:`CurveData.is_valid` to see in which cases a point
-    can be invalid.
-    """
+class CurveData(PlottingItemData):
 
     def __init__(
             self,
@@ -137,6 +137,17 @@ class CurveData(PlottingItemEntry):
             y_values: Union[List[float], np.ndarray],
             parent=None
     ):
+        """Collection of data for points representing a curve.
+
+        Emitting invalid points to a curve will result in the invalid points **being
+        dropped.** See :func:`CurveData.is_valid` to see in which cases a point
+        can be invalid.
+
+        Args:
+            x_values: list of x values of the points
+            y_values: list of y values of the points
+            parent: Parent object for the base class
+        """
         super().__init__(parent)
         if isinstance(x_values, list):
             x_values = np.array(x_values)
@@ -150,7 +161,7 @@ class CurveData(PlottingItemEntry):
         # Check validity on creation to warn user in case some points are invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if self.__class__ != other.__class__:
             return False
         try:
@@ -161,7 +172,7 @@ class CurveData(PlottingItemEntry):
         except ValueError:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_values}, y={self.y_values})"
 
     def is_valid(self, warn: bool = False) -> np.ndarray:
@@ -171,7 +182,7 @@ class CurveData(PlottingItemEntry):
             - x value is NaN and y value is not NaN
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             Bool array which contains True, if the point at that index is valid
@@ -191,13 +202,7 @@ class CurveData(PlottingItemEntry):
         return valid_indices
 
 
-class BarData(PlottingItemEntry):
-    """Data of a bar for a bar graph
-
-    Emitting and invalid bar to a bar graph will result in the bar **being
-    dropped.** See :func:`BarData.is_valid` to see in which cases a BarData
-    can be invalid.
-    """
+class BarData(PlottingItemData):
 
     def __init__(
             self,
@@ -206,6 +211,18 @@ class BarData(PlottingItemEntry):
             y_value: float = np.nan,
             parent=None
     ):
+        """Data of a bar for a bar graph
+
+        Emitting and invalid bar to a bar graph will result in the bar **being
+        dropped.** See :func:`BarData.is_valid` to see in which cases a BarData
+        can be invalid.
+
+        Args:
+            height: height of the bar
+            x_value: x position that represents the center of the bar
+            y_value: y position that represents the center of the bar
+            parent: Parent object for the base class
+        """
         super().__init__(parent)
         self.height: float = height if height is not None else np.nan
         self.x_value: float = x_value if x_value is not None else np.nan
@@ -214,7 +231,7 @@ class BarData(PlottingItemEntry):
         # Check validity on creation to warn user in case the bar is invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ != other.__class__
             and self.x_value != other.x_value
@@ -222,7 +239,7 @@ class BarData(PlottingItemEntry):
             and self.height != other.height
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value}, height={self.height})"
 
     def is_valid(self, warn: bool = False) -> bool:
@@ -238,7 +255,7 @@ class BarData(PlottingItemEntry):
         If the y value is NaN, it can be replaced by 0
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             True if the bar is valid
@@ -258,13 +275,7 @@ class BarData(PlottingItemEntry):
         return True
 
 
-class BarCollectionData(PlottingItemEntry):
-    """Collection of data for multiple bars
-
-    Emitting invalid bars to a bar graph will result in the invalid bars **being
-    dropped.** See :func:`BarCollectionData.is_valid` to see in which cases a point
-    can be invalid.
-    """
+class BarCollectionData(PlottingItemData):
 
     def __init__(
             self,
@@ -273,6 +284,18 @@ class BarCollectionData(PlottingItemEntry):
             heights: Union[list, np.ndarray],
             parent=None
     ):
+        """Collection of data for multiple bars
+
+        Emitting invalid bars to a bar graph will result in the invalid bars **being
+        dropped.** See :func:`BarCollectionData.is_valid` to see in which cases a point
+        can be invalid.
+
+        Args:
+            x_values: list of x positions that represent the center of the bar
+            y_values: list of y positions that represent the center of the bar
+            heights: list of bar heights
+            parent: Parent object for the base class
+        """
         super().__init__(parent)
         if isinstance(x_values, list):
             x_values = np.array(x_values)
@@ -289,7 +312,7 @@ class BarCollectionData(PlottingItemEntry):
         # Check validity on creation to warn user in case some bars are invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if self.__class__ != other.__class__:
             return False
         try:
@@ -301,7 +324,7 @@ class BarCollectionData(PlottingItemEntry):
         except ValueError:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_values}, " \
             f"y={self.y_values}, height={self.heights})"
 
@@ -318,7 +341,7 @@ class BarCollectionData(PlottingItemEntry):
         If the y value is NaN, it can be replaced by 0
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             Bool array which contains True, if the bar at that index is valid
@@ -338,13 +361,7 @@ class BarCollectionData(PlottingItemEntry):
         return valid_indices
 
 
-class InjectionBarData(PlottingItemEntry):
-    """Data for an injection bar for a injection bar graph
-
-    Emitting invalid injection bars to a graph will result in the invalid bars **being
-    dropped.** See :func:`InjectionBarData.is_valid` to see in which cases a bar
-    can be invalid.
-    """
+class InjectionBarData(PlottingItemData):
 
     def __init__(
         self,
@@ -355,6 +372,20 @@ class InjectionBarData(PlottingItemEntry):
         label: str = "",
         parent: Optional[QObject] = None,
     ):
+        """Data for an injection bar for a injection bar graph.
+
+        Emitting invalid injection bars to a graph will result in the invalid bars **being
+        dropped.** See :func:`InjectionBarData.is_valid` to see in which cases a bar
+        can be invalid.
+
+        Args:
+            x_value: x position of the center of the bar
+            y_value: y position of the center of the bar
+            height: length of the vertical line of the bar
+            width: length of the vertical line of the bar
+            label: text displayed at the top of the bar
+            parent: parent item of the base class
+        """
         super().__init__(parent)
         self.x_value: float = x_value if x_value is not None else np.nan
         self.y_value: float = y_value if y_value is not None else np.nan
@@ -364,7 +395,7 @@ class InjectionBarData(PlottingItemEntry):
         # Check validity on creation to warn user in case the injection bar is invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ == other.__class__
             and self.x_value == other.x_value
@@ -374,7 +405,7 @@ class InjectionBarData(PlottingItemEntry):
             and self.label == other.label
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value}, " \
             f"height={self.height}, width={self.width}, label={self.label})"
 
@@ -391,7 +422,7 @@ class InjectionBarData(PlottingItemEntry):
         If the height or width are NaN, they can be replaced with 0.
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             True if the injection bar is valid
@@ -411,13 +442,7 @@ class InjectionBarData(PlottingItemEntry):
         return True
 
 
-class InjectionBarCollectionData(PlottingItemEntry):
-    """Collection of data for multiple injection bars
-
-    Emitting invalid injection bars to a graph will result in the invalid bars **being
-    dropped.** See :func:`InjectionBarData.is_valid` to see in which cases a bar
-    can be invalid.
-    """
+class InjectionBarCollectionData(PlottingItemData):
 
     def __init__(
         self,
@@ -428,6 +453,20 @@ class InjectionBarCollectionData(PlottingItemEntry):
         labels: Union[List, np.ndarray],
         parent: Optional[QObject] = None,
     ):
+        """Collection of data for multiple injection bars.
+
+        Emitting invalid injection bars to a graph will result in the invalid bars **being
+        dropped.** See :func:`InjectionBarData.is_valid` to see in which cases a bar
+        can be invalid.
+
+        Args:
+            x_values: list of x positions of the center of each bar
+            y_values: list of y positions of the center of each bar
+            heights: list of lengths of the vertical lines of a bar
+            widths: list of lengths of the horizontal lines of a bar
+            labels: list of texts displayed at the top of each bar
+            parent: parent item of the base class
+        """
         super().__init__(parent)
         if isinstance(x_values, list):
             x_values = np.array(x_values)
@@ -451,7 +490,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
         # Check validity on creation to warn user in case some injection bars are invalid
         self.is_valid(warn=True)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if self.__class__ != other.__class__:
             return False
         try:
@@ -465,7 +504,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
         except ValueError:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_values}, y={self.y_values}, " \
             f"heights={self.heights}, widths={self.widths}, labels={self.labels})"
 
@@ -482,7 +521,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
         If the height or width are NaN, they can be replaced with 0, the label with an empty string.
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             Bool array, with true if the injection bar at this index is valid
@@ -502,16 +541,7 @@ class InjectionBarCollectionData(PlottingItemEntry):
         return valid_indices
 
 
-class TimestampMarkerData(PlottingItemEntry):
-    """Data for a timestamp marker
-
-    Emitting invalid timestamp markers to a graph will result in the invalid markers **being
-    dropped.** See :func:`TimestampMarkerData.is_valid` to see in which cases a marker
-    can be invalid.
-    """
-
-    # For only emitting the warning once
-    invalid_warning_already_emitted = False
+class TimestampMarkerData(PlottingItemData):
 
     def __init__(
             self,
@@ -520,7 +550,18 @@ class TimestampMarkerData(PlottingItemEntry):
             label: str = "",
             parent=None
     ):
-        """Create a new injection bar data structure"""
+        """Data for a timestamp marker
+
+        Emitting invalid timestamp markers to a graph will result in the invalid markers **being
+        dropped.** See :func:`TimestampMarkerData.is_valid` to see in which cases a marker
+        can be invalid.
+
+        Args:
+            x_value: x position of the timestamp marker's vertical line
+            color: of the vertical line, accepts the same arguments as pyqtgraph's mkColor
+            label: text that is shown on the top of the line
+            parent: parent item for the base class
+        """
         super().__init__(parent)
         self.x_value: float = x_value if x_value is not None else np.nan
         # Catch invalid colors and replace with the default color to prevent exceptions
@@ -546,13 +587,15 @@ class TimestampMarkerData(PlottingItemEntry):
         )
 
     def __str__(self):
-        return f"{type(self).__name__}: (x={self.x_value}, color={self.color}, label={self.label})"
+        return f"{type(self).__name__}: " \
+            f"(x={self.x_value}, color={self.color}, label={self.label})"
 
     def is_valid(self, warn: bool = False) -> bool:
         """Check if the timestamp marker is valid
 
-        A timestamp marker is invalid, if missing values can not be replaced with a default
-        value that does make sense and is not misleading
+        A timestamp marker is invalid, if missing values can not be
+        replaced with a default value that does make sense and is not
+        misleading.
 
         Cases in which a marker is invalid:
             - x value is NaN
@@ -560,30 +603,22 @@ class TimestampMarkerData(PlottingItemEntry):
         Color and labels can be replaced with standard values
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             True if the timestamp marker is valid
         """
         if np.isnan(self.x_value):
             if warn:
-                warning_message = "NaN is not a valid x value for the timestamp marker. " \
-                                  "If you emit this timeline to an graph, it won't be drawn."
+                warning_message = "NaN is not a valid x value for the timestamp " \
+                                  "marker. If you emit this timeline to an graph, " \
+                                  "it won't be drawn."
                 warnings.warn(warning_message, InvalidDataStructureWarning)
             return False
         return True
 
 
-class TimestampMarkerCollectionData(PlottingItemEntry):
-    """Collection of data for timestamp markers
-
-    Emitting invalid timestamp markers to a graph will result in the invalid markers **being
-    dropped.** See :func:`TimestampMarkerData.is_valid` to see in which cases a marker
-    can be invalid.
-    """
-
-    # For only emitting the warning once
-    invalid_warning_already_emitted = False
+class TimestampMarkerCollectionData(PlottingItemData):
 
     def __init__(
             self,
@@ -592,7 +627,22 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
             labels: Union[List, np.ndarray],
             parent=None
     ):
-        """Create a new collection of infinite lines"""
+        """Collection of data for timestamp markers
+
+        Emitting invalid timestamp markers to a graph will result in
+        the invalid markers **being dropped.** See
+        :func:`TimestampMarkerData.is_valid` to see in which cases a marker
+        can be invalid.
+
+        Args:
+            x_values: list of x positions of multiple timestamp markers'
+                      vertical lines
+            colors: list of colors of multiple timestamp markers' vertical
+                    lines
+            labels: list of labels that are displayed on top of multiple
+                    timestamp markers' vertical lines
+            parent: parent item for the base class
+        """
         super().__init__(parent=parent)
         if isinstance(x_values, list):
             x_values = np.array(x_values)
@@ -631,7 +681,7 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
         except ValueError:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__}: (x={self.x_values}, colors={self.colors}, labels={self.labels})"
 
     def is_valid(self, warn: bool = False) -> np.ndarray:
@@ -646,7 +696,7 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
         If the color or label are missing, they can be replaced with a default value.
 
         Args:
-            - warn: Should a warning be emitted if the data structure is invalid
+            warn: Should a warning be emitted if the data structure is invalid
 
         Returns:
             Bool Array with True, if the the marker at that position is valid
@@ -668,17 +718,18 @@ class TimestampMarkerCollectionData(PlottingItemEntry):
 
 # ~~~~~~~~~~~~~~~~~ Data Structures for testing purposes ~~~~~~~~~~~~~~~~~
 
-# Collection for a sliding pointer curves
-SlidingPointerCurveData = namedtuple("SlidingPointerCurveData", "old_curve new_curve")
+
+class SlidingPointerCurveData(NamedTuple):
+    """
+    Collection of a sliding pointer curve's old and new curve as
+    a named tuple. Mainly used for testing purposes.
+    """
+
+    old_curve: CurveData
+    new_curve: CurveData
 
 
 class CurveDataWithTime:
-    """ Curve data with x values and timestamps
-
-    Object representing a curve with x and y values as well as an
-    additional list of timestamps in case the x position is not equal to the
-    timestamp. This happens f.e. in case of the Sliding Pointer Plot
-    """
 
     def __init__(
             self,
@@ -686,10 +737,11 @@ class CurveDataWithTime:
             y_values: Union[List, np.ndarray],
             timestamps: Union[List, np.ndarray],
     ):
-        """Create new Curve with timestamps
+        """Curve data with x values and timestamps
 
-        Curve distinguishing between x values and timestamps
-        (for Sliding Pointer Graph testing purposes)
+        Object representing a curve with x and y values as well as an
+        additional list of timestamps in case the x position is not equal to the
+        timestamp. This happens f.e. in case of the Sliding Pointer Plot
 
         Args:
             x_values: x values of the points creating the curve
@@ -709,7 +761,7 @@ class CurveDataWithTime:
         self.y_values: np.ndarray = y_values
         self.timestamps: np.ndarray = timestamps
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if self.__class__ != other.__class__:
             return False
         try:
@@ -720,3 +772,16 @@ class CurveDataWithTime:
             )
         except ValueError:
             return False
+
+
+PlottingItemDataStructure = Union[
+    PointData,
+    CurveData,
+    BarData,
+    BarCollectionData,
+    InjectionBarData,
+    InjectionBarCollectionData,
+    TimestampMarkerData,
+    TimestampMarkerCollectionData,
+]
+"""Union with all data-structure classes from this module (useful for type hints in slots)"""

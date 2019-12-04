@@ -144,17 +144,17 @@
   <customwidget>
    <class>ScrollingPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accsoft_gui_pyqt_widgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph.widgets.plotwidget</header>
   </customwidget>
   <customwidget>
    <class>SlidingPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accsoft_gui_pyqt_widgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph.widgets.plotwidget</header>
   </customwidget>
   <customwidget>
    <class>StaticPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accsoft_gui_pyqt_widgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph.widgets.plotwidget</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -6,7 +6,7 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 from .mock_utils.widget_test_window import MinimalTestWindow
 
 
@@ -84,21 +84,21 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     )
 
     # Start in front of first value, End in between values
-    subset = buffer.get_subset(start=-4.4, end=7.9, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-4.4, end=7.9, interpolated=True)
     expected = create_expected_tuple_from_list(
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9],
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start in front of first value, End exactly on value
-    subset = buffer.get_subset(start=-2.6, end=8.0, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-2.6, end=8.0, interpolated=True)
     expected = create_expected_tuple_from_list(
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start in front of first value, End after last values
-    subset = buffer.get_subset(start=-0.1, end=11.6)
+    subset = buffer.subset_for_primary_val_range(start=-0.1, end=11.6)
     expected = create_expected_tuple_from_list(
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
         [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
@@ -106,19 +106,19 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     assert np.allclose(subset, expected, equal_nan=True)
 
     # Start on value, End in between values
-    subset = buffer.get_subset(start=2.0, end=7.9, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.0, end=7.9, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9]
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start on value, End on value
-    subset = buffer.get_subset(start=2.0, end=8.0, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.0, end=8.0, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start on value, End after last value
-    subset = buffer.get_subset(start=2.0, end=12.3, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.0, end=12.3, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
         [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
@@ -126,20 +126,20 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     assert np.allclose(subset, expected, equal_nan=True)
 
     # Start between values, End after last value
-    subset = buffer.get_subset(start=2.3, end=11.2, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.3, end=11.2, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
         [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start between values, End on value
-    subset = buffer.get_subset(start=2.3, end=8.0, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.3, end=8.0, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start between values, End between values
-    subset = buffer.get_subset(start=2.3, end=8.9, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=2.3, end=8.9, interpolated=True)
     expected = create_expected_tuple_from_list(
         [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 8.9],
         [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 8.9],
@@ -147,15 +147,15 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     assert np.allclose(subset, expected)
 
     # Start in front of first value and End in front of first value
-    subset = buffer.get_subset(start=-15.3, end=-0.6, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-15.3, end=-0.6, interpolated=True)
     expected = create_expected_tuple(start=0.0, stop=0.0)
     assert np.allclose(subset, expected, equal_nan=True)
     # Start after last value and End after last value
-    subset = buffer.get_subset(start=15.3, end=24.6, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=15.3, end=24.6, interpolated=True)
     expected = create_expected_tuple(start=0.0, stop=0.0)
     assert np.allclose(subset, expected, equal_nan=True)
     # Exactly one value
-    subset = buffer.get_subset(start=5.0, end=5.0)
+    subset = buffer.subset_for_primary_val_range(start=5.0, end=5.0)
     expected = create_expected_tuple_from_list([5.0], [5.0])
     assert np.allclose(subset, expected, equal_nan=True)
 
@@ -181,34 +181,34 @@ def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
     buffer.add_entry(x_value=np.nan, y_value=np.nan)
 
     # Span the whole array
-    subset = buffer.get_subset(start=-1.0, end=7.0, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-1.0, end=7.0, interpolated=True)
     expected = create_expected_tuple_from_list(
         [0.0, 1.0, np.nan, 2.0, 3.0, np.nan, 4.0, 5.0],
         [0.0, 1.0, np.nan, 2.0, 3.0, np.nan, 4.0, 5.0],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # No value, range before first value
-    subset = buffer.get_subset(start=-4.0, end=-1.23, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-4.0, end=-1.23, interpolated=True)
     expected = create_expected_tuple_from_list([], [])
     assert np.allclose(subset, expected, equal_nan=True)
     # No value, range after last value
-    subset = buffer.get_subset(start=14.32, end=43.21, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=14.32, end=43.21, interpolated=True)
     expected = create_expected_tuple_from_list([], [])
     assert np.allclose(subset, expected, equal_nan=True)
     # Only first number
-    subset = buffer.get_subset(start=-4.32, end=0.0, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-4.32, end=0.0, interpolated=True)
     expected = create_expected_tuple_from_list([0.0], [0.0])
     assert np.allclose(subset, expected, equal_nan=True)
     # Only first number with clipping
-    subset = buffer.get_subset(start=-4.32, end=0.5, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-4.32, end=0.5, interpolated=True)
     expected = create_expected_tuple_from_list([0.0, 0.5], [0.0, 0.5])
     assert np.allclose(subset, expected, equal_nan=True)
     # Only first number with clipping
-    subset = buffer.get_subset(start=-4.32, end=1.5, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=-4.32, end=1.5, interpolated=True)
     expected = create_expected_tuple_from_list([0.0, 1.0], [0.0, 1.0])
     assert np.allclose(subset, expected, equal_nan=True)
     # Only first number with clipping
-    subset = buffer.get_subset(start=3.9, end=5.1, clip_at_boundaries=True)
+    subset = buffer.subset_for_primary_val_range(start=3.9, end=5.1, interpolated=True)
     expected = create_expected_tuple_from_list([4.0, 5.0], [4.0, 5.0])
     assert np.allclose(subset, expected, equal_nan=True)
 
@@ -219,7 +219,7 @@ def test_add_empty_list():
     buffer.add_list_of_entries(
         x_values=np.array([]), y_values=np.array([])
     )
-    assert buffer.is_empty()
+    assert buffer.is_empty
 
 
 @pytest.mark.parametrize("item_to_add", [
@@ -249,7 +249,7 @@ def test_buffer_size_configurability(
         )
     else:
         # create items by hand and
-        item = item_to_add[0].create(  # type: ignore
+        item = item_to_add[0].from_plot_item(  # type: ignore
             plot_item=plot_item,
             data_source=data_source,
             buffer_size=10

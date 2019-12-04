@@ -1,6 +1,6 @@
 """Update Source for timestamps for Testing purposes"""
 
-from accsoft_gui_pyqt_widgets.graph import UpdateSource
+from accwidgets.graph import UpdateSource
 
 
 class MockTimingSource(UpdateSource):
@@ -17,4 +17,4 @@ class MockTimingSource(UpdateSource):
         Args:
             timestamp (float): timestamp to emit
         """
-        self.sig_timing_update.emit(timestamp)
+        self.sig_new_timestamp.emit(timestamp)

@@ -1,12 +1,13 @@
 """
-Simple example for a widget without configuration and timing source
+Example of one plot with a simple standard curve with
+the standard plot configuration.
 """
 
 import sys
 
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 import example_sources
 
 
@@ -17,10 +18,14 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
+        # One source of data for our curve
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=5
         )
-        self.plot = accgraph.ExPlotWidget(parent=self)
+        # Our plot we want to add our curve to
+        self.plot = accgraph.ScrollingPlotWidget(parent=self)
+        # A curve receiving its data from the prior defined
+        # data source.
         self.plot.addCurve(data_source=data_source_1)
         self.show()
         self.resize(800, 600)

@@ -6,10 +6,11 @@ Tests for widget properties used by the designer plugin.
 import pytest
 import json
 import numpy as np
-from accsoft_gui_pyqt_widgets.graph import \
-    StaticPlotWidget, \
-    ScrollingPlotWidget, \
-    SlidingPlotWidget
+from accwidgets.graph import (
+    StaticPlotWidget,
+    ScrollingPlotWidget,
+    SlidingPlotWidget,
+)
 from .mock_utils.widget_test_window import MinimalTestWindow
 
 
@@ -153,12 +154,12 @@ def test_axis_labels_property(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(new_val=["0"])
+    window.plot._set_layer_ids(new_val=["0"])
     window.plot._set_show_top_axis(new_val=False)
     window.plot._set_show_bottom_axis(new_val=True)
     window.plot._set_show_right_axis(new_val=False)
     window.plot._set_show_left_axis(new_val=True)
-    window.plot._set_layer_identifiers(new_val=["0"])
+    window.plot._set_layer_ids(new_val=["0"])
     labels = {
         "top": "top",
         "bottom": "bottom",
@@ -192,12 +193,12 @@ def test_axis_ranges_property(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(new_val=["0"])
+    window.plot._set_layer_ids(new_val=["0"])
     window.plot._set_show_top_axis(new_val=False)
     window.plot._set_show_bottom_axis(new_val=True)
     window.plot._set_show_right_axis(new_val=False)
     window.plot._set_show_left_axis(new_val=True)
-    window.plot._set_layer_identifiers(new_val=["0"])
+    window.plot._set_layer_ids(new_val=["0"])
     # Set range for x, y and y of new layer
     ranges = {
         "x": [-5.0, 5.0],
@@ -251,23 +252,23 @@ def test_additional_layer_property(qtbot, widget):
     )
     window.plot._set_additional_layers_count(new_val=1)
     assert window.plot._get_additional_layers_count() == 1
-    assert window.plot._get_layer_identifiers() == [
+    assert window.plot._get_layer_ids() == [
         "layer_0"
     ]
     window.plot._set_additional_layers_count(new_val=2)
     assert window.plot._get_additional_layers_count() == 2
-    assert window.plot._get_layer_identifiers() == [
+    assert window.plot._get_layer_ids() == [
         "layer_0",
         "layer_1",
     ]
     window.plot._set_additional_layers_count(new_val=1)
     assert window.plot._get_additional_layers_count() == 1
-    assert window.plot._get_layer_identifiers() == [
+    assert window.plot._get_layer_ids() == [
         "layer_0",
     ]
     window.plot._set_additional_layers_count(new_val=0)
     assert window.plot._get_additional_layers_count() == 0
-    assert window.plot._get_layer_identifiers() == []
+    assert window.plot._get_layer_ids() == []
 
 
 @pytest.mark.parametrize("widget", [
@@ -275,26 +276,26 @@ def test_additional_layer_property(qtbot, widget):
     SlidingPlotWidget,
     StaticPlotWidget,
 ])
-def test_layer_identifiers_property(qtbot, widget):
+def test_layer_ids_property(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(new_val=["custom_layer_0"])
+    window.plot._set_layer_ids(new_val=["custom_layer_0"])
     assert window.plot._get_additional_layers_count() == 1
-    assert window.plot._get_layer_identifiers() == [
+    assert window.plot._get_layer_ids() == [
         "custom_layer_0"
     ]
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["custom_layer_0", "custom_layer_1"]
     )
     assert window.plot._get_additional_layers_count() == 2
-    assert window.plot._get_layer_identifiers() == [
+    assert window.plot._get_layer_ids() == [
         "custom_layer_0",
         "custom_layer_1",
     ]
-    window.plot._set_layer_identifiers(new_val=[])
+    window.plot._set_layer_ids(new_val=[])
     assert window.plot._get_additional_layers_count() == 0
-    assert window.plot._get_layer_identifiers() == []
+    assert window.plot._get_layer_ids() == []
 
 
 @pytest.mark.parametrize("widget", [
@@ -306,7 +307,7 @@ def test_layer_rename(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["0", "1"]
     )
     labels = {
@@ -322,7 +323,7 @@ def test_layer_rename(qtbot, widget):
     window.plot._set_axis_ranges(new_val=json.dumps(ranges))
     assert window.plot._get_additional_layers_count() == 2
     # rename layer '0' to 'renamed'
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["renamed", "1"]
     )
     expected_labels = {
@@ -337,7 +338,7 @@ def test_layer_rename(qtbot, widget):
     }
     assert window.plot._get_axis_ranges() == json.dumps(expected_ranges)
     # rename layer not in ranges / labels
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["renamed", "no effect"]
     )
     assert window.plot._get_axis_ranges() == json.dumps(expected_ranges)
@@ -353,7 +354,7 @@ def test_layer_removal(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["0", "1"]
     )
     labels = {
@@ -369,7 +370,7 @@ def test_layer_removal(qtbot, widget):
     window.plot._set_axis_ranges(new_val=json.dumps(ranges))
     assert window.plot._get_additional_layers_count() == 2
     # remove layer '0'
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["1"]
     )
     expected_labels = {
@@ -382,7 +383,7 @@ def test_layer_removal(qtbot, widget):
     }
     assert window.plot._get_axis_ranges() == json.dumps(expected_ranges)
     # add layer with same name
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["0", "1"]
     )
     assert window.plot._get_axis_ranges() == json.dumps(expected_ranges)
@@ -399,7 +400,7 @@ def test_layer_removal_and_rename(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["0", "1"]
     )
     labels = {
@@ -415,7 +416,7 @@ def test_layer_removal_and_rename(qtbot, widget):
     window.plot._set_axis_ranges(new_val=json.dumps(ranges))
     assert window.plot._get_additional_layers_count() == 2
     # remove layer "0" and rename layer "1"
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["was 1"]
     )
     expected_labels = {
@@ -439,7 +440,7 @@ def test_shuffle_layers(qtbot, widget):
     window = MinimalTestWindow(
         plot_widget=widget()
     )
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["0", "1"]
     )
     labels = {
@@ -455,7 +456,7 @@ def test_shuffle_layers(qtbot, widget):
     window.plot._set_axis_ranges(new_val=json.dumps(ranges))
     assert window.plot._get_additional_layers_count() == 2
     # shuffle layer "0" and "1"
-    window.plot._set_layer_identifiers(
+    window.plot._set_layer_ids(
         new_val=["1", "0"]
     )
     expected_labels = {

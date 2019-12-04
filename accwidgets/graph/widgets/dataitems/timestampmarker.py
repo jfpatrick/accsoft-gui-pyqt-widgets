@@ -4,54 +4,54 @@ import sys
 from typing import List, Union, Type
 
 import pyqtgraph as pg
+from qtpy.QtGui import QPainter
 from qtpy.QtWidgets import QGraphicsItem
 from qtpy.QtCore import QRectF
 
-from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
-from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import TimestampMarkerDataModel
-from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
+from accwidgets.graph.datamodel.connection import UpdateSource
+from accwidgets.graph.datamodel.itemdatamodel import LiveTimestampMarkerDataModel
+from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
+from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
+from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph.widgets.plotitem import ExPlotItem
 
-# which plotting style is achieved by which class
-PLOTTING_STYLE_TO_CLASS_MAPPING = {
+_PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingTimestampMarker",
 }
+"""which plotting style is achieved by which class"""
 
 
 class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
 
-    """Base class for an InfiniteLine based marking of specific timestamps
-
-    Since this class does only create InfiniteLines but does not paint itself,
-    the right QtGraphicsItem Flags have to be set, so the class does not have
-    to provide its own Bounding Rectangle.
-    """
-
-    supported_plotting_styles: List[PlotWidgetStyle] = [*PLOTTING_STYLE_TO_CLASS_MAPPING]
+    supported_plotting_styles: List[PlotWidgetStyle] = [*_PLOTTING_STYLE_TO_CLASS_MAPPING]
+    """List of plotting styles which are supported by this class's create factory function"""
 
     def __init__(
         self,
         *graphicsobjectargs,
-        data_source: Union[UpdateSource, TimestampMarkerDataModel],
+        data_source: Union[UpdateSource, LiveTimestampMarkerDataModel],
         plot_item: "ExPlotItem",
         buffer_size: int = DEFAULT_BUFFER_SIZE
     ):
+        """ Base class for an InfiniteLine based marking of specific timestamps
+
+        Args:
+            *graphicsobjectargs: Positional arguments for baseclass GraphicsObject
+            data_source: source for data updates
+            plot_item: PlotItem this item will be added to
+            buffer_size: Amount of entries the buffer is holding (not equal the amount of displayed entries)
         """
-        Constructor for base class, use constructors of subclasses
-        """
-        if isinstance(data_source, TimestampMarkerDataModel):
+        if isinstance(data_source, LiveTimestampMarkerDataModel):
             data_model = data_source
         elif isinstance(data_source, UpdateSource):
-            data_model = TimestampMarkerDataModel(
+            data_model = LiveTimestampMarkerDataModel(
                 data_source=data_source,
                 buffer_size=buffer_size
             )
@@ -72,7 +72,29 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         }
 
     @staticmethod
-    def create_from(
+    def from_plot_item(
+        *graphicsobjectargs,
+        data_source: UpdateSource,
+        plot_item: "ExPlotItem",
+        buffer_size: int = DEFAULT_BUFFER_SIZE
+    ) -> "LiveTimestampMarker":
+        """Factory method for creating line object fitting the passed plot"""
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_item.plot_config,
+            supported_styles=LiveTimestampMarker.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
+        item_class: Type = getattr(sys.modules[__name__], class_name)
+        return item_class(
+            *graphicsobjectargs,
+            plot_item=plot_item,
+            data_source=data_source,
+            buffer_size=buffer_size
+        )
+
+    @staticmethod
+    def clone(
             *graphicsobjectargs,
             object_to_create_from: "LiveTimestampMarker",
     ):
@@ -94,7 +116,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             supported_styles=LiveTimestampMarker.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
+        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         return item_class(
             *graphicsobjectargs,
@@ -102,27 +124,42 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             data_source=object_to_create_from._data_model,
         )
 
-    @staticmethod
-    def create(
-        *graphicsobjectargs,
-        data_source: UpdateSource,
-        plot_item: "ExPlotItem",
-        buffer_size: int = DEFAULT_BUFFER_SIZE
-    ) -> "LiveTimestampMarker":
-        """Factory method for creating line object fitting the passed plot"""
-        DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_item.plot_config,
-            supported_styles=LiveTimestampMarker.supported_plotting_styles
-        )
-        # get class fitting to plotting style and return instance
-        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
-        item_class: Type = getattr(sys.modules[__name__], class_name)
-        return item_class(
-            *graphicsobjectargs,
-            plot_item=plot_item,
-            data_source=data_source,
-            buffer_size=buffer_size
-        )
+    def flags(self):
+        """
+        Since this class does only create InfiniteLines but does not paint itself,
+        the right QtGraphicsItem Flags have to be set, so the class does not have
+        to provide its own Bounding Rectangle.
+
+        ItemHasNoContents -> we do not have to provide a bounding rectangle
+                             for the ViewBox
+        """
+        return QGraphicsItem.ItemHasNoContents
+
+    def paint(self, p: QPainter, *args) -> None:
+        """
+        Overrides base's paint().
+        paint function has to be implemented but this component only
+        creates InfiniteLines and does not paint anything, so we can pass
+
+        Args:
+            p: QPainter that is used to paint this item
+        """
+        pass
+
+    def boundingRect(self) -> QRectF:
+        """
+        Overrides base's boundingRect().
+        Since this component is not painting anything, it does not
+        matter what we pass back as long as it is in the boundaries
+        of the internal InfiniteLines Bounding Rectangle
+
+        Returns:
+            Bounding Rectangle of the first line element
+        """
+        try:
+            return self._line_elements[0].boundingRect()
+        except IndexError:
+            return QRectF(0.0, 0.0, 0.0, 0.0)
 
     def _clear_infinite_lines(self):
         for line in self._line_elements:
@@ -148,34 +185,6 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         infinite_line.setParentItem(self)
         self._line_elements.append(infinite_line)
 
-    def flags(self):
-        """
-        Overrides base's flags().
-        ItemHasNoContents -> we do not have to provide a bounding rectangle
-        for the ViewBox
-        """
-        return QGraphicsItem.ItemHasNoContents
-
-    def paint(self, *args):
-        """
-        Overrides base's paint().
-        paint function has to be implemented but this component only
-        creates InfiniteLines and does not paint anything, so we can pass
-        """
-        pass
-
-    def boundingRect(self):
-        """
-        Overrides base's boundingRect().
-        Since this component is not painting anything, it does not
-        matter what we pass back as long as it is in the boundaries
-        of the internal InfiniteLines Bounding Rectangle
-        """
-        try:
-            return self._line_elements[0].boundingRect()
-        except IndexError:
-            return QRectF(0.0, 0.0, 0.0, 0.0)
-
 
 class ScrollingTimestampMarker(LiveTimestampMarker):
 
@@ -186,7 +195,7 @@ class ScrollingTimestampMarker(LiveTimestampMarker):
 
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
-        curve_x, colors, labels = self._data_model.get_subset(
+        curve_x, colors, labels = self._data_model.subset_for_xrange(
             start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
         )
         if curve_x.size == colors.size == labels.size and curve_x.size > 0:

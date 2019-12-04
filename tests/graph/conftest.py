@@ -3,13 +3,14 @@
 import warnings
 
 import pytest
+from typing import Generator
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 from tests.graph.mock_utils.widget_test_window import MinimalTestWindow
 
 
 @pytest.fixture(autouse=False)
-def minimal_test_window():
+def minimal_test_window() -> MinimalTestWindow:
     """Fixture for creating """
     window = MinimalTestWindow()
     window.show()
@@ -17,7 +18,7 @@ def minimal_test_window():
 
 
 @pytest.fixture(autouse=False)
-def warn_always():
+def warn_always() -> Generator:
     """
     Fixture for enabling warnings to always be emitted.
     After the test is done, the warning filters will be reset, so filters

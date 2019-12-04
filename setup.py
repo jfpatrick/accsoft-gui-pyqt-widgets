@@ -17,7 +17,7 @@ DEV_DEPS_FILENAME = "dev_requirements.txt"
 DEV_DEPS_MAP_KEY = "testing"
 CURRENT_FILE_LOCATION = os.path.abspath(os.path.dirname(__file__))
 
-PACKAGES = ["accsoft_gui_pyqt_widgets"]
+PACKAGES = ["accwidgets"]
 INSTALL_REQUIRES: List[str] = []
 EXTRA_REQUIRES: Dict[str, List[str]] = {DEV_DEPS_MAP_KEY: []}
 
@@ -63,7 +63,7 @@ print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
 # raise ValueError("Stop")
 
 setup(
-    name="accsoft_gui_pyqt_widgets",
+    name="accwidgets",
     version="0.1.0",
     description="PyQt based widgets",
     packages=find_packages(exclude=("examples", "docs", "tests")),

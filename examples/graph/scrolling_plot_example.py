@@ -1,51 +1,54 @@
 """
-Simple example for the usage of the ExtendPlotWidget
+Example application of a plot displaying two curves displaying
+continuously emitted data. As soon as new data arrives, the new
+point will be inserted into the curve. As time progresses, the
+plot will scroll to show new data on the right side while moving
+older data outside of the view on the left side.
+
+Additionally the plot is attached to an extra source for timing
+updates which controls the time span of data shown by the plot.
+If points with a time span newer than the current time provided
+by the timing source is emitted, it won't be visible until it is
+revealed as soon as the timing source progresses.
 """
+
 
 import sys
 
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 import example_sources
 
 
 class MainWindow(QMainWindow):
-    """Example for the usage of the Extended PlotWidget in an QMainWindow"""
 
     # pylint: disable=too-few-public-methods
     def __init__(self, *args, **kwargs):
-        """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
-        # Create example update sources for data and time
+        # Create a source for timing update to control the time span shown by the plot
         timing_source = example_sources.LocalTimerTimingSource()
+        # Create 2 sources for our curves that will continuously emit new points that
+        # are then displayed by our curve when they arrive
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=60
         )
         data_source_2 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=3, updates_per_second=60
+            x_offset=-1.0, y_offset=3, updates_per_second=60
         )
-        data_source_3 = example_sources.SinusCurveSource(
-            x_offset=-1.0, y_offset=6, updates_per_second=60
-        )
-        data_source_4 = example_sources.SinusCurveSource(
-            x_offset=1.0, y_offset=9, updates_per_second=60
-        )
-        # Create configuration that describes the way the data is supposed to be plotted
-        plot_config = accgraph.ExPlotWidgetConfig(
-            plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
-            time_span=10,
+        # We want the plot to display a scrolling 10 second time span at all times
+        # Let's create our plot fitting to these requirements with the separate source
+        # for timing updates attached
+        self.plot = accgraph.ScrollingPlotWidget(
+            timing_source=timing_source,
+            time_span=10.0,
             time_progress_line=True,
-            scrolling_plot_fixed_x_range=True,
-            scrolling_plot_fixed_x_range_offset=1
+            is_xrange_fixed=True,
         )
-        self.plot = accgraph.ExPlotWidget(
-            timing_source=timing_source, config=plot_config
-        )
+        # Now we can add 2 curves in different colors that are displaying the
+        # data coming from out source.
         self.plot.addCurve(data_source=data_source_1, pen="r")
-        self.plot.addCurve(data_source=data_source_2, pen="b")
-        self.plot.addCurve(data_source=data_source_3, pen="y")
-        self.plot.addCurve(data_source=data_source_4, pen="g")
+        self.plot.addCurve(data_source=data_source_2, pen="y")
         self.show()
         self.resize(800, 600)
         main_container = QWidget()
