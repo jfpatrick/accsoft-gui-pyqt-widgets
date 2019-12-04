@@ -10,33 +10,32 @@ from copy import copy
 import numpy as np
 import pyqtgraph as pg
 
-from accsoft_gui_pyqt_widgets.graph.datamodel.connection import UpdateSource
-from accsoft_gui_pyqt_widgets.graph.datamodel.itemdatamodel import CurveDataModel
-from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import DEFAULT_COLOR
-from accsoft_gui_pyqt_widgets.graph.widgets.dataitems.datamodelbaseditem import (
+from accwidgets.graph.datamodel.connection import UpdateSource
+from accwidgets.graph.datamodel.itemdatamodel import LiveCurveDataModel
+from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
+from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
+from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
     AbstractDataModelBasedItemMeta
 )
-from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
+from accwidgets.graph.datamodel.datastructures import (
     CurveData,
     CurveDataWithTime,
-    SlidingPointerCurveData
 )
-from accsoft_gui_pyqt_widgets.graph.widgets.plotconfiguration import (
+from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from accsoft_gui_pyqt_widgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph.widgets.plotitem import ExPlotItem
 
 _LOGGER = logging.getLogger(__name__)
 
-# which plotting style is achieved by which class
-PLOTTING_STYLE_TO_CLASS_MAPPING = {
+_PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingPlotCurve",
     PlotWidgetStyle.SLIDING_POINTER: "SlidingPointerPlotCurve",
 }
+"""which plotting style is achieved by which class"""
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [
@@ -62,33 +61,38 @@ _PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
 
 
 class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
-    """Base class for different live data curves."""
 
-    supported_plotting_styles: List[PlotWidgetStyle] = [*PLOTTING_STYLE_TO_CLASS_MAPPING]
+    supported_plotting_styles: List[PlotWidgetStyle] = [*_PLOTTING_STYLE_TO_CLASS_MAPPING]
+    """List of plotting styles which are supported by this class's create factory function"""
 
     def __init__(
         self,
         plot_item: "ExPlotItem",
-        data_source: Union[UpdateSource, CurveDataModel],
+        data_source: Union[UpdateSource, LiveCurveDataModel],
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         pen=DEFAULT_COLOR,
         **plotdataitem_kwargs,
     ):
-        """ Constructor for the base class
+        """Base class for different live data curves.
 
         Args:
             plot_item: plot item the curve should fit to
             data_source: source the curve receives data from
-            buffer_size: count of values the curve's data model's buffer should hold at max
-            pen: pen the curve should be drawn with, is part of the plotdataitem base class parameters
+            buffer_size: count of values the curve's data model's buffer should
+                         hold at max
+            pen: pen the curve should be drawn with, is part of the plotdataitem
+                 base class parameters
             **plotdataitem_kwargs: keyword arguments fo the base class
+
+        Raises:
+            ValueError: The passes data source is not usable as a source for data
         """
         if isinstance(data_source, UpdateSource):
-            data_model = CurveDataModel(
+            data_model = LiveCurveDataModel(
                 data_source=data_source,
                 buffer_size=buffer_size,
             )
-        elif isinstance(data_source, CurveDataModel):
+        elif isinstance(data_source, LiveCurveDataModel):
             data_model = data_source
         else:
             raise ValueError(
@@ -107,12 +111,48 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             self.setPen(pen)
 
     @staticmethod
-    def create_from(
+    def from_plot_item(
+            plot_item: "ExPlotItem",
+            data_source: UpdateSource,
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
+            **plotdataitem_kwargs,
+    ) -> "LivePlotCurve":
+        """Factory method for creating curve object fitting to the given plot item.
+
+        This function allows easier creation of the right object instead of creating
+        the right object that fits to the plotting style of the plot item by hand. This
+        function only initializes the item but does not yet add it to the plot item.
+
+        Args:
+            plot_item: plot item the item should fit to
+            data_source: source the item receives data from
+            buffer_size: count of values the item's data model's buffer should hold at max
+            **buffer_size: keyword arguments for the items base class
+
+        Returns:
+            the created item
+        """
+        DataModelBasedItem.check_plotting_style_support(
+            plot_config=plot_item.plot_config,
+            supported_styles=LivePlotCurve.supported_plotting_styles
+        )
+        # get class fitting to plotting style and return instance
+        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
+        item_class: Type = getattr(sys.modules[__name__], class_name)
+        return item_class(
+            plot_item=plot_item,
+            data_source=data_source,
+            buffer_size=buffer_size,
+            **plotdataitem_kwargs,
+        )
+
+    @staticmethod
+    def clone(
         object_to_create_from: "LivePlotCurve",
         **plotdataitem_kwargs,
     ) -> "LivePlotCurve":
         """
-        Recreate graph item from existing one. The datamodel is shared, but the new graph item
+        Clone graph item from existing one. The datamodel is shared, but the new graph item
         is fitted to the old graph item's parent plot item's style. If this one has changed
         since the creation of the old graph item, the new graph item will have the new style.
 
@@ -129,7 +169,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             supported_styles=LivePlotCurve.supported_plotting_styles
         )
         # get class fitting to plotting style and return instance
-        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
+        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
         item_class: Type = getattr(sys.modules[__name__], class_name)
         # Take opts from old item except ones passed explicitly
         kwargs = copy(object_to_create_from.opts)
@@ -140,41 +180,10 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             **kwargs,
         )
 
-    @staticmethod
-    def create(
-        plot_item: "ExPlotItem",
-        data_source: UpdateSource,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-        **plotdataitem_kwargs,
-    ) -> "LivePlotCurve":
-        """Factory method for creating curve object fitting to the given plotitem.
-
-        This function allows easier creation of the right object instead of creating
-        the right object that fits to the plotting style of the plotitem by hand. This
-        function only initializes the item but does not yet add it to the plot item.
-
-        Args:
-            plot_item: plot item the item should fit to
-            data_source: source the item receives data from
-            buffer_size: count of values the item's datamodel's buffer should hold at max
-            **buffer_size: keyword arguments for the items base class
-
-        Returns:
-            the created item
-        """
-        DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_item.plot_config,
-            supported_styles=LivePlotCurve.supported_plotting_styles
-        )
-        # get class fitting to plotting style and return instance
-        class_name: str = PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
-        item_class: Type = getattr(sys.modules[__name__], class_name)
-        return item_class(
-            plot_item=plot_item,
-            data_source=data_source,
-            buffer_size=buffer_size,
-            **plotdataitem_kwargs,
-        )
+    @property
+    def last_timestamp(self) -> float:
+        """Last timestamp received by the curve."""
+        return self._parent_plot_item.last_timestamp
 
     def _set_data(self, x: np.ndarray, y: np.ndarray) -> None:
         """ Set data of the inner curve and scatter plot
@@ -238,62 +247,48 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
 
 
 class SlidingPointerPlotCurve(LivePlotCurve):
-    """PlotDataItem extension for the Sliding Pointer Plotting Style
 
-    Displays data as a sliding pointer widget similar to a heart rate
-    monitor. The graph itself stays fixed in position and has a fixed length
-    that it does not exceed. As soon as the drawing reaches the end, the graph
-    gets redrawn beginning from the start. The old curve gets incrementally
-    overwritten by the new values. The x-values of all lines in the graph will
-    be shifted backwards according to the time span length (like x % time_span_length)
-    so the area with the curve does not move.
-    """
+    def __init__(
+            self,
+            plot_item: "ExPlotItem",
+            data_source: Union[UpdateSource, LiveCurveDataModel],
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
+            pen=DEFAULT_COLOR,
+            **plotdataitem_kwargs,
+    ):
+        """
+        PlotDataItem extension for the Sliding Pointer Plotting Style
 
-    def __init__(self, **kwargs):
-        """Create a new SlidingPointer curve."""
-        super().__init__(**kwargs)
+        Displays data as a sliding pointer widget similar to a heart rate
+        monitor. The graph itself stays fixed in position and has a fixed length
+        that it does not exceed. As soon as the drawing reaches the end, the graph
+        gets redrawn beginning from the start. The old curve gets incrementally
+        overwritten by the new values. The x-values of all lines in the graph will
+        be shifted backwards according to the time span length (like x % time_span_length)
+        so the area with the curve does not move.
+
+        Args:
+            plot_item: plot item the curve should fit to
+            data_source: source the curve receives data from
+            buffer_size: count of values the curve's data model's buffer should
+                         hold at max
+            pen: pen the curve should be drawn with, is part of the plotdataitem
+                 base class parameters
+            **plotdataitem_kwargs: keyword arguments fo the base class
+
+        Raises:
+            ValueError: The passes data source is not usable as a source for data
+        """
+        super().__init__(
+            plot_item=plot_item,
+            data_source=data_source,
+            buffer_size=buffer_size,
+            pen=pen,
+            **plotdataitem_kwargs,
+        )
         # Curves after clipping (data actually drawn)
         self._clipped_curve_old: CurveData = CurveData(np.array([]), np.array([]))
         self._clipped_curve_new: CurveData = CurveData(np.array([]), np.array([]))
-
-    def equals(self, other: "SlidingPointerPlotCurve") -> bool:
-        """Compare two Sliding Pointer Curves's content
-
-        Explanation why not __eq__():
-
-        Class needs to be hashable since it is used as a key in PyQtGraph
-        If we would override the __eq__ function based on the values of
-        the object we would either make the class not hashable or hashable
-        based on the values of the object, since A == B -> hash(A) == hash(B),
-        which would not be the case if we hash by identity. Such an
-        implementation would lead to a modifiable object hash, which is definitely
-        not what we want.
-        """
-        if (
-            self.__class__ != other.__class__
-            or other.get_full_buffer() != self.get_full_buffer()
-            or other.get_new_curve_buffer() != self.get_new_curve_buffer()
-            or other.get_old_curve_buffer() != self.get_old_curve_buffer()
-        ):
-            return False
-        try:
-            return (
-                np.allclose(
-                    other.get_last_drawn_data().old_curve.y_values,
-                    self.get_last_drawn_data().old_curve.y_values,
-                ) and np.allclose(
-                    other.get_last_drawn_data().old_curve.x_values,
-                    self.get_last_drawn_data().old_curve.x_values,
-                ) and np.allclose(
-                    other.get_last_drawn_data().new_curve.x_values,
-                    self.get_last_drawn_data().new_curve.x_values,
-                ) and np.allclose(
-                    other.get_last_drawn_data().new_curve.y_values,
-                    self.get_last_drawn_data().new_curve.y_values,
-                )
-            )
-        except ValueError:
-            return False
 
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
@@ -309,9 +304,6 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         The cut between both curves is achieved with a np.nan value as a
         separator in combination with finite connection passed to the
         PlotCurveItem.
-
-        Returns:
-            None
         """
         data_x: np.ndarray = np.array([])
         data_y: np.ndarray = np.array([])
@@ -341,13 +333,13 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         point will be added if the the new point exceeds the current time
         (because of f.e. inaccurate timestamp)
         """
-        start = self._parent_plot_item.time_span.current_time_span_start_timestamp
+        start = self._parent_plot_item.time_span.curr_start
         end = self._parent_plot_item.last_timestamp
-        x_values, y_values = self._data_model.get_clipped_subset(
-            start=start, end=end
+        x_values, y_values = self._data_model.subset_for_xrange(
+            start=start, end=end, interpolated=True
         )
         self._clipped_curve_new = CurveData(
-            x_values=x_values - self._parent_plot_item.time_span.current_time_span_offset,
+            x_values=x_values - self._parent_plot_item.time_span.curr_offset,
             y_values=y_values,
         )
 
@@ -359,72 +351,14 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         (because of f.e. inaccurate timestamp)
         """
         start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.size
-        end = self._parent_plot_item.time_span.previous_time_span_end_timestamp
-        x_values, y_values = self._data_model.get_clipped_subset(
-            start=start, end=end
+        end = self._parent_plot_item.time_span.prev_end
+        x_values, y_values = self._data_model.subset_for_xrange(
+            start=start, end=end, interpolated=True
         )
         self._clipped_curve_old = CurveData(
-            x_values=x_values - self._parent_plot_item.time_span.previous_time_span_offset,
+            x_values=x_values - self._parent_plot_item.time_span.prev_offset,
             y_values=y_values,
         )
-
-    # Testing utilities
-
-    def get_last_drawn_data(self) -> SlidingPointerCurveData:
-        """Return a dictionary holding the data passed to the PlotDataItem. This
-        can be used to find out, what the PlotDataItems are showing.
-
-        Returns:
-            Dictionary mapping the description where the points are displayed to
-            a list of points
-        """
-        return SlidingPointerCurveData(
-            self._clipped_curve_old,
-            self._clipped_curve_new
-        )
-
-    def get_full_buffer(self) -> CurveDataWithTime:
-        """
-        Get the full curve that is saved in the data model.
-        """
-        x_values, y_values = self._data_model.get_full_data_buffer()
-        return CurveDataWithTime(
-            timestamps=x_values, x_values=np.array([]), y_values=y_values
-        )
-
-    def get_new_curve_buffer(self) -> CurveDataWithTime:
-        """
-        Return a list of points (without interpolating the ends)
-        from the data model that are part of the new curve.
-        """
-        x_values, y_values = self._data_model.get_subset(
-            start=self._parent_plot_item.time_span.current_time_span_start_timestamp,
-            end=self._parent_plot_item.time_span.current_time_span_end_timestamp,
-        )
-        return CurveDataWithTime(
-            timestamps=x_values,
-            x_values=x_values - self._parent_plot_item.time_span.current_time_span_offset,
-            y_values=y_values,
-        )
-
-    def get_old_curve_buffer(self) -> CurveDataWithTime:
-        """
-        Return a list of points (without interpolating the ends)
-        from the data model that are part of the old curve.
-        """
-        x_values, y_values = self._data_model.get_subset(
-            start=self._parent_plot_item.time_span.previous_time_span_start_timestamp,
-            end=self._parent_plot_item.time_span.previous_time_span_end_timestamp,
-        )
-        return CurveDataWithTime(
-            timestamps=x_values,
-            x_values=x_values - self._parent_plot_item.time_span.previous_time_span_offset,
-            y_values=y_values,
-        )
-
-    def get_last_time_stamp(self) -> float:
-        """Return last timestamp received by the curve"""
-        return self._parent_plot_item.last_timestamp
 
 
 class ScrollingPlotCurve(LivePlotCurve):
@@ -434,49 +368,19 @@ class ScrollingPlotCurve(LivePlotCurve):
     The shown range has always the same length.
     """
 
-    def equals(self, other: "ScrollingPlotCurve") -> bool:
-        """Compare two Scrolling Plot Curves's data
-
-        Explanation why not __eq__():
-
-        Class needs to be hashable since it is used as a key in PyQtGraph
-        If we would override the __eq__ function based on the values of
-        the object we would either make the class not hashable or hashable
-        based on the values of the object, since A == B -> hash(A) == hash(B),
-        which would not be the case if we hash by identity. Such an
-        implementation would lead to a modifiable object hash, which is definitely
-        not what we want.
-        """
-        return (
-            self.__class__ == other.__class__
-            and self.get_full_buffer() == other.get_full_buffer()
-            and self.get_last_drawn_data() == other.get_last_drawn_data()
-        )
-
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         if self.opts.get("pen", None) is not None:
             # Subset for curve is clipped
-            curve_x, curve_y = self._data_model.get_clipped_subset(
-                start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
+            curve_x, curve_y = self._data_model.subset_for_xrange(
+                start=self._parent_plot_item.time_span.start,
+                end=self._parent_plot_item.time_span.end,
+                interpolated=True,
             )
         else:
             # Clipping is not used for scatter plot
-            curve_x, curve_y = self._data_model.get_subset(
+            curve_x, curve_y = self._data_model.subset_for_xrange(
                 start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
             )
         self._set_data(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)
-
-    def get_full_buffer(self):
-        """
-        Get the full curve that is saved in the data model.
-        """
-        x_values, y_values = self._data_model.get_full_data_buffer()
-        return CurveDataWithTime(
-            timestamps=x_values, x_values=np.array([]), y_values=y_values
-        )
-
-    def get_last_drawn_data(self) -> CurveData:
-        """Get the data of the curve actually passed to draw"""
-        return self._data_item_data

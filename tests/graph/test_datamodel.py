@@ -10,62 +10,62 @@ from typing import Type
 import numpy as np
 import pytest
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
 from .mock_utils import datamodel_generalization_util as dm_util
 from .mock_utils.mock_data_source import MockDataSource
 
 DATAMODELS_TO_TEST = [
-    accgraph.CurveDataModel,
-    accgraph.BarGraphDataModel,
-    accgraph.InjectionBarDataModel,
-    accgraph.TimestampMarkerDataModel
+    accgraph.LiveCurveDataModel,
+    accgraph.LiveBarGraphDataModel,
+    accgraph.LiveInjectionBarDataModel,
+    accgraph.LiveTimestampMarkerDataModel
 ]
 
 # ~~~~~ Simple ordering for different datamodels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_datamodel_is_empty(model_type: Type[accgraph.BaseDataModel]):
+def test_datamodel_is_empty(model_type: Type[accgraph.AbstractLiveDataModel]):
     """ Check if datamodel is empty is correct """
     data_source: MockDataSource = MockDataSource()
-    datamodel: accgraph.BarGraphDataModel = model_type(data_source=data_source, buffer_size=5)
-    assert datamodel.is_empty()
+    datamodel: accgraph.LiveBarGraphDataModel = model_type(data_source=data_source, buffer_size=5)
+    assert datamodel.is_empty
     data_source.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
-    assert not datamodel.is_empty()
+    assert not datamodel.is_empty
     data_source.emit_new_object(dm_util.create_fitting_object_collection(datamodel, [2.0, 3.0, 4.0, 5.0]))
-    assert not datamodel.is_empty()
+    assert not datamodel.is_empty
     data_source.emit_new_object(dm_util.create_fitting_object(datamodel, 6.0))
-    assert not datamodel.is_empty()
+    assert not datamodel.is_empty
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_data_source_replacement(model_type: Type[accgraph.BaseDataModel]):
+def test_data_source_replacement(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Check replacement of data source with and without buffer clearing"""
     data_source_1: MockDataSource = MockDataSource()
     data_source_2: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
-    assert datamodel.get_data_source() is data_source_1
-    assert datamodel.is_empty()
+    assert datamodel.data_source is data_source_1
+    assert datamodel.is_empty
     data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
-    assert not datamodel.is_empty()
+    assert not datamodel.is_empty
     assert dm_util.check_datamodel(datamodel, 5, [1.0])
     datamodel.replace_data_source(data_source_2, clear_buffer=False)
-    assert datamodel.get_data_source() is data_source_2
-    assert not datamodel.is_empty()
+    assert datamodel.data_source is data_source_2
+    assert not datamodel.is_empty
     assert dm_util.check_datamodel(datamodel, 5, [1.0])
     datamodel.replace_data_source(data_source_1, clear_buffer=True)
-    assert datamodel.get_data_source() is data_source_1
-    assert datamodel.is_empty()
+    assert datamodel.data_source is data_source_1
+    assert datamodel.is_empty
     assert dm_util.check_datamodel(datamodel, 5, [])
     data_source_1.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
-    assert not datamodel.is_empty()
+    assert not datamodel.is_empty
 
 
 # ~~~~~ Databuffer tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_long_list_of_simple_values(model_type: Type[accgraph.BaseDataModel]):
+def test_append_long_list_of_simple_values(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Append a long list of simple values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -74,7 +74,7 @@ def test_append_long_list_of_simple_values(model_type: Type[accgraph.BaseDataMod
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type: Type[accgraph.BaseDataModel]):
+def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Append a long list that is longer than the buffers overall size"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -85,7 +85,7 @@ def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_type: Type[accgraph.BaseDataModel]):
+def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Append a long list that is longer than the buffers overall size while the buffer is already filled to a part"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -95,8 +95,8 @@ def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_ty
     assert dm_util.check_datamodel(datamodel, 5, [98.0, 99.0, 100.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.BaseDataModel]):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Append a nan value to represent a split in a line"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -108,8 +108,8 @@ def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.BaseDataM
     assert dm_util.check_datamodel(datamodel, 5, [1.0, np.nan, 2.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_sort_values_around_nan_value(model_type: Type[accgraph.BaseDataModel]):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_sort_values_around_nan_value(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Test sorting values right next to a NaN value"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -126,8 +126,8 @@ def test_sort_values_around_nan_value(model_type: Type[accgraph.BaseDataModel]):
     assert dm_util.check_datamodel(datamodel, 5, [2.0, 2.5, 2.75, 3.0, np.nan])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_append_nan_on_first_position(model_type: Type[accgraph.BaseDataModel]):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_append_nan_on_first_position(model_type: Type[accgraph.AbstractLiveDataModel]):
     """First value appended to the DataModel is NaN"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -137,8 +137,8 @@ def test_append_nan_on_first_position(model_type: Type[accgraph.BaseDataModel]):
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 1.0, 2.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel]):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_nan_get_first_value_after_shift(model_type: Type[accgraph.AbstractLiveDataModel]):
     """First value after shift in databuffer is NaN"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -151,8 +151,8 @@ def test_nan_get_first_value_after_shift(model_type: Type[accgraph.BaseDataModel
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_append_list_containing_nan(model_type: Type[accgraph.BaseDataModel]):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_append_list_containing_nan(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Append a list with values that contain a nan"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -167,7 +167,7 @@ def test_append_list_containing_nan(model_type: Type[accgraph.BaseDataModel]):
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
+def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does not contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -199,8 +199,8 @@ def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgr
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -238,8 +238,8 @@ def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", [accgraph.CurveDataModel])
-def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_value(model_type: Type[accgraph.BaseDataModel], length_for_buffer: int):
+@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
+def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_value(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -279,36 +279,36 @@ def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_smallest_distance_between_primary_values(model_type: Type[accgraph.BaseDataModel]):
+def test_smallest_distance_between_primary_values(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source: MockDataSource = MockDataSource()
     data_model = model_type(data_source=data_source, buffer_size=5)
-    assert data_model.get_smallest_distance_between_x_values() == np.inf
+    assert data_model.min_dx == np.inf
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 1.0))
-    assert data_model.get_smallest_distance_between_x_values() == np.inf
+    assert data_model.min_dx == np.inf
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 3.2))
-    assert data_model.get_smallest_distance_between_x_values() == 3.2 - 1.0
+    assert data_model.min_dx == 3.2 - 1.0
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 2.0))
-    assert data_model.get_smallest_distance_between_x_values() == 2.0 - 1.0
+    assert data_model.min_dx == 2.0 - 1.0
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 4.0))
-    assert data_model.get_smallest_distance_between_x_values() == 4.0 - 3.2
+    assert data_model.min_dx == 4.0 - 3.2
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_get_highest_primary_value(model_type: Type[accgraph.BaseDataModel]):
+def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataModel]):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source: MockDataSource = MockDataSource()
     data_model = model_type(data_source=data_source, buffer_size=5)
-    assert data_model.get_highest_primary_value() is None
+    assert data_model.max_primary_val is None
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
-    assert data_model.get_highest_primary_value() is None
+    assert data_model.max_primary_val is None
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 1.0))
-    assert data_model.get_highest_primary_value() == 1.0
+    assert data_model.max_primary_val == 1.0
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 3.2))
-    assert data_model.get_highest_primary_value() == 3.2
+    assert data_model.max_primary_val == 3.2
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 2.0))
-    assert data_model.get_highest_primary_value() == 3.2
+    assert data_model.max_primary_val == 3.2
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 4.0))
-    assert data_model.get_highest_primary_value() == 4.0
+    assert data_model.max_primary_val == 4.0
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
-    assert data_model.get_highest_primary_value() == 4.0
+    assert data_model.max_primary_val == 4.0

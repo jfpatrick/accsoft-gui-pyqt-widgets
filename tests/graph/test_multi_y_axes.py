@@ -5,7 +5,7 @@ import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import HoverEvent
 import pytest
 
-from accsoft_gui_pyqt_widgets.graph import (
+from accwidgets.graph import (
     PlotItemLayer,
     LayerIdentification,
     ExPlotItem,
@@ -28,8 +28,8 @@ all_axes_names = standard_axes_names + not_existing_axes_names + additional_axes
 
 
 @pytest.mark.parametrize("method", {
-    ExViewBox.setYRange,
     ExViewBox.setRange,
+    ExViewBox.setYRange,
 })
 @pytest.mark.parametrize("item_to_test", {
     ExPlotItem,
@@ -44,9 +44,9 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
-    layer_1 = plot.add_layer(identifier="layer_1")
-    layer_2 = plot.add_layer(identifier="layer_2")
+    layer_0 = plot.layer()
+    layer_1 = plot.add_layer(layer_id="layer_1")
+    layer_2 = plot.add_layer(layer_id="layer_2")
     plot.setXRange(min=-10.0, max=10.0, padding=0.0)
     # default layer
     _set_range(
@@ -54,19 +54,17 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
         plot_item=plot,
         view_range=(0.0, 1.0),
     )
-    # reference layer by identifier
     _set_range(
         method=method,
         plot_item=plot,
         view_range=(1.0, 2.0),
         layer="layer_1"
     )
-    # reference layer by reference
     _set_range(
         method=method,
         plot_item=plot,
         view_range=(2.0, 3.0),
-        layer=layer_2
+        layer="layer_2"
     )
     check_range(layer_0.view_box.targetRange(), [[-10, 10], [0.0, 1.0]])
     check_range(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
@@ -105,8 +103,8 @@ def test_invert_y(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
-    layer_1 = plot.add_layer(identifier="layer_1")
+    layer_0 = plot.layer()
+    layer_1 = plot.add_layer(layer_id="layer_1")
     plot.invertY(True)
     assert layer_0.view_box.yInverted()
     assert not layer_1.view_box.yInverted()
@@ -128,7 +126,7 @@ def test_invert_y(qtbot, item_to_test):
 def test_link_y_layers(qtbot, item_to_test):
     """ test_simple_adding_two_new_layers(qtbot)
 
-    - Are new layers created and accessible by their layer_identifier
+    - Are new layers created and accessible by their layer_id
 
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
@@ -161,7 +159,7 @@ def test_link_y_layers(qtbot, item_to_test):
 def test_get_view_box(qtbot, item_to_test):
     """ test_simple_adding_two_new_layers(qtbot)
 
-    - Are new layers created and accessible by their layer_identifier
+    - Are new layers created and accessible by their layer_id
 
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
@@ -179,7 +177,7 @@ def test_get_view_box(qtbot, item_to_test):
     assert second_layer.view_box == plot.getViewBox(second_layer)
     assert second_layer.view_box == plot.getViewBox("second_layer")
     with pytest.raises(KeyError):
-        plot.getViewBox("non_existing_layer_identifier")
+        plot.getViewBox("non_existing_layer_id")
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -266,7 +264,7 @@ def test_add_axes_labels(qtbot, item_to_test):
     if item_to_test == ExPlotWidget:
         plot = window.plot
     for identifier in additional_axes_names:
-        plot.add_layer(identifier=identifier)
+        plot.add_layer(layer_id=identifier)
     complicated_german_axis_label = "Achsenbeschreibungsbuchstabensequenz"
     kwargs = {}
     for index, axis_name in enumerate(all_existing_axes_names):
@@ -283,7 +281,7 @@ def test_add_axes_labels(qtbot, item_to_test):
 def test_simple_adding_two_new_layers(qtbot, item_to_test):
     """ test_simple_adding_two_new_layers(qtbot)
 
-    - Are new layers created and accessible by their layer_identifier
+    - Are new layers created and accessible by their layer_id
 
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
@@ -294,11 +292,11 @@ def test_simple_adding_two_new_layers(qtbot, item_to_test):
         plot = window.plot
     first_layer = plot.add_layer("first_layer")
     second_layer = plot.add_layer("second_layer")
-    assert first_layer == plot.get_layer("first_layer")
-    assert second_layer == plot.get_layer("second_layer")
+    assert first_layer == plot.layer("first_layer")
+    assert second_layer == plot.layer("second_layer")
     with pytest.raises(KeyError):
-        plot.get_layer("third_layer")
-    assert len(plot.get_all_layers()) == 3
+        plot.layer("third_layer")
+    assert len(window.plot.plotItem.layers) == 3
     # Make shure that the position tuple is set in the plotItems axes attribute
     assert "right" in window.plot.plotItem.axes["first_layer"]["pos"]
     assert "right" in window.plot.plotItem.axes["second_layer"]["pos"]
@@ -320,12 +318,12 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     if item_to_test == ExPlotWidget:
         plot = window.plot
     layer_0 = plot.add_layer(
-        identifier="layer_0"
+        layer_id="layer_0"
     )
     assert not layer_0.view_box.yInverted()
     check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
     layer_1 = plot.add_layer(
-        identifier="layer_1",
+        layer_id="layer_1",
         y_range=(-1.0, 2.0),
         y_range_padding=0.0,
     )
@@ -334,7 +332,7 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
     check_range(layer_1.view_box.targetRange(), [[0, 1], [-1.0, 2.0]])
     layer_2 = plot.add_layer(
-        identifier="layer_2",
+        layer_id="layer_2",
         invert_y=True,
     )
     check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
@@ -351,7 +349,7 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
 def test_removal_of_layer(qtbot, item_to_test):
     """ test_simple_adding_two_new_layers(qtbot)
 
-    - Are new layers created and accessible by their layer_identifier
+    - Are new layers created and accessible by their layer_id
 
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
@@ -362,22 +360,22 @@ def test_removal_of_layer(qtbot, item_to_test):
         plot = window.plot
     first_layer = plot.add_layer("first_layer")
     second_layer = plot.add_layer("second_layer")
-    assert first_layer == plot.get_layer("first_layer")
-    assert second_layer == plot.get_layer("second_layer")
-    assert len(plot.get_all_layers()) == 3
+    assert first_layer == plot.layer("first_layer")
+    assert second_layer == plot.layer("second_layer")
+    assert len(window.plot.plotItem.layers) == 3
     plot.remove_layer("first_layer")
     with pytest.raises(KeyError):
-        plot.get_layer("first_layer")
-    assert first_layer not in plot.get_all_layers()
-    assert len(plot.get_all_layers()) == 2
+        plot.layer("first_layer")
+    assert first_layer not in window.plot.plotItem.layers
+    assert len(window.plot.plotItem.layers) == 2
     # Second layer is still accessible
-    assert second_layer == plot.get_layer("second_layer")
+    assert second_layer == plot.layer("second_layer")
     with pytest.raises(KeyError):
-        plot.get_layer("first_layer")
+        plot.layer("first_layer")
     with pytest.raises(KeyError):
-        plot.get_layer("layer_that_does_not_exist")
+        plot.layer("layer_that_does_not_exist")
     plot.remove_layer(second_layer)
-    assert len(plot.get_all_layers()) == 1
+    assert len(window.plot.plotItem.layers) == 1
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -387,7 +385,7 @@ def test_removal_of_layer(qtbot, item_to_test):
 def test_get_all_layers_viewboxes(qtbot, item_to_test):
     """ test_simple_adding_two_new_layers(qtbot)
 
-    - Are new layers created and accessible by their layer_identifier
+    - Are new layers created and accessible by their layer_id
 
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
@@ -396,17 +394,17 @@ def test_get_all_layers_viewboxes(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    plot_item_layer = plot.get_layer()
+    plot_item_layer = plot.layer()
     first_layer = plot.add_layer("first_layer")
     second_layer = plot.add_layer("second_layer")
-    assert len(plot.get_all_viewboxes()) == 3
-    assert plot_item_layer.view_box in plot.get_all_viewboxes()
-    assert first_layer.view_box in plot.get_all_viewboxes()
-    assert second_layer.view_box in plot.get_all_viewboxes()
+    assert len(window.plot.plotItem.view_boxes) == 3
+    assert plot_item_layer.view_box in window.plot.plotItem.view_boxes
+    assert first_layer.view_box in window.plot.plotItem.view_boxes
+    assert second_layer.view_box in window.plot.plotItem.view_boxes
     plot.remove_layer(second_layer)
-    assert len(plot.get_all_viewboxes()) == 2
-    assert plot_item_layer.view_box in plot.get_all_viewboxes()
-    assert first_layer.view_box in plot.get_all_viewboxes()
+    assert len(window.plot.plotItem.view_boxes) == 2
+    assert plot_item_layer.view_box in window.plot.plotItem.view_boxes
+    assert first_layer.view_box in window.plot.plotItem.view_boxes
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -432,8 +430,8 @@ def test_new_layer_viewbox_and_axis(qtbot, item_to_test):
     assert new_layer.view_box and new_layer.view_box is not plot.getViewBox()
     assert new_layer.axis_item and new_layer.axis_item is not plot.getAxis("left")
     assert new_layer.axis_item.labelText == "layer_2_label"
-    assert new_layer.identifier == "layer_2_id"
-    assert len(plot.get_all_layers()) == 2
+    assert new_layer.id == "layer_2_id"
+    assert len(window.plot.plotItem.layers) == 2
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -452,16 +450,16 @@ def test_plot_item_default_layer(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    default_layer = plot.get_layer()
+    default_layer = plot.layer()
     assert default_layer.axis_item is plot.getAxis("left")
     assert default_layer.view_box is plot.getViewBox()
     assert (
-            default_layer.identifier == PlotItemLayer.default_layer_identifier
+            default_layer.id == PlotItemLayer.default_layer_id
     )
-    assert default_layer is plot.get_layer(
-        PlotItemLayer.default_layer_identifier
+    assert default_layer is plot.layer(
+        PlotItemLayer.default_layer_id
     )
-    assert len(plot.get_all_layers()) == 1
+    assert len(window.plot.plotItem.layers) == 1
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -480,7 +478,7 @@ def test_draw_add_plotdataitem_to_specific_layer(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    default_layer = plot.get_layer()
+    default_layer = plot.layer()
     layer_2 = plot.add_layer("layer_2")
     values_1 = _create_values()
     values_2 = _create_values()
@@ -572,14 +570,14 @@ def test_set_axis_range(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    plot.link_y_range_of_all_layers(link=False)
-    layer_0 = plot.get_layer()
+    plot._couple_layers_yrange(link=False)
+    layer_0 = plot.layer()
     layer_1 = plot.add_layer(
-        identifier="layer_1",
+        layer_id="layer_1",
         text="layer_1",
     )
     layer_2 = plot.add_layer(
-        identifier="layer_2",
+        layer_id="layer_2",
         text="layer_2",
     )
     manual_range_change(layer_0, xRange=[-10, 10], yRange=[0, 10])
@@ -594,7 +592,7 @@ def test_set_axis_range(qtbot, item_to_test):
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
     check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check translation in connected axes
-    plot.link_y_range_of_all_layers(link=True)
+    plot._couple_layers_yrange(link=True)
     manual_range_change(layer_0, yRange=[10, 20])
     check_range(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [8, 13]])
@@ -605,7 +603,7 @@ def test_set_axis_range(qtbot, item_to_test):
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
     check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check translation in disconnected axes
-    plot.link_y_range_of_all_layers(link=False)
+    plot._couple_layers_yrange(link=False)
     manual_range_change(layer_0, yRange=[10, 20])
     check_range(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
@@ -616,13 +614,13 @@ def test_set_axis_range(qtbot, item_to_test):
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
     check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check scaling in connected axes
-    plot.link_y_range_of_all_layers(link=True)
+    plot._couple_layers_yrange(link=True)
     manual_range_change(layer_0, yRange=[-10, 20])
     check_range(layer_0.view_box.targetRange(), [[-20, 20], [-10, 20]])
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
     check_range(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
     # Check scaling in disconnected axes
-    plot.link_y_range_of_all_layers(link=False)
+    plot._couple_layers_yrange(link=False)
     manual_range_change(layer_0, yRange=[0, 10])
     check_range(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
     check_range(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
@@ -638,7 +636,7 @@ def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
+    layer_0 = plot.layer()
     layer_1 = plot.add_layer("layer_1")
     layer_2 = plot.add_layer("layer_2")
     plot.addItem(layer="", item=pg.PlotDataItem([0, 1], [0, 1]))
@@ -662,9 +660,9 @@ def test_auto_range_all_layers_at_different_range(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
-    layer_1 = plot.add_layer(identifier="layer_1")
-    layer_2 = plot.add_layer(identifier="layer_2")
+    layer_0 = plot.layer()
+    layer_1 = plot.add_layer(layer_id="layer_1")
+    layer_2 = plot.add_layer(layer_id="layer_2")
     plot.addItem(layer="", item=pg.PlotDataItem([-10, 150], [0, 1]))
     plot.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [1.0, 3.0]))
     plot.addItem(layer="layer_2", item=pg.PlotDataItem([250, 300, 350, 400], [-150.0, 0.0, -200.0, 100.0]))
@@ -693,8 +691,8 @@ def test_auto_button_visibility(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
-    layer_1 = plot.add_layer(identifier="layer_1")
+    layer_0 = plot.layer()
+    layer_1 = plot.add_layer(layer_id="layer_1")
     plot.addItem(layer="", item=pg.PlotDataItem([-10, 150], [0, 1]))
     plot.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [1.0, 3.0]))
     assert not window.plot.plotItem.autoBtn.isVisible()
@@ -732,8 +730,8 @@ def test_auto_button_functionality(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.get_layer()
-    layer_1 = plot.add_layer(identifier="layer_1")
+    layer_0 = plot.layer()
+    layer_1 = plot.add_layer(layer_id="layer_1")
     plot.addItem(layer="", item=pg.PlotDataItem([-10, 150], [0, 1]))
     plot.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [1.0, 3.0]))
     # Set the range automatically to something different
@@ -837,11 +835,15 @@ def _set_range(
     layer: Optional[LayerIdentification] = None
 ):
     kwargs: Dict = {}
-    if layer is not None:
-        kwargs["layer"] = layer
     if method == ExViewBox.setYRange:
+        if layer is not None:
+            kwargs["layer"] = layer
         plot_item.setYRange(min=view_range[0], max=view_range[1], padding=0.0, **kwargs)
     elif method == ExViewBox.setRange:
-        plot_item.setRange(yRange=view_range, padding=0.0, **kwargs)
+        if layer is not None:
+            kwargs[layer] = view_range
+        else:
+            kwargs["yRange"] = view_range
+        plot_item.setRange(padding=0.0, **kwargs)
     else:
         raise ValueError(f"Unknown method {method} for setting range.")

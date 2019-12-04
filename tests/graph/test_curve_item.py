@@ -5,14 +5,17 @@ from typing import List, Union, Optional, Tuple, Type
 import pytest
 import numpy as np
 
-from accsoft_gui_pyqt_widgets.graph import (LivePlotCurve,
-                                            ExPlotWidgetConfig,
-                                            CurveDataWithTime,
-                                            PlotWidgetStyle,
-                                            SlidingPointerPlotCurve,
-                                            UpdateSource,
-                                            PointData,
-                                            InvalidDataStructureWarning)
+from accwidgets.graph import (
+    LivePlotCurve,
+    ExPlotWidgetConfig,
+    CurveDataWithTime,
+    SlidingPointerCurveData,
+    PlotWidgetStyle,
+    SlidingPointerPlotCurve,
+    UpdateSource,
+    PointData,
+    InvalidDataStructureWarning,
+)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.mock_timing_source import MockTimingSource
@@ -38,13 +41,14 @@ def test_simple_linear_data_append(qtbot):
     expected_data = np.arange(
         current_dataset_timestamp, timestamps[-1] + datasets_delta, datasets_delta
     )
-    curves = window.plot.plotItem.get_live_data_curves()
+    curves = window.plot.plotItem.live_curves
     assert len(curves) == 1
     curve = curves[0]
     assert isinstance(curve, SlidingPointerPlotCurve)
-    assert curve.get_last_time_stamp() == 10.0
-    assert np.allclose(curve.get_full_buffer().timestamps, expected_data)
-    assert np.allclose(curve.get_full_buffer().y_values, expected_data)
+    assert curve.last_timestamp == 10.0
+    buffer = _make_curve_from_buffer(curve)
+    assert np.allclose(buffer.timestamps, expected_data)
+    assert np.allclose(buffer.y_values, expected_data)
 
 
 def test_plot_after_first_timing_update(qtbot):
@@ -53,7 +57,7 @@ def test_plot_after_first_timing_update(qtbot):
         qtbot:
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
@@ -72,7 +76,7 @@ def test_plot_before_first_timing_update(qtbot):
         qtbot:
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
@@ -107,7 +111,7 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
@@ -199,7 +203,7 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     time.create_new_value(0.0)
@@ -274,7 +278,7 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
         qtbot:
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     time.create_new_value(0.0)
@@ -455,8 +459,8 @@ def test_time_and_data_update_order(qtbot):
     """
     window_1 = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
     window_2 = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item_1 = window_1.plot.plotItem.get_live_data_curves()[0]
-    plot_item_2 = window_2.plot.plotItem.get_live_data_curves()[0]
+    plot_item_1 = window_1.plot.plotItem.live_curves[0]
+    plot_item_2 = window_2.plot.plotItem.live_curves[0]
     time_1 = window_1.time_source_mock
     time_2 = window_2.time_source_mock
     data_1 = window_1.data_source_mock
@@ -465,12 +469,12 @@ def test_time_and_data_update_order(qtbot):
     data_1.create_new_value(0.0, 0.0)
     data_2.create_new_value(0.0, 0.0)
     time_2.create_new_value(0.0)
-    assert plot_item_1.equals(plot_item_2)
+    assert equals(plot_item_1, plot_item_2)
     time_1.create_new_value(1.0)
     data_1.create_new_value(0.5, 0.5)
     data_2.create_new_value(0.5, 0.5)
     time_2.create_new_value(1.0)
-    assert plot_item_1.equals(plot_item_2)
+    assert equals(plot_item_1, plot_item_2)
     time_1.create_new_value(2.0)
     data_1.create_new_value(1.0, 1.0)
     data_1.create_new_value(1.5, 1.5)
@@ -479,7 +483,7 @@ def test_time_and_data_update_order(qtbot):
     data_2.create_new_value(1.5, 1.5)
     data_2.create_new_value(2.0, 2.0)
     time_2.create_new_value(2.0)
-    assert plot_item_1.equals(plot_item_2)
+    assert equals(plot_item_1, plot_item_2)
 
 
 def test_data_delivered_in_wrong_order(qtbot):
@@ -492,7 +496,7 @@ def test_data_delivered_in_wrong_order(qtbot):
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     time.create_new_value(0.0)
@@ -584,7 +588,7 @@ def test_timestamp_delivered_in_wrong_order(qtbot):
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
     time.create_new_value(0.0)
@@ -673,7 +677,7 @@ def test_no_timing_source_attached(qtbot):
         qtbot: pytest-qt fixture for interaction with qt-application
     """
     window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0, should_create_timing_source=False)
-    plot_item = window.plot.plotItem.get_live_data_curves()[0]
+    plot_item = window.plot.plotItem.live_curves[0]
     data = window.data_source_mock
     data.create_new_value(0.5, 0.5)
     data.create_new_value(1.0, 1.0)
@@ -722,11 +726,11 @@ def test_plotdataitem_components_visible(qtbot, params):
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     item: LivePlotCurve = window.plot.addCurve(data_source=source, **params)
-    source.sig_data_update[PointData].emit(PointData(0.0, 0.0))
-    source.sig_data_update[PointData].emit(PointData(1.0, 1.0))
-    source.sig_data_update[PointData].emit(PointData(np.nan, np.nan))
-    source.sig_data_update[PointData].emit(PointData(2.0, 2.0))
-    source.sig_data_update[PointData].emit(PointData(3.0, 3.0))
+    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
+    source.sig_new_data[PointData].emit(PointData(1.0, 1.0))
+    source.sig_new_data[PointData].emit(PointData(np.nan, np.nan))
+    source.sig_new_data[PointData].emit(PointData(2.0, 2.0))
+    source.sig_new_data[PointData].emit(PointData(3.0, 3.0))
     # Condition as in PlotDataItem.updateItems()
     if params.get("pen") is not None or (params.get("brush") and params.get("fillLevel") is not None):
         assert item.curve.isVisible()
@@ -774,7 +778,7 @@ def test_nan_values_in_scatter_plot(
     # symbol -> pass data to symbol as well
     window.plot.addCurve(data_source=source, symbol="o")
     for point in data_sequence:
-        source.sig_data_update.emit(PointData(point[0], point[1]))
+        source.sig_new_data.emit(PointData(point[0], point[1]))
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
         qtbot.wait(1)
     for expected in expected_warnings:
@@ -844,17 +848,58 @@ def _check_curves(
 ):
     """
     Args:
-        curve (SlidingPointerPlotCurve):
-        expected_full (CurveDataWithTime):
-        expected_old (CurveDataWithTime):
-        expected_new (CurveDataWithTime):
+        curve: Curve that should be checked
+        expected_full: What should be in the buffer?
+        expected_old: What should be part of the old part of the curve
+        expected_new: What should be part of the new part of the curve
     """
+
     result = (
-            curve.get_full_buffer() == expected_full
-            and curve.get_new_curve_buffer() == expected_new
-            and curve.get_old_curve_buffer() == expected_old
+            _make_curve_from_buffer(curve) == expected_full
+            and _make_curve_from_buffers_new_part(curve) == expected_new
+            and _make_curve_from_buffers_old_part(curve) == expected_old
     )
     return result
+
+
+def _make_curve_from_buffer(curve: SlidingPointerPlotCurve):
+    """For easier comparison of the buffers content, we wrap it in a curve object"""
+    x_values, y_values = curve._data_model.full_data_buffer
+    return CurveDataWithTime(
+        timestamps=x_values, x_values=np.array([]), y_values=y_values
+    )
+
+
+def _make_curve_from_buffers_new_part(curve: SlidingPointerPlotCurve) -> CurveDataWithTime:
+    """
+    A list of points (without interpolating the ends)
+    from the data model that are part of the new curve.
+    """
+    x_values, y_values = curve._data_model.subset_for_xrange(
+        start=curve._parent_plot_item.time_span.curr_start,
+        end=curve._parent_plot_item.time_span.curr_end,
+    )
+    return CurveDataWithTime(
+        timestamps=x_values,
+        x_values=x_values - curve._parent_plot_item.time_span.curr_offset,
+        y_values=y_values,
+    )
+
+
+def _make_curve_from_buffers_old_part(curve: SlidingPointerPlotCurve) -> CurveDataWithTime:
+    """
+    A list of points (without interpolating the ends)
+    from the data model that are part of the old curve.
+    """
+    x_values, y_values = curve._data_model.subset_for_xrange(
+        start=curve._parent_plot_item.time_span.prev_start,
+        end=curve._parent_plot_item.time_span.prev_end,
+    )
+    return CurveDataWithTime(
+        timestamps=x_values,
+        x_values=x_values - curve._parent_plot_item.time_span.prev_offset,
+        y_values=y_values,
+    )
 
 
 def _check_plot_data_items_data(
@@ -877,7 +922,10 @@ def _check_plot_data_items_data(
         True if the plotdataitem has the expected data
     """
     try:
-        data = curve.get_last_drawn_data()
+        data = SlidingPointerCurveData(
+            old_curve=curve._clipped_curve_old,
+            new_curve=curve._clipped_curve_new,
+        )
         if isinstance(expected_nc_x, List):
             expected_nc_x = np.array(expected_nc_x)
         if isinstance(expected_nc_y, List):
@@ -895,6 +943,46 @@ def _check_plot_data_items_data(
     except:   # pylint: disable=bare-except
         return False
     return result
+
+
+def equals(one: SlidingPointerPlotCurve, two: SlidingPointerPlotCurve) -> bool:
+    """Compare two Sliding Pointer Curves's content
+
+    Explanation why not __eq__():
+
+    Class needs to be hashable since it is used as a key in PyQtGraph
+    If we would override the __eq__ function based on the values of
+    the object we would either make the class not hashable or hashable
+    based on the values of the object, since A == B -> hash(A) == hash(B),
+    which would not be the case if we hash by identity. Such an
+    implementation would lead to a modifiable object hash, which is definitely
+    not what we want.
+    """
+    if (
+            one.__class__ != two.__class__
+            and _make_curve_from_buffer(one) == _make_curve_from_buffer(two)
+            and _make_curve_from_buffers_new_part(one) == _make_curve_from_buffers_new_part(two)
+            and _make_curve_from_buffers_old_part(one) == _make_curve_from_buffers_old_part(two)
+    ):
+        return False
+    try:
+        return (
+                np.allclose(
+                    two._clipped_curve_old.y_values,
+                    one._clipped_curve_old.y_values,
+                ) and np.allclose(
+                    two._clipped_curve_old.x_values,
+                    one._clipped_curve_old.x_values,
+                ) and np.allclose(
+                    two._clipped_curve_new.x_values,
+                    one._clipped_curve_new.x_values,
+                ) and np.allclose(
+                    two._clipped_curve_new.y_values,
+                    one._clipped_curve_new.y_values,
+                )
+            )
+    except ValueError:
+        return False
 
 
 def _simple_linear_update(

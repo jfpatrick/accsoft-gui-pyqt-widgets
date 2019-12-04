@@ -3,18 +3,41 @@ Tests that tests if a data structure's validity is determined correctly,
 The tests rely on warnings being emitted on creating the data structures.
 """
 
-from collections import namedtuple
+from typing import NamedTuple, Union, List
 import itertools
 
 import pytest
 import numpy as np
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
-PointNamedTuple = namedtuple("PointNamedTuple", "x y")
-BarNamedTuple = namedtuple("BarNamedTuple", "x y h")
-InjectionBarNamedTuple = namedtuple("InjectionBarNamedTuple", "x y h w l")
-TimestampMarkerNamedTuple = namedtuple("TimestampMarkerNamedTuple", "x c l")
 
+class PointNamedTuple(NamedTuple):
+
+    x: Union[float, List[float], None]
+    y: Union[float, List[float], None]
+
+
+class BarNamedTuple(NamedTuple):
+
+    x: Union[float, List[float], None]
+    y: Union[float, List[float], None]
+    h: Union[float, List[float], None]
+
+
+class InjectionBarNamedTuple(NamedTuple):
+
+    x: Union[float, List[float], None]
+    y: Union[float, List[float], None]
+    h: Union[float, List[float], None]
+    w: Union[float, List[float], None]
+    l: Union[str, List[str], None]
+
+
+class TimestampMarkerNamedTuple(NamedTuple):
+
+    x: Union[float, List[float], None]
+    c: Union[str, List[str], None]
+    l: Union[str, List[str], None]
 
 # ~~~~~~~~~~ Curve Data-Structures ~~~~~~~~~~
 

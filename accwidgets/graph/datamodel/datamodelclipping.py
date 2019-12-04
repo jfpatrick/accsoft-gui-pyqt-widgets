@@ -5,7 +5,7 @@ from typing import Dict, List, Union
 
 import numpy as np
 
-from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import (
+from accwidgets.graph.datamodel.datastructures import (
     CurveData,
     CurveDataWithTime,
     PointData,
@@ -21,11 +21,21 @@ def intersect(
     """Intersect a plot line with a vertical line, for example a boundary
     defined by a x-value.
 
+    The result is collected in a dictionary containing the following entries:
+        - the last point's index before the intersection
+        - the first point's index after the intersection
+        - the intersection between the curve and the passed boundary
+    If one of the indices does not exist, -1 is returned in its position.
+    If the intersection does not exist, a Point (nan, nan) is returned.
+
     Args:
         graph_points (Dict[str, List[float]]): x and y values as list
             packaged in a dictionary
         vertical_line_x_position (float): Line on which the intersection
             should be calculated on
+
+    Returns:
+        Dictionary containing the results of the intersection
     """
     result: Dict[str, Union[int, PointData]] = {
         "last_before_index": -1,

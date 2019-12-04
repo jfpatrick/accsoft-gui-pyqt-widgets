@@ -10,8 +10,8 @@ from typing import Optional, Tuple, List, Union
 
 import numpy as np
 
-from accsoft_gui_pyqt_widgets.graph.datamodel.datamodelclipping import calc_intersection
-from accsoft_gui_pyqt_widgets.graph.datamodel.datastructures import PointData
+from accwidgets.graph.datamodel.datamodelclipping import calc_intersection
+from accwidgets.graph.datamodel.datastructures import PointData
 
 DEFAULT_BUFFER_SIZE: int = 100000
 
@@ -19,28 +19,27 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
-    """
-    Base class for different data buffers.
-
-    Buffer for multiple arrays with data of different types.
-    The buffer is containing one array of primary values which
-    all values are sorted by. The n arrays of secondary values
-    are the values that are belonging to the x axis with the same
-    index. For better understanding here a few simple examples:
-
-    For a curve this could look like this:
-        primary value:      x position
-
-        secondary value:    y position
-
-    For a bar chart this could look like this:
-        primary value:      x position
-
-        secondary value:    y position, height
-    """
 
     def __init__(self, size: int = DEFAULT_BUFFER_SIZE):
         """
+        Base class for different data buffers.
+
+        Buffer for multiple arrays with data of different types.
+        The buffer is containing one array of primary values which
+        all values are sorted by. The n arrays of secondary values
+        are the values that are belonging to the x axis with the same
+        index. For better understanding here a few simple examples:
+
+        For a curve this could look like this:
+            primary value:      x position
+
+            secondary value:    y position
+
+        For a bar chart this could look like this:
+            primary value:      x position
+
+            secondary value:    y position, height
+
         Subclasses should initialize the primary and secondary values
         according to the values they want to save. A convenient way is to
         implement the preparation of primary and secondary values in the
@@ -60,81 +59,14 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         self._primary_values: np.ndarray = np.array([])
         self._secondary_values_lists: List[np.ndarray] = []
         self._space_left: int
-        self._smallest_distance_between_two_primary_values: float
+        self._min_primary_value_delta: float
         self._next_free_slot: int
         self._is_empty: bool
         # This is needed for initialization
         self.reset()
 
-    def reset(self) -> None:
-        """ Clear all saved fields and intialize them again
-
-        Clear the buffer by initializing primary and secondary values again.
-        Since different databuffers can hold different types and amounts of secondary
-        values, initializing the list of secondary values has to be done in each
-        subclass.
-        """
-        self._primary_values = np.array([])
-        self._secondary_values_lists = []
-        self._space_left = self._size
-        self._smallest_distance_between_two_primary_values = np.inf
-        self._next_free_slot = 0
-        self._is_empty = True
-
-    # ~~~~~ Properties for buffer important buffer information ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    @property
-    def space_left(self) -> int:
-        """Free spaces left in the buffer"""
-        self._update_space_left()
-        return self._space_left
-
-    @property
-    def count_occupied_entries(self) -> int:
-        """Next free index location (== amount of occupied indices)"""
-        return self._size - self.space_left
-
-    @property
-    def full_size(self) -> int:
-        """Buffer size"""
-        return self._primary_values.size
-
-    @property
-    def index_of_last_primary_value_not_nan(self) -> int:
-        """Search fo the newest primary value (f.e. x value) that is a number"""
-        next_free_index = self.count_occupied_entries
-        last_non_free_and_not_none_index = next_free_index - 1
-        while last_non_free_and_not_none_index > 0 and np.isnan(
-            self._primary_values[last_non_free_and_not_none_index]
-        ):
-            last_non_free_and_not_none_index -= 1
-        return last_non_free_and_not_none_index
-
-    @property
-    def smallest_distance_between_primary_values(self) -> float:
-        """Get the smallest distance between two primary values in the buffer"""
-        return self._smallest_distance_between_two_primary_values
-
-    def is_empty(self) -> bool:
-        """Check if the buffer is still empty"""
-        return self._is_empty
-
-    def as_np_array(self) -> Tuple[np.ndarray, ...]:
-        """ Return Buffer as Tuple of Numpy arrays
-
-        Gets the buffers written values (empty fields are cut) as numpy
-        arrays packaged in a tuple with the first one being the primary values
-        and the followings being the secondary values in the same order as they
-        are saved in the Buffer's secondary values list.
-        """
-        i = self.count_occupied_entries
-        values: List[np.ndarray] = [self._primary_values[:i]]
-        for secondary_values in self._secondary_values_lists:
-            values.append(secondary_values[:i])
-        return tuple(values)
-
     @abc.abstractmethod
-    def get_subset(self, start: float, end: float) -> Tuple[np.ndarray, ...]:
+    def subset_for_primary_val_range(self, start: float, end: float) -> Tuple[np.ndarray, ...]:
         """ Get Subset of a specific start and end point
 
         Args:
@@ -146,15 +78,18 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """
         pass
 
-    # ~~~~~ Add new entries to buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    def add_values_to_buffer(
+    def add_entry_to_buffer(
         self, primary_value: float, secondary_values: List[Union[float, str]]
     ) -> None:
         """Append a new entry to the buffer
 
         Add a single entry into the buffer and sort it in at the right position.
         Before calling make sure your data is valid and can be drawn.
+
+        Args:
+            primary_value: Single primary value that should be added to the buffer
+            secondary_values: List of secondary values that are added to the buffer
+                              at the same position as the primary value
         """
         svl = [np.array([secondary_value]) for secondary_value in secondary_values]
         primary_values, secondary_values_list = self._prepare_buffer_and_values(
@@ -167,7 +102,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 primary_value=primary_value, secondary_values=secondary_values
             )
 
-    def add_list_of_values_to_buffer(
+    def add_entries_to_buffer(
         self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
     ) -> None:
         """Append a list of entries
@@ -178,9 +113,10 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         right position, it should be passed as a single point (add_point()).
         Before calling make sure the passed data is valid.
 
-        Params:
-            **kwargs: primary secondary values, see subtype implementations for
-                      more specific information of the params for each buffer type
+        Args:
+            primary_values: List of primary values that should be added to the buffer
+            secondary_values_list: List of secondary values arrays that should be added
+                                   to the buffer at the position of their primary value
         """
         if primary_values is None or secondary_values_list is None:
             raise ValueError("Passed keyword arguments do not match the expected ones.")
@@ -193,7 +129,120 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 sec_values.append(secondary_values_entry[index])
             self._sort_in_point(primary_value=p_val, secondary_values=sec_values)
 
-    # ~~~~~ Preparation and Sorting in of new data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def reset(self) -> None:
+        """ Clear all saved fields and intialize them again
+
+        Clear the buffer by initializing primary and secondary values again.
+        Since different databuffers can hold different types and amounts of secondary
+        values, initializing the list of secondary values has to be done in each
+        subclass.
+        """
+        self._primary_values = np.array([])
+        self._secondary_values_lists = []
+        self._space_left = self._size
+        self._min_primary_value_delta = np.inf
+        self._next_free_slot = 0
+        self._is_empty = True
+
+    def as_np_array(self) -> Tuple[np.ndarray, ...]:
+        """ Return Buffer as Tuple of Numpy arrays
+
+        Gets the buffers written values (empty fields are cut) as numpy
+        arrays packaged in a tuple with the first one being the primary values
+        and the followings being the secondary values in the same order as they
+        are saved in the Buffer's secondary values list.
+        """
+        i = self.occupied_size
+        values: List[np.ndarray] = [self._primary_values[:i]]
+        for secondary_values in self._secondary_values_lists:
+            values.append(secondary_values[:i])
+        return tuple(values)
+
+    @staticmethod
+    def sorted_data_arrays(
+        primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
+    ) -> Tuple[np.ndarray, List[np.ndarray]]:
+        """ Sort Primary and Secondary Values
+
+        Sort the passed primary and secondary values by the primary one.
+        Nan Values will be sorted to the end. The original arrays are not
+        mutated, returned are sorted copies of the original passed data.
+        """
+        if not SortedCurveDataBuffer.data_arrays_are_compatible(primary_values, secondary_values_list):
+            raise ValueError("The passed arrays must have the same length.")
+        sorted_primary_values_indices = np.argsort(primary_values)
+        sorted_primary_values = primary_values[sorted_primary_values_indices]
+        secondary_values_list_sorted: List[np.ndarray] = []
+        for secondary_values in secondary_values_list:
+            sorted_secondary_values = secondary_values[
+                sorted_primary_values_indices
+            ][:]
+            secondary_values_list_sorted.append(sorted_secondary_values)
+        return sorted_primary_values, secondary_values_list_sorted
+
+    @staticmethod
+    def data_arrays_are_compatible(
+        primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
+    ) -> bool:
+        """Check if both arrays have the same shape and length and the correct type"""
+        arrays_are_not_none = primary_values is not None
+        arrays_correct_type = isinstance(primary_values, np.ndarray)
+        arrays_right_shape = True
+        arrays_right_size = True
+        for secondary_values in secondary_values_list:
+            arrays_are_not_none = arrays_are_not_none and secondary_values is not None
+            arrays_correct_type = isinstance(secondary_values, np.ndarray)
+            arrays_right_shape = arrays_right_shape and np.shape(primary_values) == np.shape(secondary_values)
+            arrays_right_size = (
+                arrays_right_size and primary_values.size == secondary_values.size
+            )
+        return (
+            arrays_are_not_none
+            and arrays_correct_type
+            and arrays_right_shape
+            and arrays_right_size
+        )
+
+    # ~~~~~~~~~~ Properties ~~~~~~~~~~
+
+    @property
+    def space_left(self) -> int:
+        """Free spaces left in the buffer"""
+        self._update_space_left()
+        return self._space_left
+
+    @property
+    def occupied_size(self) -> int:
+        """Next free index location (== amount of occupied indices)"""
+        return self._size - self.space_left
+
+    @property
+    def capacity(self) -> int:
+        """Maximum entry count the buffer can hold."""
+        return self._primary_values.size
+
+    @property
+    def index_of_last_valid(self) -> int:
+        """The newest primary value (f.e. x value) that is a number and not NaN."""
+        next_free_index = self.occupied_size
+        last_non_free_and_not_none_index = next_free_index - 1
+        while last_non_free_and_not_none_index > 0 and np.isnan(
+            self._primary_values[last_non_free_and_not_none_index]
+        ):
+            last_non_free_and_not_none_index -= 1
+        return last_non_free_and_not_none_index
+
+    @property
+    def min_dx(self) -> float:
+        """Smallest distance between two primary values in the buffer"""
+        return self._min_primary_value_delta
+
+    @property
+    def is_empty(self) -> bool:
+        """Check if the buffer is still empty"""
+        return self._is_empty
+
+    # ~~~~~~~~~~ Private ~~~~~~~~~~
 
     def _sort_in_point(
         self, primary_value: float, secondary_values: List[Union[float, str]]
@@ -218,12 +267,9 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         Args:
             primary_value: Primary value of the new entry
             secondary_values: Secondary values of the new entry
-
-        Returns:
-            None
         """
-        next_free_index = self.count_occupied_entries
-        last_non_free_and_not_none_index = self.index_of_last_primary_value_not_nan
+        next_free_index = self.occupied_size
+        last_non_free_and_not_none_index = self.index_of_last_valid
         if self._is_new_value_greater_than_all_others(
             primary_value, last_non_free_and_not_none_index
         ):
@@ -236,8 +282,8 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
             except IndexError:
                 distance = np.inf
         else:
-            i = self.count_occupied_entries
-            write_index = self.searchsorted_with_nans(
+            i = self.occupied_size
+            write_index = self._searchsorted_with_nans(
                 array=self._primary_values[:i], value=primary_value, side="right"
             )
             self._primary_values = np.insert(
@@ -262,8 +308,8 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 distance = np.inf
         self._next_free_slot += 1
         self._is_empty = False
-        if self._smallest_distance_between_two_primary_values > distance:
-            self._smallest_distance_between_two_primary_values = distance
+        if self._min_primary_value_delta > distance:
+            self._min_primary_value_delta = distance
 
     def _prepare_buffer_and_values(
         self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
@@ -318,8 +364,8 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """
         free_spaces_after_input = math.ceil(self._size / 3)
         spaces_to_shift: int = free_spaces_after_input + primary_values.size
-        if spaces_to_shift > self.count_occupied_entries:
-            spaces_to_shift = self.count_occupied_entries
+        if spaces_to_shift > self.occupied_size:
+            spaces_to_shift = self.occupied_size
         input_cut: int
         input_cut, spaces_to_shift = self._find_removable_part_from_input(
             free_spaces_after_input=free_spaces_after_input,
@@ -394,8 +440,6 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
             self._secondary_values_lists[index] = secondary_values
         self._next_free_slot -= spaces_to_shift
 
-    # ~~~~~~ Helper functions for more readable conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     def _is_new_value_greater_than_all_others(
         self, primary_value: float, last_non_free_and_not_none_index: int
     ) -> bool:
@@ -411,13 +455,11 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """Update the space that is left in this buffer"""
         self._space_left = self._size - self._next_free_slot
 
-    # ~~~~~~ Static functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     @staticmethod
     def _get_indices_for_cutting_leading_and_trailing_nans(
         primary_values: np.ndarray,
-        start_index: int,
-        end_index: int,
+        start_index: float,
+        end_index: float,
     ) -> Tuple[int, int]:
         """Cut trailing and leading nans
 
@@ -448,52 +490,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         return any(secondary_values.size for secondary_values in secondary_values_list)
 
     @staticmethod
-    def sorted_data_arrays(
-        primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
-    ) -> Tuple[np.ndarray, List[np.ndarray]]:
-        """ Sort Primary and Secondary Values
-
-        Sort the passed primary and secondary values by the primary one.
-        Nan Values will be sorted to the end. The original arrays are not
-        mutated, returned are sorted copies of the original passed data.
-        """
-        if not SortedCurveDataBuffer.data_arrays_are_compatible(primary_values, secondary_values_list):
-            raise ValueError("The passed arrays must have the same length.")
-        sorted_primary_values_indices = np.argsort(primary_values)
-        sorted_primary_values = primary_values[sorted_primary_values_indices]
-        secondary_values_list_sorted: List[np.ndarray] = []
-        for secondary_values in secondary_values_list:
-            sorted_secondary_values = secondary_values[
-                sorted_primary_values_indices
-            ][:]
-            secondary_values_list_sorted.append(sorted_secondary_values)
-        return sorted_primary_values, secondary_values_list_sorted
-
-    @staticmethod
-    def data_arrays_are_compatible(
-        primary_values: np.ndarray, secondary_values_list: List[np.ndarray]
-    ) -> bool:
-        """Check if both arrays have the same shape and length and the correct type"""
-        arrays_are_not_none = primary_values is not None
-        arrays_correct_type = isinstance(primary_values, np.ndarray)
-        arrays_right_shape = True
-        arrays_right_size = True
-        for secondary_values in secondary_values_list:
-            arrays_are_not_none = arrays_are_not_none and secondary_values is not None
-            arrays_correct_type = isinstance(secondary_values, np.ndarray)
-            arrays_right_shape = arrays_right_shape and np.shape(primary_values) == np.shape(secondary_values)
-            arrays_right_size = (
-                arrays_right_size and primary_values.size == secondary_values.size
-            )
-        return (
-            arrays_are_not_none
-            and arrays_correct_type
-            and arrays_right_shape
-            and arrays_right_size
-        )
-
-    @staticmethod
-    def searchsorted_with_nans(array: np.ndarray, value: float, side: str) -> int:
+    def _searchsorted_with_nans(array: np.ndarray, value: float, side: str) -> int:
         """np.searchsorted with nan support"""
         sorting_indices = np.argsort(array)
         index = np.searchsorted(array, value, side=side, sorter=sorting_indices)
@@ -507,7 +504,8 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
 
 class SortedCurveDataBuffer(BaseSortedDataBuffer):
 
-    """Sorted Buffer for a Line Graph
+    """
+    Sorted Buffer for a Line Graph.
 
     Content
         Primary Value =     X Value
@@ -529,22 +527,30 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         """Append a single point to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        this is the case.
+
+        Args:
+            x_value: x value that should be added to the buffer
+            y_value: y value that should be added to the buffer
         """
-        super().add_values_to_buffer(primary_value=x_value, secondary_values=[y_value])
+        super().add_entry_to_buffer(primary_value=x_value, secondary_values=[y_value])
 
     def add_list_of_entries(self, x_values: np.ndarray, y_values: np.ndarray) -> None:
         """Append a list of points to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        this is the case.
+
+        Args:
+            x_values: Array of x values that should be added to the buffer
+            y_values: Array of y values that should be added to the buffer.
         """
-        super().add_list_of_values_to_buffer(
+        super().add_entries_to_buffer(
             primary_values=x_values, secondary_values_list=[y_values]
         )
 
-    def get_subset(  # pylint: disable=arguments-differ
-        self, start: float, end: float, clip_at_boundaries: bool = False
+    def subset_for_primary_val_range(  # pylint: disable=arguments-differ
+        self, start: float, end: float, interpolated: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get Subset of the data
 
@@ -558,20 +564,20 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         Args:
             start: start boundary for primary values of elements that should be included in the subset
             end: end boundary for primary values of elements that should be included in the subset
-            clip_at_boundaries: If true the curve will be interpolated at the edges and the two
-                                new points at the edge will be contained in the subset
+            interpolated: If true the curve will be interpolated at the edges and the two
+                          new points at the edge will be contained in the subset
 
         Returns:
             X and Y Values of the subset in a tuple of the form (x_values, y_values)
         """
-        i = self.count_occupied_entries
+        i = self.occupied_size
         x_values: np.ndarray = self._primary_values[:i]
         y_values: np.ndarray = self._secondary_values_lists[0][:i]
-        start_index = self.searchsorted_with_nans(
+        start_index = self._searchsorted_with_nans(
             array=x_values, value=start, side="left"
         )
-        end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
-        if clip_at_boundaries:
+        end_index = self._searchsorted_with_nans(array=x_values, value=end, side="right")
+        if interpolated:
             return self._clip_at_boundaries_if_possible(
                 x_values=x_values,
                 y_values=y_values,
@@ -589,7 +595,12 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
 
     @staticmethod
     def _clip_at_boundaries_if_possible(
-        x_values, y_values, start_index, end_index, start_boundary, end_boundary
+            x_values: np.ndarray,
+            y_values: np.ndarray,
+            start_index: float,
+            end_index: float,
+            start_boundary: float,
+            end_boundary: float,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """ Create subset with clipped ends
 
@@ -620,8 +631,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
                 x_value=x_values[start_index - 1], y_value=y_values[start_index - 1]
             )
             if (
-                not point_in_front_of_boundary.contains_nan()
-                and not point_after_boundary.contains_nan()
+                not point_in_front_of_boundary.is_nan
+                and not point_after_boundary.is_nan
             ):
                 start_clipping_point = calc_intersection(
                     point_in_front_of_boundary, point_after_boundary, start_boundary
@@ -639,8 +650,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
                 x_value=x_values[end_index - 1], y_value=y_values[end_index - 1]
             )
             if (
-                not point_in_front_of_boundary.contains_nan()
-                and not point_after_boundary.contains_nan()
+                not point_in_front_of_boundary.is_nan
+                and not point_after_boundary.is_nan
             ):
                 end_clipping_point = calc_intersection(
                     point_in_front_of_boundary, point_after_boundary, end_boundary
@@ -667,7 +678,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
 
 class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
 
-    """Sorted Buffer for a Bar Graph
+    """
+    Sorted Buffer for a Bar Graph.
 
     Content:
         Primary Value =     X Value
@@ -693,24 +705,34 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
 
         It is expected, that the passed data is valid. Make sure before calling,
         this is the case
+
+        Args:
+            x_value: x value that should be added to the buffer
+            y_value: x value that should be added to the buffer
+            height: height of a bar that should be added to the buffer
         """
-        super().add_values_to_buffer(
+        super().add_entry_to_buffer(
             primary_value=x_value, secondary_values=[y_value, height]
         )
 
     def add_list_of_entries(
-        self, x_values: np.ndarray, y_values: np.ndarray, height: np.ndarray
+        self, x_values: np.ndarray, y_values: np.ndarray, heights: np.ndarray
     ) -> None:
         """Append a list of bars to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
         this is the case
+
+        Args:
+            x_values: Array of x values that should be added to the buffer
+            y_values: Array of y values that should be added to the buffer
+            heights: Array of bar-heights that should be added to the buffer
         """
-        super().add_list_of_values_to_buffer(
-            primary_values=x_values, secondary_values_list=[y_values, height]
+        super().add_entries_to_buffer(
+            primary_values=x_values, secondary_values_list=[y_values, heights]
         )
 
-    def get_subset(
+    def subset_for_primary_val_range(
         self, start: float, end: float
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """ Get Subset of a specific start and end point
@@ -722,14 +744,14 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         Returns:
             Primary and Secondary Values of the subset in a tuple of the form (x_values, y_values, height_values)
         """
-        i = self.count_occupied_entries
+        i = self.occupied_size
         x_values: np.ndarray = self._primary_values[:i]
         y_values: np.ndarray = self._secondary_values_lists[0][:i]
         height: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self.searchsorted_with_nans(
+        start_index = self._searchsorted_with_nans(
             array=x_values, value=start, side="left"
         )
-        end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
+        end_index = self._searchsorted_with_nans(array=x_values, value=end, side="right")
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
             start_index=start_index,
@@ -744,7 +766,8 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
 
 class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
 
-    """Sorted Buffer for a Injection Bar Graph
+    """
+    Sorted Buffer for a Injection Bar Graph.
 
     Content
         Primary Value =     X Value
@@ -778,12 +801,19 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         width: float,
         label: str,
     ) -> None:
-        """Append an injectionbar to the buffer
+        """Append an injection bar to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
         this is the case
+
+        Args:
+            x_value: x value that should be added to the buffer
+            y_value: y value that should be added to the buffer
+            height: bar height that should be added to the buffer
+            width: bar width that should be added to the buffer
+            label: label text that should be added to the buffer
         """
-        super().add_values_to_buffer(
+        super().add_entry_to_buffer(
             primary_value=x_value,
             secondary_values=[y_value, height, width, label],
         )
@@ -796,17 +826,24 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         widths: np.ndarray,
         labels: np.ndarray,
     ) -> None:
-        """Append a list of injectionbars to the buffer
+        """Append a list of injection bars to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        this is the case.
+
+        Args:
+            x_values: Array of x values that should be added to the buffer
+            y_values: Array of y values that should be added to the buffer
+            heights: Array of heights that should be added to the buffer
+            widths: Array of widths that should be added to the buffer
+            labels: Array of label texts that should be added to the buffer
         """
-        super().add_list_of_values_to_buffer(
+        super().add_entries_to_buffer(
             primary_values=x_values,
             secondary_values_list=[y_values, heights, widths, labels],
         )
 
-    def get_subset(
+    def subset_for_primary_val_range(
         self, start: float, end: float
     ) -> Tuple[
         np.ndarray,
@@ -825,16 +862,16 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
             Primary and Secondary Values of the subset in a tuple of the form
             (x_values, y_values, height_values, width_values, labels)
         """
-        i = self.count_occupied_entries
+        i = self.occupied_size
         x_values: np.ndarray = self._primary_values[:i]
         y_values: np.ndarray = self._secondary_values_lists[0][:i]
         heights: np.ndarray = self._secondary_values_lists[1][:i]
         widths: np.ndarray = self._secondary_values_lists[2][:i]
         labels: np.ndarray = self._secondary_values_lists[3][:i]
-        start_index = self.searchsorted_with_nans(
+        start_index = self._searchsorted_with_nans(
             array=x_values, value=start, side="left"
         )
-        end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
+        end_index = self._searchsorted_with_nans(array=x_values, value=end, side="right")
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,
             start_index=start_index,
@@ -851,7 +888,8 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
 
 class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
 
-    """Sorted Buffer for Timestamp Markers
+    """
+    Sorted Buffer for Timestamp Markers.
 
     Content
         Primary Value =     X Value
@@ -875,8 +913,13 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
 
         It is expected, that the passed data is valid. Make sure before calling,
         this is the case
+
+        Args:
+            x_value: x value that should be added to the buffer
+            color: line color that should be added to the buffer
+            label: label text that should be added to the buffer
         """
-        super().add_values_to_buffer(
+        super().add_entry_to_buffer(
             primary_value=x_value, secondary_values=[color, label]
         )
 
@@ -886,13 +929,18 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         """Append a list of infinite lines
 
         It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        this is the case.
+
+        Args:
+            x_values: Array of x values that should be added to the buffer
+            colors: Array of colors that should be added to the buffer
+            labels: Array of label texts that should be added to the buffer
         """
-        super().add_list_of_values_to_buffer(
+        super().add_entries_to_buffer(
             primary_values=x_values, secondary_values_list=[colors, labels]
         )
 
-    def get_subset(
+    def subset_for_primary_val_range(
         self, start: float, end: float
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """ Get Subset of a specific start and end point
@@ -905,14 +953,14 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
             Primary and Secondary Values of the subset in a tuple of the form
             (x_values, colors, labels)
         """
-        i = self.count_occupied_entries
+        i = self.occupied_size
         x_values: np.ndarray = self._primary_values[:i]
         color: np.ndarray = self._secondary_values_lists[0][:i]
         label: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self.searchsorted_with_nans(
+        start_index = self._searchsorted_with_nans(
             array=x_values, value=start, side="left"
         )
-        end_index = self.searchsorted_with_nans(array=x_values, value=end, side="right")
+        end_index = self._searchsorted_with_nans(array=x_values, value=end, side="right")
         # indices for removing leading/trailing entries that have NaN as their primary value
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x_values,

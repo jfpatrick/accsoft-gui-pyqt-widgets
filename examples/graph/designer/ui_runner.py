@@ -14,7 +14,7 @@ from datetime import datetime
 from qtpy import QtWidgets, QtCore, uic
 import pyqtgraph as pg
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
 
 class Ui(
@@ -35,9 +35,9 @@ class Ui(
         file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "plot.ui")
         uic.loadUi(file_path, self)
         # Create items to add to the plots
-        sliding_item = accgraph.LivePlotCurve.create(plot_item=self.sliding_plot.plotItem, data_source=RandomDataSource(500))
-        scrolling_item_1 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(1000))
-        scrolling_item_2 = accgraph.LivePlotCurve.create(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(500))
+        sliding_item = accgraph.LivePlotCurve.from_plot_item(plot_item=self.sliding_plot.plotItem, data_source=RandomDataSource(500))
+        scrolling_item_1 = accgraph.LivePlotCurve.from_plot_item(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(1000))
+        scrolling_item_2 = accgraph.LivePlotCurve.from_plot_item(plot_item=self.scrolling_plot.plotItem, data_source=RandomDataSource(500))
         static_item_1 = pg.BarGraphItem(x=[0.0, 1.0, 2.0, 3.0], height=[1.0, 0.5, -0.5, 1.0], width=0.75)
         static_item_2 = pg.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
         # Add items
@@ -59,9 +59,9 @@ class RandomDataSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self.emit)
         self.timer.start(update_freq)
 
-    def emit(self):
+    def emit(self) -> None:
         """Emit new float value"""
-        self.sig_data_update[accgraph.PointData].emit(
+        self.sig_new_data[accgraph.PointData].emit(
             accgraph.PointData(
                 x_value=datetime.now().timestamp(),
                 y_value=random.uniform(0.0, 10.0)

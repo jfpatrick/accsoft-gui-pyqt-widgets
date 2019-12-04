@@ -19,52 +19,57 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
 # ~~~~~ Creation of values the datamodel can emit ~~~~~~~~~~~~~~~~~~~~~~
 
 
-def check_datamodel(data_model: accgraph.BaseDataModel, buffer_size: int, primary_values: List[float]):
+def check_datamodel(data_model: accgraph.AbstractLiveDataModel, buffer_size: int, primary_values: List[float]) -> bool:
     """
     Check the content of the datamodels buffer with expected secondary values created
     with the same logic as the for the datasource created objects.
     This allows to write generic check without having to know the actual how
     many and which fields the datamodel saves the datamodel is saving.
     """
-    actual: Tuple[np.ndarray, ...] = data_model.get_full_data_buffer()
+    actual: Tuple[np.ndarray, ...] = data_model.full_data_buffer
     return _check_data_model(data_model, buffer_size, actual, primary_values)
 
 
-def check_datamodel_subset(data_model: accgraph.BaseDataModel, buffer_size: int, expected: List[float], start: float, end: float):
+def check_datamodel_subset(data_model: accgraph.AbstractLiveDataModel, buffer_size: int, expected: List[float], start: float, end: float) -> bool:
     """
     Check a specific subset of the datamodels buffer with expected secondary values created
     with the same logic as the for the datasource created objects.
     This allows to write generic check without having to know the actual how
     many and which fields the datamodel saves the datamodel is saving.
     """
-    actual: Tuple[np.ndarray, ...] = data_model.get_subset(start, end)
+    actual: Tuple[np.ndarray, ...] = data_model.subset_for_xrange(start, end)
     return _check_data_model(data_model, buffer_size, actual, expected)
 
 
-def _check_data_model(data_model: accgraph.BaseDataModel, buffer_size: int, actual: Tuple[np.ndarray, ...], primary_values: List[float]):
+def _check_data_model(
+        data_model: accgraph.AbstractLiveDataModel,
+        buffer_size: int,
+        actual: Tuple[np.ndarray, ...],
+        primary_values: List[float]
+) -> bool:
     """Create expected data by the given primary values"""
-    if data_model.get_data_buffer_size() != buffer_size:
+    if data_model.buffer_size != buffer_size:
         return False
     expected: Tuple[np.ndarray, ...]
-    if isinstance(data_model, accgraph.CurveDataModel):
+    if isinstance(data_model, accgraph.LiveCurveDataModel):
         expected = _create_curve_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.BarGraphDataModel):
+    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
         expected = _create_bar_graph_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.InjectionBarDataModel):
+    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
         expected = _create_injection_bar_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.TimestampMarkerDataModel):
+    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
         expected = _create_infinite_line_data_model_expected_content(x_values=primary_values)
     else:
         raise ValueError("Can not handle DataModel of type", data_model.__class__)
     return compare_tuple_of_numpy_arrays(actual, expected)
 
 
-def compare_tuple_of_numpy_arrays(tuple_1: Tuple[np.ndarray, ...], tuple_2: Tuple[np.ndarray, ...]):
+def compare_tuple_of_numpy_arrays(tuple_1: Tuple[np.ndarray, ...], tuple_2: Tuple[np.ndarray, ...]) -> bool:
     """Go through two tuples containing numpy arrays and compare them"""
     for array_1, array_2 in zip(list(tuple_1), list(tuple_2)):
         if len(array_1) != len(array_2):
@@ -96,32 +101,36 @@ def get_fitting_color(x_value: float) -> str:
     return colors[int(x_value) % (len(colors) - 1)]
 
 
-def create_fitting_object(data_model: accgraph.BaseDataModel, x_value: float):
+def create_fitting_object(
+        data_model: accgraph.AbstractLiveDataModel,
+        x_value: float
+) -> Union[accgraph.PointData, accgraph.BarData, accgraph.InjectionBarData, accgraph.TimestampMarkerData, None]:
     """Create an object fitting to the specified data model"""
-    if isinstance(data_model, accgraph.CurveDataModel):
+    if isinstance(data_model, accgraph.LiveCurveDataModel):
         return _create_point_data(value=x_value)
-    elif isinstance(data_model, accgraph.BarGraphDataModel):
+    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
         return _create_bar_data(value=x_value)
-    elif isinstance(data_model, accgraph.InjectionBarDataModel):
+    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
         return _create_injection_bar_data(value=x_value)
-    elif isinstance(data_model, accgraph.TimestampMarkerDataModel):
+    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
         return _create_infinite_line(
             value=x_value,
             color=get_fitting_color(x_value)
         )
+    return None
 
 
-def create_fitting_object_collection(data_model: accgraph.BaseDataModel, x_values: Union[List[float], np.ndarray]):
+def create_fitting_object_collection(data_model: accgraph.AbstractLiveDataModel, x_values: Union[List[float], np.ndarray]):
     """Create an object fitting to the specified data model"""
     if not isinstance(x_values, np.ndarray):
         x_values = np.array(x_values)
-    if isinstance(data_model, accgraph.CurveDataModel):
+    if isinstance(data_model, accgraph.LiveCurveDataModel):
         return _create_curve_data(values=x_values)
-    elif isinstance(data_model, accgraph.BarGraphDataModel):
+    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
         return _create_bar_data_collection(values=x_values)
-    elif isinstance(data_model, accgraph.InjectionBarDataModel):
+    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
         return _create_injection_bar_data_collection(values=x_values)
-    elif isinstance(data_model, accgraph.TimestampMarkerDataModel):
+    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
         return _create_infinite_line_collection(
             values=x_values,
             colors=np.array([get_fitting_color(x_value) for x_value in x_values])

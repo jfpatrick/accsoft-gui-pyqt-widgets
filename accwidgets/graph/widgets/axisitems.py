@@ -3,26 +3,36 @@ Different AxisItem implementations for Timestamp based plotting for better reada
 """
 
 from datetime import datetime
-from typing import List
+from typing import List, Iterable
 
 from pyqtgraph import AxisItem
+from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal
+from qtpy.QtGui import QWheelEvent
 
 
-class CustomAxisItem(AxisItem):
+class ExAxisItem(AxisItem):
 
     """AxisItem with some required extra functions"""
 
-    # Signal for informing later components that
     sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
+    """Signal that the mouse event was executed on the axis (and not the ViewBox)"""
 
-    def mouseDragEvent(self, event):
-        """Make the mouse drag event on the axis distinguishable from the ViewBox one"""
+    def mouseDragEvent(self, event: MouseDragEvent) -> None:
+        """Make the mouse drag event on the axis distinguishable from the ViewBox one
+
+        Args:
+            event: Mouse drag event executed on the axis
+        """
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().mouseDragEvent(event)
 
-    def wheelEvent(self, ev):
-        """Make the mouse click event on the axis distinguishable from the ViewBox one"""
+    def wheelEvent(self, ev: QWheelEvent) -> None:
+        """Make the mouse click event on the axis distinguishable from the ViewBox one
+
+        Args:
+            ev: Wheel event executed on the axis
+        """
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().wheelEvent(ev)
 
@@ -57,41 +67,27 @@ class TimeAxisItem(AxisItem):
 
 
 class RelativeTimeAxisItem(AxisItem):
-    """ Relative-Time Axis-Item
-
-    Axis Item that displays timestamps as difference in seconds to an given
-    start time. Example: start-time 01:00:00 and tick is 01:00:10 -> "+10s" will
-    be displayed at the position of the tick
-    """
 
     def __init__(self, *args, **kwargs):
-        """ Create new RelativeTimeAxisItem and set start to 0.
+        """Relative-Time Axis-Item
+
+        Axis Item that displays timestamps as difference in seconds to an given
+        start time. Example: start-time 01:00:00 and tick is 01:00:10 -> "+10s" will
+        be displayed at the position of the tick.
+
         Args:
-            *args: See arguments of AxisItem
-            **kwargs: See arguments of AxisItem
+            *args: Arguments for base class AxisItem
+            **kwargs: Arguments for base class AxisItem
         """
         super().__init__(*args, **kwargs)
-        self.start = 0
+        self._start = 0.0
 
-    def set_start_time(self, timestamp) -> None:
-        """Sets the start time on which the relative timestamps should be
-        calculated from. This has to be done either by hand or as soon as
-        the first timestamp get's available.
-
-        Args:
-            timestamp: Timestamp that represents the start time
-
-        Returns:
-            None
-        """
-        self.start = timestamp
-
-    def tickStrings(self, values, scale, spacing) -> List[str]:
+    def tickStrings(self, values: Iterable[float], scale: float, spacing: float) -> List[str]:
         """Translate timestamp differences from a point in time to the
         start-time to readable strings in seconds.
 
         Args:
-            values: Positions from the axis that are supposed to be labeled
+            values: Positions on the axis that are supposed to be labeled
             scale: See AxisItem Documentation
             spacing: See AxisItem Documentation
 
@@ -104,6 +100,22 @@ class RelativeTimeAxisItem(AxisItem):
             + f"{self._cut_to_n_decimals(value - self.start, 2)}s"
             for value in values
         ]
+
+    @property
+    def start(self) -> float:
+        """Start time on which the relative timestamps should be calculated from."""
+        return self._start
+
+    @start.setter
+    def start(self, timestamp: float) -> None:
+        """Sets the start time on which the relative timestamps should be
+        calculated from. This has to be done either by hand or as soon as
+        the first timestamp get's available.
+
+        Args:
+            timestamp: Timestamp that represents the start time
+        """
+        self._start = timestamp
 
     @staticmethod
     def _cut_to_n_decimals(value: float, decimal_count: int) -> float:

@@ -6,14 +6,14 @@ from typing import Optional, Type, Union, Dict
 
 from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
 
-from accsoft_gui_pyqt_widgets.graph import (LiveBarGraphItem,
-                                            LiveTimestampMarker,
-                                            LiveInjectionBarGraphItem,
-                                            LivePlotCurve,
-                                            ExPlotWidget,
-                                            ExPlotWidgetConfig,
-                                            DataModelBasedItem,
-                                            PlotWidgetStyle)
+from accwidgets.graph import (LiveBarGraphItem,
+                              LiveTimestampMarker,
+                              LiveInjectionBarGraphItem,
+                              LivePlotCurve,
+                              ExPlotWidget,
+                              ExPlotWidgetConfig,
+                              DataModelBasedItem,
+                              PlotWidgetStyle)
 
 from .mock_data_source import MockDataSource
 from .mock_timing_source import MockTimingSource

@@ -6,33 +6,27 @@ import sys
 
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 import example_sources
 
 
 class MainWindow(QMainWindow):
-    """Example for the usage of the Extended PlotWidget in an QMainWindow"""
 
     # pylint: disable=too-few-public-methods
     def __init__(self, *args, **kwargs):
-        """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
-        plot_config = accgraph.ExPlotWidgetConfig(
-            time_span=30,
-            plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
-            time_progress_line=False,
-            scrolling_plot_fixed_x_range=True,
-            scrolling_plot_fixed_x_range_offset=0.0
+        # We want to create a scrolling plot widget showing 30 seconds of data
+        self.plot = accgraph.ScrollingPlotWidget(
+            time_span=30.0,
+            is_xrange_fixed=True
         )
-        self.plot = accgraph.ExPlotWidget(config=plot_config)
-        # Create example update sources for data and time
+        # 5 different sources for data for different types of data visualization
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=20
         )
         data_source_2 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=4, updates_per_second=1
         )
-
         data_source_3 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=-4, updates_per_second=1, types_to_emit=[
                 example_sources.SinusCurveSourceEmitTypes.BAR
@@ -48,10 +42,11 @@ class MainWindow(QMainWindow):
                 example_sources.SinusCurveSourceEmitTypes.INFINITELINE
             ]
         )
-        self.plot.plotItem.add_layer(
-            identifier="layer_1"
+        # Let's add a second y axis to our plot
+        self.plot.add_layer(
+            layer_id="layer_1"
         )
-        # Add graph items to the plot
+        # A bar graph with green bars and blue borders
         bargraph = self.plot.addBarGraph(
             layer="layer_1",
             data_source=data_source_3,
@@ -59,14 +54,19 @@ class MainWindow(QMainWindow):
             pen="b",
             width=0.75
         )
+        # A visual item visually similar to an error bar with an
+        # label representing the injection of particles
         injectionbar = self.plot.addInjectionBar(
             layer="layer_1",
             data_source=data_source_4,
             pen={"color": "b", "width": 3}
         )
+        # Vertical Lines with labels that mark specific timestamps
         self.plot.addTimestampMarker(
             data_source=data_source_5
         )
+        # As in pyqtgraph, scrolling scatter plots are curves with
+        # symbols but without a pen connecting each data point
         scatter_plot = self.plot.addCurve(
             data_source=data_source_2,
             pen=None,
@@ -75,9 +75,12 @@ class MainWindow(QMainWindow):
             symbolSize=8,
             symbolBrush=(255, 0, 0, 255)
         )
-        curve_plot = self.plot.addCurve(data_source=data_source_1, pen={"color": "r", "width": 3})
-        # Create Legend
-        legend_item = self.plot.plotItem.addLegend()
+        # A red curve with a thickness of 3
+        curve_plot = self.plot.addCurve(
+            data_source=data_source_1, pen={"color": "r", "width": 3}
+        )
+        # Let's create a legend item and add all our created items to it
+        legend_item = self.plot.addLegend()
         legend_item.addItem(item=curve_plot, name="Curve")
         legend_item.addItem(item=bargraph, name="Bar Graph")
         legend_item.addItem(item=scatter_plot, name="Scatter Plot")

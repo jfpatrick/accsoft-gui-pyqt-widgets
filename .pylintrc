@@ -140,12 +140,16 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         # Own disabled
+        fixme,
+        bad-continuation, # Related to https://github.com/PyCQA/pylint/issues/289
         too-few-public-methods,
         logging-fstring-interpolation,
         unnecessary-pass,
         too-many-lines,
-        fixme,
-        bad-continuation # Related to https://github.com/PyCQA/pylint/issues/289
+        # We prefer to put the docstring into __init__(), at one point
+        # should replace this disable with a pylint plugin that checks,
+        # if __init__() actually has this docstring
+        missing-class-docstring,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

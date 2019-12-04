@@ -3,7 +3,7 @@
 Goal of this repository is to create new Widgets based on PyQtGraph that meet the special plotting needs mentioned in the [Requirements](https://wikis.cern.ch/display/ACCPY/Charting+libraries#Chartinglibraries-Featurewishlist) and more.
 
 ## Installation
-Dependencies that are mandatory for using the library are listed in [requirements.txt](../../accsoft_gui_pyqt_widgets/graph/requirements.txt). Dependencies that are necessary for development and executing tests are listed in [dev_requirements.txt](../../accsoft_gui_pyqt_widgets/graph/dev_requirements.txt). They will be collected automatically by [setup.py](../../setup.py) and don't have to be installed by hand. Refer to the [README.md](../../README.md) for installation.
+Dependencies that are mandatory for using the library are listed in [requirements.txt](../../accwidgets/graph/requirements.txt). Dependencies that are necessary for development and executing tests are listed in [dev_requirements.txt](../../accwidgets/graph/dev_requirements.txt). They will be collected automatically by [setup.py](../../setup.py) and don't have to be installed by hand. Refer to the [README.md](../../README.md) for installation.
 
 
 ## Components of this Project

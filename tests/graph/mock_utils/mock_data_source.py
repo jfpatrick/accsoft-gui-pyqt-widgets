@@ -2,7 +2,7 @@
 
 from typing import List, Union, Type, Any
 
-import accsoft_gui_pyqt_widgets.graph as accgraph
+from accwidgets import graph as accgraph
 
 
 class MockDataSource(accgraph.UpdateSource):
@@ -23,13 +23,13 @@ class MockDataSource(accgraph.UpdateSource):
         """
         if type_to_emit == accgraph.PointData and isinstance(value, float):
             new_data = accgraph.PointData(x_value=timestamp, y_value=value)
-            self.sig_data_update[accgraph.PointData].emit(new_data)
+            self.sig_new_data[accgraph.PointData].emit(new_data)
         elif type_to_emit == accgraph.BarData and isinstance(value, List):
             new_data = accgraph.BarData(x_value=timestamp, y_value=value[0], height=value[1])
-            self.sig_data_update[accgraph.BarData].emit(new_data)
+            self.sig_new_data[accgraph.BarData].emit(new_data)
 
     def emit_new_object(
             self,
             object_to_emit: Any):
         """Emit already created object with the """
-        self.sig_data_update[type(object_to_emit)].emit(object_to_emit)
+        self.sig_new_data[type(object_to_emit)].emit(object_to_emit)

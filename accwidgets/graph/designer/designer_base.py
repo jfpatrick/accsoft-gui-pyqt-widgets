@@ -9,7 +9,7 @@ from typing import Type, Optional
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtDesigner import QDesignerFormEditorInterface, QPyDesignerCustomWidgetPlugin
-from accsoft_gui_pyqt_widgets.graph.designer import designer_check
+from accwidgets.graph.designer import designer_check
 
 
 def _icon(name: str) -> QIcon:
@@ -23,17 +23,20 @@ def _icon(name: str) -> QIcon:
 
 
 class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
-    """
-    Base for ExPlotWidget based plugins for QtDesigner.
-    Use the factory method for creating plugin classes from this.
-    Make sure this class is not included in your modules namespace
-    that is imported from QtDesigner. QtDesigner will try to initialize
-    this plugin which will result in an error message.
-    """
 
     # pylint: disable=invalid-name, no-self-use
 
     def __init__(self, widget_class: Type):
+        """
+        Base for ExPlotWidget based plugins for QtDesigner.
+        Use the factory method for creating plugin classes from this.
+        Make sure this class is not included in your modules namespace
+        that is imported from QtDesigner. QtDesigner will try to initialize
+        this plugin which will result in an error message.
+
+        Args:
+            widget_class: widget class this plugin is based on
+        """
         designer_check.set_designer()
         QPyDesignerCustomWidgetPlugin.__init__(self)
         self.initialized = False
