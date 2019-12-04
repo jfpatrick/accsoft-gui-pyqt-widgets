@@ -46,13 +46,13 @@ for package in PACKAGES:
 
 for usr_dep_file in FOUND_USER_DEPS_FILES:
     with open(os.path.join(usr_dep_file), "r") as f:
-        deps = f.read().split()
+        deps = f.read().split("\n")
         print(f"Collecting user dependencies:      {deps}")
         INSTALL_REQUIRES += deps
 
 for dev_dep_file in FOUND_DEV_DEPS_FILES:
     with open(os.path.join(dev_dep_file), "r") as f:
-        deps = f.read().split()
+        deps = f.read().split("\n")
         print(f"Collecting developer dependencies: {deps}")
         EXTRA_REQUIRES["testing"] += deps
 
