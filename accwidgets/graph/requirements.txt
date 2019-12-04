@@ -1,4 +1,4 @@
 numpy~=1.16
 scipy>=1.1&&<2
 QtPy>=1.7&&<2
-pyqtgraph~=0.10.0
+pyqtgraph @ git+ssh://git@gitlab.cern.ch:7999/acc-co/accsoft/gui/accsoft-gui-pyqtgraph.git@fix/ACCPY-428_NAN_missing_curves#egg=pyqtgraph
