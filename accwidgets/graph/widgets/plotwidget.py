@@ -897,6 +897,25 @@ class ExPlotWidgetProperties(XAxisSideOptions, DefaultYAxisSideOptions, GridOrie
         axis_range: Dict = json.loads(self.axisRanges)
         removed_layer_ids = [l for l in self._get_layer_ids() if l not in new]
         added_layer_ids = [l for l in new if l not in self._get_layer_ids()]
+        items_to_move = []
+        if removed_layer_ids or added_layer_ids:
+            # Any layer change at all
+            for name in old:
+                # Take ownership of items before deleting their ViewBox
+                items_to_move += self.plotItem.layer(name).view_box.addedItems
+                for item in self.plotItem.layer(name).view_box.addedItems:
+                    item.setParentItem(self.plotItem.getViewBox())
+                self.plotItem.remove_layer(name)
+            for name in new:
+                self.plotItem.add_layer(name)
+                # Put items back to their layers, for the ones where the layer has not changed
+                items_to_add = [item for item in items_to_move if item.layer_id == name]
+                for item in items_to_add:
+                    try:
+                        self.addItem(item=item, layer=name)
+                        items_to_move.remove(item)
+                    except RuntimeError:
+                        print(item.label)
         if removed_layer_ids and added_layer_ids:
             # Rename
             for old_name, new_name in zip(removed_layer_ids, added_layer_ids):
@@ -904,6 +923,11 @@ class ExPlotWidgetProperties(XAxisSideOptions, DefaultYAxisSideOptions, GridOrie
                 axis_labels.update({new_name: axis_labels.pop(old_name)})
                 axis_auto_range.update({new_name: axis_auto_range.pop(old_name)})
                 axis_range.update({new_name: axis_range.pop(old_name)})
+                # If layer was renamed -> move item to new layer
+                item_from_this_layer = [item for item in items_to_move if item.layer_id == old_name]
+                for item in item_from_this_layer:
+                    self.addItem(item=item, layer=new_name)
+                    items_to_move.remove(item)
         elif removed_layer_ids:
             # Layer(s) removed
             for name in removed_layer_ids:
@@ -911,15 +935,9 @@ class ExPlotWidgetProperties(XAxisSideOptions, DefaultYAxisSideOptions, GridOrie
                 axis_labels.pop(name)
                 axis_auto_range.pop(name)
                 axis_range.pop(name)
-        if removed_layer_ids or added_layer_ids:
-            for name in old:
-                self.plotItem.remove_layer(name)
-            for name in new:
-                self.plotItem.add_layer(name)
         self.axisLabels = json.dumps(axis_labels)
         self.axisAutoRange = json.dumps(axis_auto_range)
         self.axisRanges = json.dumps(axis_range)
-
 
     @staticmethod
     def diff(list1, list2):
