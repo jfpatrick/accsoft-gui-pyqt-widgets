@@ -17,8 +17,14 @@ def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    # window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
-    window = _prepare_sliding_pointer_plot_test_window(qtbot=qtbot, time_span=5.0, should_create_timing_source=True)
+    window = _prepare_cyclic_plot_test_window(
+        qtbot=qtbot,
+        time_span=accgraph.TimeSpan(
+            left=5.0,
+            right=0.0,
+        ),
+        should_create_timing_source=True
+    )
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
     data = window.data_source_mock
@@ -86,9 +92,12 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(
+    window = _prepare_cyclic_plot_test_window(
         qtbot=qtbot,
-        time_span=20.0,
+        time_span=accgraph.TimeSpan(
+            left=20.0,
+            right=0.0,
+        ),
         should_create_timing_source=True
     )
     plot_item: pg.PlotItem = window.plot.plotItem
@@ -193,20 +202,18 @@ def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: Resum
         )
 
 
-def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: float, should_create_timing_source: bool = True):
+def _prepare_cyclic_plot_test_window(qtbot, time_span: accgraph.TimeSpan, should_create_timing_source: bool = True):
     """
     Prepare a window for testing
 
     Args:
         qtbot: qtbot pytest fixture
-        time_span (int): time span size, how much data should be shown
+        time_span: time span size, how much data should be shown
     """
     plot_config = accgraph.ExPlotWidgetConfig(
         plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
         time_span=time_span,
         time_progress_line=True,
-        is_xrange_fixed=True,
-        fixed_xrange_offset=0.0
     )
     window = PlotWidgetTestWindow(
         plot_config,

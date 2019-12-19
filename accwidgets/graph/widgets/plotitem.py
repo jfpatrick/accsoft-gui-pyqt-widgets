@@ -43,7 +43,7 @@ from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from accwidgets.graph.datamodel.datastructures import PointData
-from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, SlidingPointerTimeSpan, PlottingTimeSpan
+from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, CyclicPlotTimeSpan, BasePlotTimeSpan
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,15 +51,15 @@ _LOGGER = logging.getLogger(__name__)
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {
     PlotWidgetStyle.STATIC_PLOT: ExAxisItem,
-    PlotWidgetStyle.SLIDING_POINTER: RelativeTimeAxisItem,
+    PlotWidgetStyle.CYCLIC_PLOT: RelativeTimeAxisItem,
     PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
 }
 
 
 # Mapping of plotting styles to a fitting time span
-_STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[PlottingTimeSpan]]] = {
+_STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[BasePlotTimeSpan]]] = {
     PlotWidgetStyle.STATIC_PLOT: None,
-    PlotWidgetStyle.SLIDING_POINTER: SlidingPointerTimeSpan,
+    PlotWidgetStyle.CYCLIC_PLOT: CyclicPlotTimeSpan,
     PlotWidgetStyle.SCROLLING_PLOT: ScrollingPlotTimeSpan,
 }
 
@@ -104,13 +104,12 @@ class ExPlotItem(pg.PlotItem):
             **plotitem_kwargs
         )
         self._plot_config: ExPlotWidgetConfig = config
-        self._time_span: Optional[PlottingTimeSpan] = self._create_fitting_time_span()
-        self._last_timestamp: float = -1.0
+        self._time_span: Optional[BasePlotTimeSpan] = self._create_fitting_time_span()
         self._time_line: Optional[pg.InfiniteLine] = None
         self._style_specific_objects_already_drawn: bool = False
         self._layers: PlotItemLayerCollection
         self._timing_source_attached: bool
-        # Needed for the Sliding Pointer Curve
+        # Needed for the Cyclic Curve
         self._time_span_start_boundary: Optional[pg.InfiniteLine] = None
         self._time_span_end_boundary: Optional[pg.InfiniteLine] = None
         self._prepare_layers()
@@ -325,7 +324,7 @@ class ExPlotItem(pg.PlotItem):
         """
         super().clear()
         if not clear_decorators:
-            self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
+            self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 
     def removeItem(self, item: pg.GraphicsObject) -> None:
         """
@@ -424,13 +423,12 @@ class ExPlotItem(pg.PlotItem):
         if self._time_span:
             self._init_time_line_decorator(timestamp=timestamp)
             self._init_relative_time_axis_start(timestamp=timestamp)
-            if timestamp >= self._last_timestamp:
-                self._last_timestamp = timestamp
-                self._time_span.update(timestamp=self._last_timestamp)
+            if np.isnan(self.last_timestamp) or timestamp >= self.last_timestamp:
+                self._time_span.update(timestamp=timestamp)
                 self._handle_scrolling_plot_fixed_xrange_update()
                 self._update_time_line_decorator(
                     timestamp=timestamp,
-                    position=self.time_span.x_pos(self._last_timestamp)
+                    position=self.time_span.x_pos(self.last_timestamp)
                 )
             self._update_children_items_timing()
             self._draw_style_specific_objects()
@@ -644,20 +642,23 @@ class ExPlotItem(pg.PlotItem):
         """
         if hasattr(self, "_plot_config") and self._plot_config is not None:
             if (
-                    self._plot_config.time_span != config.time_span
-                    or self._plot_config.fixed_xrange_offset != config.fixed_xrange_offset
-                    or self._plot_config.plotting_style != config.plotting_style
+                self._plot_config.time_span != config.time_span
+                or self._plot_config.plotting_style != config.plotting_style
             ):
                 self._plot_config = config
+                items_to_recreate = self.live_items
                 self._remove_child_items_affected_from_style_change()
-                self._recreate_child_items_with_new_config()
+                self._recreate_child_items_with_new_config(items_to_recreate)
                 self._time_span = self._create_fitting_time_span()
                 self._update_decorators()
                 self._update_bottom_and_top_axis_style(style=config.plotting_style)
             elif self.plot_config.time_progress_line != config.time_progress_line:
                 self._plot_config = config
                 if config.time_progress_line:
-                    self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
+                    timestamp = self.last_timestamp
+                    if np.isnan(timestamp):
+                        timestamp = 0.0
+                    self._init_time_line_decorator(timestamp=timestamp, force=True)
                 else:
                     self.removeItem(self._time_line)
                     self._time_line = None
@@ -876,7 +877,7 @@ class ExPlotItem(pg.PlotItem):
     @property
     def last_timestamp(self) -> float:
         """Latest timestamp that is known to the plot."""
-        return self._last_timestamp
+        return self._time_span.last_timestamp
 
     @property
     def plot_config(self) -> ExPlotWidgetConfig:
@@ -884,7 +885,7 @@ class ExPlotItem(pg.PlotItem):
         return self._plot_config
 
     @property
-    def time_span(self) -> Optional[PlottingTimeSpan]:
+    def time_span(self) -> Optional[BasePlotTimeSpan]:
         """Time span for the current plot"""
         if self._time_span is None:
             warnings.warn("The plot does not have a time span in this configuration.", RuntimeWarning)
@@ -907,15 +908,16 @@ class ExPlotItem(pg.PlotItem):
             timestamp: Position where to create the
             force: If true, a new time line will be created
         """
-        if self._plot_config.time_progress_line and (force or self._last_timestamp == -1.0):
+        if self._plot_config.time_progress_line and (force or np.isnan(self.last_timestamp)):
             label_opts = {"movable": True, "position": 0.96}
             if self._time_line is not None:
                 self.removeItem(self._time_line)
                 self._time_line = None
+            ts = timestamp if not np.isnan(timestamp) else 0.0
             self._time_line = self.addLine(
-                timestamp,
+                ts,
                 pen=(pg.mkPen(80, 80, 80)),
-                label=datetime.fromtimestamp(timestamp).strftime("%H:%M:%S"),
+                label=datetime.fromtimestamp(ts).strftime("%H:%M:%S"),
                 labelOpts=label_opts,
             )
 
@@ -929,7 +931,7 @@ class ExPlotItem(pg.PlotItem):
         Redraw the timing line according to a passed timestamp. Alternatively
         the line can also be drawn at a custom position by providing the
         position parameter, if the position is different from the provided
-        timestamp (f.e. for the sliding pointer plot)
+        timestamp (f.e. for the cyclic plot)
 
         Args:
             timestamp: Timestamp of the time that the line represents
@@ -947,17 +949,16 @@ class ExPlotItem(pg.PlotItem):
 
     def _config_contains_scrolling_style_with_fixed_xrange(self) -> bool:
         return(
-            self._plot_config.is_xrange_fixed
-            and not np.isnan(self._plot_config.fixed_xrange_offset)
-            and (self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT)
+            self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT
             and self._scrolling_fixed_xrange_activated
+            and self._plot_config.time_span.finite
         )
 
     def _handle_scrolling_plot_fixed_xrange_update(self) -> None:
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
-        if self._config_contains_scrolling_style_with_fixed_xrange():
-            x_range_min: float = self._last_timestamp - self._plot_config.time_span + self._plot_config.fixed_xrange_offset
-            x_range_max: float = self._last_timestamp + self._plot_config.fixed_xrange_offset
+        if self._config_contains_scrolling_style_with_fixed_xrange() and not np.isnan(self.last_timestamp):
+            x_range_min: float = self.last_timestamp - self._plot_config.time_span.left_boundary_offset
+            x_range_max: float = self.last_timestamp - self._plot_config.time_span.right_boundary_offset
             x_range: Tuple[float, float] = (x_range_min, x_range_max)
             self.getViewBox().setRange(xRange=x_range, padding=0.0)
 
@@ -973,8 +974,8 @@ class ExPlotItem(pg.PlotItem):
             new_axis: pg.AxisItem = self._create_fitting_axis_item(
                 config_style=style, orientation=pos, parent=self
             )
-            if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._time_span, SlidingPointerTimeSpan):
-                new_axis.start = self._time_span.start
+            if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._time_span, CyclicPlotTimeSpan):
+                new_axis.start = self._time_span.prev_start
             new_axis.linkToView(self.vb)
             # Make the axis update its ticks
             new_axis.linkedViewChanged(view=self.vb)
@@ -1023,39 +1024,36 @@ class ExPlotItem(pg.PlotItem):
             return axis(orientation=orientation, parent=parent)
         return ExAxisItem(orientation=orientation, parent=self)
 
-    def _create_fitting_time_span(self) -> Optional[PlottingTimeSpan]:
-        """Create a time span object fitting to the passed config style.
-
-        Parameters like the time span start are (if possible) taken from the old time span.
-        Other parameters are taken from the
+    def _create_fitting_time_span(self) -> Optional[BasePlotTimeSpan]:
         """
-        for style, time_span in _STYLE_TO_TIMESPAN_MAPPING.items():
-            if self._plot_config.plotting_style != style:
-                continue
-            time_span_kwargs = {}
-            try:
-                if self._time_span is not None and self._time_span.start != 0:
-                    time_span_kwargs["start"] = self._time_span.start
-            except AttributeError:
-                pass
-            time_span_kwargs["size"] = self._plot_config.time_span
-            time_span_kwargs["xrange_offset"] = self._plot_config.fixed_xrange_offset
-            if time_span:
-                return time_span(**time_span_kwargs)
-        return None
+        Create a time span object fitting to the passed config style. Parameters like the
+        time span start and last time stamp are (if possible) taken from the old time span.
+        """
+        ts = None
+        try:
+            time_span = _STYLE_TO_TIMESPAN_MAPPING.get(self._plot_config.plotting_style)
+            ts = time_span(time_span=self.plot_config.time_span)
+            ts.update(self.time_span._start)
+            ts.update(self.time_span._last_time_stamp)
+        except (AttributeError, TypeError):
+            # Attribute Error -> self._plot_config is not yet defined
+            #                    (can happen in Qt Designer)
+            # Type Error      -> No Time Span Object to initialize
+            pass
+        return ts
 
     def _draw_style_specific_objects(self) -> None:
         """Draw objects f.e. lines that are part of a specific plotting style
 
-        - **Sliding Pointer**: Line at the time span start and end
+        - **CyclicPlotWidget**: Line at the time span start and end
         """
         if (
-            self._plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
-            and self._last_timestamp != -1
+            self._plot_config.plotting_style == PlotWidgetStyle.CYCLIC_PLOT
+            and not np.isnan(self.last_timestamp)
             and not self._style_specific_objects_already_drawn
         ):
-            start = self.time_span.start
-            end = start + self._plot_config.time_span
+            start = self.time_span._start
+            end = self.time_span._end
             self._time_span_start_boundary = self.addLine(
                 x=start, pen=pg.mkPen(128, 128, 128)
             )
@@ -1065,7 +1063,7 @@ class ExPlotItem(pg.PlotItem):
             self._style_specific_objects_already_drawn = True
 
     def _update_children_items_timing(self) -> None:
-        """Update timestamp in all items added to the plotitem"""
+        """Update timestamp in all items added to the plot item."""
         for item in self.items:
             if isinstance(item, DataModelBasedItem):
                 item.update_item()
@@ -1076,7 +1074,7 @@ class ExPlotItem(pg.PlotItem):
         Args:
             timestamp: timestamp to set the start time of the axis to
         """
-        if self._last_timestamp == -1.0:
+        if np.isnan(self.last_timestamp):
             for pos in ["bottom", "top"]:
                 axis = self.getAxis(pos)
                 if isinstance(axis, RelativeTimeAxisItem):
@@ -1192,19 +1190,19 @@ class ExPlotItem(pg.PlotItem):
         Additionally all plotting style specific elements like time span boundaries or timing lines
         are removed.
         """
-        for layer, item in product(self.layers, self.live_items):
-            if item.layer_id == layer.id:
-                layer.view_box.removeItem(item)
+        for item in self.live_items:
+            self.removeItem(item)
         self.removeItem(self._time_line)
         if self._time_span is not None:
-            for item in [self._time_span_start_boundary, self._time_span_end_boundary]:
-                if item is not None:
-                    self.removeItem(item)
+            if self._time_span_start_boundary is not None:
+                self.removeItem(self._time_span_start_boundary)
+            if self._time_span_end_boundary is not None:
+                self.removeItem(self._time_span_end_boundary)
         self._time_line = None
         self._time_span_start_boundary = None
         self._time_span_end_boundary = None
 
-    def _recreate_child_items_with_new_config(self) -> None:
+    def _recreate_child_items_with_new_config(self, items_to_recreate: List[DataModelBasedItem]) -> None:
         """
         Replace all items with ones that fit the given config.
         Datamodels are preserved.
@@ -1213,20 +1211,22 @@ class ExPlotItem(pg.PlotItem):
         if they are not, they will not be recreated. After successful recreation the old
         items are removed from PlotItem.items
         """
-        for item in self.live_items:
-            if hasattr(item, "create_from"):
-                new_item = item.create_from(object_to_create_from=item)
+        for item in items_to_recreate:
+            try:
+                new_item = item.clone(object_to_create_from=item)
                 layer = item.layer_id
                 self.addItem(layer=layer, item=new_item)
                 self.removeItem(item)
+            except AttributeError:
+                pass
 
     def _update_decorators(self) -> None:
         """Update the decorators f.e. line representing current timestamp, time span boundaries"""
-        if self._last_timestamp:
+        if not np.isnan(self.last_timestamp):
             self._style_specific_objects_already_drawn = False
             self._draw_style_specific_objects()
         # we have to recreate the new
-        self._init_time_line_decorator(timestamp=self._last_timestamp, force=True)
+        self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 
 
 class PlotItemLayer:

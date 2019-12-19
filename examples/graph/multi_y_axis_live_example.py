@@ -1,6 +1,6 @@
 """
-Example application of a plot displaying two sliding pointer
-curves plotted against two independent y axes. A sliding pointer
+Example application of a plot displaying two cyclic plot
+curves plotted against two independent y axes. A cyclic plot
 curve displays data similar to a heart rate monitor by overdrawing
 itself when new data arrives. The y axes are part of a so called
 'layer' that is composed from an view box, the are the curve is
@@ -36,9 +36,9 @@ class MainWindow(QMainWindow):
         data_source_2 = example_sources.SinusCurveSource(x_offset=0.0, y_offset=3)
         # Create a sliding plot that shows 10 seconds of data, the current time should
         # be represented as a vertical line with time stamp
-        self.plot = accgraph.SlidingPlotWidget(
+        self.plot = accgraph.CyclicPlotWidget(
             timing_source=timing_source,
-            time_span=10.0,
+            time_span=accgraph.TimeSpan(10.0),
             time_progress_line=True,
         )
         # Add a layer with y-axis on which our second curve should be plotted

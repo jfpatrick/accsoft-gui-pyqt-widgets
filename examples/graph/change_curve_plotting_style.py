@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         # In the beginning we want to show 10 seconds of data
-        self.time_span = 10.0
+        self.time_span = accgraph.TimeSpan(left=10.0, right=0.0)
         # Two sources of sinus curves with different update frequencies
         data_source_1 = example_sources.SinusCurveSource(
             x_offset=0.0, y_offset=0, updates_per_second=20, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         )
         # In the beginning the plot should show the data as sliding pointer curves
         plot_config = accgraph.ExPlotWidgetConfig(
-            plotting_style=accgraph.PlotWidgetStyle.SLIDING_POINTER,
+            plotting_style=accgraph.PlotWidgetStyle.CYCLIC_PLOT,
             time_progress_line=False,
             time_span=self.time_span,
         )
@@ -55,9 +55,9 @@ class MainWindow(QMainWindow):
         # As soon as one of the inputs have been changed, we take the
         # value and update our plots configuration accordingly
         self.style_combobox.currentTextChanged.connect(self.change_plot_config)
-        self.time_span_input.valueChanged.connect(self.change_plot_config)
-        self.offset_input.valueChanged.connect(self.change_plot_config)
-        self.offset_checkbox.stateChanged.connect(self.change_plot_config)
+        self.time_span_input_left.valueChanged.connect(self.change_plot_config)
+        self.time_span_input_right.valueChanged.connect(self.change_plot_config)
+        self.time_span_left_checkbox.stateChanged.connect(self.change_plot_config)
         self.time_line_checkbox.stateChanged.connect(self.change_plot_config)
 
     def create_input(self, main_layout: QGridLayout, main_container: QWidget):
@@ -65,38 +65,38 @@ class MainWindow(QMainWindow):
         # Style Combobox that lets you switch the plot's display style
         self.style_combobox = QComboBox()
         label_1 = QLabel("Plot Style")
-        self.style_combobox.addItems(["Sliding", "Scrolling"])
+        self.style_combobox.addItems(["Cyclic", "Scrolling"])
         main_layout.addWidget(label_1)
         main_layout.addWidget(self.style_combobox)
         self.add_sperator(main_layout)
         # Input that lets you change the time span of the displayed data
-        self.time_span_input = QSpinBox()
-        self.time_span_input.setValue(self.time_span)
-        self.time_span_input.setRange(1, 100)
-        label_2 = QLabel("Time Span")
+        self.time_span_input_left = QSpinBox()
+        self.time_span_input_left.setValue(int(self.time_span.left_boundary_offset))
+        self.time_span_input_left.setRange(1, 100)
+        label_2 = QLabel("Left Time Span Boundary")
         main_layout.addWidget(label_2)
-        main_layout.addWidget(self.time_span_input)
+        main_layout.addWidget(self.time_span_input_left)
         self.add_sperator(main_layout)
         main_container.setLayout(main_layout)
         # Input that lets you add an offset to the time span of the
         # displayed data.
-        self.offset_input = QSpinBox()
+        self.time_span_input_right = QSpinBox()
         # If activated the value of the offset_input is used
-        self.offset_checkbox = QCheckBox()
+        self.time_span_left_checkbox = QCheckBox()
         # If activated, the current timestamp is represented
         # by a vertical line with a label showing the current time
         self.time_line_checkbox = QCheckBox()
-        self.offset_checkbox.setChecked(False)
-        self.offset_input.setRange(-10.0, 10.0)
-        self.offset_input.setValue(0.0)
-        label_3 = QLabel("Offset")
-        label_4 = QLabel("Fixed x-range")
+        self.time_span_left_checkbox.setChecked(False)
+        self.time_span_input_right.setRange(-10.0, 10.0)
+        self.time_span_input_right.setValue(0.0)
+        label_3 = QLabel("Right Time Span Boundary")
+        label_4 = QLabel("Ignore Left Border")
         label_5 = QLabel("Show time line")
         main_layout.addWidget(label_3)
-        main_layout.addWidget(self.offset_input)
+        main_layout.addWidget(self.time_span_input_right)
         self.add_sperator(main_layout)
         main_layout.addWidget(label_4)
-        main_layout.addWidget(self.offset_checkbox)
+        main_layout.addWidget(self.time_span_left_checkbox)
         self.add_sperator(main_layout)
         main_layout.addWidget(label_5)
         main_layout.addWidget(self.time_line_checkbox)
@@ -114,17 +114,19 @@ class MainWindow(QMainWindow):
 
     def change_plot_config(self, *_) -> None:
         """Change the plot's configuration with the values from the inputs"""
-        time_span = self.time_span_input.value()
-        fixed_range = self.offset_checkbox.isChecked()
-        offset = self.offset_input.value() if fixed_range else np.nan
-        style = accgraph.PlotWidgetStyle.SLIDING_POINTER if self.style_combobox.currentText() == "Sliding" else accgraph.PlotWidgetStyle.SCROLLING_PLOT
+        ts_left = self.time_span_input_left.value()
+        ts_right = self.time_span_input_right.value()
+        ts_left_ignored = self.time_span_left_checkbox.isChecked()
+        style = accgraph.PlotWidgetStyle.CYCLIC_PLOT if self.style_combobox.currentText() == "Cyclic" else accgraph.PlotWidgetStyle.SCROLLING_PLOT
+        if ts_left_ignored and style == accgraph.PlotWidgetStyle.SCROLLING_PLOT:
+            ts = accgraph.TimeSpan(None, ts_right)
+        else:
+            ts = accgraph.TimeSpan(ts_left, ts_right)
         # Create new configuration object according to the values
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=style,
             time_progress_line=self.time_line_checkbox.isChecked(),
-            time_span=time_span,
-            is_xrange_fixed=fixed_range,
-            fixed_xrange_offset=offset
+            time_span=ts,
         )
         # Update our plot with the new configuration
         self.plot.update_config(config=plot_config)

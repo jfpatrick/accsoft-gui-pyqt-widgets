@@ -22,9 +22,10 @@ from accwidgets.graph import (LiveBarGraphItem,
                               ScrollingTimestampMarker,
                               ScrollingInjectionBarGraphItem,
                               ScrollingPlotCurve,
-                              SlidingPointerPlotCurve,
+                              CyclicPlotCurve,
                               TimeAxisItem,
-                              UpdateSource)
+                              UpdateSource,
+                              TimeSpan)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
@@ -43,7 +44,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
     """
 
     values = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
-    if style == PlotWidgetStyle.SLIDING_POINTER:
+    if style == PlotWidgetStyle.CYCLIC_PLOT:
         expected = ["0.0s", "+1.0s", "+2.0s", "+3.0s", "+4.0s", "+5.0s"]
         type_correct = isinstance(plot_item.getAxis("bottom"), RelativeTimeAxisItem)
         strings_correct = plot_item.getAxis("bottom").tickStrings(values, 1, 1) == expected
@@ -62,7 +63,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
 @pytest.mark.parametrize("time_span", [2, 100])
 @pytest.mark.parametrize("plotting_style", [
     PlotWidgetStyle.SCROLLING_PLOT,
-    PlotWidgetStyle.SLIDING_POINTER
+    PlotWidgetStyle.CYCLIC_PLOT
 ])
 @pytest.mark.parametrize("time_line", [False, True])
 @pytest.mark.parametrize("item_to_add", [
@@ -120,8 +121,8 @@ def test_all_available_widget_configurations(
 _test_change_plot_config_on_running_plot_time_span_change = list(itertools.product([10.0, 30.0], [10.0, 30.0]))
 _test_change_plot_config_on_running_plot_x_offset_change = list(itertools.product([-5.0, 0.0, 5.0], [-5.0, 0.0, 5.0]))
 _test_change_plot_config_on_running_plot_plotting_style_change = list(itertools.product(
-    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER],
-    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER]
+    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT],
+    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT]
 ))
 _test_change_plot_config_on_running_plot_time_line_change = list(itertools.product([True, False], [True, False]))
 _test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, float]]] = {
@@ -153,12 +154,15 @@ def test_change_plot_config_on_running_plot(
     time_line_change: List[bool],
 ):
     """Test if changes in the configuration are applied correctly in an already running plot"""
+    left = time_span_change[0] - x_offset_change[0]
+    right = -x_offset_change[0]
     plot_config_before_change = ExPlotWidgetConfig(
-        time_span=time_span_change[0],
+        time_span=TimeSpan(
+            left=left,
+            right=right,
+        ),
         plotting_style=plotting_style_change[0],
         time_progress_line=time_line_change[0],
-        is_xrange_fixed=True,
-        fixed_xrange_offset=x_offset_change[0]
     )
     window = MinimalTestWindow(
         plot_config=plot_config_before_change,
@@ -176,7 +180,7 @@ def test_change_plot_config_on_running_plot(
     emit_fitting_value(LivePlotCurve, ds_curve, 10.0, 0.0)
     emit_fitting_value(LivePlotCurve, ds_curve, 20.0, 0.0)
     emit_fitting_value(LivePlotCurve, ds_curve, 30.0, 0.0)
-    if PlotWidgetStyle.SLIDING_POINTER not in plotting_style_change:
+    if PlotWidgetStyle.CYCLIC_PLOT not in plotting_style_change:
         # Bar graph in its own layer
         plotwidget.add_layer(layer_id="layer_1")
         plotwidget.addBarGraph(  # type: ignore
@@ -214,12 +218,15 @@ def test_change_plot_config_on_running_plot(
         plotwidget.plotItem._time_span_start_boundary,
         plotwidget.plotItem._time_span_end_boundary,
     ]
+    left = time_span_change[1] - x_offset_change[1]
+    right = -x_offset_change[1]
     plot_config_after_change = ExPlotWidgetConfig(
-        time_span=time_span_change[1],
+        time_span=TimeSpan(
+            left=left,
+            right=right,
+        ),
         plotting_style=plotting_style_change[1],
         time_progress_line=time_line_change[1],
-        is_xrange_fixed=True,
-        fixed_xrange_offset=x_offset_change[1]
     )
     plotwidget.update_config(plot_config_after_change)
     check_scrolling_plot_with_fixed_xrange(
@@ -232,8 +239,7 @@ def test_change_plot_config_on_running_plot(
 
 
 @pytest.mark.parametrize("plotting_style", [
-    PlotWidgetStyle.SCROLLING_PLOT,
-    PlotWidgetStyle.SLIDING_POINTER
+    PlotWidgetStyle.CYCLIC_PLOT
 ])
 def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     """
@@ -241,7 +247,8 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     as well as from the PlotItem
     """
     config = ExPlotWidgetConfig(
-        plotting_style=plotting_style
+        time_span=TimeSpan(60),
+        plotting_style=plotting_style,
     )
     window = MinimalTestWindow(plot_config=config)
     window.show()
@@ -281,7 +288,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     plot_widget.autoRange(padding=0.0)
     if plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
         expected = [[0.0, 3.0], [0.0, 3.0]]
-    elif plotting_style == PlotWidgetStyle.SLIDING_POINTER:
+    elif plotting_style == PlotWidgetStyle.CYCLIC_PLOT:
         expected = [
             [plot_item._time_span_start_boundary.pos()[0], plot_item._time_span_end_boundary.pos()[0]],
             [0.0, 3.0]
@@ -292,7 +299,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
 
 
 @pytest.mark.parametrize("config_style_change", [
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SLIDING_POINTER),
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT),
     (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT)
 ])
 def test_static_items_config_change(qtbot, config_style_change):
@@ -301,7 +308,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     present after switching the plot-items configuration
     """
     config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[0]
+        plotting_style=config_style_change[0],
     )
     window = MinimalTestWindow(plot_config=config)
     window.show()
@@ -320,7 +327,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     for item in items:
         assert item in plot_item.vb.addedItems
     config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[1]
+        plotting_style=config_style_change[1],
     )
     plot_item.update_config(config=config)
     for item in items:
@@ -367,7 +374,7 @@ def check_decorators(
         prior_items = [None, None, None]
     check_bottom_axis(plot_item=plot_item)
     check_time_line(plot_item=plot_item, prior_item=prior_items[0])
-    check_sliding_pointer_time_span_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
+    check_cyclic_time_span_boundaries(plot_item=plot_item, prior_items=prior_items[1:])
 
 
 def check_bottom_axis(plot_item: ExPlotItem):
@@ -394,14 +401,14 @@ def check_time_line(
             assert prior_item not in plot_item.vb.addedItems
 
 
-def check_sliding_pointer_time_span_boundaries(
+def check_cyclic_time_span_boundaries(
         plot_item: ExPlotItem,
         prior_items: Optional[List] = None,
 ):
     """Check if the time span boundaries on a sliding pointer plot are set correctly"""
     if prior_items is None:
         prior_items = []
-    boundaries_drawn = plot_item.plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER
+    boundaries_drawn = plot_item.plot_config.plotting_style == PlotWidgetStyle.CYCLIC_PLOT
     if boundaries_drawn:
         assert (plot_item._time_span_start_boundary is not None and plot_item._time_span_end_boundary is not None)
         assert plot_item._time_span_start_boundary in plot_item.items
@@ -470,8 +477,8 @@ def check_plot_curves(
             assert curve.opts.get(opt, None) == expected
         if plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
             assert isinstance(curve, ScrollingPlotCurve)
-        elif plot_item._plot_config.plotting_style == PlotWidgetStyle.SLIDING_POINTER:
-            assert isinstance(curve, SlidingPointerPlotCurve)
+        elif plot_item._plot_config.plotting_style == PlotWidgetStyle.CYCLIC_PLOT:
+            assert isinstance(curve, CyclicPlotCurve)
         assert isinstance(plot_item._time_line, pg.InfiniteLine)
         assert plot_item._time_line.value() == time_2
 

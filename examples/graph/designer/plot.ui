@@ -48,51 +48,53 @@
           <property name="plotTitle" stdset="0">
            <string>Static Plot</string>
           </property>
-          <property name="showGridX" stdset="0">
-           <bool>true</bool>
+          <property name="xAxisSide" stdset="0">
+           <enum>StaticPlotWidget::Both</enum>
           </property>
-          <property name="showGridY" stdset="0">
-           <bool>true</bool>
+          <property name="gridOrientation" stdset="0">
+           <enum>StaticPlotWidget::Both</enum>
           </property>
-          <property name="showTopAxis" stdset="0">
-           <bool>true</bool>
-          </property>
-          <property name="showRightAxis" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="additionalLayers" stdset="0">
-           <number>1</number>
+          <property name="layerIDs" stdset="0">
+           <stringlist>
+            <string>y_0</string>
+           </stringlist>
           </property>
           <property name="axisLabels" stdset="0">
-           <string>{&quot;bottom&quot;: &quot;x-axis&quot;, &quot;left&quot;: &quot;y-axis I&quot;, &quot;layer_0&quot;: &quot;y-axis II&quot;}</string>
+           <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;, &quot;y_0&quot;: &quot;&quot;}</string>
           </property>
           <property name="axisRanges" stdset="0">
-           <string>{&quot;y&quot;: [-3, 1], &quot;layer_0&quot;: [-1, 3]}</string>
+           <string>{&quot;x&quot;: [0, 1], &quot;y&quot;: [0, 1], &quot;y_0&quot;: [0, 1]}</string>
+          </property>
+          <property name="axisAutoRange" stdset="0">
+           <string>{&quot;x&quot;: true, &quot;y&quot;: true, &quot;y_0&quot;: true}</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="SlidingPlotWidget" name="sliding_plot">
+         <widget class="CyclicPlotWidget" name="cyclic_plot">
           <property name="toolTip">
            <string>Extended Plot Widget with live data plotting capabilities.</string>
           </property>
           <property name="plotTitle" stdset="0">
-           <string>Sliding Plot</string>
+           <string>Cyclic Plot</string>
           </property>
           <property name="showTimeProgressLine" stdset="0">
            <bool>true</bool>
           </property>
-          <property name="time_span" stdset="0">
+          <property name="leftTimeBoundary" stdset="0">
            <double>10.000000000000000</double>
           </property>
-          <property name="showGridX" stdset="0">
-           <bool>false</bool>
+          <property name="layerIDs" stdset="0">
+           <stringlist/>
           </property>
-          <property name="showGridY" stdset="0">
-           <bool>true</bool>
+          <property name="axisLabels" stdset="0">
+           <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;}</string>
           </property>
           <property name="axisRanges" stdset="0">
-           <string>{&quot;y&quot;: [0, 10]}</string>
+           <string>{&quot;x&quot;: [-0.5263157894736842, 10.526315789473685], &quot;y&quot;: [0, 1]}</string>
+          </property>
+          <property name="axisAutoRange" stdset="0">
+           <string>{&quot;x&quot;: true, &quot;y&quot;: true}</string>
           </property>
          </widget>
         </item>
@@ -106,32 +108,28 @@
         <property name="plotTitle" stdset="0">
          <string>Scrolling Plot</string>
         </property>
-        <property name="showTimeProgressLine" stdset="0">
-         <bool>true</bool>
+        <property name="layerIDs" stdset="0">
+         <stringlist>
+          <string>y_0</string>
+         </stringlist>
         </property>
-        <property name="time_span" stdset="0">
-         <double>20.000000000000000</double>
-        </property>
-        <property name="showGridX" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="showGridY" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="showTopAxis" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="additionalLayers" stdset="0">
-         <number>1</number>
+        <property name="axisLabels" stdset="0">
+         <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;, &quot;y_0&quot;: &quot;&quot;}</string>
         </property>
         <property name="axisRanges" stdset="0">
-         <string>{&quot;y&quot;: [0, 20], &quot;layer_0&quot;: [-10, 10]}</string>
+         <string>{&quot;x&quot;: [0, 1], &quot;y&quot;: [0.0, 20.0], &quot;y_0&quot;: [-10.0, 10.0]}</string>
         </property>
-        <property name="fixedXRange" stdset="0">
+        <property name="axisAutoRange" stdset="0">
+         <string>{&quot;x&quot;: true, &quot;y&quot;: false, &quot;y_0&quot;: false}</string>
+        </property>
+        <property name="rightTimeBoundary" stdset="0">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="leftTimeBoundary" stdset="0">
+         <double>20.000000000000000</double>
+        </property>
+        <property name="leftTimeBoundaryEnabled" stdset="0">
          <bool>true</bool>
-        </property>
-        <property name="fixedXRangeOffset" stdset="0">
-         <double>0.200000000000000</double>
         </property>
        </widget>
       </item>
@@ -147,7 +145,7 @@
    <header>accwidgets.graph.widgets.plotwidget</header>
   </customwidget>
   <customwidget>
-   <class>SlidingPlotWidget</class>
+   <class>CyclicPlotWidget</class>
    <extends>QGraphicsView</extends>
    <header>accwidgets.graph.widgets.plotwidget</header>
   </customwidget>

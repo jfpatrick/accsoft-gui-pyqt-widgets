@@ -32,10 +32,8 @@ class MainWindow(QMainWindow):
         )
         # Create a scrolling plot that shows 25 seconds of data
         self.plot = accgraph.ScrollingPlotWidget(
-            time_span=25.0,
+            time_span=accgraph.TimeSpan(left=25.0, right=0.0),
             time_progress_line=False,
-            is_xrange_fixed=True,
-            fixed_xrange_offset=0.0
         )
         # Add a blue curve with a thickness of 2 to our plot
         # Data for the curve is received by the passed data source

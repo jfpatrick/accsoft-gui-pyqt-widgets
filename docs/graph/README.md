@@ -19,14 +19,14 @@ Usage examples for different use cases and examples for updating the graph are p
 
 ### Live-Data Plotting
 
-One big feature that differentiates this library the easy-to-use Live-Data plotting capabilities without having to handle the saving and sorting of data by its timestamps yourself. The data can be displayed in to different styles, in a Scrolling and a Sliding Pointer format explained below.  
+One big feature that differentiates this library the easy-to-use Live-Data plotting capabilities without having to handle the saving and sorting of data by its timestamps yourself. The data can be displayed in to different styles, in a Scrolling and a Cyclic format explained below.
 
-![Sliding Pointer Widget](./img/Live_Plotting.png?raw=true "Sliding Pointer Widget")
+![Cyclic Plot Widget](./img/Live_Plotting.png?raw=true "Cyclic Plot Widget")
 
-#### Style I: Sliding Pointer
+#### Style I: Cyclic Plot
 The data is drawn in an fixed cycle. When the data reaches the cycle end, it starts overdrawing itself starting from the cycle start again. 
 
-![Sliding Pointer Widget](./img/SlidingPointerWidget.png?raw=true "Sliding Pointer Widget")
+![Cyclic Plot Widget](./img/SlidingPointerWidget.png?raw=true "Cyclic Plot Widget")
 
 #### Style II: Scrolling Plot
 As new data gets available, it is appended on the right site of the screen. The graph shows a fixed range of time from (currenttime - cyclesize) to currenttime.

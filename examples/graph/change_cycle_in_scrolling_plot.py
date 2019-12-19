@@ -39,8 +39,7 @@ class MainWindow(QMainWindow):
         # 10 seconds of data available to keep the x range from changing
         # in its scaling level
         self.plot = accgraph.ScrollingPlotWidget(
-            time_span=time_span,
-            is_xrange_fixed=True
+            time_span=accgraph.TimeSpan(left=time_span),
         )
         # We add two seperate layers with their own y axis to our plot
         self.plot.add_layer(layer_id="layer_1")
@@ -76,14 +75,14 @@ class MainWindow(QMainWindow):
         self.time_span_input = QSpinBox()
         self.time_span_input.setValue(time_span)
         self.time_span_input.setRange(1, 100)
-        label_2 = QLabel("s Time Span")
+        label_2 = QLabel("s Left Boundary")
         main_layout.addWidget(self.time_span_input)
         main_layout.addWidget(label_2)
         # Offset for the above mentioned time span.
         self.offset_input = QSpinBox()
         self.offset_input.setRange(-10.0, 10.0)
         self.offset_input.setValue(0.0)
-        label_3 = QLabel("s Offset")
+        label_3 = QLabel("s Right Boundary")
         main_layout.addWidget(self.offset_input)
         main_layout.addWidget(label_3)
         # Update the plots configuration on changes from the input elements
@@ -92,14 +91,14 @@ class MainWindow(QMainWindow):
 
     def change_plot_config(self, *_):
         """Change plot configuration depending on the input"""
-        time_span = self.time_span_input.value()
-        offset = self.offset_input.value()
+        time_span = accgraph.TimeSpan(
+            left=self.time_span_input.value(),
+            right=self.offset_input.value()
+        )
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
             time_progress_line=False,
             time_span=time_span,
-            is_xrange_fixed=True,
-            fixed_xrange_offset=offset
         )
         self.plot.update_config(config=plot_config)
 
