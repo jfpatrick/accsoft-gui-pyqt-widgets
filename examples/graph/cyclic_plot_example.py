@@ -32,9 +32,9 @@ class MainWindow(QMainWindow):
         # We want the plot to display a 10 second time span at all times, but instead
         # of scrolling in a sliding pointer way. Additionally we attach it to our created
         # source for timing updates
-        self.plot = accgraph.SlidingPlotWidget(
+        self.plot = accgraph.CyclicPlotWidget(
             timing_source=timing_source,
-            time_span=10,
+            time_span=accgraph.TimeSpan(left=10, right=0),
             time_progress_line=True,
         )
         # Add 2 curves attached to our sources for data updates, each displayed

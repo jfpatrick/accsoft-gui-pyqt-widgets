@@ -23,7 +23,10 @@ class MainWindow(QMainWindow):
             x_offset=0.0, y_offset=0, updates_per_second=5
         )
         # Our plot we want to add our curve to
-        self.plot = accgraph.ScrollingPlotWidget(parent=self)
+        self.plot = accgraph.ScrollingPlotWidget(
+            parent=self,
+            time_span=accgraph.TimeSpan(10.0)
+        )
         # A curve receiving its data from the prior defined
         # data source.
         self.plot.addCurve(data_source=data_source_1)

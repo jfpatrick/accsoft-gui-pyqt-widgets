@@ -9,9 +9,9 @@ from accwidgets.graph import (
     LivePlotCurve,
     ExPlotWidgetConfig,
     CurveDataWithTime,
-    SlidingPointerCurveData,
+    CyclicPlotCurveData,
     PlotWidgetStyle,
-    SlidingPointerPlotCurve,
+    CyclicPlotCurve,
     UpdateSource,
     PointData,
     InvalidDataStructureWarning,
@@ -30,7 +30,7 @@ def test_simple_linear_data_append(qtbot):
     timestamps = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
     datasets_delta = 0.25
     current_dataset_timestamp = 0.0
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5.0)
     _simple_linear_update(
         window.time_source_mock,
         window.data_source_mock,
@@ -44,7 +44,7 @@ def test_simple_linear_data_append(qtbot):
     curves = window.plot.plotItem.live_curves
     assert len(curves) == 1
     curve = curves[0]
-    assert isinstance(curve, SlidingPointerPlotCurve)
+    assert isinstance(curve, CyclicPlotCurve)
     assert curve.last_timestamp == 10.0
     buffer = _make_curve_from_buffer(curve)
     assert np.allclose(buffer.timestamps, expected_data)
@@ -56,7 +56,7 @@ def test_plot_after_first_timing_update(qtbot):
     Args:
         qtbot:
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -75,7 +75,7 @@ def test_plot_before_first_timing_update(qtbot):
     Args:
         qtbot:
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -110,7 +110,7 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -202,7 +202,7 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -277,7 +277,7 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     Args:
         qtbot:
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -457,8 +457,8 @@ def test_time_and_data_update_order(qtbot):
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window_1 = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
-    window_2 = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window_1 = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window_2 = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item_1 = window_1.plot.plotItem.live_curves[0]
     plot_item_2 = window_2.plot.plotItem.live_curves[0]
     time_1 = window_1.time_source_mock
@@ -495,7 +495,7 @@ def test_data_delivered_in_wrong_order(qtbot):
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -587,7 +587,7 @@ def test_timestamp_delivered_in_wrong_order(qtbot):
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -676,7 +676,7 @@ def test_no_timing_source_attached(qtbot):
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 2.0, should_create_timing_source=False)
+    window = _prepare_cyclic_plot_test_window(qtbot, 2.0, should_create_timing_source=False)
     plot_item = window.plot.plotItem.live_curves[0]
     data = window.data_source_mock
     data.create_new_value(0.5, 0.5)
@@ -790,7 +790,7 @@ def test_nan_values_in_scatter_plot(
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
 
 
-def _prepare_sliding_pointer_plot_test_window(
+def _prepare_cyclic_plot_test_window(
         qtbot,
         time_span: float,
         should_create_timing_source: bool = True
@@ -804,7 +804,7 @@ def _prepare_sliding_pointer_plot_test_window(
         time_span (int): time span size, how much data should be shown
     """
     plot_config = ExPlotWidgetConfig(
-        plotting_style=PlotWidgetStyle.SLIDING_POINTER,
+        plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
         time_span=time_span,
         time_progress_line=True,
     )
@@ -841,7 +841,7 @@ def _prepare_minimal_test_window(
 
 
 def _check_curves(
-    curve: SlidingPointerPlotCurve,
+    curve: CyclicPlotCurve,
     expected_full: CurveDataWithTime,
     expected_old: CurveDataWithTime,
     expected_new: CurveDataWithTime,
@@ -862,7 +862,7 @@ def _check_curves(
     return result
 
 
-def _make_curve_from_buffer(curve: SlidingPointerPlotCurve):
+def _make_curve_from_buffer(curve: CyclicPlotCurve):
     """For easier comparison of the buffers content, we wrap it in a curve object"""
     x_values, y_values = curve._data_model.full_data_buffer
     return CurveDataWithTime(
@@ -870,14 +870,14 @@ def _make_curve_from_buffer(curve: SlidingPointerPlotCurve):
     )
 
 
-def _make_curve_from_buffers_new_part(curve: SlidingPointerPlotCurve) -> CurveDataWithTime:
+def _make_curve_from_buffers_new_part(curve: CyclicPlotCurve) -> CurveDataWithTime:
     """
     A list of points (without interpolating the ends)
     from the data model that are part of the new curve.
     """
     x_values, y_values = curve._data_model.subset_for_xrange(
-        start=curve._parent_plot_item.time_span.curr_start,
-        end=curve._parent_plot_item.time_span.curr_end,
+        start=curve._parent_plot_item.time_span.start,
+        end=curve._parent_plot_item.time_span.end,
     )
     return CurveDataWithTime(
         timestamps=x_values,
@@ -886,7 +886,7 @@ def _make_curve_from_buffers_new_part(curve: SlidingPointerPlotCurve) -> CurveDa
     )
 
 
-def _make_curve_from_buffers_old_part(curve: SlidingPointerPlotCurve) -> CurveDataWithTime:
+def _make_curve_from_buffers_old_part(curve: CyclicPlotCurve) -> CurveDataWithTime:
     """
     A list of points (without interpolating the ends)
     from the data model that are part of the old curve.
@@ -903,7 +903,7 @@ def _make_curve_from_buffers_old_part(curve: SlidingPointerPlotCurve) -> CurveDa
 
 
 def _check_plot_data_items_data(
-    curve: SlidingPointerPlotCurve,
+    curve: CyclicPlotCurve,
     expected_nc_x: Union[np.ndarray, List[float], None] = None,
     expected_nc_y: Union[np.ndarray, List[float], None] = None,
     expected_oc_x: Union[np.ndarray, List[float], None] = None,
@@ -922,7 +922,7 @@ def _check_plot_data_items_data(
         True if the plotdataitem has the expected data
     """
     try:
-        data = SlidingPointerCurveData(
+        data = CyclicPlotCurveData(
             old_curve=curve._clipped_curve_old,
             new_curve=curve._clipped_curve_new,
         )
@@ -945,8 +945,8 @@ def _check_plot_data_items_data(
     return result
 
 
-def equals(one: SlidingPointerPlotCurve, two: SlidingPointerPlotCurve) -> bool:
-    """Compare two Sliding Pointer Curves's content
+def equals(one: CyclicPlotCurve, two: CyclicPlotCurve) -> bool:
+    """Compare two Cyclic Curves's content
 
     Explanation why not __eq__():
 

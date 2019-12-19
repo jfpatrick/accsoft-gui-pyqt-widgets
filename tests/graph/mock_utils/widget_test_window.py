@@ -93,7 +93,7 @@ class MinimalTestWindow(QMainWindow):
         self.plot: ExPlotWidget
         if plot_widget:
             self.plot = plot_widget
-            self.plot_config = plot_widget._config
+            self.plot_config = plot_widget.plotItem.plot_config
         else:
             self.plot_config = plot_config or ExPlotWidgetConfig()
             self.plot = ExPlotWidget(config=plot_config)

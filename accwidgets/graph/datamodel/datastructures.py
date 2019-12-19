@@ -719,9 +719,9 @@ class TimestampMarkerCollectionData(PlottingItemData):
 # ~~~~~~~~~~~~~~~~~ Data Structures for testing purposes ~~~~~~~~~~~~~~~~~
 
 
-class SlidingPointerCurveData(NamedTuple):
+class CyclicPlotCurveData(NamedTuple):
     """
-    Collection of a sliding pointer curve's old and new curve as
+    Collection of a cyclic curve's old and new curve as
     a named tuple. Mainly used for testing purposes.
     """
 
@@ -741,7 +741,7 @@ class CurveDataWithTime:
 
         Object representing a curve with x and y values as well as an
         additional list of timestamps in case the x position is not equal to the
-        timestamp. This happens f.e. in case of the Sliding Pointer Plot
+        timestamp. This happens f.e. in case of the Cyclic Plot
 
         Args:
             x_values: x values of the points creating the curve

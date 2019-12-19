@@ -41,9 +41,8 @@ class MainWindow(QMainWindow):
         # for timing updates attached
         self.plot = accgraph.ScrollingPlotWidget(
             timing_source=timing_source,
-            time_span=10.0,
-            time_progress_line=True,
-            is_xrange_fixed=True,
+            time_span=accgraph.TimeSpan(10.0, 0.0),
+            time_progress_line=True
         )
         # Now we can add 2 curves in different colors that are displaying the
         # data coming from out source.

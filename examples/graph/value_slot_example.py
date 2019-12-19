@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create a standard scrolling plot
-        self.plot = accgraph.ScrollingPlotWidget()
+        self.plot = accgraph.ScrollingPlotWidget(time_span=accgraph.TimeSpan(10.0))
         # Create an object that emits value through a signal
         self.object_with_signal = ObjectWithSignal()
         # Connect the signal of the object to the value slot in the plot

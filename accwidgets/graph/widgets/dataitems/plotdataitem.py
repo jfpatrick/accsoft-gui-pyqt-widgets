@@ -33,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingPlotCurve",
-    PlotWidgetStyle.SLIDING_POINTER: "SlidingPointerPlotCurve",
+    PlotWidgetStyle.CYCLIC_PLOT: "CyclicPlotCurve",
 }
 """which plotting style is achieved by which class"""
 
@@ -246,7 +246,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             return x_values, y_values
 
 
-class SlidingPointerPlotCurve(LivePlotCurve):
+class CyclicPlotCurve(LivePlotCurve):
 
     def __init__(
             self,
@@ -257,9 +257,9 @@ class SlidingPointerPlotCurve(LivePlotCurve):
             **plotdataitem_kwargs,
     ):
         """
-        PlotDataItem extension for the Sliding Pointer Plotting Style
+        PlotDataItem extension for the Cyclic Plotting Style
 
-        Displays data as a sliding pointer widget similar to a heart rate
+        Displays data as a cyclic plot widget similar to a heart rate
         monitor. The graph itself stays fixed in position and has a fixed length
         that it does not exceed. As soon as the drawing reaches the end, the graph
         gets redrawn beginning from the start. The old curve gets incrementally
@@ -293,7 +293,7 @@ class SlidingPointerPlotCurve(LivePlotCurve):
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         self._update_new_curve_data_item()
-        if self._parent_plot_item.time_span.number > 0:
+        if self._parent_plot_item.time_span.cycle > 0:
             self._update_old_curve_data_item()
         self._redraw_curve()
 
@@ -333,7 +333,7 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         point will be added if the the new point exceeds the current time
         (because of f.e. inaccurate timestamp)
         """
-        start = self._parent_plot_item.time_span.curr_start
+        start = self._parent_plot_item.time_span.start
         end = self._parent_plot_item.last_timestamp
         x_values, y_values = self._data_model.subset_for_xrange(
             start=start, end=end, interpolated=True
@@ -350,7 +350,7 @@ class SlidingPointerPlotCurve(LivePlotCurve):
         point will be added if the the new point exceeds the current time
         (because of f.e. inaccurate timestamp)
         """
-        start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.size
+        start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.time_span.size
         end = self._parent_plot_item.time_span.prev_end
         x_values, y_values = self._data_model.subset_for_xrange(
             start=start, end=end, interpolated=True

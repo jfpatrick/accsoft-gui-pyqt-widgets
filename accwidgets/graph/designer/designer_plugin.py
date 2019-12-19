@@ -2,14 +2,29 @@
 Module containing QtDesigner plugin for different type of graphs.
 """
 
-from accwidgets.graph import ScrollingPlotWidget, SlidingPlotWidget, StaticPlotWidget
-import designer_base
+from accwidgets.graph import ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget
+from accwidgets.graph.designer import designer_base, designer_extensions
 
 
-ScrollingExPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(widget_class=ScrollingPlotWidget)
+ScrollingPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
+    widget_class=ScrollingPlotWidget,
+    extensions=[
+        designer_extensions.PlotLayerExtension
+    ]
+)
 
 
-SlidingExPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(widget_class=SlidingPlotWidget)
+CyclicPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
+    widget_class=CyclicPlotWidget,
+    extensions=[
+        designer_extensions.PlotLayerExtension
+    ]
+)
 
 
-StaticExPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(widget_class=StaticPlotWidget)
+StaticPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
+    widget_class=StaticPlotWidget,
+    extensions=[
+        designer_extensions.PlotLayerExtension
+    ]
+)

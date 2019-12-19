@@ -9,14 +9,15 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from qtpy.QtCore import Slot, Property
+from qtpy.QtCore import Slot, Property, Q_ENUM
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QPen
 
 from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
-    PlotWidgetStyle
+    PlotWidgetStyle,
+    TimeSpan
 )
 from accwidgets.graph.widgets.plotitem import ExPlotItem, PlotItemLayer, LayerIdentification
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -74,7 +75,6 @@ class ExPlotWidget(pg.PlotWidget):
         if axis_items is None:
             axis_items = {}
         self.timing_source = timing_source
-        self._config = config
         axis_items = axis_items or {}
         # From base class
         self.plotItem: ExPlotItem
@@ -85,17 +85,6 @@ class ExPlotWidget(pg.PlotWidget):
             **plotitem_kwargs
         )
         self._wrap_plotitem_functions()
-        # Fields for keeping track of properties
-        self._layer_ids_from_property: List[str] = []
-        self._layers_number: int = 0
-        self._layer_axis_labels: Dict[str, str] = {}
-        self._standard_axis_labels: Dict[str, str] = {}
-        self._layer_axis_ranges: Dict[str, Tuple[Union[float, int], Union[float, int]]] = {}
-        self._standard_axis_ranges: Dict[str, Tuple[Union[float, int], Union[float, int]]] = {}
-        self._show_axis_top: bool = self.plotItem.getAxis("top").isVisible()
-        self._show_axis_right: bool = self.plotItem.getAxis("right").isVisible()
-        self._show_axis_bottom: bool = self.plotItem.getAxis("bottom").isVisible()
-        self._show_axis_left: bool = self.plotItem.getAxis("left").isVisible()
 
     def addCurve(  # pylint: disable=invalid-name
             self,
@@ -327,7 +316,6 @@ class ExPlotWidget(pg.PlotWidget):
             config: The new configuration that should be used by the plot and all
                     its (affected) items
         """
-        self._config = config
         self.plotItem.update_config(config=config)
 
     # ~~~~~~~~~~ Properties ~~~~~~~~~
@@ -364,24 +352,102 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
+    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line)
     """Vertical Line displaying the current time stamp"""
 
-    def _get_time_span(self) -> float:
+    def _get_right_time_span_boundary(self) -> float:
         """QtDesigner getter function for the PlotItems time span size"""
-        return self.plotItem.plot_config.time_span
+        return self.plotItem.plot_config.time_span.right_boundary_offset
 
-    def _set_time_span(self, new_val: float) -> None:
+    def _set_right_time_span_boundary(self, new_val: float) -> None:
         """QtDesigner setter function for the PlotItems time span size"""
-        if new_val != self.plotItem.plot_config.time_span and new_val > 0:
+        if new_val != self.plotItem.plot_config.time_span.right_boundary_offset:
             new_config = deepcopy(self.plotItem.plot_config)
-            new_config.time_span = new_val
+            new_config.time_span.right_boundary_offset = new_val
+            if new_val > new_config.time_span.left_boundary_offset:
+                new_config.time_span.left_boundary_offset = new_val
             self.plotItem.update_config(config=new_config)
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
-    """Range from which the plot displays data"""
+    rightTimeBoundary: float = Property(
+        float,
+        _get_right_time_span_boundary,
+        _set_right_time_span_boundary,
+        designable=False,
+    )
+    """Value of the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
+        """
+        QtDesigner getter function for the PlotItems time span size. When called
+        from designer, nan and inf are masked, when called from code, they will
+        return the nan and inf values. This is done since inf and nan are not
+        displayed very well in the QtDesigner property sheet.
+
+        Args:
+            hide_nans: Returns the last not nan value instead of nan / inf, since
+                       nan / inf in the property fields is displayed as gibberish
+        """
+        potential = self.plotItem.plot_config.time_span.left_boundary_offset
+        if not designer_check.is_designer():
+            hide_nans = False
+        if hide_nans and (np.isinf(potential) or np.isnan(potential)):
+            try:
+                potential = self._left_time_span_boundary_bool_value_cache
+            except NameError:
+                print("No value cached")
+                potential = 60.0
+        return potential
+
+    def _set_left_time_span_boundary(self, new_val: float) -> None:
+        """QtDesigner setter function for the PlotItems time span size"""
+        if new_val != self._get_left_time_span_boundary(hide_nans=False):
+            new_config = deepcopy(self.plotItem.plot_config)
+            new_config.time_span.left_boundary_offset = new_val
+            if new_val < new_config.time_span.right_boundary_offset:
+                new_config.time_span.right_boundary_offset = new_val
+            self.plotItem.update_config(config=new_config)
+
+    # designable false ->   can be used from code but is part of the sub classes property sheet if they
+    #                       are set to designable
+    leftTimeBoundary: float = Property(
+        float,
+        _get_left_time_span_boundary,
+        _set_left_time_span_boundary,
+        designable=False,
+    )
+    """Value of the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary_bool(self) -> bool:
+        """QtDesigner getter function for the PlotItems time span size"""
+        return not np.isinf(self._get_left_time_span_boundary(hide_nans=False))
+
+    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+        """QtDesigner setter function for the PlotItems time span size"""
+        if not new_val:
+            potential = self.plotItem.plot_config.time_span.left_boundary_offset
+            if potential and not np.isinf(potential):
+                self._left_time_span_boundary_bool_value_cache = potential
+            self._set_left_time_span_boundary(new_val=np.inf)
+        elif np.isinf(self._get_left_time_span_boundary(hide_nans=False)):
+            try:
+                potential = self._left_time_span_boundary_bool_value_cache
+                if potential < self.plotItem.plot_config.time_span.right_boundary_offset:
+                    potential = self.plotItem.plot_config.time_span.right_boundary_offset
+                self._set_left_time_span_boundary(new_val=potential)
+            except NameError:
+                self._set_left_time_span_boundary(
+                    new_val=60.0
+                )
+
+    leftTimeBoundaryEnabled: bool = Property(
+        bool,
+        _get_left_time_span_boundary_bool,
+        _set_left_time_span_boundary_bool,
+        designable=False,
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     # ~~~~~~~~~~ Private ~~~~~~~~~
 
@@ -429,7 +495,51 @@ class ExPlotWidget(pg.PlotWidget):
 # pylint: disable=no-member,access-member-before-definition,attribute-defined-outside-init
 
 
-class ExPlotWidgetProperties:
+class GridOrientationOptions:
+    Hidden = 0
+    X = 1
+    Y = 2
+    Both = 3
+
+
+class XAxisSideOptions:
+    Hidden = 0
+    Top = 1
+    Bottom = 2
+    Both = 3
+
+
+class DefaultYAxisSideOptions:
+    Hidden = 0
+    Left = 1
+    Right = 2
+    Both = 3
+
+
+class LegendXAlignmentOptions:
+    Left = 0
+    Right = 1
+    Center = 2
+
+
+class LegendYAlignmentOptions:
+    Top = 0
+    Bottom = 1
+    Center = 2
+
+
+class ExPlotWidgetProperties(XAxisSideOptions, DefaultYAxisSideOptions, GridOrientationOptions):
+
+    Q_ENUM(XAxisSideOptions)
+    Q_ENUM(DefaultYAxisSideOptions)
+    Q_ENUM(GridOrientationOptions)
+    Q_ENUM(LegendXAlignmentOptions)
+    Q_ENUM(LegendYAlignmentOptions)
+    XAxisSideOptions = XAxisSideOptions
+    DefaultYAxisSideOptions = DefaultYAxisSideOptions
+    GridOrientationOptions = GridOrientationOptions
+    LegendXAlignmentOptions = LegendXAlignmentOptions
+    LegendYAlignmentOptions = LegendYAlignmentOptions
 
     """
     Do not use this class except as a base class to inject properties in the following
@@ -441,127 +551,215 @@ class ExPlotWidgetProperties:
     If you use this class in any other context, these resolutions will fail.
     """
 
-    def _get_show_x_grid(self) -> bool:
-        """QtDesigner getter function for the PlotItems x grid"""
-        return self.plotItem.ctrl.xGridCheck.isChecked()  # type: ignore[attr-defined]
+    def _get_show_x_axis(self) -> int:
+        """Where is the X Axis of the plot displayed"""
+        top = self.getAxis("top").isVisible()  # type: ignore[attr-defined]
+        bottom = self.getAxis("bottom").isVisible()  # type: ignore[attr-defined]
+        if top and bottom:
+            return XAxisSideOptions.Both
+        if top and not bottom:
+            return XAxisSideOptions.Top
+        if not top and bottom:
+            return XAxisSideOptions.Bottom
+        if not top and not bottom:
+            return XAxisSideOptions.Hidden
 
-    def _set_show_x_grid(self, new_val: bool) -> None:
-        """QtDesigner setter function for the PlotItems x grid"""
-        if new_val != self.plotItem.ctrl.xGridCheck.isChecked():  # type: ignore[attr-defined]
-            self.plotItem.showGrid(x=new_val)  # type: ignore[attr-defined]
+    def _set_show_x_axis(self, new_val: int) -> None:
+        """Where is the X Axis of the plot displayed"""
+        if new_val != self._get_show_x_axis():  # type: ignore[has-type]
+            if new_val == XAxisSideOptions.Both:
+                self.showAxis("top")
+                self.showAxis("bottom")
+            if new_val == XAxisSideOptions.Top:
+                self.showAxis("top")
+                self.hideAxis("bottom")
+            if new_val == XAxisSideOptions.Bottom:
+                self.hideAxis("top")
+                self.showAxis("bottom")
+            if new_val == XAxisSideOptions.Hidden:
+                self.hideAxis("top")
+                self.hideAxis("bottom")
+            # Update labels through property
+            self.axisLabels = self.axisLabels
 
-    showGridX: bool = Property(bool, _get_show_x_grid, _set_show_x_grid)
-    """Show a grid in x direction"""
+    xAxisSide: int = Property(XAxisSideOptions, _get_show_x_axis, _set_show_x_axis)
+    """Where should the x axis be displayed?"""
 
-    def _get_show_y_grid(self) -> bool:
-        """QtDesigner getter function for the PlotItems y grid"""
-        return self.plotItem.ctrl.yGridCheck.isChecked()  # type: ignore[attr-defined]
+    def _get_show_y_axis(self) -> int:
+        """Where is the Y Axis of the plot displayed"""
+        left = self.getAxis("left").isVisible()  # type: ignore[attr-defined]
+        right = self.getAxis("right").isVisible()  # type: ignore[attr-defined]
+        if left and right:
+            return DefaultYAxisSideOptions.Both
+        if left and not right:
+            return DefaultYAxisSideOptions.Left
+        if not left and right:
+            return DefaultYAxisSideOptions.Right
+        if not left and not right:
+            return DefaultYAxisSideOptions.Hidden
 
-    def _set_show_y_grid(self, new_val: bool) -> None:
-        """QtDesigner setter function for the PlotItems y grid"""
-        if new_val != self.plotItem.ctrl.yGridCheck.isChecked():  # type: ignore[attr-defined]
-            self.plotItem.showGrid(y=new_val)  # type: ignore[attr-defined]
+    def _set_show_y_axis(self, new_val: int) -> None:
+        """Where is the Y Axis of the plot displayed"""
+        if new_val != self._get_show_y_axis():  # type: ignore[has-type]
+            if new_val == DefaultYAxisSideOptions.Both:
+                self.showAxis("left")
+                self.showAxis("right")
+            if new_val == DefaultYAxisSideOptions.Left:
+                self.showAxis("left")
+                self.hideAxis("right")
+            if new_val == DefaultYAxisSideOptions.Right:
+                self.hideAxis("left")
+                self.showAxis("right")
+            if new_val == DefaultYAxisSideOptions.Hidden:
+                self.hideAxis("left")
+                self.hideAxis("right")
+            # Update labels through property
+            self.axisLabels = self.axisLabels
 
-    showGridY: bool = Property(bool, _get_show_y_grid, _set_show_y_grid)
-    """Show a grid in y direction"""
+    defaultYAxisSide: int = Property(DefaultYAxisSideOptions, _get_show_y_axis, _set_show_y_axis)
+    """Where should the y axis be displayed?"""
 
-    def _get_show_bottom_axis(self) -> bool:
-        """QtDesigner getter function for showing the PlotItems bottom axis"""
-        return self._show_axis_bottom  # type: ignore[has-type]
+    def _get_show_grid(self) -> int:
+        """What Axis Grid should be displayed"""
+        x_grid = self.plotItem.ctrl.xGridCheck.isChecked()  # type: ignore[attr-defined]
+        y_grid = self.plotItem.ctrl.yGridCheck.isChecked()  # type: ignore[attr-defined]
+        if x_grid and y_grid:
+            return GridOrientationOptions.Both
+        if x_grid and not y_grid:
+            return GridOrientationOptions.X
+        if not x_grid and y_grid:
+            return GridOrientationOptions.Y
+        if not x_grid and not y_grid:
+            return GridOrientationOptions.Hidden
 
-    def _set_show_bottom_axis(self, new_val: bool) -> None:
-        """QtDesigner setter function for showing the PlotItems bottom axis"""
-        if new_val != self._show_axis_bottom:  # type: ignore[has-type]
-            self._show_axis_bottom = new_val
-            self.showAxis("bottom", new_val)  # type: ignore[attr-defined]
-            self._set_axis_labels(new_val=self._get_axis_labels())  # type: ignore[attr-defined]
+    def _set_show_grid(self, new_val: int) -> None:
+        """What Axis Grid should be displayed"""
+        if new_val != self._get_show_grid():  # type: ignore[has-type]
+            if new_val == GridOrientationOptions.Both:
+                self.plotItem.showGrid(x=True)
+                self.plotItem.showGrid(y=True)
+            if new_val == GridOrientationOptions.X:
+                self.plotItem.showGrid(x=True)
+                self.plotItem.showGrid(y=False)
+            if new_val == GridOrientationOptions.Y:
+                self.plotItem.showGrid(x=False)
+                self.plotItem.showGrid(y=True)
+            if new_val == GridOrientationOptions.Hidden:
+                self.plotItem.showGrid(x=False)
+                self.plotItem.showGrid(y=False)
 
-    showBottomAxis: bool = Property(bool, _get_show_bottom_axis, _set_show_bottom_axis)
-    """show the x axis at the bottom"""
+    gridOrientation: int = Property(GridOrientationOptions, _get_show_grid, _set_show_grid)
+    """Which Axis' Grid should be displayed"""
 
-    def _get_show_top_axis(self) -> bool:
-        """QtDesigner getter function for showing the PlotItems top axis"""
-        return self._show_axis_top   # type: ignore[has-type]
+    def _get_show_legend(self) -> bool:
+        """Does the plot show a legend."""
+        return self.plotItem.legend is not None
 
-    def _set_show_top_axis(self, new_val: bool) -> None:
-        """QtDesigner setter function for showing the PlotItems top axis"""
-        if new_val != self._show_axis_top:  # type: ignore[has-type]
-            self._show_axis_top = new_val
-            self.showAxis("top", new_val)  # type: ignore[attr-defined]
-            self._set_axis_labels(new_val=self._get_axis_labels())  # type: ignore[attr-defined]
+    def _set_show_legend(self, new_val: bool) -> None:
+        """If true, the plot shows a legend."""
+        if new_val != self._get_show_legend():  # type: ignore[has-type]
+            if new_val:
+                self.addLegend(size=None, offset=None)
+                old_pos = self._get_legend_position()
+                self._set_legend_position(
+                    x_alignment=old_pos[0],
+                    y_alignment=old_pos[1],
+                )
+            else:
+                if self.plotItem.legend is not None:
+                    self.removeItem(self.plotItem.legend)
+                    self.plotItem.legend.deleteLater()
+                    self.plotItem.legend = None
+            self.update()
 
-    showTopAxis: bool = Property(bool, _get_show_top_axis, _set_show_top_axis)
-    """show the x axis at the top"""
+    showLegend: bool = Property(bool, _get_show_legend, _set_show_legend)
+    """Does the plot show a legend which displays the contained items."""
 
-    def _get_show_left_axis(self) -> bool:
-        """QtDesigner getter function for showing the PlotItems left axis"""
-        return self._show_axis_left  # type: ignore[has-type]
+    def _get_legend_position(self) -> Tuple[int, int]:
+        """
+        Get the legends position in the passed dimension.
 
-    def _set_show_left_axis(self, new_val: bool) -> None:
-        """QtDesigner setter function for showing the PlotItems left axis"""
-        if new_val != self._show_axis_left:  # type: ignore[has-type]
-            self._show_axis_left = new_val
-            self.showAxis("left", new_val)  # type: ignore[attr-defined]
-            self._set_axis_labels(new_val=self._get_axis_labels())  # type: ignore[attr-defined]
+        Args:
+            index: 0 for X / Horizontal Alignment, 1 for Y / Vertical Alignment
 
-    showLeftAxis: bool = Property(bool, _get_show_left_axis, _set_show_left_axis)
-    """show the y axis on the left side"""
+        Returns: position of the axis in the given dimension
+        """
+        try:
+            return self._legend_position_cache
+        except (AttributeError, NameError):
+            d = [LegendXAlignmentOptions.Left, LegendYAlignmentOptions.Top]
+            if self.plotItem.legend is not None:
+                self._set_legend_position(x_alignment=d[0], y_alignment=d[1])
+            return d
 
-    def _get_show_right_axis(self) -> bool:
-        """QtDesigner getter function for showing the PlotItems right axis"""
-        return self._show_axis_right  # type: ignore[has-type]
+    def _set_legend_position(self, x_alignment: int = -1, y_alignment: int = -1, offset: int = 10.0) -> None:
+        """
+        Set the legends position in the ViewBox. Values smaller 0 are not accepted.
+        Values that move the Legend out of the viewable area are not accepted.
+        If a value is not accepted it is replaced with the max/min possible value.
 
-    def _set_show_right_axis(self, new_val: bool) -> None:
-        """QtDesigner setter function for showing the PlotItems right axis"""
-        if new_val != self._show_axis_right:  # type: ignore[has-type]
-            self._show_axis_right = new_val
-            self.showAxis("right", new_val)  # type: ignore[attr-defined]
-            self._set_axis_labels(new_val=self._get_axis_labels())  # type: ignore[attr-defined]
+        If invalid values are passed for the alignment, no positioning is done.
 
-    showRightAxis: bool = Property(bool, _get_show_right_axis, _set_show_right_axis)
-    """show the y axis on the right side"""
+        If -1 is passed for one of the alignment params, the current position is taken.
+
+        Args:
+            x_alignment: Horizontal Alignment (values from LegendXAlignmentOptions)
+            y_alignment: Vertical Alignment (values from LegendYAlignmentOptions)
+        """
+        if x_alignment == -1:
+            x_alignment = self._get_legend_x_position()
+        if y_alignment == -1:
+            y_alignment = self._get_legend_y_position()
+        x, y, x_offset, y_offset = np.nan, np.nan, np.nan, np.nan
+        # We have to cache the position because there is no elegant way of
+        # retrieving it from the LegendItem
+        self._legend_position_cache: Tuple[int, int] = (x_alignment, y_alignment)
+        if x_alignment == LegendXAlignmentOptions.Left:
+            x = 0
+            x_offset = offset
+        elif x_alignment == LegendXAlignmentOptions.Center:
+            x = 0.5
+            x_offset = 0
+        elif x_alignment == LegendXAlignmentOptions.Right:
+            x = 1
+            x_offset = -offset
+        if y_alignment == LegendYAlignmentOptions.Top:
+            y = 0
+            y_offset = offset
+        elif y_alignment == LegendYAlignmentOptions.Center:
+            y = 0.5
+            y_offset = 0
+        elif y_alignment == LegendYAlignmentOptions.Bottom:
+            y = 1
+            y_offset = -offset
+        if True not in np.isnan(np.array([x, y, x_offset, y_offset])) and self.plotItem.legend is not None:
+            self.plotItem.legend.anchor(itemPos=(x, y), parentPos=(x, y), offset=(x_offset, y_offset))
+
+    def _get_legend_x_position(self) -> int:
+        return self._get_legend_position()[0]
+
+    def _set_legend_x_position(self, new_val: int) -> None:
+        self._set_legend_position(x_alignment=new_val)
+
+    legendXAlignment: int = Property(LegendXAlignmentOptions, _get_legend_x_position, _set_legend_x_position)
+    """Which position has the top left corner in the x dimension. Is 0, if no legend is displayed."""
+
+    def _get_legend_y_position(self) -> int:
+        return self._get_legend_position()[1]
+
+    def _set_legend_y_position(self, new_val: int) -> None:
+        self._set_legend_position(y_alignment=new_val)
+
+    legendYAlignment: int = Property(LegendYAlignmentOptions, _get_legend_y_position, _set_legend_y_position)
+    """Which position has the top left corner in the y dimension. Is 0, if no legend is displayed."""
 
     # ~~~~~~~~~~ QtDesigner Properties ~~~~~~~~~~
 
     _reserved_axis_labels_identifiers: Set[str] = {
-        "top", "bottom", "left", "right", PlotItemLayer.default_layer_id
+        "top", "bottom", "left", "right"
     }
 
     _reserved_axis_ranges_identifiers: Set[str] = {"x", "y"}
-
-    def _get_additional_layers_count(self) -> int:
-        """
-        QtDesigner getter function for the PlotItems count of additional layers
-
-        This property is for usage in Qt Designer and its limitations in property
-        data type. A better way of achieving this by usage directly from code is
-        to use the function add_layer().
-        """
-        return self._layers_number  # type: ignore[has-type]
-
-    def _set_additional_layers_count(self, new_val: int) -> None:
-        """
-        QtDesigner setter function for the PlotItems count of additional layers
-
-        This property is for usage in Qt Designer and its limitations in property
-        data type. A better way of achieving this by usage directly from code is
-        to use the function add_layer().
-        """
-        if new_val != self._layers_number and new_val >= 0:  # type: ignore[has-type]
-            self._layers_number = new_val
-            if new_val < len(self._layer_ids_from_property):
-                self._set_layer_ids(new_val=self._layer_ids_from_property[:new_val])
-            elif new_val > len(self._layer_ids_from_property):
-                id_number = 0
-                for _ in range(len(self._layer_ids_from_property), new_val):
-                    while f"layer_{id_number}" in self._layer_ids_from_property:
-                        id_number += 1
-                    self._layer_ids_from_property.append(f"layer_{id_number}")
-            self._update_layer_from_designer_properties()
-            self._update_axis_labels_from_designer_properties()
-
-    additionalLayers: int = Property(int, _get_additional_layers_count, _set_additional_layers_count)
-    """count of additional layers next to the plot's default one"""
 
     def _get_layer_ids(self) -> "QStringList":  # type: ignore # noqa
         """
@@ -571,9 +769,9 @@ class ExPlotWidgetProperties:
         data type. A better way of achieving this by usage directly from code is
         to use the function add_layer().
         """
-        return self._layer_ids_from_property
+        return [layer.id for layer in self.plotItem.non_default_layers]
 
-    def _set_layer_ids(self, new_val: "QStringList") -> None:  # type: ignore # noqa
+    def _set_layer_ids(self, layers: "QStringList") -> None:  # type: ignore # noqa
         """
         QtDesigner setter function for the PlotItems time span
 
@@ -582,179 +780,169 @@ class ExPlotWidgetProperties:
         to use the function add_layer().
         """
         # Check for duplicated values
-        if len(new_val) != len(set(new_val)):
+        if len(layers) != len(set(layers)):
             print("Layers can not be updated since you have provided duplicated identifiers for them.")
             return
         # Check for invalid layer identifiers
         for reserved in ExPlotWidgetProperties._reserved_axis_labels_identifiers:
-            if reserved in new_val:
+            if reserved in layers:
                 print(f"Identifier entry '{reserved}' will be ignored since it is reserved.")
-                new_val.remove(reserved)
-        self._update_axis_labels_and_ranges_dict(new_identifiers=new_val)
-        self._layer_ids_from_property = new_val
-        self._layers_number = len(new_val)
-        self._update_layer_from_designer_properties()
-        self._update_axis_labels_from_designer_properties()
-        self._update_view_ranges_from_designer_properties()
+                layers.remove(reserved)
+        # Update changed identifiers
+        self._update_layers(layers)
 
-    layerIDs: List[str] = Property("QStringList", _get_layer_ids, _set_layer_ids)
+    layerIDs: List[str] = Property("QStringList", _get_layer_ids, _set_layer_ids, designable=False)
     """List of strings with the additional layer's identifiers"""
 
     def _get_axis_labels(self) -> str:
         """QtDesigner getter function for the PlotItems axis labels"""
-        return json.dumps(self._axis_labels())
+        labels = {}
+        for axis in self._reserved_axis_labels_identifiers:
+            labels.update({axis: self.getAxis(axis).labelText})
+        for layer in self.plotItem.non_default_layers:
+            labels.update({layer.id: layer.axis_item.labelText})
+        return json.dumps(labels)
 
     def _set_axis_labels(self, new_val: str) -> None:
         """QtDesigner setter function for the PlotItems axis labels"""
         try:
-            axis_labels = json.loads(new_val)
-            self._layer_axis_labels: Dict = {}
-            self._standard_axis_labels: Dict = {}
-            for entry in axis_labels:
-                if entry in ExPlotWidgetProperties._reserved_axis_labels_identifiers:
-                    self._standard_axis_labels[entry] = axis_labels[entry]
-                else:
-                    self._layer_axis_labels[entry] = axis_labels[entry]
-            self._update_layer_from_designer_properties()
-            self._update_axis_labels_from_designer_properties()
-        except (json.decoder.JSONDecodeError, AttributeError):
-            pass
-
-    axisLabels: str = Property(str, _get_axis_labels, _set_axis_labels)
-    """JSON string with mappings of axis positions and layers to a label text"""
-
-    def _get_axis_ranges(self) -> str:
-        """QtDesigner getter function for the PlotItems axis ranges"""
-        return json.dumps(self._axis_ranges())
-
-    def _set_axis_ranges(self, new_val: str) -> None:
-        """QtDesigner setter function for the PlotItems axis ranges"""
-        try:
-            axis_ranges = json.loads(new_val)
-            self._layer_axis_ranges: Dict = {}
-            self._standard_axis_ranges: Dict = {}
-            for entry in axis_ranges:
-                # Check if range was given in the right form
-                axis_range = axis_ranges[entry]
-                if len(axis_range) == 2 and \
-                        isinstance(axis_range[0], (float, int)) and \
-                        isinstance(axis_range[1], (float, int)):
-                    # Save in fitting array
-                    if entry in ExPlotWidgetProperties._reserved_axis_ranges_identifiers:
-                        self._standard_axis_ranges[entry] = tuple(axis_range)  # type: ignore[assignment]
+            axis_labels: Dict[str, str] = json.loads(new_val)
+            for axis, label in axis_labels.items():
+                label = axis_labels.get(axis, None).strip()
+                if self.plotItem.getAxis(axis).isVisible():
+                    if label:
+                        self.plotItem.setLabel(axis=axis, text=label)
                     else:
-                        self._layer_axis_ranges[entry] = tuple(axis_range)  # type: ignore[assignment]
-            self._update_view_ranges_from_designer_properties()
+                        self.plotItem.getAxis(axis).labelText = label
+                        self.plotItem.getAxis(axis).showLabel(False)
+                else:
+                    self.plotItem.getAxis(axis).labelText = label
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
             # TypeError for len() operation on entries that do not support it
             pass
 
-    axisRanges: str = Property(str, _get_axis_ranges, _set_axis_ranges)
+    axisLabels: str = Property(str, _get_axis_labels, _set_axis_labels, designable=False)
+    """JSON string with mappings of axis positions and layers to a label text"""
+
+    def _get_axis_ranges(self) -> str:
+        """QtDesigner getter function for the PlotItems axis ranges"""
+        auto_ranges_dict = {}
+        auto_ranges_dict.update({"x": self.getViewBox().targetRange()[0]})
+        auto_ranges_dict.update({"y": self.getViewBox().targetRange()[1]})
+        for layer in self.plotItem.non_default_layers:
+            auto_ranges_dict.update({layer.id: layer.view_box.targetRange()[1]})
+        return json.dumps(auto_ranges_dict)
+
+    def _set_axis_ranges(self, new_val: str) -> None:
+        """QtDesigner setter function for the PlotItems axis ranges"""
+        try:
+            axis_ranges: Dict[str, Tuple[float, float]] = json.loads(new_val)
+            self.plotItem.setRange(
+                xRange=axis_ranges.pop("x", None),
+                yRange=axis_ranges.pop("y", None),
+                padding=0.0,
+                disableAutoRange=False
+            )
+            for layer, range_tuple in axis_ranges.items():
+                # Check if range was given in the right form
+                if layer in self._get_layer_ids():
+                    self.plotItem.getViewBox(layer=layer).setRange(
+                        yRange=range_tuple,
+                        padding=0.0,
+                        disableAutoRange=False
+                    )
+        except (json.decoder.JSONDecodeError, AttributeError, TypeError):
+            # JSONDecodeError and Attribute Errors for JSON decoding
+            # TypeError for len() operation on entries that do not support it
+            pass
+
+    axisRanges: str = Property(str, _get_axis_ranges, _set_axis_ranges, designable=False)
     """JSON string with mappings of x, y and layers to a view range"""
 
-    # ~~~~~~~~~ Private ~~~~~~~~~
+    def _get_axis_auto_range(self) -> str:
+        """QtDesigner getter function for the PlotItems axis ranges"""
+        auto_ranges_dict = {}
+        auto_ranges_dict.update({"x": self.getViewBox().autoRangeEnabled()[0]})
+        auto_ranges_dict.update({"y": self.getViewBox().autoRangeEnabled()[1]})
+        for layer in self.plotItem.non_default_layers:
+            auto_ranges_dict.update({layer.id:  layer.view_box.autoRangeEnabled()[1]})
+        return json.dumps(auto_ranges_dict)
 
-    def _update_axis_labels_and_ranges_dict(self, new_identifiers: List[str]) -> None:
-        """
-        Update the identifiers in the axis label JSON string based on the list of
-        identifiers.
-        """
-        labels_old = deepcopy(self._layer_axis_labels)
-        ranges_old = deepcopy(self._layer_axis_ranges)
-        # New and old identifier lists have the same length -> assume identifiers were renamed
-        if len(self._layer_ids_from_property) == len(new_identifiers):
-            for entry in zip(self._layer_ids_from_property, new_identifiers):
-                # Update label json keys
-                if entry[0] != entry[1] and labels_old.get(entry[0]):
-                    if entry[0] not in new_identifiers or not labels_old.get(entry[1]):
-                        self._layer_axis_labels.pop(entry[0], None)
-                    if entry[1]:
-                        self._layer_axis_labels[entry[1]] = labels_old.get(entry[0], "")
-                # Update range json keys
-                if entry[0] != entry[1] and ranges_old.get(entry[0]):
-                    if entry[0] not in new_identifiers or not ranges_old.get(entry[1]):
-                        self._layer_axis_ranges.pop(entry[0], None)
-                    if entry[1]:
-                        self._layer_axis_ranges[entry[1]] = ranges_old.get(entry[0], (0.0, 1.0))
-        # Length did change -> assume identifiers that are not existing anymore, were deleted
-        else:
-            # Remove old keys from labels json
-            deleted_labels = [item for item in self._layer_axis_labels if item not in set(new_identifiers)]
-            for deleted_element in deleted_labels:
-                self._layer_axis_labels.pop(deleted_element, None)
-            # Remove old keys from range json
-            deleted_ranges = [item for item in self._layer_axis_ranges if item not in set(new_identifiers)]
-            for deleted_range in deleted_ranges:
-                self._layer_axis_ranges.pop(deleted_range, None)
+    def _set_axis_auto_range(self, new_val: str) -> None:
+        """QtDesigner setter function for the PlotItems axis ranges"""
+        try:
+            axis_auto_range: Dict[str, bool] = json.loads(new_val)
+            self.plotItem.enableAutoRange(x=axis_auto_range.pop("x", None), y=axis_auto_range.pop("y", None))
+            for layer, auto_range in axis_auto_range.items():
+                # Check if range was given in the right form
+                self.plotItem.getViewBox(layer=layer).enableAutoRange(y=auto_range)
+        except (json.decoder.JSONDecodeError, AttributeError, TypeError):
+            # JSONDecodeError and Attribute Errors for JSON decoding
+            # TypeError for len() operation on entries that do not support it
+            pass
 
-    def _update_layer_from_designer_properties(self) -> None:
-        """
-        Remove all layers added prior to the PlotItem and add new ones
-        according to the layer identifier list property
-        """
-        for layer in self.plotItem.non_default_layers:  # type: ignore[attr-defined]
-            self.plotItem.remove_layer(layer)  # type: ignore[attr-defined]
-        for layer_id in self._layer_ids_from_property:
-            self.plotItem.add_layer(layer_id=layer_id)  # type: ignore[attr-defined]
+    axisAutoRange: str = Property(str, _get_axis_auto_range, _set_axis_auto_range, designable=False)
+    """JSON string with mappings of x, y and layers to a view range"""
 
-    def _update_axis_labels_from_designer_properties(self) -> None:
+    def _update_layers(self, new: List[str]) -> None:
         """
-        Update the axis labels according to the map set in the designer property.
-        "left", "top", "right" and "bottom" refer to the standard PlotItem axis.
-        For the axis of the layer use the layer's identifier as a key.
+        Attention: This function can only handle one operation at a time.
+        Combinations of adding, removing and renaming layers can't be
+        detected clearly.
         """
-        for entry in self._axis_labels():
-            if entry in ExPlotWidgetProperties._reserved_axis_labels_identifiers:
-                if (entry != PlotItemLayer.default_layer_id
-                        and self.plotItem.getAxis(entry).isVisible()):  # type: ignore[attr-defined]
-                    self.plotItem.setLabel(axis=entry, text=f"{self._standard_axis_labels[entry]}")  # type: ignore[attr-defined]
-            else:
-                try:
-                    layer = self.plotItem.layer(layer_id=entry)  # type: ignore[attr-defined]
-                    layer.axis_item.setLabel(f"{self._layer_axis_labels[entry]}")
-                except KeyError:
-                    pass
+        old = self._get_layer_ids()
+        axis_labels: Dict = json.loads(self.axisLabels)
+        axis_auto_range: Dict = json.loads(self.axisAutoRange)
+        axis_range: Dict = json.loads(self.axisRanges)
+        removed_layer_ids = [l for l in self._get_layer_ids() if l not in new]
+        added_layer_ids = [l for l in new if l not in self._get_layer_ids()]
+        if removed_layer_ids and added_layer_ids:
+            # Rename
+            for old_name, new_name in zip(removed_layer_ids, added_layer_ids):
+                # replace id in dicts
+                axis_labels.update({new_name: axis_labels.pop(old_name)})
+                axis_auto_range.update({new_name: axis_auto_range.pop(old_name)})
+                axis_range.update({new_name: axis_range.pop(old_name)})
+        elif removed_layer_ids:
+            # Layer(s) removed
+            for name in removed_layer_ids:
+                # remove old ids from dict
+                axis_labels.pop(name)
+                axis_auto_range.pop(name)
+                axis_range.pop(name)
+        if removed_layer_ids or added_layer_ids:
+            for name in old:
+                self.plotItem.remove_layer(name)
+            for name in new:
+                self.plotItem.add_layer(name)
+        self.axisLabels = json.dumps(axis_labels)
+        self.axisAutoRange = json.dumps(axis_auto_range)
+        self.axisRanges = json.dumps(axis_range)
 
-    def _update_view_ranges_from_designer_properties(self) -> None:
-        """
-        Update the view ranges of all axis according to the map set in the
-        designer property. Use "x" and "y" for the standard PlotItem dimensions
-        and the layer identifier for the y dimension of a additional layer.
-        """
-        for entry in self._axis_ranges():
-            if entry in ("x", "X"):
-                self.setXRange(*self._axis_ranges()[entry])  # type: ignore[attr-defined]
-            elif entry in ("y", "Y"):
-                self.setYRange(*self._axis_ranges()[entry])  # type: ignore[attr-defined]
-            else:
-                try:
-                    layer = self.plotItem.layer(layer_id=entry)  # type: ignore[attr-defined]
-                    layer.view_box.setYRange(min=self._axis_ranges()[entry][0], max=self._axis_ranges()[entry][1])
-                except KeyError:
-                    pass
 
-    def _axis_labels(self) -> Dict[str, str]:
-        """Return a dictionary containing the labels of all axis (if explicitly set)."""
-        return {**self._standard_axis_labels, **self._layer_axis_labels}
+    @staticmethod
+    def diff(list1, list2):
+        return list(set(list1).symmetric_difference(set(list2)))
 
-    def _axis_ranges(self) -> Dict[str, Tuple[float, float]]:
-        """Return a dictionary containing the view ranges of all axis (if explicitly set)."""
-        return {**self._standard_axis_ranges, **self._layer_axis_ranges}
 
 # pylint: enable=no-member,access-member-before-definition,attribute-defined-outside-init
 
 
 class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
 
+    Q_ENUM(XAxisSideOptions)
+    Q_ENUM(DefaultYAxisSideOptions)
+    Q_ENUM(GridOrientationOptions)
+    Q_ENUM(LegendXAlignmentOptions)
+    Q_ENUM(LegendYAlignmentOptions)
+
     def __init__(
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            time_span: float = 60.0,
+            time_span: Union[TimeSpan, float, None] = 60.0,
             time_progress_line: bool = False,
-            is_xrange_fixed: bool = False,
-            fixed_xrange_offset: float = np.nan,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
             **plotitem_kwargs,
@@ -769,13 +957,10 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
         Args:
             parent: parent item for this widget, will only be passed to base class
             background: background for the widget, will only be passed to base class
-            time_span: data from which time span should be displayed in the plot
+            time_span: data from which time span should be displayed in the plot.
+                       The default time span is 60.0 seconds.
             time_progress_line: If true, the current timestamp will represented as a
                                 vertical line in the plot
-            is_xrange_fixed: If true, the x-range will always be the time span. If less
-                             data is available, the x range won't be zoom in to it automatically.
-            fixed_xrange_offset: If the fixed x range is activated, this options allows to
-                                 add or subtract an offset to the time span.
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
             timing_source: Mainly for live data plotting. This timing source allows
@@ -787,11 +972,10 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
             plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
             time_span=time_span,
             time_progress_line=time_progress_line,
-            is_xrange_fixed=is_xrange_fixed,
-            fixed_xrange_offset=fixed_xrange_offset,
         )
-        config.plotting_style = PlotWidgetStyle.SCROLLING_PLOT
-        super().__init__(
+        ExPlotWidgetProperties.__init__(self)
+        ExPlotWidget.__init__(
+            self,
             parent=parent,
             background=background,
             config=config,
@@ -800,50 +984,42 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
             **plotitem_kwargs
         )
 
-    showTimeProgressLine: bool = Property(bool, ExPlotWidget._get_show_time_line, ExPlotWidget._set_show_time_line)
-    """Vertical Line displaying the current time stamp"""
+    rightTimeBoundary: float = Property(
+        float,
+        ExPlotWidget._get_right_time_span_boundary,
+        ExPlotWidget._set_right_time_span_boundary,
+    )
+    """Value of the Left / Lower boundary for the Plot's timestamp"""
 
-    timeSpan: float = Property(float, ExPlotWidget._get_time_span, ExPlotWidget._set_time_span)
-    """Range from which the plot displays data"""
+    leftTimeBoundary: float = Property(
+        float,
+        ExPlotWidget._get_left_time_span_boundary,
+        ExPlotWidget._set_left_time_span_boundary,
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
-    def _get_is_xrange_fixed(self) -> bool:
-        """QtDesigner getter function for the PlotItems flag for a fixed scrolling x range"""
-        return self.plotItem.plot_config.is_xrange_fixed
-
-    def _set_is_xrange_fixed(self, new_val: bool) -> None:
-        """QtDesigner setter function for the PlotItems flag for a fixed scrolling x range"""
-        if new_val != self.plotItem.plot_config.is_xrange_fixed:
-            new_config = deepcopy(self.plotItem.plot_config)
-            new_config.is_xrange_fixed = new_val
-            self.plotItem.update_config(config=new_config)
-
-    fixedXRange: bool = Property(bool, _get_is_xrange_fixed, _set_is_xrange_fixed)
-    """The x axis shows always the same range and does not zoom in if less data is available"""
-
-    def _get_fixed_xrange_offset(self) -> float:
-        """QtDesigner getter function for the PlotItems fixed scrolling x range offset"""
-        if np.isnan(self.plotItem.plot_config.fixed_xrange_offset):
-            return 0.0
-        return self.plotItem.plot_config.fixed_xrange_offset
-
-    def _set_fixed_xrange_offset(self, new_val: float) -> None:
-        """QtDesigner setter function for the PlotItems fixed scrolling x range offset"""
-        if new_val != self.plotItem.plot_config.fixed_xrange_offset:
-            new_config = deepcopy(self.plotItem.plot_config)
-            new_config.fixed_xrange_offset = new_val
-            self.plotItem.update_config(config=new_config)
-
-    fixedXRangeOffset: float = Property(float, _get_fixed_xrange_offset, _set_fixed_xrange_offset)
-    """Offset for the Fixed x range"""
+    leftTimeBoundaryEnabled: bool = Property(
+        bool,
+        ExPlotWidget._get_left_time_span_boundary_bool,
+        ExPlotWidget._set_left_time_span_boundary_bool,
+        doc="This is a test",
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
 
-class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+
+    Q_ENUM(XAxisSideOptions)
+    Q_ENUM(DefaultYAxisSideOptions)
+    Q_ENUM(GridOrientationOptions)
+    Q_ENUM(LegendXAlignmentOptions)
+    Q_ENUM(LegendYAlignmentOptions)
 
     def __init__(
             self,
             parent: Optional[QWidget] = None,
             background: str = "default",
-            time_span: float = 60.0,
+            time_span: Union[TimeSpan, float, None] = 60.0,
             time_progress_line: bool = False,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
@@ -851,7 +1027,7 @@ class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[m
     ):
         """
         The ScrollingPlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the sliding pointer style. Additionally some
+        configuration contains the cylic plot style. Additionally some
         properties are offered that are specific to this plotting style.
         When switching the ExPlotWidget, passing a fitting configuration
         can achieve the same results as using these properties.
@@ -859,7 +1035,8 @@ class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[m
         Args:
             parent: parent item for this widget, will only be passed to base class
             background: background for the widget, will only be passed to base class
-            time_span: data from which time span should be displayed in the plot
+            time_span: data from which time span should be displayed in the plot.
+                       The default time span is 60.0 seconds.
             time_progress_line: If true, the current timestamp will represented as a
                                 vertical line in the plot
             axis_items: If the standard plot axes should be replaced, pass a dictionary
@@ -870,11 +1047,13 @@ class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[m
             **plotitem_kwargs: Params passed to the plot item
         """
         config = ExPlotWidgetConfig(
-            plotting_style=PlotWidgetStyle.SLIDING_POINTER,
+            plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
             time_span=time_span,
             time_progress_line=time_progress_line,
         )
-        super().__init__(
+        ExPlotWidgetProperties.__init__(self)
+        ExPlotWidget.__init__(
+            self,
             parent=parent,
             background=background,
             config=config,
@@ -883,14 +1062,40 @@ class SlidingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[m
             **plotitem_kwargs
         )
 
-    showTimeProgressLine: bool = Property(bool, ExPlotWidget._get_show_time_line, ExPlotWidget._set_show_time_line)
-    """Vertical Line displaying the current time stamp"""
+    leftBoundary: float = Property(
+        float,
+        ExPlotWidget._get_left_time_span_boundary,
+        ExPlotWidget._set_left_time_span_boundary,
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
-    timeSpan: float = Property(float, ExPlotWidget._get_time_span, ExPlotWidget._set_time_span)
-    """Range from which the plot displays data"""
+    def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+                                "since a cyclic plot can not be drawn without both boundaries defined.")
+        return False
+
+    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+                                "since a cyclic plot can not be drawn without both boundaries defined.")
+
+    leftBoundaryEnabled: bool = Property(
+        bool,
+        _get_left_time_span_boundary_bool,
+        _set_left_time_span_boundary_bool,
+        designable=False,
+    )
+    """DO NOT USE WITH A CYCLIC PLOT."""
 
 
 class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+
+    Q_ENUM(XAxisSideOptions)
+    Q_ENUM(DefaultYAxisSideOptions)
+    Q_ENUM(GridOrientationOptions)
+    Q_ENUM(LegendXAlignmentOptions)
+    Q_ENUM(LegendYAlignmentOptions)
 
     def __init__(
             self,
@@ -915,7 +1120,9 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
         config = ExPlotWidgetConfig(
             plotting_style=PlotWidgetStyle.STATIC_PLOT,
         )
-        super().__init__(
+        ExPlotWidgetProperties.__init__(self)
+        ExPlotWidget.__init__(
+            self,
             parent=parent,
             background=background,
             config=config,
@@ -926,13 +1133,13 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
             _LOGGER.warning(msg="Property 'setShowTimeLine' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and SlidingPlotWidget.")
+                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return False
 
     def _set_show_time_line(self, new_val: bool) -> None:
         if not designer_check.is_designer():
             _LOGGER.warning(msg="Property 'setShowTimeLine' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and SlidingPlotWidget.")
+                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
     """Vertical Line displaying the current time stamp, not supported by the static plotting style"""
@@ -940,13 +1147,69 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
     def _get_time_span(self) -> float:
         if not designer_check.is_designer():
             _LOGGER.warning(msg="Property 'timeSpan' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and SlidingPlotWidget.")
+                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return 0.0
 
     def _set_time_span(self, new_val: float) -> None:
         if not designer_check.is_designer():
             _LOGGER.warning(msg="Property 'timeSpan' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and SlidingPlotWidget.")
+                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
     """Range from which the plot displays data, not supported by the static plotting style"""
+
+    def _get_right_time_span_boundary(self) -> float:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'rightBoundary' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+        return False
+
+    def _set_right_time_span_boundary(self, new_val: float) -> None:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'rightBoundary' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+
+    rightBoundary: float = Property(
+        float,
+        _get_right_time_span_boundary,
+        _set_right_time_span_boundary,
+        designable=False,
+    )
+    """Value of the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary(self, **kwargs) -> float:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundary' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+        return False
+
+    def _set_left_time_span_boundary(self, new_val: float) -> None:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundary' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+
+    leftBoundary: float = Property(
+        float,
+        _get_left_time_span_boundary,
+        _set_left_time_span_boundary,
+        designable=False,
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary_bool(self) -> bool:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+        return False
+
+    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+        if not designer_check.is_designer():
+            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+                                "since it does not use any time span.")
+
+    leftBoundaryEnabled: bool = Property(
+        bool,
+        _get_left_time_span_boundary_bool,
+        _set_left_time_span_boundary_bool,
+        designable=False,
+    )

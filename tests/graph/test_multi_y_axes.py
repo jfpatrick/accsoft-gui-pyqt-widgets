@@ -40,7 +40,7 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
     Test addition of the layer parameter in the setRange and setYRange
     function of the ExPlotItem
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -99,7 +99,7 @@ def test_invert_y(qtbot, item_to_test):
     Test addition of the layer parameter in the setYRange
     function of the ExPlotItem
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -131,7 +131,7 @@ def test_link_y_layers(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -164,7 +164,7 @@ def test_get_view_box(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -189,7 +189,7 @@ def test_get_axis(qtbot, item_to_test):
     Test get axes by their name as well as axes from additional
     layers by their layer identifier.
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -213,7 +213,7 @@ def test_get_axis(qtbot, item_to_test):
 })
 def test_show_axis(qtbot, name, item_to_test):
     """Test show axes by their name."""
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -236,7 +236,7 @@ def test_show_axis(qtbot, name, item_to_test):
 })
 def test_add_axes_label(qtbot, name, item_to_test):
     """Test adding labels to axes by their name."""
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -259,7 +259,7 @@ def test_add_axes_label(qtbot, name, item_to_test):
 })
 def test_add_axes_labels(qtbot, item_to_test):
     """Test convenience function for adding labels to axes 'addLabels'"""
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -286,7 +286,7 @@ def test_simple_adding_two_new_layers(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -313,7 +313,7 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -354,7 +354,7 @@ def test_removal_of_layer(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -390,7 +390,7 @@ def test_get_all_layers_viewboxes(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -420,7 +420,7 @@ def test_new_layer_viewbox_and_axis(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -446,7 +446,7 @@ def test_plot_item_default_layer(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -474,7 +474,7 @@ def test_draw_add_plotdataitem_to_specific_layer(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -505,7 +505,7 @@ def test_layers_with_new_plotting_style(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -566,7 +566,7 @@ def test_set_axis_range(qtbot, item_to_test):
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -632,7 +632,7 @@ def test_set_axis_range(qtbot, item_to_test):
     ExPlotWidget,
 })
 def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -656,7 +656,7 @@ def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
     ExPlotWidget,
 })
 def test_auto_range_all_layers_at_different_range(qtbot, item_to_test):
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -687,7 +687,7 @@ def test_auto_button_visibility(qtbot, item_to_test):
     layer is not in the auto scaling mode anymore and a mouse
     pointer is hovering over the plot.
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -726,7 +726,7 @@ def test_auto_button_functionality(qtbot, item_to_test):
     layer is not in the auto scaling mode anymore and a mouse
     pointer is hovering over the plot.
     """
-    window = _prepare_sliding_pointer_plot_test_window(qtbot, 5)
+    window = _prepare_cyclic_plot_test_window(qtbot, 5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -805,14 +805,14 @@ def manual_range_change(layer: PlotItemLayer, **kwargs):
     layer.view_box.setRange(**kwargs)
 
 
-def _prepare_sliding_pointer_plot_test_window(qtbot, time_span: int):
+def _prepare_cyclic_plot_test_window(qtbot, time_span: int):
     """ Create a simple test window
     Args:
         qtbot: pytest-qt fixture to control pyqt applications
         time_span (int): time span size for the PlotItem
     """
     plot_config = ExPlotWidgetConfig(
-        plotting_style=PlotWidgetStyle.SLIDING_POINTER,
+        plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
         time_span=time_span,
         time_progress_line=True,
     )

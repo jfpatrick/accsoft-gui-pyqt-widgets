@@ -11,6 +11,7 @@ in a passed frequency.
 from datetime import datetime
 from typing import List, Optional
 from enum import Enum
+import math
 
 import numpy as np
 from qtpy.QtCore import QTimer
@@ -52,18 +53,10 @@ class SinusCurveSource(accgraph.UpdateSource):
             updates_per_second: How many points should be emitted per second
         """
         super().__init__()
-        self.sinus_curve = [
-            y_val + y_offset
-            for y_val in np.sin(
-                np.array(np.arange(start=0.0, stop=720.0, step=60 / updates_per_second))
-                * np.pi
-                / 180.0
-            )
-        ]
         self.types_to_emit: List[SinusCurveSourceEmitTypes] = types_to_emit or [SinusCurveSourceEmitTypes.POINT]
-        self.pointer = 0
         self.label_counter = 0
         self.x_offset = x_offset
+        self.y_offset = y_offset
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._create_new_values)
         self.timer.start(1000 / updates_per_second)
@@ -77,20 +70,20 @@ class SinusCurveSource(accgraph.UpdateSource):
         if emit_type == SinusCurveSourceEmitTypes.POINT:
             new_data = accgraph.PointData(
                 x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=self.sinus_curve[self.pointer],
+                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
             self.sig_new_data[accgraph.PointData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=self.sinus_curve[self.pointer],
-                height=self.sinus_curve[self.pointer],
+                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
+                height=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
             self.sig_new_data[accgraph.BarData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
                 x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=self.sinus_curve[self.pointer],
+                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
                 height=2.0,
                 width=0.0,
                 label=str(self.label_counter),
@@ -116,7 +109,6 @@ class SinusCurveSource(accgraph.UpdateSource):
             self.label_counter += 1
         else:
             raise ValueError(f"Unknown signal emit_type: {self.types_to_emit}")
-        self.pointer = (self.pointer + 1) % len(self.sinus_curve)
 
 
 class LoggingCurveDataSource(accgraph.UpdateSource):
