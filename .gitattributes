@@ -244,4 +244,5 @@ AUTHORS text
 *.woff binary
 *.woff2 binary
 *.pyc binary
-*.pdf binary
+*.pdf binary_version.py export-subst
+accwidgets/_version.py export-subst

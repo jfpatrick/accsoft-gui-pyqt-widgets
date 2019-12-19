@@ -6,6 +6,7 @@ For developer additional dependencies:  pip install .[testing]
 
 import os
 from typing import Dict, List
+import versioneer
 
 from setuptools import find_packages, setup
 
@@ -64,7 +65,8 @@ print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
 
 setup(
     name="accwidgets",
-    version="0.1.0",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description="PyQt based widgets",
     packages=find_packages(exclude=("examples", "docs", "tests")),
     install_requires=INSTALL_REQUIRES,
