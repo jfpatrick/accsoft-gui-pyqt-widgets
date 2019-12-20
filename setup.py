@@ -9,7 +9,15 @@ from typing import Dict, List
 from pathlib import Path
 import versioneer
 
-from setuptools import find_packages, setup
+from setuptools import setup, PEP420PackageFinder
+
+
+# We use implicit packages (PEP420) that are not obliged
+# to have __init__.py. Default implementation of setuptools.find_packages will
+# expect that file to exist and thus skip everything else. We need a tailored
+# version.
+find_packages = PEP420PackageFinder.find
+
 
 FOUND_USER_DEPS_FILES = []
 FOUND_DEV_DEPS_FILES = []
@@ -89,6 +97,9 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Typing :: Typed',
     ],
+    package_data={
+        '': ['*.ico'],
+    },
     platforms=['centos7'],
     test_suite='tests',
 )
