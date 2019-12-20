@@ -528,7 +528,11 @@ class LegendYAlignmentOptions:
     Center = 2
 
 
-class ExPlotWidgetProperties(XAxisSideOptions, DefaultYAxisSideOptions, GridOrientationOptions):
+class ExPlotWidgetProperties(XAxisSideOptions,
+                             DefaultYAxisSideOptions,
+                             GridOrientationOptions,
+                             LegendXAlignmentOptions,
+                             LegendYAlignmentOptions):
 
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
