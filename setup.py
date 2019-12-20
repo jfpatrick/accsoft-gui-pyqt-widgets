@@ -6,6 +6,7 @@ For developer additional dependencies:  pip install .[testing]
 
 import os
 from typing import Dict, List
+from pathlib import Path
 import versioneer
 
 from setuptools import find_packages, setup
@@ -61,14 +62,33 @@ print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Result of Search ~~~~~~~~~~~~~~~~~~~~~~~~~~
 print(f"Combined user dependencies:        {INSTALL_REQUIRES}")
 print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
 
-# raise ValueError("Stop")
+
+curr_dir: Path = Path(__file__).parent.absolute()
+
+with curr_dir.joinpath('README.md').open() as f:
+    long_description = f.read()
 
 setup(
     name="accwidgets",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description="PyQt based widgets",
-    packages=find_packages(exclude=("examples", "docs", "tests")),
+    description="PyQt-based widgets for CERN accelerator controls",
+    long_description=long_description,
+    author='Fabian Sorn',
+    author_email='fabian.sorn@cern.ch',
+    packages=find_packages(exclude=("examples", "docs", "tests", "build*", "dist*", "*.egg-info")),
+    url='https://wikis.cern.ch/display/ACCPY/Widgets',
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRA_REQUIRES,
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: X11 Applications :: Qt',
+        'Intended Audience :: Developers',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Typing :: Typed',
+    ],
+    platforms=['centos7'],
+    test_suite='tests',
 )
