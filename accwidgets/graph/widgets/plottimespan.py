@@ -9,8 +9,8 @@ class BasePlotTimeSpan(metaclass=abc.ABCMeta):
 
     def __init__(
             self,
+            time_span: TimeSpan,
             start: float = 0.0,
-            time_span: TimeSpan = None
     ):
         """
         Base class for different plotting time spans.
@@ -100,12 +100,12 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
 
     def __init__(
             self,
+            time_span: TimeSpan,
             start: float = 0.0,
-            time_span: TimeSpan = None
     ):
         super().__init__(
             start=start,
-            time_span=time_span
+            time_span=time_span,
         )
         self._cycle: float = 0.0
 
@@ -160,6 +160,4 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
 
     def _validate(self):
         if not self.time_span.finite:
-            raise ValueError(
-                f"Infinite Time Spans {self.time_span} are not compatible with a Cyclic Plot."
-            )
+            raise ValueError(f"Infinite Time Spans {self.time_span} are not compatible with a Cyclic Plot.")

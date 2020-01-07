@@ -7,7 +7,6 @@ on a running plot that is displaying data.
 
 import sys
 
-import numpy as np
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QComboBox, QSpinBox, QLabel, QCheckBox, QFrame
 import pyqtgraph as pg
 
@@ -22,12 +21,18 @@ class MainWindow(QMainWindow):
         # In the beginning we want to show 10 seconds of data
         self.time_span = accgraph.TimeSpan(left=10.0, right=0.0)
         # Two sources of sinus curves with different update frequencies
-        data_source_1 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=0, updates_per_second=20, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
-        )
-        data_source_2 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=5, updates_per_second=5, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
-        )
+        data_source_1 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=0,
+                                                         updates_per_second=20,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.POINT,
+                                                         ])
+        data_source_2 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=5,
+                                                         updates_per_second=5,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.POINT,
+                                                         ])
         # In the beginning the plot should show the data as sliding pointer curves
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.CYCLIC_PLOT,

@@ -41,9 +41,7 @@ class ExAxisItem(AxisItem):
 class TimeAxisItem(AxisItem):
     """Axis Item that shows timestamps as strings in format HH:MM:SS"""
 
-    def tickStrings(
-        self, values: List[float], scale: float, spacing: float
-    ) -> List[str]:
+    def tickStrings(self, values: List[float], scale: float, spacing: float) -> List[str]:
         """Translate timestamps to human readable times formatted HH:MM:SS
 
         Args:

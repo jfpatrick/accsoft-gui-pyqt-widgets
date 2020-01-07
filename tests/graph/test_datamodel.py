@@ -19,7 +19,7 @@ DATAMODELS_TO_TEST = [
     accgraph.LiveCurveDataModel,
     accgraph.LiveBarGraphDataModel,
     accgraph.LiveInjectionBarDataModel,
-    accgraph.LiveTimestampMarkerDataModel
+    accgraph.LiveTimestampMarkerDataModel,
 ]
 
 # ~~~~~ Simple ordering for different datamodels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

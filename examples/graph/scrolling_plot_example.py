@@ -30,19 +30,15 @@ class MainWindow(QMainWindow):
         timing_source = example_sources.LocalTimerTimingSource()
         # Create 2 sources for our curves that will continuously emit new points that
         # are then displayed by our curve when they arrive
-        data_source_1 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=0, updates_per_second=60
-        )
-        data_source_2 = example_sources.SinusCurveSource(
-            x_offset=-1.0, y_offset=3, updates_per_second=60
-        )
+        data_source_1 = example_sources.SinusCurveSource(x_offset=0.0, y_offset=0, updates_per_second=60)
+        data_source_2 = example_sources.SinusCurveSource(x_offset=-1.0, y_offset=3, updates_per_second=60)
         # We want the plot to display a scrolling 10 second time span at all times
         # Let's create our plot fitting to these requirements with the separate source
         # for timing updates attached
         self.plot = accgraph.ScrollingPlotWidget(
             timing_source=timing_source,
             time_span=accgraph.TimeSpan(10.0, 0.0),
-            time_progress_line=True
+            time_progress_line=True,
         )
         # Now we can add 2 curves in different colors that are displaying the
         # data coming from out source.

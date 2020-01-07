@@ -31,9 +31,8 @@ PACKAGES = ["accwidgets"]
 INSTALL_REQUIRES: List[str] = []
 EXTRA_REQUIRES: Dict[str, List[str]] = {DEV_DEPS_MAP_KEY: []}
 
-print(
-    f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, starting from {CURRENT_FILE_LOCATION}"
-)
+print(f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, "
+      f"starting from {CURRENT_FILE_LOCATION}")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 for package in PACKAGES:
     folder_to_search = (
@@ -42,7 +41,7 @@ for package in PACKAGES:
         + package
     )
     print(f"Search folder:                     {folder_to_search}")
-    for root, directories, files in os.walk(
+    for root, _, files in os.walk(
         folder_to_search,
         onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),  # type: ignore
     ):
@@ -94,7 +93,7 @@ EXTRA_REQUIRES["release"] = [
 
 curr_dir: Path = Path(__file__).parent.absolute()
 
-with curr_dir.joinpath('README.md').open() as f:
+with curr_dir.joinpath("README.md").open() as f:
     long_description = f.read()
 
 setup(
@@ -103,24 +102,24 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description="PyQt-based widgets for CERN accelerator controls",
     long_description=long_description,
-    author='Fabian Sorn',
-    author_email='fabian.sorn@cern.ch',
+    author="Fabian Sorn",
+    author_email="fabian.sorn@cern.ch",
     packages=find_packages(exclude=("examples", "docs", "tests", "build*", "dist*", "*.egg-info")),
-    url='https://wikis.cern.ch/display/ACCPY/Widgets',
+    url="https://wikis.cern.ch/display/ACCPY/Widgets",
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRA_REQUIRES,
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: X11 Applications :: Qt',
-        'Intended Audience :: Developers',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Typing :: Typed',
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: X11 Applications :: Qt",
+        "Intended Audience :: Developers",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Typing :: Typed",
     ],
     package_data={
-        '': ['*.ico'],
+        "": ["*.ico"],
     },
-    platforms=['centos7'],
-    test_suite='tests',
+    platforms=["centos7"],
+    test_suite="tests",
 )

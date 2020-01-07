@@ -48,9 +48,7 @@ class MainWindow(QMainWindow):
         )
         self.plot.addItem(
             layer="omega_layer",
-            item=pg.BarGraphItem(
-                x=[1, 2, 3], width=0.05, height=[101, 102, 103]
-            ),
+            item=pg.BarGraphItem(x=[1, 2, 3], width=0.05, height=[101, 102, 103]),
         )
         # Each layer can have its own custom y range set
         self.plot.setRange(

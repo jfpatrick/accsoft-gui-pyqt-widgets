@@ -130,12 +130,10 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         self.timer_diff = 1000 / updates_per_second
         self.y_values_live: List[float] = list(
             np.sin(
-                np.array(
-                    np.arange(start=0.0, stop=720.0, step=60 / self.updates_per_second)
-                )
+                np.array(np.arange(start=0.0, stop=720.0, step=60 / self.updates_per_second))
                 * np.pi
-                / 180.0
-            )
+                / 180.0,
+            ),
         )
         self.y_values_logging: List[float] = [y_value * 0.25 for y_value in self.y_values_live]
         delta = self.timer_diff / (1000 * 2)

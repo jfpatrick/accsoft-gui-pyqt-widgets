@@ -128,6 +128,7 @@ class LayerEditorTableModel(QAbstractTableModel):
             return self.columns[section].value
         elif orientation == Qt.Vertical and section < self.rowCount():
             return str(section)
+        return ""
 
     def append(self) -> None:
         """Append a new layer to the plot."""
@@ -162,7 +163,7 @@ class LayerEditorTableModel(QAbstractTableModel):
     def data(
             self,
             index: QModelIndex,
-            role: Qt.ItemDataRole = Qt.DisplayRole
+            role: Qt.ItemDataRole = Qt.DisplayRole,
     ) -> Union[QVariant, str, float, float]:
         """
         Get Data from the table's model by a given index.
@@ -184,12 +185,13 @@ class LayerEditorTableModel(QAbstractTableModel):
         # Return found data
         if role == Qt.DisplayRole or role == Qt.EditRole:
             return self._get_data(index=index)
+        return QVariant()
 
     def setData(
             self,
             index: QModelIndex,
             value=Union[float, str],
-            role: Qt.ItemDataRole = Qt.EditRole
+            role: Qt.ItemDataRole = Qt.EditRole,
     ) -> bool:
         """
         Set Data to the tables data model at the given index.
@@ -286,7 +288,7 @@ class LayerEditorTableModel(QAbstractTableModel):
         ar_dict.update({axis: bool(auto_range)})
         self.plot.axisAutoRange = json.dumps(ar_dict)
 
-    def _get_view_range(self, axis: str) -> (float, float):
+    def _get_view_range(self, axis: str) -> Tuple[float, float]:
         axes_ranges = json.loads(self.plot.axisRanges)
         return axes_ranges.get(axis, (np.nan, np.nan))
 
@@ -328,7 +330,7 @@ class PlotLayerEditingDialog(QDialog):
         self.remove_button.setEnabled(False)
         self.layer_table_view.selectionModel().selectionChanged.connect(
             self.handleSelectionChange)
-        plot_name = " ".join([s.capitalize() for s in self.plot.plotItem.plot_config.plotting_style.name.split('_')])
+        plot_name = " ".join([s.capitalize() for s in self.plot.plotItem.plot_config.plotting_style.name.split("_")])
         self.setWindowTitle(f"Edit Axes of {plot_name}")
         self.resize(600, 300)
         self.show()

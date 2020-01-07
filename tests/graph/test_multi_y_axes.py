@@ -58,13 +58,13 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
         method=method,
         plot_item=plot,
         view_range=(1.0, 2.0),
-        layer="layer_1"
+        layer="layer_1",
     )
     _set_range(
         method=method,
         plot_item=plot,
         view_range=(2.0, 3.0),
-        layer="layer_2"
+        layer="layer_2",
     )
     check_range(layer_0.view_box.targetRange(), [[-10, 10], [0.0, 1.0]])
     check_range(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
@@ -74,7 +74,7 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
         method=method,
         plot_item=plot,
         view_range=(-1.0, 0.0),
-        layer=""
+        layer="",
     )
     check_range(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
     with pytest.raises(KeyError):
@@ -82,7 +82,7 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
             min=-100.0,
             max=0.0,
             padding=0.0,
-            layer="non existing layer"
+            layer="non existing layer",
         )
     # No ranges should be touched
     check_range(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
@@ -201,9 +201,7 @@ def test_get_axis(qtbot, item_to_test):
         plot.getAxis(name="non_existing_layer")
     # Test that original functionality is still there
     for axis in standard_axes_names:
-        assert plot.getAxis(name=axis) == super(
-            type(window.plot.plotItem), window.plot.plotItem
-        ).getAxis(name=axis)
+        assert plot.getAxis(name=axis) == super(type(window.plot.plotItem), window.plot.plotItem).getAxis(name=axis)
 
 
 @pytest.mark.parametrize("name", all_axes_names)
@@ -317,9 +315,7 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    layer_0 = plot.add_layer(
-        layer_id="layer_0"
-    )
+    layer_0 = plot.add_layer(layer_id="layer_0")
     assert not layer_0.view_box.yInverted()
     check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
     layer_1 = plot.add_layer(
@@ -424,9 +420,7 @@ def test_new_layer_viewbox_and_axis(qtbot, item_to_test):
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
-    new_layer = plot.add_layer(
-        "layer_2_id", text="layer_2_label"
-    )
+    new_layer = plot.add_layer("layer_2_id", text="layer_2_label")
     assert new_layer.view_box and new_layer.view_box is not plot.getViewBox()
     assert new_layer.axis_item and new_layer.axis_item is not plot.getAxis("left")
     assert new_layer.axis_item.labelText == "layer_2_label"
@@ -453,12 +447,8 @@ def test_plot_item_default_layer(qtbot, item_to_test):
     default_layer = plot.layer()
     assert default_layer.axis_item is plot.getAxis("left")
     assert default_layer.view_box is plot.getViewBox()
-    assert (
-            default_layer.id == PlotItemLayer.default_layer_id
-    )
-    assert default_layer is plot.layer(
-        PlotItemLayer.default_layer_id
-    )
+    assert default_layer.id == PlotItemLayer.default_layer_id
+    assert default_layer is plot.layer(PlotItemLayer.default_layer_id)
     assert len(window.plot.plotItem.layers) == 1
 
 
@@ -535,9 +525,7 @@ def test_layers_with_new_plotting_style(qtbot, item_to_test):
     assert len(default_layer_items) == empty_default_layer_items_count
     assert layer_1_curve in layer_1_items
     assert layer_1_curve not in default_layer_items
-    default_layer_curve = plot.addCurve(
-        data_source=data_source_mock
-    )
+    default_layer_curve = plot.addCurve(data_source=data_source_mock)
     # Create some updates for the new curve (without data no plotted curve)
     data_source_mock.create_new_value(timestamp=1.2, value=1.0)
     data_source_mock.create_new_value(timestamp=1.5, value=1.0)
@@ -546,10 +534,7 @@ def test_layers_with_new_plotting_style(qtbot, item_to_test):
     # Layer 1 should not be affected by the new curve
     assert len(layer_1_items) == 1
     # The default layer should have the new items included
-    assert (
-        len(default_layer_items)
-        == empty_default_layer_items_count + 1
-    )
+    assert len(default_layer_items) == empty_default_layer_items_count + 1
     assert default_layer_curve in default_layer_items
     assert default_layer_curve not in layer_1_items
 
@@ -776,7 +761,7 @@ def _simulate_mouse_hover_for_auto_button(plot: Union[pg.PlotItem, pg.PlotWidget
 def check_range(
         actual_range: List[List[float]],
         expected_range: List[List[float]],
-        tolerance_factor: float = 0.0025
+        tolerance_factor: float = 0.0025,
 ) -> None:
     """
     Compare a viewboxes range with an expected range
@@ -799,9 +784,7 @@ def manual_range_change(layer: PlotItemLayer, **kwargs):
     """Simulate a manual range change in a viewbox by emitting the manual change signal before setting the range"""
     if not kwargs.get("padding"):
         kwargs["padding"] = 0.0
-    layer.view_box.sigRangeChangedManually.emit(
-        layer.view_box.state["mouseEnabled"]
-    )  # Simulate Manual update by mouse
+    layer.view_box.sigRangeChangedManually.emit(layer.view_box.state["mouseEnabled"])  # Simulate Manual update by mouse
     layer.view_box.setRange(**kwargs)
 
 
@@ -832,7 +815,7 @@ def _set_range(
     method: classmethod,
     plot_item: ExPlotItem,
     view_range: Tuple[float, float],
-    layer: Optional[LayerIdentification] = None
+    layer: Optional[LayerIdentification] = None,
 ):
     kwargs: Dict = {}
     if method == ExViewBox.setYRange:

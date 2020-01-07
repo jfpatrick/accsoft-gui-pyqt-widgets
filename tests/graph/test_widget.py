@@ -1,7 +1,5 @@
-# pylint: disable=missing-docstring, protected-access
-
 from datetime import datetime
-from typing import Union, List, Tuple, Dict, Type, Optional
+from typing import Union, List, Tuple, Dict, Type, Optional, cast
 import itertools
 
 import pytest
@@ -63,7 +61,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
 @pytest.mark.parametrize("time_span", [2, 100])
 @pytest.mark.parametrize("plotting_style", [
     PlotWidgetStyle.SCROLLING_PLOT,
-    PlotWidgetStyle.CYCLIC_PLOT
+    PlotWidgetStyle.CYCLIC_PLOT,
 ])
 @pytest.mark.parametrize("time_line", [False, True])
 @pytest.mark.parametrize("item_to_add", [
@@ -77,7 +75,7 @@ def test_all_available_widget_configurations(
     time_span: int,
     plotting_style: PlotWidgetStyle,
     time_line: bool,
-    item_to_add: Tuple[Type[DataModelBasedItem], str, Dict]
+    item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
 ):
     """Iterate through the possible combinations of parameters when creating
      a new PlotWidget and check if all elements are created as expected.
@@ -99,7 +97,7 @@ def test_all_available_widget_configurations(
     window = PlotWidgetTestWindow(
         plot_config=plot_config,
         item_to_add=item_to_add[0],
-        opts=_test_change_plot_config_on_running_plot_opts.get(item_to_add[1], {})
+        opts=_test_change_plot_config_on_running_plot_opts.get(item_to_add[1], {}),
     )
     if window.time_source_mock is None:
         raise ValueError("Timing Source for the test window was not created as expected.")
@@ -122,7 +120,7 @@ _test_change_plot_config_on_running_plot_time_span_change = list(itertools.produ
 _test_change_plot_config_on_running_plot_x_offset_change = list(itertools.product([-5.0, 0.0, 5.0], [-5.0, 0.0, 5.0]))
 _test_change_plot_config_on_running_plot_plotting_style_change = list(itertools.product(
     [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT],
-    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT]
+    [PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT],
 ))
 _test_change_plot_config_on_running_plot_time_line_change = list(itertools.product([True, False], [True, False]))
 _test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, float]]] = {
@@ -138,7 +136,7 @@ _test_change_plot_config_on_running_plot_opts: Dict[str, Dict[str, Union[str, fl
     },
     "injectionbar": {
         "pen": "r",
-    }
+    },
 }
 
 
@@ -175,7 +173,7 @@ def test_change_plot_config_on_running_plot(
     ds_line = MockDataSource()
     plotwidget.addCurve(
         data_source=ds_curve,
-        **_test_change_plot_config_on_running_plot_opts["curve"]  # type: ignore[arg-type]
+        **_test_change_plot_config_on_running_plot_opts["curve"],  # type: ignore
     )
     emit_fitting_value(LivePlotCurve, ds_curve, 10.0, 0.0)
     emit_fitting_value(LivePlotCurve, ds_curve, 20.0, 0.0)
@@ -186,7 +184,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.addBarGraph(  # type: ignore
             data_source=ds_bar,
             layer="layer_1",
-            **_test_change_plot_config_on_running_plot_opts["bargraph"]  # type: ignore[arg-type]
+            **_test_change_plot_config_on_running_plot_opts["bargraph"],  # type: ignore
         )
         emit_fitting_value(LiveBarGraphItem, ds_bar, 10.0, 0.0)
         emit_fitting_value(LiveBarGraphItem, ds_bar, 20.0, 0.0)
@@ -196,7 +194,7 @@ def test_change_plot_config_on_running_plot(
         plotwidget.addInjectionBar(  # type: ignore
             data_source=ds_injection,
             layer="layer_2",
-            **_test_change_plot_config_on_running_plot_opts["injectionbar"]  # type: ignore[arg-type]
+            **_test_change_plot_config_on_running_plot_opts["injectionbar"],  # type: ignore
         )
         emit_fitting_value(LiveInjectionBarGraphItem, ds_injection, 10.0, 0.0)
         emit_fitting_value(LiveInjectionBarGraphItem, ds_injection, 20.0, 0.0)
@@ -239,7 +237,7 @@ def test_change_plot_config_on_running_plot(
 
 
 @pytest.mark.parametrize("plotting_style", [
-    PlotWidgetStyle.CYCLIC_PLOT
+    PlotWidgetStyle.CYCLIC_PLOT,
 ])
 def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     """
@@ -259,27 +257,27 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     plot_item.addCurve(data_source=source)
     source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
     # Set Range on PlotWidget
-    expected = [[-2.5, 2.5], [-1.5, 1.5]]
+    expected = ((-2.5, 2.5), (-1.5, 1.5))
     plot_widget.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_widget.setYRange(expected[1][0], expected[1][1], padding=0.0)
     source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
-    expected = [[-4.5, 4.5], [-3.5, 3.5]]
+    expected = ((-4.5, 4.5), (-3.5, 3.5))
     plot_item.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_item.setYRange(expected[1][0], expected[1][1], padding=0.0)
     source.sig_new_data[PointData].emit(PointData(1.0, 1.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
-    expected = [[-2.5, 2.5], [-1.5, 1.5]]
+    expected = ((-2.5, 2.5), (-1.5, 1.5))
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
     source.sig_new_data[PointData].emit(PointData(2.0, 2.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotWidget
-    expected = [[-4.5, 4.5], [-3.5, 3.5]]
+    expected = ((-4.5, 4.5), (-3.5, 3.5))
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
     source.sig_new_data[PointData].emit(PointData(3.0, 3.0))
     actual = plot_item.vb.targetRange()
@@ -287,12 +285,14 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     # Auto Range (to see if still possible after setting range by hand)
     plot_widget.autoRange(padding=0.0)
     if plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
-        expected = [[0.0, 3.0], [0.0, 3.0]]
+        expected = ((0.0, 3.0), (0.0, 3.0))
     elif plotting_style == PlotWidgetStyle.CYCLIC_PLOT:
-        expected = [
-            [plot_item._time_span_start_boundary.pos()[0], plot_item._time_span_end_boundary.pos()[0]],
-            [0.0, 3.0]
-        ]
+        start_boundary = cast(pg.InfiniteLine, plot_item._time_span_start_boundary)
+        end_boundary = cast(pg.InfiniteLine, plot_item._time_span_end_boundary)
+        expected = (
+            (start_boundary.pos()[0], end_boundary.pos()[0]),
+            (0.0, 3.0),
+        )
     source.sig_new_data[PointData].emit(PointData(4.0, 4.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected), atol=0.1)
@@ -300,7 +300,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
 
 @pytest.mark.parametrize("config_style_change", [
     (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT),
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT)
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT),
 ])
 def test_static_items_config_change(qtbot, config_style_change):
     """
@@ -319,7 +319,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     items = [
         plot_item.addCurve(data_source=source),
         pg.PlotDataItem([0.0, 1.0, 2.0]),
-        pg.InfiniteLine(pos=0.0, angle=0)
+        pg.InfiniteLine(pos=0.0, angle=0),
     ]
     for item in items:
         plot_item.addItem(item)
@@ -350,7 +350,7 @@ def check_scrolling_plot_with_fixed_xrange(
         for view_box in plotwidget.plotItem.view_boxes:
             check_range(actual_range=view_box.targetRange(), expected_range=[
                 [(30.0 + x_offset_change) - time_span_change, 30.0 + x_offset_change],
-                [np.nan, np.nan]
+                [np.nan, np.nan],
             ])
 
 
@@ -413,8 +413,8 @@ def check_cyclic_time_span_boundaries(
         assert (plot_item._time_span_start_boundary is not None and plot_item._time_span_end_boundary is not None)
         assert plot_item._time_span_start_boundary in plot_item.items
         assert plot_item._time_span_start_boundary in plot_item.vb.addedItems
-        assert plot_item._time_span_end_boundary  in plot_item.items
-        assert plot_item._time_span_end_boundary  in plot_item.vb.addedItems
+        assert plot_item._time_span_end_boundary in plot_item.items
+        assert plot_item._time_span_end_boundary in plot_item.vb.addedItems
     else:
         assert (plot_item._time_span_start_boundary is None and plot_item._time_span_end_boundary is None)
         if prior_items:
@@ -430,14 +430,14 @@ def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):
     if item_to_add == LivePlotCurve or isinstance(item_to_add, str) and item_to_add == "ScatterPlot":
         point = PointData(
             x_value=data_x,
-            y_value=data_y
+            y_value=data_y,
         )
         data_source.emit_new_object(point)
     elif item_to_add == LiveBarGraphItem:
         bar = BarData(
             x_value=data_x,
             y_value=data_y,
-            height=data_y
+            height=data_y,
         )
         data_source.emit_new_object(bar)
     elif item_to_add == LiveInjectionBarGraphItem:
@@ -446,14 +446,14 @@ def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):
             y_value=data_y,
             height=data_y,
             width=1,
-            label=str(data_x)
+            label=str(data_x),
         )
         data_source.emit_new_object(i_bar)
     elif item_to_add == LiveTimestampMarker:
         line = TimestampMarkerData(
             x_value=data_x,
             color="r",
-            label=str(data_x)
+            label=str(data_x),
         )
         data_source.emit_new_object(line)
 
@@ -486,7 +486,7 @@ def check_plot_curves(
 def check_bargraph(
         item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
         plot_item: ExPlotItem,
-        time_2: float
+        time_2: float,
 ):
     """Check if the bargraph is created correctly"""
     if item_to_add == LiveBarGraphItem and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
@@ -510,7 +510,7 @@ def check_bargraph(
 def check_injectionbar_graph(
         item_to_add: Tuple[Type[DataModelBasedItem], str, Dict],
         plot_item: ExPlotItem,
-        time_2: float
+        time_2: float,
 ):
     """Check if the injection are created correctly"""
     if item_to_add == LiveInjectionBarGraphItem and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
@@ -532,7 +532,7 @@ def check_injectionbar_graph(
 def check_timestamp_markers(
         item_to_add: Union[DataModelBasedItem, str],
         plot_item: ExPlotItem,
-        time_2: float
+        time_2: float,
 ):
     """Check if the timestamp markers are created correctly"""
     if item_to_add == LiveTimestampMarker and plot_item._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:

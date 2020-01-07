@@ -8,23 +8,17 @@ from accwidgets.graph.designer import designer_base, designer_extensions
 
 ScrollingPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
     widget_class=ScrollingPlotWidget,
-    extensions=[
-        designer_extensions.PlotLayerExtension
-    ]
+    extensions=[designer_extensions.PlotLayerExtension],
 )
 
 
 CyclicPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
     widget_class=CyclicPlotWidget,
-    extensions=[
-        designer_extensions.PlotLayerExtension
-    ]
+    extensions=[designer_extensions.PlotLayerExtension],
 )
 
 
 StaticPlotWidgetPlugin = designer_base.ex_plot_widget_plugin_factory(
     widget_class=StaticPlotWidget,
-    extensions=[
-        designer_extensions.PlotLayerExtension
-    ]
+    extensions=[designer_extensions.PlotLayerExtension],
 )

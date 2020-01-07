@@ -27,9 +27,7 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         # This is some example implementation of the UpdateSource
         # that we receive our data from
-        data_source = example_sources.LoggingCurveDataSource(
-            updates_per_second=60
-        )
+        data_source = example_sources.LoggingCurveDataSource(updates_per_second=60)
         # Create a scrolling plot that shows 25 seconds of data
         self.plot = accgraph.ScrollingPlotWidget(
             time_span=accgraph.TimeSpan(left=25.0, right=0.0),
@@ -39,7 +37,7 @@ class MainWindow(QMainWindow):
         # Data for the curve is received by the passed data source
         self.plot.addCurve(
             data_source=data_source,
-            pen={"color": "b", "width": 2}
+            pen={"color": "b", "width": 2},
         )
         self.plot.setYRange(-1, 1)
         self.show()

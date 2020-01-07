@@ -13,7 +13,7 @@ from accwidgets.graph.datamodel.itemdatamodel import LiveTimestampMarkerDataMode
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
-    AbstractDataModelBasedItemMeta
+    AbstractDataModelBasedItemMeta,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
@@ -38,7 +38,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         *graphicsobjectargs,
         data_source: Union[UpdateSource, LiveTimestampMarkerDataModel],
         plot_item: "ExPlotItem",
-        buffer_size: int = DEFAULT_BUFFER_SIZE
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
     ):
         """ Base class for an InfiniteLine based marking of specific timestamps
 
@@ -53,12 +53,10 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         elif isinstance(data_source, UpdateSource):
             data_model = LiveTimestampMarkerDataModel(
                 data_source=data_source,
-                buffer_size=buffer_size
+                buffer_size=buffer_size,
             )
         else:
-            raise ValueError(
-                f"Data Source of type {type(data_source)} can not be used as a source or model for data."
-            )
+            raise ValueError(f"Data Source of type {type(data_source)} can not be used as a source or model for data.")
         pg.GraphicsObject.__init__(self, *graphicsobjectargs)
         DataModelBasedItem.__init__(
             self,
@@ -68,7 +66,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         self._line_elements: List[pg.InfiniteLine] = []
         self.opts = {
             # pen width shared among all pens for the InfiniteLines
-            "pen_width": 1
+            "pen_width": 1,
         }
 
     @staticmethod
@@ -76,12 +74,12 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         *graphicsobjectargs,
         data_source: UpdateSource,
         plot_item: "ExPlotItem",
-        buffer_size: int = DEFAULT_BUFFER_SIZE
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
     ) -> "LiveTimestampMarker":
         """Factory method for creating line object fitting the passed plot"""
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_item.plot_config,
-            supported_styles=LiveTimestampMarker.supported_plotting_styles
+            supported_styles=LiveTimestampMarker.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
@@ -90,7 +88,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
             *graphicsobjectargs,
             plot_item=plot_item,
             data_source=data_source,
-            buffer_size=buffer_size
+            buffer_size=buffer_size,
         )
 
     @staticmethod
@@ -113,7 +111,7 @@ class LiveTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=Abstr
         plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
-            supported_styles=LiveTimestampMarker.supported_plotting_styles
+            supported_styles=LiveTimestampMarker.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
@@ -196,7 +194,8 @@ class ScrollingTimestampMarker(LiveTimestampMarker):
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         curve_x, colors, labels = self._data_model.subset_for_xrange(
-            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
+            start=self._parent_plot_item.time_span.start,
+            end=self._parent_plot_item.time_span.end,
         )
         if curve_x.size == colors.size == labels.size and curve_x.size > 0:
             self._clear_infinite_lines()

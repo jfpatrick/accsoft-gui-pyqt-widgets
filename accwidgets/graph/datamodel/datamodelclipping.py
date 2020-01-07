@@ -45,13 +45,9 @@ def intersect(
     x_positions = graph_points.x_values
     y_positions = graph_points.y_values
     if len(x_positions) != len(y_positions):
-        LOGGER.error(
-            f"Length:({len(x_positions)}, {len(y_positions)}), Passed Points: {graph_points}"
-        )
+        LOGGER.error(f"Length:({len(x_positions)}, {len(y_positions)}), Passed Points: {graph_points}")
         raise ValueError("The count of X indices and Y values is not the same.")
-    surrounding_points = bin_search_surrounding_points(
-        x_positions, vertical_line_x_position
-    )
+    surrounding_points = bin_search_surrounding_points(x_positions, vertical_line_x_position)
     result["last_before_index"] = surrounding_points["before"]
     result["first_after_index"] = surrounding_points["after"]
     # Line is actually in between two points -> Calculate intersection point
@@ -65,15 +61,11 @@ def intersect(
             y_value=y_positions[surrounding_points["after"]],
         )
         # Intersection between Old Curve
-        result["intersection"] = calc_intersection(
-            last_before_obj, first_after_obj, vertical_line_x_position
-        )
+        result["intersection"] = calc_intersection(last_before_obj, first_after_obj, vertical_line_x_position)
     return result
 
 
-def calc_intersection(
-    point_1: PointData, point_2: PointData, new_point_x_position: float
-) -> PointData:
+def calc_intersection(point_1: PointData, point_2: PointData, new_point_x_position: float) -> PointData:
     """Calculates the position of a point with a given X value that is
     located on the straight line between point_1 and point_2.
 
@@ -88,21 +80,17 @@ def calc_intersection(
         dictionary will be returned
     """
     if point_2.x_value < point_1.x_value:
-        LOGGER.debug(
-            "Parameters are in wrong order. This might hint, that a bug appeared in the code before. \n"
-            f"Point 1:     {point_1} \n"
-            f"Point 2:     {point_2} \n"
-            f"X Position:  {new_point_x_position}"
-        )
+        LOGGER.debug("Parameters are in wrong order. This might hint, that a bug appeared in the code before. \n"
+                     f"Point 1:     {point_1} \n"
+                     f"Point 2:     {point_2} \n"
+                     f"X Position:  {new_point_x_position}")
         point_1, point_2 = point_2, point_1
     if (
         new_point_x_position > point_2.x_value
         or new_point_x_position < point_1.x_value
     ):
-        LOGGER.debug(
-            "New position not between the passed points, listing their X positions: \n"
-            f"New= {new_point_x_position}, P1= {point_1.x_value}, P2= {point_2.x_value}"
-        )
+        LOGGER.debug("New position not between the passed points, listing their X positions: \n"
+                     f"New= {new_point_x_position}, P1= {point_1.x_value}, P2= {point_2.x_value}")
         return PointData()
     if point_2.x_value == point_1.x_value:
         return PointData(x_value=point_1.x_value, y_value=point_1.y_value)

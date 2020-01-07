@@ -50,7 +50,7 @@ def _check_data_model(
         data_model: accgraph.AbstractLiveDataModel,
         buffer_size: int,
         actual: Tuple[np.ndarray, ...],
-        primary_values: List[float]
+        primary_values: List[float],
 ) -> bool:
     """Create expected data by the given primary values"""
     if data_model.buffer_size != buffer_size:
@@ -96,14 +96,14 @@ def get_fitting_color(x_value: float) -> str:
         "c",
         "m",
         "k",
-        "w"
+        "w",
     ]
     return colors[int(x_value) % (len(colors) - 1)]
 
 
 def create_fitting_object(
         data_model: accgraph.AbstractLiveDataModel,
-        x_value: float
+        x_value: float,
 ) -> Union[accgraph.PointData, accgraph.BarData, accgraph.InjectionBarData, accgraph.TimestampMarkerData, None]:
     """Create an object fitting to the specified data model"""
     if isinstance(data_model, accgraph.LiveCurveDataModel):
@@ -115,7 +115,7 @@ def create_fitting_object(
     elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
         return _create_infinite_line(
             value=x_value,
-            color=get_fitting_color(x_value)
+            color=get_fitting_color(x_value),
         )
     return None
 
@@ -133,7 +133,7 @@ def create_fitting_object_collection(data_model: accgraph.AbstractLiveDataModel,
     elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
         return _create_infinite_line_collection(
             values=x_values,
-            colors=np.array([get_fitting_color(x_value) for x_value in x_values])
+            colors=np.array([get_fitting_color(x_value) for x_value in x_values]),
         )
 
 
@@ -141,7 +141,7 @@ def _create_point_data(value: float) -> accgraph.PointData:
     """Create PointData"""
     return accgraph.PointData(
         x_value=value,
-        y_value=value + 0.1
+        y_value=value + 0.1,
     )
 
 
@@ -149,7 +149,7 @@ def _create_curve_data(values: np.ndarray) -> accgraph.CurveData:
     """Create PointData"""
     return accgraph.CurveData(
         x_values=values,
-        y_values=values + 0.1
+        y_values=values + 0.1,
     )
 
 
