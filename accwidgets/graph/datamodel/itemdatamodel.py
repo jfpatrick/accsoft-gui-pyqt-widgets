@@ -26,7 +26,7 @@ from accwidgets.graph.datamodel.datastructures import (
     InjectionBarCollectionData,
     InjectionBarData,
     PointData,
-    PlottingItemDataStructure
+    PlottingItemDataStructure,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
             data_source: New source the model should connect to.
         """
         self._disconnect_from_data_source()
-        self._data_source: UpdateSource = data_source
+        self._data_source = data_source
         self._connect_to_data_source()
 
     @property
@@ -243,13 +243,13 @@ class LiveCurveDataModel(AbstractLiveDataModel):
         if isinstance(data, PointData) and data.is_valid():
             self._full_data_buffer.add_entry(
                 x_value=data.x_value,
-                y_value=data.y_value
+                y_value=data.y_value,
             )
             self.sig_data_model_changed.emit()
         elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x_values=data.x_values,
-                y_values=data.y_values
+                y_values=data.y_values,
             )
             self.sig_data_model_changed.emit()
         else:
@@ -287,9 +287,7 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, BarData) and data.is_valid():
-            self._full_data_buffer.add_entry(
-                x_value=data.x_value, y_value=data.y_value, height=data.height
-            )
+            self._full_data_buffer.add_entry(x_value=data.x_value, y_value=data.y_value, height=data.height)
             self.sig_data_model_changed.emit()
         elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
@@ -372,9 +370,7 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, TimestampMarkerData) and data.is_valid():
-            self._full_data_buffer.add_entry(
-                x_value=data.x_value, color=data.color, label=data.label
-            )
+            self._full_data_buffer.add_entry(x_value=data.x_value, color=data.color, label=data.label)
             self.sig_data_model_changed.emit()
         elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(

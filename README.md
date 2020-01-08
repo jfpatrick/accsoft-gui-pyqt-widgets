@@ -1,5 +1,8 @@
 # ACCSoft GUI PyQt Widgets
 
+[![pipeline status](https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets/badges/develop/pipeline.svg)](https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets/pipelines)
+[![coverage report](https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets/badges/develop/coverage.svg)](https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets/pipelines)
+
 ## Installation
 For installation this package execute `pip install .` This will install the all necessary dependencies along with this package. All dependencies are collected in [setup.py](./setup.py) Dependencies for each package are collected inside their folder in **requirements.txt** files, which get collected and added on execution of the setup.
 

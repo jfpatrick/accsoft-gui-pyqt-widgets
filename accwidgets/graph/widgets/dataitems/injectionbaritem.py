@@ -14,7 +14,7 @@ from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
-    AbstractDataModelBasedItemMeta
+    AbstractDataModelBasedItemMeta,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
@@ -52,7 +52,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pg.ErrorBarItem, metaclass=A
         if isinstance(data_source, UpdateSource):
             data_model = LiveInjectionBarDataModel(
                 data_source=data_source,
-                buffer_size=buffer_size
+                buffer_size=buffer_size,
             )
         elif isinstance(data_source, LiveInjectionBarDataModel):
             data_model = data_source
@@ -109,7 +109,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pg.ErrorBarItem, metaclass=A
         """
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_item.plot_config,
-            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
+            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
@@ -141,7 +141,7 @@ class LiveInjectionBarGraphItem(DataModelBasedItem, pg.ErrorBarItem, metaclass=A
         plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
-            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles
+            supported_styles=LiveInjectionBarGraphItem.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
@@ -197,7 +197,8 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         curve_x, curve_y, height, width, labels = self._data_model.subset_for_xrange(
-            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
+            start=self._parent_plot_item.time_span.start,
+            end=self._parent_plot_item.time_span.end,
         )
         self._label_texts = labels
         self._label_y_positions = []

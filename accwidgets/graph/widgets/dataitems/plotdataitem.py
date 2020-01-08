@@ -4,7 +4,7 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 
 import sys
 import logging
-from typing import Union, List, Tuple, Dict, Type
+from typing import Union, List, Tuple, Dict, Type, cast
 from copy import copy
 
 import numpy as np
@@ -13,18 +13,13 @@ import pyqtgraph as pg
 from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.datamodel.itemdatamodel import LiveCurveDataModel
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
+from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR, CurveData
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
-    AbstractDataModelBasedItemMeta
+    AbstractDataModelBasedItemMeta,
 )
-from accwidgets.graph.datamodel.datastructures import (
-    CurveData,
-    CurveDataWithTime,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    PlotWidgetStyle,
-)
+from accwidgets.graph.widgets.plotconfiguration import PlotWidgetStyle
+from accwidgets.graph.widgets.plottimespan import CyclicPlotTimeSpan
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -95,9 +90,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         elif isinstance(data_source, LiveCurveDataModel):
             data_model = data_source
         else:
-            raise ValueError(
-                f"Data Source of type {type(data_source)} can not be used as a source or model for data."
-            )
+            raise ValueError(f"Data Source of type {type(data_source)} can not be used as a source or model for data.")
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
@@ -134,7 +127,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         """
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_item.plot_config,
-            supported_styles=LivePlotCurve.supported_plotting_styles
+            supported_styles=LivePlotCurve.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
@@ -166,7 +159,7 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
-            supported_styles=LivePlotCurve.supported_plotting_styles
+            supported_styles=LivePlotCurve.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
@@ -206,7 +199,9 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
             if orig_key in self.opts:
                 scatter_arguments[scatter_key] = self.opts[orig_key]
-        if self.opts.get("pen") is not None or (self.opts.get("brush") is not None and self.opts.get("fillLevel") is not None):
+        if (self.opts.get("pen") is not None
+                or (self.opts.get("brush") is not None
+                    and self.opts.get("fillLevel") is not None)):
             self.curve.setData(x=x, y=y, **curve_arguments)
             self.curve.show()
         else:
@@ -293,7 +288,7 @@ class CyclicPlotCurve(LivePlotCurve):
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         self._update_new_curve_data_item()
-        if self._parent_plot_item.time_span.cycle > 0:
+        if cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).cycle > 0:
             self._update_old_curve_data_item()
         self._redraw_curve()
 
@@ -335,11 +330,9 @@ class CyclicPlotCurve(LivePlotCurve):
         """
         start = self._parent_plot_item.time_span.start
         end = self._parent_plot_item.last_timestamp
-        x_values, y_values = self._data_model.subset_for_xrange(
-            start=start, end=end, interpolated=True
-        )
+        x_values, y_values = self._data_model.subset_for_xrange(start=start, end=end, interpolated=True)
         self._clipped_curve_new = CurveData(
-            x_values=x_values - self._parent_plot_item.time_span.curr_offset,
+            x_values=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).curr_offset,
             y_values=y_values,
         )
 
@@ -351,12 +344,10 @@ class CyclicPlotCurve(LivePlotCurve):
         (because of f.e. inaccurate timestamp)
         """
         start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.time_span.size
-        end = self._parent_plot_item.time_span.prev_end
-        x_values, y_values = self._data_model.subset_for_xrange(
-            start=start, end=end, interpolated=True
-        )
+        end = cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_end
+        x_values, y_values = self._data_model.subset_for_xrange(start=start, end=end, interpolated=True)
         self._clipped_curve_old = CurveData(
-            x_values=x_values - self._parent_plot_item.time_span.prev_offset,
+            x_values=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_offset,
             y_values=y_values,
         )
 
@@ -379,8 +370,7 @@ class ScrollingPlotCurve(LivePlotCurve):
             )
         else:
             # Clipping is not used for scatter plot
-            curve_x, curve_y = self._data_model.subset_for_xrange(
-                start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
-            )
+            curve_x, curve_y = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
+                                                                  end=self._parent_plot_item.time_span.end)
         self._set_data(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)

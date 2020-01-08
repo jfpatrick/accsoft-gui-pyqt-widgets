@@ -46,9 +46,7 @@ class MainWindow(QMainWindow):
         # Plot a curve against the plot's standard y axis on the left side
         self.plot.addCurve(data_source=data_source_2, pen="y")
         # Plot a curve against our new layer's y-axis by passing its identifier
-        self.plot.addCurve(
-            data_source=data_source_1, layer="layer_0", pen="r"
-        )
+        self.plot.addCurve(data_source=data_source_1, layer="layer_0", pen="r")
         self.show()
         self.resize(800, 600)
         main_container = QWidget()

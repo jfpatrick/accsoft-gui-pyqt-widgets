@@ -13,7 +13,7 @@ from qtpy.QtDesigner import (
     QPyDesignerCustomWidgetPlugin,
     QExtensionFactory,
     QPyDesignerTaskMenuExtension,
-    QExtensionManager
+    QExtensionManager,
 )
 from accwidgets import graph as accgraph
 
@@ -52,9 +52,9 @@ class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
         """
         super().__init__(parent)
         self.widget = widget
-        self.__actions = None
-        self.__extensions = []
-        extensions = getattr(widget, 'extensions', None)
+        self.__actions: Optional[List[QAction]] = None
+        self.__extensions: List[WidgetsExtension] = []
+        extensions = getattr(widget, "extensions", None)
         if extensions is not None:
             for ex in extensions:
                 extension = ex(self.widget)
@@ -83,7 +83,7 @@ class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
 
 class WidgetsExtensionFactory(QExtensionFactory):
 
-    def __init__(self, parent: QWidget=None):
+    def __init__(self, parent: QWidget = None):
         """Factory of instanciating Task Menu extensions. """
         super().__init__(parent)
 
@@ -91,7 +91,7 @@ class WidgetsExtensionFactory(QExtensionFactory):
             self,
             obj: QWidget,
             iid: str,
-            parent: QWidget
+            parent: QWidget,
     ) -> Optional[WidgetsTaskMenuExtension]:
         """
         Create Task Menu Extension instance.
@@ -167,7 +167,7 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
             if self.manager:
                 self.manager.registerExtensions(
                     WidgetsExtensionFactory(parent=self.manager),
-                    'org.qt-project.Qt.Designer.TaskMenu'
+                    "org.qt-project.Qt.Designer.TaskMenu",
                 )
         self.initialized = True
 
@@ -189,7 +189,7 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
         """
         instance = self._widget_class(parent=parent)
         try:
-            setattr(instance, "extensions", self.extensions)
+            instance.extensions = self.extensions
         except (AttributeError, NameError):
             pass
         return instance
@@ -237,8 +237,8 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
         XML Description of the widget's properties.
         """
         return (
-            "<widget class=\"{0}\" name=\"{0}\">\n"
-            " <property name=\"toolTip\" >\n"
+            '<widget class="{0}" name="{0}">\n'
+            ' <property name="toolTip" >\n'
             "  <string>{1}</string>\n"
             " </property>\n"
             "</widget>\n"
@@ -272,7 +272,7 @@ def ex_plot_widget_plugin_factory(widget_class: Type, extensions: List):
         def __init__(self):
             super(Plugin, self).__init__(
                 widget_class=widget_class,
-                extensions=extensions
+                extensions=extensions,
             )
 
     return Plugin

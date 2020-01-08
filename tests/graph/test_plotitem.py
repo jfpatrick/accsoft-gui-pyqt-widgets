@@ -23,7 +23,7 @@ def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
             left=5.0,
             right=0.0,
         ),
-        should_create_timing_source=True
+        should_create_timing_source=True,
     )
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
@@ -73,7 +73,7 @@ class TransformRangeOperation(Enum):
 
 @pytest.mark.parametrize("resume_operation", [
     ResumeRangeOperation.view_all,
-    ResumeRangeOperation.auto_button
+    ResumeRangeOperation.auto_button,
 ])
 @pytest.mark.parametrize("transform_operation", [
     TransformRangeOperation.transform_x,
@@ -83,7 +83,7 @@ class TransformRangeOperation(Enum):
 def test_scrolling_plot_fixed_scrolling_xrange_zoom(
         qtbot,
         resume_operation: ResumeRangeOperation,
-        transform_operation: TransformRangeOperation
+        transform_operation: TransformRangeOperation,
 ):
     """
     Test handling of transformation operations if the fixed x range option is
@@ -98,7 +98,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(
             left=20.0,
             right=0.0,
         ),
-        should_create_timing_source=True
+        should_create_timing_source=True,
     )
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
@@ -111,50 +111,50 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(
     # Auto range y axis and scrolling fixed range
     assert check_range(
         plot_item.vb.targetRange(),
-        [[10.0, 30.0], [np.nan, np.nan]]
+        [[10.0, 30.0], [np.nan, np.nan]],
     )
     assert (-15.0 - 30 * 0.1) <= plot_item.vb.targetRange()[1][0] <= -15.0
     assert 15.0 <= plot_item.vb.targetRange()[1][1] <= (15.0 + 30 * 0.1)
     # Alter range by hand
     expected = _transform_operation(
         plot_item=plot_item,
-        transform_operation=transform_operation
+        transform_operation=transform_operation,
     )
     assert check_range(
         actual_range=plot_item.vb.targetRange(),
-        expected_range=expected
+        expected_range=expected,
     )
     # Send timing update -> hand set range has to be kept
     time.create_new_value(31.0)
     assert check_range(
         actual_range=plot_item.vb.targetRange(),
-        expected_range=expected
+        expected_range=expected,
     )
     # Zoom a second time
     expected = _transform_operation(
         plot_item=plot_item,
         transform_operation=transform_operation,
-        offset=1.0
+        offset=1.0,
     )
     assert check_range(
         actual_range=plot_item.vb.targetRange(),
-        expected_range=expected
+        expected_range=expected,
     )
     # Resume to original view range
     _resume_to_orig_range(
         plot_item=plot_item,
-        reset_operation=resume_operation
+        reset_operation=resume_operation,
     )
     assert check_range(
         plot_item.vb.targetRange(),
-        [[11.0, 31.0], [np.nan, np.nan]]
+        [[11.0, 31.0], [np.nan, np.nan]],
     )
     assert (-15.0 - 30 * 0.1) <= plot_item.vb.targetRange()[1][0] <= -15.0
     assert 15.0 <= plot_item.vb.targetRange()[1][1] <= (15.0 + 30 * 0.1)
     time.create_new_value(32.0)
     assert check_range(
         plot_item.vb.targetRange(),
-        [[12.0, 32.0], [np.nan, np.nan]]
+        [[12.0, 32.0], [np.nan, np.nan]],
     )
     assert (-15.0 - 30 * 0.1) <= plot_item.vb.targetRange()[1][0] <= -15.0
     assert 15.0 <= plot_item.vb.targetRange()[1][1] <= (15.0 + 30 * 0.1)
@@ -163,7 +163,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(
 def _transform_operation(
         plot_item: accgraph.ExPlotItem,
         transform_operation: TransformRangeOperation,
-        offset: float = 0.0
+        offset: float = 0.0,
 ) -> List[List[float]]:
     """Transform the view range of the given plot item in the given way."""
     # We want to make sure no auto range updates are pending anymore.
@@ -178,9 +178,7 @@ def _transform_operation(
     elif transform_operation == TransformRangeOperation.transform_y:
         expected = [[np.nan, np.nan], [10.0 - offset, 25.0 + offset]]
     else:
-        raise ValueError(
-            f"{transform_operation} is not a known operation for transforming the view range in the plot."
-        )
+        raise ValueError(f"{transform_operation} is not a known operation for transforming the view range in the plot.")
     if not np.isnan(expected[0]).any() or not np.isnan(expected[1]).any():
         plot_item.vb.sigRangeChangedManually.emit(plot_item.vb.mouseEnabled())
     if not np.isnan(expected[0]).any():
@@ -197,9 +195,7 @@ def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: Resum
     elif reset_operation == ResumeRangeOperation.view_all:
         plot_item.vb.menu.viewAll.activate(QAction.Trigger)
     else:
-        raise ValueError(
-            f"{reset_operation} is not a known operation for resetting the view range in the plot."
-        )
+        raise ValueError(f"{reset_operation} is not a known operation for resetting the view range in the plot.")
 
 
 def _prepare_cyclic_plot_test_window(qtbot, time_span: accgraph.TimeSpan, should_create_timing_source: bool = True):
@@ -218,7 +214,7 @@ def _prepare_cyclic_plot_test_window(qtbot, time_span: accgraph.TimeSpan, should
     window = PlotWidgetTestWindow(
         plot_config,
         item_to_add=accgraph.LivePlotCurve,
-        should_create_timing_source=should_create_timing_source
+        should_create_timing_source=should_create_timing_source,
     )
     window.show()
     qtbot.addWidget(window)

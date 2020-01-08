@@ -31,9 +31,8 @@ PACKAGES = ["accwidgets"]
 INSTALL_REQUIRES: List[str] = []
 EXTRA_REQUIRES: Dict[str, List[str]] = {DEV_DEPS_MAP_KEY: []}
 
-print(
-    f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, starting from {CURRENT_FILE_LOCATION}"
-)
+print(f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, "
+      f"starting from {CURRENT_FILE_LOCATION}")
 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 for package in PACKAGES:
     folder_to_search = (
@@ -42,7 +41,7 @@ for package in PACKAGES:
         + package
     )
     print(f"Search folder:                     {folder_to_search}")
-    for root, directories, files in os.walk(
+    for root, _, files in os.walk(
         folder_to_search,
         onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),  # type: ignore
     ):
@@ -66,14 +65,35 @@ for dev_dep_file in FOUND_DEV_DEPS_FILES:
         print(f"Collecting developer dependencies: {deps}")
         EXTRA_REQUIRES["testing"] += deps
 
-print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Result of Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print(f"Combined user dependencies:        {INSTALL_REQUIRES}")
-print(f"Combined developer dependencies:   {EXTRA_REQUIRES}")
-
+EXTRA_REQUIRES["linting"] = [
+    "mypy~=0.720",
+    "pylint>=2.3.1&&<3",
+    "pylint-unittest>=0.1.3&&<2",
+    "flake8>=3.7.8&&<4",
+    "flake8-quotes>=2.1.0&&<3",
+    "flake8-commas>=2&&<3",
+    "flake8-colors>=0.1.6&&<2",
+    "flake8-rst>=0.7.1&&<2",
+    "flake8-breakpoint>=1.1.0&&<2",
+    "flake8-pyi>=19.3.0&&<20",
+    "flake8-comprehensions>=2.2.0&&<3",
+    "flake8-builtins-unleashed>=1.3.1&&<2",
+    "flake8-blind-except>=0.1.1&&<2",
+    "flake8-bugbear>=19.8.0&&<20",
+]
+EXTRA_REQUIRES["docs"] = [
+    "Sphinx~=2.1.2",
+    "recommonmark~=0.6.0",
+    "sphinx-rtd-theme~=0.4.3",
+]
+EXTRA_REQUIRES["release"] = [
+    "twine~=1.13.0",
+    "wheel~=0.33.4",
+]
 
 curr_dir: Path = Path(__file__).parent.absolute()
 
-with curr_dir.joinpath('README.md').open() as f:
+with curr_dir.joinpath("README.md").open() as f:
     long_description = f.read()
 
 setup(
@@ -82,24 +102,24 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description="PyQt-based widgets for CERN accelerator controls",
     long_description=long_description,
-    author='Fabian Sorn',
-    author_email='fabian.sorn@cern.ch',
+    author="Fabian Sorn",
+    author_email="fabian.sorn@cern.ch",
     packages=find_packages(exclude=("examples", "docs", "tests", "build*", "dist*", "*.egg-info")),
-    url='https://wikis.cern.ch/display/ACCPY/Widgets',
+    url="https://wikis.cern.ch/display/ACCPY/Widgets",
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRA_REQUIRES,
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: X11 Applications :: Qt',
-        'Intended Audience :: Developers',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Typing :: Typed',
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: X11 Applications :: Qt",
+        "Intended Audience :: Developers",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Typing :: Typed",
     ],
     package_data={
-        '': ['*.ico'],
+        "": ["*.ico"],
     },
-    platforms=['centos7'],
-    test_suite='tests',
+    platforms=["centos7"],
+    test_suite="tests",
 )

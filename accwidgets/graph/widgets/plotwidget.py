@@ -2,7 +2,7 @@
 Extended Widget for custom plotting with simple configuration wrappers
 """
 
-from typing import Dict, Optional, Any, Set, List, Tuple, Union
+from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast
 from copy import deepcopy
 import json
 import logging
@@ -17,13 +17,14 @@ from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle,
-    TimeSpan
+    TimeSpan,
 )
 from accwidgets.graph.widgets.plotitem import ExPlotItem, PlotItemLayer, LayerIdentification
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.dataitems.bargraphitem import LiveBarGraphItem
 from accwidgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBarGraphItem
 from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
+from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
 from accwidgets.graph.widgets.axisitems import ExAxisItem
 from accwidgets.graph.designer import designer_check
 
@@ -82,7 +83,7 @@ class ExPlotWidget(pg.PlotWidget):
             axis_items=axis_items,
             config=config,
             timing_source=timing_source,
-            **plotitem_kwargs
+            **plotitem_kwargs,
         )
         self._wrap_plotitem_functions()
 
@@ -134,7 +135,7 @@ class ExPlotWidget(pg.PlotWidget):
             data_source: Optional[UpdateSource] = None,
             layer: Optional[LayerIdentification] = None,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **bargraph_kwargs
+            **bargraph_kwargs,
     ) -> LiveBarGraphItem:
         """Add a new curve attached to a source for new data
 
@@ -159,7 +160,7 @@ class ExPlotWidget(pg.PlotWidget):
             data_source=data_source,
             layer=layer,
             buffer_size=buffer_size,
-            **bargraph_kwargs
+            **bargraph_kwargs,
         )
 
     def addInjectionBar(  # pylint: disable=invalid-name
@@ -188,14 +189,14 @@ class ExPlotWidget(pg.PlotWidget):
             data_source=data_source,
             layer=layer,
             buffer_size=buffer_size,
-            **errorbaritem_kwargs
+            **errorbaritem_kwargs,
         )
 
     def addTimestampMarker(  # pylint: disable=invalid-name
             self,
             *graphicsobjectargs,
             data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
     ) -> LiveTimestampMarker:
         """Add a new timestamp marker sequence to the plot
 
@@ -215,7 +216,7 @@ class ExPlotWidget(pg.PlotWidget):
         return self.plotItem.addTimestampMarker(
             *graphicsobjectargs,
             data_source=data_source,
-            buffer_size=buffer_size
+            buffer_size=buffer_size,
         )
 
     @Slot(float)
@@ -246,7 +247,7 @@ class ExPlotWidget(pg.PlotWidget):
             text: Optional[str] = None,
             units: Optional[str] = None,
             unit_prefix: Optional[str] = None,
-            **axis_label_css_kwargs
+            **axis_label_css_kwargs,
     ) -> "PlotItemLayer":
         """Add a new layer to the plot.
 
@@ -301,7 +302,7 @@ class ExPlotWidget(pg.PlotWidget):
             text=text,
             units=units,
             unit_prefix=unit_prefix,
-            **axis_label_css_kwargs
+            **axis_label_css_kwargs,
         )
 
     def update_config(self, config: ExPlotWidgetConfig) -> None:
@@ -437,9 +438,7 @@ class ExPlotWidget(pg.PlotWidget):
                     potential = self.plotItem.plot_config.time_span.right_boundary_offset
                 self._set_left_time_span_boundary(new_val=potential)
             except NameError:
-                self._set_left_time_span_boundary(
-                    new_val=60.0
-                )
+                self._set_left_time_span_boundary(new_val=60.0)
 
     leftTimeBoundaryEnabled: bool = Property(
         bool,
@@ -456,7 +455,7 @@ class ExPlotWidget(pg.PlotWidget):
             config: Optional[ExPlotWidgetConfig] = None,
             axis_items: Optional[Dict[str, pg.AxisItem]] = None,
             timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs
+            **plotitem_kwargs,
     ):
         """
         Replace the plot item created by the base class with an instance
@@ -486,7 +485,7 @@ class ExPlotWidget(pg.PlotWidget):
             "addItem", "removeItem", "autoRange", "clear", "setXRange",
             "setYRange", "setRange", "setAspectLocked", "setMouseEnabled",
             "setXLink", "setYLink", "enableAutoRange", "disableAutoRange",
-            "setLimits", "register", "unregister", "viewRect"
+            "setLimits", "register", "unregister", "viewRect",
         ]
         for method in wrap_from_base_class:
             setattr(self, method, getattr(self.plotItem, method))
@@ -565,24 +564,23 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             return XAxisSideOptions.Top
         if not top and bottom:
             return XAxisSideOptions.Bottom
-        if not top and not bottom:
-            return XAxisSideOptions.Hidden
+        return XAxisSideOptions.Hidden
 
     def _set_show_x_axis(self, new_val: int) -> None:
         """Where is the X Axis of the plot displayed"""
         if new_val != self._get_show_x_axis():  # type: ignore[has-type]
             if new_val == XAxisSideOptions.Both:
-                self.showAxis("top")
-                self.showAxis("bottom")
+                cast(ExPlotWidget, self).showAxis("top")
+                cast(ExPlotWidget, self).showAxis("bottom")
             if new_val == XAxisSideOptions.Top:
-                self.showAxis("top")
-                self.hideAxis("bottom")
+                cast(ExPlotWidget, self).showAxis("top")
+                cast(ExPlotWidget, self).hideAxis("bottom")
             if new_val == XAxisSideOptions.Bottom:
-                self.hideAxis("top")
-                self.showAxis("bottom")
+                cast(ExPlotWidget, self).hideAxis("top")
+                cast(ExPlotWidget, self).showAxis("bottom")
             if new_val == XAxisSideOptions.Hidden:
-                self.hideAxis("top")
-                self.hideAxis("bottom")
+                cast(ExPlotWidget, self).hideAxis("top")
+                cast(ExPlotWidget, self).hideAxis("bottom")
             # Update labels through property
             self.axisLabels = self.axisLabels
 
@@ -591,32 +589,31 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     def _get_show_y_axis(self) -> int:
         """Where is the Y Axis of the plot displayed"""
-        left = self.getAxis("left").isVisible()  # type: ignore[attr-defined]
-        right = self.getAxis("right").isVisible()  # type: ignore[attr-defined]
+        left = cast(ExPlotWidget, self).getAxis("left").isVisible()  # type: ignore[attr-defined]
+        right = cast(ExPlotWidget, self).getAxis("right").isVisible()  # type: ignore[attr-defined]
         if left and right:
             return DefaultYAxisSideOptions.Both
         if left and not right:
             return DefaultYAxisSideOptions.Left
         if not left and right:
             return DefaultYAxisSideOptions.Right
-        if not left and not right:
-            return DefaultYAxisSideOptions.Hidden
+        return DefaultYAxisSideOptions.Hidden
 
     def _set_show_y_axis(self, new_val: int) -> None:
         """Where is the Y Axis of the plot displayed"""
         if new_val != self._get_show_y_axis():  # type: ignore[has-type]
             if new_val == DefaultYAxisSideOptions.Both:
-                self.showAxis("left")
-                self.showAxis("right")
+                cast(ExPlotWidget, self).showAxis("left")
+                cast(ExPlotWidget, self).showAxis("right")
             if new_val == DefaultYAxisSideOptions.Left:
-                self.showAxis("left")
-                self.hideAxis("right")
+                cast(ExPlotWidget, self).showAxis("left")
+                cast(ExPlotWidget, self).hideAxis("right")
             if new_val == DefaultYAxisSideOptions.Right:
-                self.hideAxis("left")
-                self.showAxis("right")
+                cast(ExPlotWidget, self).hideAxis("left")
+                cast(ExPlotWidget, self).showAxis("right")
             if new_val == DefaultYAxisSideOptions.Hidden:
-                self.hideAxis("left")
-                self.hideAxis("right")
+                cast(ExPlotWidget, self).hideAxis("left")
+                cast(ExPlotWidget, self).hideAxis("right")
             # Update labels through property
             self.axisLabels = self.axisLabels
 
@@ -625,56 +622,57 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     def _get_show_grid(self) -> int:
         """What Axis Grid should be displayed"""
-        x_grid = self.plotItem.ctrl.xGridCheck.isChecked()  # type: ignore[attr-defined]
-        y_grid = self.plotItem.ctrl.yGridCheck.isChecked()  # type: ignore[attr-defined]
+        x_grid = cast(ExPlotWidget, self).plotItem.ctrl.xGridCheck.isChecked()
+        y_grid = cast(ExPlotWidget, self).plotItem.ctrl.yGridCheck.isChecked()
         if x_grid and y_grid:
             return GridOrientationOptions.Both
         if x_grid and not y_grid:
             return GridOrientationOptions.X
         if not x_grid and y_grid:
             return GridOrientationOptions.Y
-        if not x_grid and not y_grid:
-            return GridOrientationOptions.Hidden
+        return GridOrientationOptions.Hidden
 
     def _set_show_grid(self, new_val: int) -> None:
         """What Axis Grid should be displayed"""
-        if new_val != self._get_show_grid():  # type: ignore[has-type]
+        if new_val != self._get_show_grid():
             if new_val == GridOrientationOptions.Both:
-                self.plotItem.showGrid(x=True)
-                self.plotItem.showGrid(y=True)
+                cast(ExPlotWidget, self).plotItem.showGrid(x=True)
+                cast(ExPlotWidget, self).plotItem.showGrid(y=True)
             if new_val == GridOrientationOptions.X:
-                self.plotItem.showGrid(x=True)
-                self.plotItem.showGrid(y=False)
+                cast(ExPlotWidget, self).plotItem.showGrid(x=True)
+                cast(ExPlotWidget, self).plotItem.showGrid(y=False)
             if new_val == GridOrientationOptions.Y:
-                self.plotItem.showGrid(x=False)
-                self.plotItem.showGrid(y=True)
+                cast(ExPlotWidget, self).plotItem.showGrid(x=False)
+                cast(ExPlotWidget, self).plotItem.showGrid(y=True)
             if new_val == GridOrientationOptions.Hidden:
-                self.plotItem.showGrid(x=False)
-                self.plotItem.showGrid(y=False)
+                cast(ExPlotWidget, self).plotItem.showGrid(x=False)
+                cast(ExPlotWidget, self).plotItem.showGrid(y=False)
 
     gridOrientation: int = Property(GridOrientationOptions, _get_show_grid, _set_show_grid)
     """Which Axis' Grid should be displayed"""
 
     def _get_show_legend(self) -> bool:
         """Does the plot show a legend."""
-        return self.plotItem.legend is not None
+        return cast(ExPlotWidget, self).plotItem.legend is not None
 
     def _set_show_legend(self, new_val: bool) -> None:
         """If true, the plot shows a legend."""
         if new_val != self._get_show_legend():  # type: ignore[has-type]
             if new_val:
-                self.addLegend(size=None, offset=None)
+                cast(ExPlotWidget, self).addLegend(size=None, offset=None)
                 old_pos = self._get_legend_position()
                 self._set_legend_position(
                     x_alignment=old_pos[0],
                     y_alignment=old_pos[1],
                 )
             else:
-                if self.plotItem.legend is not None:
-                    self.removeItem(self.plotItem.legend)
-                    self.plotItem.legend.deleteLater()
-                    self.plotItem.legend = None
-            self.update()
+                if cast(ExPlotWidget, self).plotItem.legend is not None:
+                    cast(ExPlotWidget, self).removeItem(
+                        cast(ExPlotWidget, self).plotItem.legend,
+                    )
+                    cast(ExPlotWidget, self).plotItem.legend.deleteLater()
+                    cast(ExPlotWidget, self).plotItem.legend = None
+            cast(ExPlotWidget, self).update()
 
     showLegend: bool = Property(bool, _get_show_legend, _set_show_legend)
     """Does the plot show a legend which displays the contained items."""
@@ -691,12 +689,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         try:
             return self._legend_position_cache
         except (AttributeError, NameError):
-            d = [LegendXAlignmentOptions.Left, LegendYAlignmentOptions.Top]
-            if self.plotItem.legend is not None:
+            d = (LegendXAlignmentOptions.Left, LegendYAlignmentOptions.Top)
+            if cast(ExPlotWidget, self).plotItem.legend is not None:
                 self._set_legend_position(x_alignment=d[0], y_alignment=d[1])
             return d
 
-    def _set_legend_position(self, x_alignment: int = -1, y_alignment: int = -1, offset: int = 10.0) -> None:
+    def _set_legend_position(self, x_alignment: int = -1, y_alignment: int = -1, offset: float = 10.0) -> None:
         """
         Set the legends position in the ViewBox. Values smaller 0 are not accepted.
         Values that move the Legend out of the viewable area are not accepted.
@@ -736,8 +734,15 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         elif y_alignment == LegendYAlignmentOptions.Bottom:
             y = 1
             y_offset = -offset
-        if True not in np.isnan(np.array([x, y, x_offset, y_offset])) and self.plotItem.legend is not None:
-            self.plotItem.legend.anchor(itemPos=(x, y), parentPos=(x, y), offset=(x_offset, y_offset))
+        if (
+                True not in np.isnan(np.array([x, y, x_offset, y_offset]))
+                and cast(ExPlotWidget, self).legend is not None
+        ):
+            cast(ExPlotWidget, self).plotItem.legend.anchor(
+                itemPos=(x, y),
+                parentPos=(x, y),
+                offset=(x_offset, y_offset),
+            )
 
     def _get_legend_x_position(self) -> int:
         return self._get_legend_position()[0]
@@ -759,9 +764,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     # ~~~~~~~~~~ QtDesigner Properties ~~~~~~~~~~
 
-    _reserved_axis_labels_identifiers: Set[str] = {
-        "top", "bottom", "left", "right"
-    }
+    _reserved_axis_labels_identifiers: Set[str] = {"top", "bottom", "left", "right"}
 
     _reserved_axis_ranges_identifiers: Set[str] = {"x", "y"}
 
@@ -773,7 +776,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         data type. A better way of achieving this by usage directly from code is
         to use the function add_layer().
         """
-        return [layer.id for layer in self.plotItem.non_default_layers]
+        return [layer.id for layer in cast(ExPlotWidget, self).plotItem.non_default_layers]
 
     def _set_layer_ids(self, layers: "QStringList") -> None:  # type: ignore # noqa
         """
@@ -802,8 +805,8 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """QtDesigner getter function for the PlotItems axis labels"""
         labels = {}
         for axis in self._reserved_axis_labels_identifiers:
-            labels.update({axis: self.getAxis(axis).labelText})
-        for layer in self.plotItem.non_default_layers:
+            labels.update({axis: cast(ExPlotWidget, self).getAxis(axis).labelText})
+        for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
             labels.update({layer.id: layer.axis_item.labelText})
         return json.dumps(labels)
 
@@ -812,15 +815,15 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         try:
             axis_labels: Dict[str, str] = json.loads(new_val)
             for axis, label in axis_labels.items():
-                label = axis_labels.get(axis, None).strip()
-                if self.plotItem.getAxis(axis).isVisible():
+                label = axis_labels.get(axis, "").strip()
+                if cast(ExPlotWidget, self).plotItem.getAxis(axis).isVisible():
                     if label:
-                        self.plotItem.setLabel(axis=axis, text=label)
+                        cast(ExPlotWidget, self).plotItem.setLabel(axis=axis, text=label)
                     else:
-                        self.plotItem.getAxis(axis).labelText = label
-                        self.plotItem.getAxis(axis).showLabel(False)
+                        cast(ExPlotWidget, self).plotItem.getAxis(axis).labelText = label
+                        cast(ExPlotWidget, self).plotItem.getAxis(axis).showLabel(False)
                 else:
-                    self.plotItem.getAxis(axis).labelText = label
+                    cast(ExPlotWidget, self).plotItem.getAxis(axis).labelText = label
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
             # TypeError for len() operation on entries that do not support it
@@ -832,9 +835,9 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _get_axis_ranges(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
         auto_ranges_dict = {}
-        auto_ranges_dict.update({"x": self.getViewBox().targetRange()[0]})
-        auto_ranges_dict.update({"y": self.getViewBox().targetRange()[1]})
-        for layer in self.plotItem.non_default_layers:
+        auto_ranges_dict.update({"x": cast(ExPlotWidget, self).getViewBox().targetRange()[0]})
+        auto_ranges_dict.update({"y": cast(ExPlotWidget, self).getViewBox().targetRange()[1]})
+        for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
             auto_ranges_dict.update({layer.id: layer.view_box.targetRange()[1]})
         return json.dumps(auto_ranges_dict)
 
@@ -842,19 +845,19 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """QtDesigner setter function for the PlotItems axis ranges"""
         try:
             axis_ranges: Dict[str, Tuple[float, float]] = json.loads(new_val)
-            self.plotItem.setRange(
+            cast(ExPlotWidget, self).setRange(
                 xRange=axis_ranges.pop("x", None),
                 yRange=axis_ranges.pop("y", None),
                 padding=0.0,
-                disableAutoRange=False
+                disableAutoRange=False,
             )
             for layer, range_tuple in axis_ranges.items():
                 # Check if range was given in the right form
                 if layer in self._get_layer_ids():
-                    self.plotItem.getViewBox(layer=layer).setRange(
+                    cast(ExPlotWidget, self).plotItem.getViewBox(layer=layer).setRange(
                         yRange=range_tuple,
                         padding=0.0,
-                        disableAutoRange=False
+                        disableAutoRange=False,
                     )
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
@@ -867,20 +870,23 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _get_axis_auto_range(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
         auto_ranges_dict = {}
-        auto_ranges_dict.update({"x": self.getViewBox().autoRangeEnabled()[0]})
-        auto_ranges_dict.update({"y": self.getViewBox().autoRangeEnabled()[1]})
-        for layer in self.plotItem.non_default_layers:
-            auto_ranges_dict.update({layer.id:  layer.view_box.autoRangeEnabled()[1]})
+        auto_ranges_dict.update({"x": cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()[0]})
+        auto_ranges_dict.update({"y": cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()[1]})
+        for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
+            auto_ranges_dict.update({layer.id: layer.view_box.autoRangeEnabled()[1]})
         return json.dumps(auto_ranges_dict)
 
     def _set_axis_auto_range(self, new_val: str) -> None:
         """QtDesigner setter function for the PlotItems axis ranges"""
         try:
             axis_auto_range: Dict[str, bool] = json.loads(new_val)
-            self.plotItem.enableAutoRange(x=axis_auto_range.pop("x", None), y=axis_auto_range.pop("y", None))
+            cast(ExPlotWidget, self).plotItem.enableAutoRange(
+                x=axis_auto_range.pop("x", None),
+                y=axis_auto_range.pop("y", None),
+            )
             for layer, auto_range in axis_auto_range.items():
                 # Check if range was given in the right form
-                self.plotItem.getViewBox(layer=layer).enableAutoRange(y=auto_range)
+                cast(ExPlotWidget, self).plotItem.getViewBox(layer=layer).enableAutoRange(y=auto_range)
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
             # TypeError for len() operation on entries that do not support it
@@ -901,22 +907,22 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         axis_range: Dict = json.loads(self.axisRanges)
         removed_layer_ids = [l for l in self._get_layer_ids() if l not in new]
         added_layer_ids = [l for l in new if l not in self._get_layer_ids()]
-        items_to_move = []
+        items_to_move: List[DataModelBasedItem] = []
         if removed_layer_ids or added_layer_ids:
             # Any layer change at all
             for name in old:
                 # Take ownership of items before deleting their ViewBox
-                items_to_move += self.plotItem.layer(name).view_box.addedItems
-                for item in self.plotItem.layer(name).view_box.addedItems:
-                    item.setParentItem(self.plotItem.getViewBox())
-                self.plotItem.remove_layer(name)
+                items_to_move += cast(ExPlotWidget, self).plotItem.layer(name).view_box.addedItems
+                for item in cast(ExPlotWidget, self).plotItem.layer(name).view_box.addedItems:
+                    item.setParentItem(cast(ExPlotWidget, self).plotItem.getViewBox())
+                cast(ExPlotWidget, self).plotItem.remove_layer(name)
             for name in new:
-                self.plotItem.add_layer(name)
+                cast(ExPlotWidget, self).plotItem.add_layer(name)
                 # Put items back to their layers, for the ones where the layer has not changed
                 items_to_add = [item for item in items_to_move if item.layer_id == name]
                 for item in items_to_add:
                     try:
-                        self.addItem(item=item, layer=name)
+                        cast(ExPlotWidget, self).addItem(item=item, layer=name)
                         items_to_move.remove(item)
                     except RuntimeError:
                         print(item.label)
@@ -930,7 +936,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                 # If layer was renamed -> move item to new layer
                 item_from_this_layer = [item for item in items_to_move if item.layer_id == old_name]
                 for item in item_from_this_layer:
-                    self.addItem(item=item, layer=new_name)
+                    cast(ExPlotWidget, self).addItem(item=item, layer=new_name)
                     items_to_move.remove(item)
         elif removed_layer_ids:
             # Layer(s) removed
@@ -1003,7 +1009,7 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
             config=config,
             axis_items=axis_items,
             timing_source=timing_source,
-            **plotitem_kwargs
+            **plotitem_kwargs,
         )
 
     rightTimeBoundary: float = Property(
@@ -1081,7 +1087,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             config=config,
             axis_items=axis_items,
             timing_source=timing_source,
-            **plotitem_kwargs
+            **plotitem_kwargs,
         )
 
     leftBoundary: float = Property(
@@ -1149,7 +1155,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             background=background,
             config=config,
             axis_items=axis_items,
-            **plotitem_kwargs
+            **plotitem_kwargs,
         )
 
     def _get_show_time_line(self) -> bool:
@@ -1199,7 +1205,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
     )
     """Value of the Left / Lower boundary for the Plot's timestamp"""
 
-    def _get_left_time_span_boundary(self, **kwargs) -> float:
+    def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
             _LOGGER.warning(msg="Property 'leftBoundary' is not supposed to be used with at static plot, "
                                 "since it does not use any time span.")

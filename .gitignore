@@ -1,6 +1,8 @@
 # Placeholder for user defined entries. If you would like to extend this file, please put your entries in this section.
 
 *.coverage
+htmlcov
+coverage
 
 # End of placeholder for user defined entries
 

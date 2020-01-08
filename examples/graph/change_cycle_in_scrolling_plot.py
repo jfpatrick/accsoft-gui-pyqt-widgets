@@ -22,18 +22,30 @@ class MainWindow(QMainWindow):
         time_span = 10.0
         # 4 different sources for updates for 4 different types of data
         # visualization we want to add to our plot
-        data_source_1 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=0, updates_per_second=20, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.POINT]
-        )
-        data_source_2 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=3, updates_per_second=1, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.BAR]
-        )
-        data_source_3 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=6, updates_per_second=2, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.INJECTIONBAR]
-        )
-        data_source_4 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=9, updates_per_second=0.2, types_to_emit=[example_sources.SinusCurveSourceEmitTypes.INFINITELINE]
-        )
+        data_source_1 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=0,
+                                                         updates_per_second=20,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.POINT,
+                                                         ])
+        data_source_2 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=3,
+                                                         updates_per_second=1,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.BAR,
+                                                         ])
+        data_source_3 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=6,
+                                                         updates_per_second=2,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.INJECTIONBAR,
+                                                         ])
+        data_source_4 = example_sources.SinusCurveSource(x_offset=0.0,
+                                                         y_offset=9,
+                                                         updates_per_second=0.2,
+                                                         types_to_emit=[
+                                                             example_sources.SinusCurveSourceEmitTypes.INFINITELINE,
+                                                         ])
         # We want a plot with an fixed scrolling range, which means
         # we display always 10 seconds of data, even if there is less than
         # 10 seconds of data available to keep the x range from changing
@@ -65,7 +77,7 @@ class MainWindow(QMainWindow):
     def _create_time_span_config_elements(
             self,
             main_layout: QGridLayout,
-            time_span: float
+            time_span: float,
     ) -> None:
         """
         To change the plots configuration for the time span, we add
@@ -93,7 +105,7 @@ class MainWindow(QMainWindow):
         """Change plot configuration depending on the input"""
         time_span = accgraph.TimeSpan(
             left=self.time_span_input.value(),
-            right=self.offset_input.value()
+            right=self.offset_input.value(),
         )
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,

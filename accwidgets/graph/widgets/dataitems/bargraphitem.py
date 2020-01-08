@@ -12,7 +12,7 @@ from accwidgets.graph.datamodel.itemdatamodel import LiveBarGraphDataModel
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
-    AbstractDataModelBasedItemMeta
+    AbstractDataModelBasedItemMeta,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
@@ -50,14 +50,13 @@ class LiveBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDa
         if isinstance(data_source, UpdateSource):
             data_model = LiveBarGraphDataModel(
                 data_source=data_source,
-                buffer_size=buffer_size
+                buffer_size=buffer_size,
             )
         elif isinstance(data_source, LiveBarGraphDataModel):
             data_model = data_source
         else:
-            raise ValueError(
-                f"Data Source of type {type(data_source).__name__} can not be used as a source or model for data."
-            )
+            raise ValueError(f"Data Source of type {type(data_source).__name__} can not be used "
+                             f"as a source or model for data.")
         self._fixed_bar_width = bargraphitem_kwargs.get("width", -1)
         bargraphitem_kwargs = LiveBarGraphItem._prepare_bar_graph_item_params(**bargraphitem_kwargs)
         pg.BarGraphItem.__init__(self, **bargraphitem_kwargs)
@@ -91,7 +90,7 @@ class LiveBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDa
         """
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_item.plot_config,
-            supported_styles=LiveBarGraphItem.supported_plotting_styles
+            supported_styles=LiveBarGraphItem.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
@@ -123,7 +122,7 @@ class LiveBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDa
         plot_config = object_to_create_from._parent_plot_item.plot_config
         DataModelBasedItem.check_plotting_style_support(
             plot_config=plot_config,
-            supported_styles=LiveBarGraphItem.supported_plotting_styles
+            supported_styles=LiveBarGraphItem.supported_plotting_styles,
         )
         # get class fitting to plotting style and return instance
         class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
@@ -164,8 +163,10 @@ class ScrollingBarGraphItem(LiveBarGraphItem):
             width = 0.9 * smallest_distance if smallest_distance != np.inf else 1.0
         else:
             width = self._fixed_bar_width
-        curve_x, curve_y, height = self._data_model.subset_for_xrange(
-            start=self._parent_plot_item.time_span.start, end=self._parent_plot_item.time_span.end
-        )
-        if curve_x.size == curve_y.size and curve_x.size > 0:
-            self.setOpts(x=curve_x, y=curve_y, height=height, width=width)
+        if self._parent_plot_item.time_span is not None:
+            curve_x, curve_y, height = self._data_model.subset_for_xrange(
+                start=self._parent_plot_item.time_span.start,
+                end=self._parent_plot_item.time_span.end,
+            )
+            if curve_x.size == curve_y.size and curve_x.size > 0:
+                self.setOpts(x=curve_x, y=curve_y, height=height, width=width)

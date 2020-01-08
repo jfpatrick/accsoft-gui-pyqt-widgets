@@ -135,7 +135,7 @@ class CurveData(PlottingItemData):
             self,
             x_values: Union[List[float], np.ndarray],
             y_values: Union[List[float], np.ndarray],
-            parent=None
+            parent=None,
     ):
         """Collection of data for points representing a curve.
 
@@ -209,7 +209,7 @@ class BarData(PlottingItemData):
             height: float,
             x_value: float,
             y_value: float = np.nan,
-            parent=None
+            parent=None,
     ):
         """Data of a bar for a bar graph
 
@@ -282,7 +282,7 @@ class BarCollectionData(PlottingItemData):
             x_values: Union[list, np.ndarray],
             y_values: Union[list, np.ndarray],
             heights: Union[list, np.ndarray],
-            parent=None
+            parent=None,
     ):
         """Collection of data for multiple bars
 
@@ -316,11 +316,9 @@ class BarCollectionData(PlottingItemData):
         if self.__class__ != other.__class__:
             return False
         try:
-            return (
-               np.allclose(self.x_values, other.x_values)
-               and np.allclose(self.y_values, other.y_values)
-               and np.array_equal(self.heights, other.heights)
-            )
+            return (np.allclose(self.x_values, other.x_values)
+                    and np.allclose(self.y_values, other.y_values)
+                    and np.array_equal(self.heights, other.heights))
         except ValueError:
             return False
 
@@ -548,7 +546,7 @@ class TimestampMarkerData(PlottingItemData):
             x_value: float,
             color: str = DEFAULT_COLOR,
             label: str = "",
-            parent=None
+            parent=None,
     ):
         """Data for a timestamp marker
 
@@ -625,7 +623,7 @@ class TimestampMarkerCollectionData(PlottingItemData):
             x_values: Union[List, np.ndarray],
             colors: Union[List, np.ndarray],
             labels: Union[List, np.ndarray],
-            parent=None
+            parent=None,
     ):
         """Collection of data for timestamp markers
 

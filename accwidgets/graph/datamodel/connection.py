@@ -41,5 +41,5 @@ class UpdateSource(QObject):
         [InjectionBarData],
         [InjectionBarCollectionData],
         [TimestampMarkerData],
-        [TimestampMarkerCollectionData]
+        [TimestampMarkerCollectionData],
     )

@@ -3,10 +3,8 @@ Base class for modified PlotItems that handle data displaying in the ExtendedPlo
 """
 
 import logging
-import warnings
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union, Type
-from itertools import product
+from typing import Any, Dict, List, Optional, Tuple, Union, Type, cast
 
 import numpy as np
 import pyqtgraph as pg
@@ -20,7 +18,7 @@ from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.axisitems import (
     ExAxisItem,
     RelativeTimeAxisItem,
-    TimeAxisItem
+    TimeAxisItem,
 )
 from accwidgets.graph.widgets.dataitems.bargraphitem import (
     LiveBarGraphItem,
@@ -36,7 +34,7 @@ from accwidgets.graph.widgets.dataitems.injectionbaritem import (
 )
 from accwidgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
-    ScrollingPlotCurve
+    ScrollingPlotCurve,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
@@ -86,22 +84,18 @@ class ExPlotItem(pg.PlotItem):
             axis_items = {}
         axis_items["left"] = ExAxisItem(orientation="left")
         axis_items["right"] = ExAxisItem(orientation="right")
-        axis_items["bottom"] = axis_items.get(
-            "bottom", self._create_fitting_axis_item(
-                config_style=config.plotting_style,
-                orientation="bottom"
-            )
-        )
-        axis_items["top"] = axis_items.get(
-            "top", self._create_fitting_axis_item(
-                config_style=config.plotting_style,
-                orientation="top"
-            )
-        )
+        axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item(
+            config_style=config.plotting_style,
+            orientation="bottom",
+        ))
+        axis_items["top"] = axis_items.get("top", self._create_fitting_axis_item(
+            config_style=config.plotting_style,
+            orientation="top",
+        ))
         super().__init__(
             axisItems=axis_items,
             viewBox=ExViewBox(),
-            **plotitem_kwargs
+            **plotitem_kwargs,
         )
         self._plot_config: ExPlotWidgetConfig = config
         self._time_span: Optional[BasePlotTimeSpan] = self._create_fitting_time_span()
@@ -162,13 +156,13 @@ class ExPlotItem(pg.PlotItem):
             params = params or {}
             self.addItem(item=c, **params)
             return c
-        new_plot = pg.PlotDataItem(**plotdataitem_kwargs) if data_source is None else \
-            LivePlotCurve.from_plot_item(
-                plot_item=self,
-                data_source=data_source,
-                buffer_size=buffer_size,
-                **plotdataitem_kwargs,
-            )
+        new_plot = (pg.PlotDataItem(**plotdataitem_kwargs)
+                    if data_source is None
+                    else LivePlotCurve.from_plot_item(plot_item=self,
+                                                      data_source=data_source,
+                                                      buffer_size=buffer_size,
+                                                      **plotdataitem_kwargs)
+                    )
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
@@ -198,13 +192,13 @@ class ExPlotItem(pg.PlotItem):
             BarGraphItem or LiveBarGraphItem, depending on the passed parameters,
             that was added to the plot.
         """
-        new_plot: pg.BarGraphItem = pg.BarGraphItem(**bargraph_kwargs) if data_source is None else \
-            LiveBarGraphItem.from_plot_item(
-                plot_item=self,
-                data_source=data_source,
-                buffer_size=buffer_size,
-                **bargraph_kwargs,
-            )
+        new_plot: pg.BarGraphItem = (pg.BarGraphItem(**bargraph_kwargs)
+                                     if data_source is None
+                                     else LiveBarGraphItem.from_plot_item(plot_item=self,
+                                                                          data_source=data_source,
+                                                                          buffer_size=buffer_size,
+                                                                          **bargraph_kwargs)
+                                     )
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
@@ -243,7 +237,7 @@ class ExPlotItem(pg.PlotItem):
         self,
         *graphicsobjectargs,
         data_source: UpdateSource,
-        buffer_size: int = DEFAULT_BUFFER_SIZE
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
     ) -> LiveTimestampMarker:
         """Add a new timestamp marker sequence to the plot
 
@@ -264,7 +258,7 @@ class ExPlotItem(pg.PlotItem):
             *graphicsobjectargs,
             plot_item=self,
             data_source=data_source,
-            buffer_size=buffer_size
+            buffer_size=buffer_size,
         )
         self.addItem(layer=None, item=new_plot)
         return new_plot
@@ -274,7 +268,7 @@ class ExPlotItem(pg.PlotItem):
         item: Union[pg.GraphicsObject, DataModelBasedItem],
         layer: Optional["LayerIdentification"] = None,
         ignoreBounds: bool = False,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Add an item to the plot. If no layer is provided, the item
@@ -351,12 +345,7 @@ class ExPlotItem(pg.PlotItem):
             self.updateDecimation()
             self.updateParamList()
 
-    def plot(  # pylint: disable=arguments-differ
-        self,
-        *args,
-        clear: bool = False,
-        params: Optional[Dict[str, Any]] = None,
-     ) -> pg.PlotDataItem:
+    def plot(self, *args, clear: bool = False, params: Optional[Dict[str, Any]] = None) -> pg.PlotDataItem:
         """ **Warning:** Avoid using this function
 
         Plotting curves in the ExPlotItem should not be done with PlotItem.plot
@@ -428,7 +417,7 @@ class ExPlotItem(pg.PlotItem):
                 self._handle_scrolling_plot_fixed_xrange_update()
                 self._update_time_line_decorator(
                     timestamp=timestamp,
-                    position=self.time_span.x_pos(self.last_timestamp)
+                    position=self.time_span.x_pos(self.last_timestamp),
                 )
             self._update_children_items_timing()
             self._draw_style_specific_objects()
@@ -447,9 +436,7 @@ class ExPlotItem(pg.PlotItem):
         if self.single_curve_value_slot_source is None:
             self.single_curve_value_slot_source = UpdateSource()
         if self.single_curve_value_slot_curve is None:
-            self.single_curve_value_slot_curve = self.addCurve(
-                data_source=self.single_curve_value_slot_source
-            )
+            self.single_curve_value_slot_curve = self.addCurve(data_source=self.single_curve_value_slot_source)
         new_data = PointData(x_value=datetime.now().timestamp(), y_value=data)
         self.single_curve_value_slot_source.sig_new_data.emit(new_data)
 
@@ -480,7 +467,7 @@ class ExPlotItem(pg.PlotItem):
         text: Optional[str] = None,
         units: Optional[str] = None,
         unit_prefix: Optional[str] = None,
-        **axis_label_css_kwargs
+        **axis_label_css_kwargs,
     ) -> "PlotItemLayer":
         """Add a new layer to the plot
 
@@ -544,7 +531,7 @@ class ExPlotItem(pg.PlotItem):
         self.layout.addItem(new_y_axis, *new_y_axis_position)
         self.axes[layer_id] = {
             "item": new_y_axis,
-            "pos": (new_y_axis_orientation, new_y_axis_position)
+            "pos": (new_y_axis_orientation, new_y_axis_position),
         }
         self.scene().addItem(new_view_box)
         new_y_axis.linkToView(new_view_box)
@@ -553,7 +540,7 @@ class ExPlotItem(pg.PlotItem):
             text=text,
             units=units,
             unitPrefix=unit_prefix,
-            **axis_label_css_kwargs
+            **axis_label_css_kwargs,
         )
         new_view_box.sigStateChanged.connect(self.viewStateChanged)
         if y_range is not None:
@@ -561,7 +548,7 @@ class ExPlotItem(pg.PlotItem):
                 min=y_range[0],
                 max=y_range[1],
                 padding=y_range_padding,
-                layer=new_layer
+                layer=new_layer,
             )
         if invert_y:
             self.invertY(invert_y, layer=new_layer)
@@ -587,11 +574,9 @@ class ExPlotItem(pg.PlotItem):
         if isinstance(layer, str) and layer != "":
             layer = self._layers.get(layer)
         if not isinstance(layer, PlotItemLayer):
-            raise ValueError(
-                f"The layer could not be removed, since it does not have the"
-                f"right type ({type(layer).__name__}) or the given identifier "
-                f"does not exist."
-            )
+            raise ValueError(f"The layer could not be removed, since it does not have the"
+                             f"right type ({type(layer).__name__}) or the given identifier "
+                             f"does not exist.")
         self.layout.removeItem(layer.axis_item)
         layer.axis_item.deleteLater()
         layer.axis_item.setParentItem(None)
@@ -674,7 +659,7 @@ class ExPlotItem(pg.PlotItem):
         padding: Optional[float] = None,
         update: bool = True,
         disableAutoRange: bool = True,  # pylint: disable=invalid-name
-        **layer_y_ranges
+        **layer_y_ranges,
     ) -> None:
         """
         Set the visible range of the view. Additionally to setting the x and y
@@ -705,14 +690,14 @@ class ExPlotItem(pg.PlotItem):
                 yRange=yRange,
                 padding=padding,
                 update=update,
-                disableAutoRange=disableAutoRange
+                disableAutoRange=disableAutoRange,
             )
         for layer_y_range in layer_y_ranges:
             self.getViewBox(layer=layer_y_range).setRange(
                 yRange=layer_y_ranges[layer_y_range],
                 padding=padding,
                 update=update,
-                disableAutoRange=disableAutoRange
+                disableAutoRange=disableAutoRange,
             )
 
     def setYRange(  # pylint: disable=invalid-name
@@ -721,7 +706,7 @@ class ExPlotItem(pg.PlotItem):
         max: float,  # pylint: disable=redefined-builtin
         padding: Optional[float] = None,
         update: bool = True,
-        layer: Optional["LayerIdentification"] = None
+        layer: Optional["LayerIdentification"] = None,
     ) -> None:
         """
         Set the visible Y range of the view. If no layer is passed,
@@ -740,13 +725,13 @@ class ExPlotItem(pg.PlotItem):
             min=min,
             max=max,
             padding=padding,
-            update=update
+            update=update,
         )
 
     def invertY(  # pylint: disable=invalid-name
         self,
         b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
-        layer: Optional["LayerIdentification"] = None
+        layer: Optional["LayerIdentification"] = None,
     ) -> None:
         """
         Allows inverting a y-axis. If no layer is passed, the default y axis
@@ -762,7 +747,7 @@ class ExPlotItem(pg.PlotItem):
     def setYLink(  # pylint: disable=invalid-name
         self,
         view: pg.ViewBox,
-        layer: Optional["LayerIdentification"] = None
+        layer: Optional["LayerIdentification"] = None,
     ) -> None:
         """
         Link the movement of a y axis to another ViewBox. If no layer is passed,
@@ -784,7 +769,7 @@ class ExPlotItem(pg.PlotItem):
             enable: Union[bool, float] = True,
             x: Union[bool, float, None] = None,  # pylint: disable=invalid-name
             y: Union[bool, float, None] = None,  # pylint: disable=invalid-name
-            **layers_y
+            **layers_y,
     ) -> None:
         """
         Extend the PlotItem's standard enableAutoRange for the y axes of
@@ -817,7 +802,7 @@ class ExPlotItem(pg.PlotItem):
             axis=axis,
             enable=enable,
             x=x,
-            y=y
+            y=y,
         )
         if axis is None and x is None and y is None and not layers_y:
             layers_y = {layer.id: True for layer in self.non_default_layers}
@@ -825,12 +810,12 @@ class ExPlotItem(pg.PlotItem):
             for key, value in layers_y.items():
                 self.getViewBox(layer=key).enableAutoRange(
                     axis=pg.ViewBox.YAxis,
-                    enable=value
+                    enable=value,
                 )
 
     def getViewBox(  # pylint: disable=arguments-differ
             self,
-            layer: Optional["LayerIdentification"] = None
+            layer: Optional["LayerIdentification"] = None,
     ) -> pg.ViewBox:
         """
         Extend the PlotItem's getViewBox method to also return viewboxes
@@ -856,12 +841,11 @@ class ExPlotItem(pg.PlotItem):
         added with additional layers.
         """
         try:
-            show_button = self._exportOpts is False and \
-                          self.mouseHovering and \
-                          not self.buttonsHidden and \
-                          (not all(self.vb.autoRangeEnabled()) or
-                           not all([l.view_box.autoRangeEnabled()[1]
-                                    for l in self.non_default_layers]))
+            show_button = (self._exportOpts is False
+                           and self.mouseHovering
+                           and not self.buttonsHidden
+                           and (not all(self.vb.autoRangeEnabled())
+                                or not all(l.view_box.autoRangeEnabled()[1] for l in self.non_default_layers)))
             if show_button:
                 self.autoBtn.show()
             else:
@@ -877,7 +861,7 @@ class ExPlotItem(pg.PlotItem):
     @property
     def last_timestamp(self) -> float:
         """Latest timestamp that is known to the plot."""
-        return self._time_span.last_timestamp
+        return self.time_span.last_timestamp
 
     @property
     def plot_config(self) -> ExPlotWidgetConfig:
@@ -885,10 +869,10 @@ class ExPlotItem(pg.PlotItem):
         return self._plot_config
 
     @property
-    def time_span(self) -> Optional[BasePlotTimeSpan]:
+    def time_span(self) -> BasePlotTimeSpan:
         """Time span for the current plot"""
         if self._time_span is None:
-            warnings.warn("The plot does not have a time span in this configuration.", RuntimeWarning)
+            raise ValueError("The plot does not have a time span in this configuration.", RuntimeWarning)
         return self._time_span
 
     # ~~~~~~~~~ Private ~~~~~~~~~~
@@ -924,7 +908,7 @@ class ExPlotItem(pg.PlotItem):
     def _update_time_line_decorator(
             self,
             timestamp: float,
-            position: Optional[float] = None
+            position: Optional[float] = None,
     ) -> None:
         """Move the vertical line representing the current time to a new position
 
@@ -943,9 +927,7 @@ class ExPlotItem(pg.PlotItem):
                 position = timestamp
             self._time_line.setValue(position)
             if hasattr(self._time_line, "label"):
-                self._time_line.label.setText(
-                    datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
-                )
+                self._time_line.label.setText(datetime.fromtimestamp(timestamp).strftime("%H:%M:%S"))
 
     def _config_contains_scrolling_style_with_fixed_xrange(self) -> bool:
         return(
@@ -971,9 +953,7 @@ class ExPlotItem(pg.PlotItem):
             style: plotting style the new axes should fit to.
         """
         for pos in ["bottom", "top"]:
-            new_axis: pg.AxisItem = self._create_fitting_axis_item(
-                config_style=style, orientation=pos, parent=self
-            )
+            new_axis: pg.AxisItem = self._create_fitting_axis_item(config_style=style, orientation=pos, parent=self)
             if isinstance(new_axis, RelativeTimeAxisItem) and isinstance(self._time_span, CyclicPlotTimeSpan):
                 new_axis.start = self._time_span.prev_start
             new_axis.linkToView(self.vb)
@@ -1002,7 +982,7 @@ class ExPlotItem(pg.PlotItem):
             self,
             config_style: PlotWidgetStyle,
             orientation: str = "bottom",
-            parent: Optional["ExPlotItem"] = None
+            parent: Optional["ExPlotItem"] = None,
     ) -> pg.AxisItem:
         """Create an axis that fits the given plotting style
 
@@ -1032,7 +1012,7 @@ class ExPlotItem(pg.PlotItem):
         ts = None
         try:
             time_span = _STYLE_TO_TIMESPAN_MAPPING.get(self._plot_config.plotting_style)
-            ts = time_span(time_span=self.plot_config.time_span)
+            ts = cast(type, time_span)(time_span=self.plot_config.time_span)
             ts.update(self.time_span._start)
             ts.update(self.time_span._last_time_stamp)
         except (AttributeError, TypeError):
@@ -1054,12 +1034,8 @@ class ExPlotItem(pg.PlotItem):
         ):
             start = self.time_span._start
             end = self.time_span._end
-            self._time_span_start_boundary = self.addLine(
-                x=start, pen=pg.mkPen(128, 128, 128)
-            )
-            self._time_span_end_boundary = self.addLine(
-                x=end, pen=pg.mkPen(128, 128, 128)
-            )
+            self._time_span_start_boundary = self.addLine(x=start, pen=pg.mkPen(128, 128, 128))
+            self._time_span_end_boundary = self.addLine(x=end, pen=pg.mkPen(128, 128, 128))
             self._style_specific_objects_already_drawn = True
 
     def _update_children_items_timing(self) -> None:
@@ -1082,14 +1058,12 @@ class ExPlotItem(pg.PlotItem):
 
     def _prepare_layers(self) -> None:
         """Initialize everything needed for multiple layers"""
-        self._layers: PlotItemLayerCollection = PlotItemLayerCollection(self)
-        self._layers.add(
-            PlotItemLayer(
-                view_box=self.vb,
-                axis_item=self.getAxis("left"),
-                layer_id=PlotItemLayer.default_layer_id,
-            )
-        )
+        self._layers = PlotItemLayerCollection(self)
+        self._layers.add(PlotItemLayer(
+            view_box=self.vb,
+            axis_item=self.getAxis("left"),
+            layer_id=PlotItemLayer.default_layer_id,
+        ))
         self.vb.sigResized.connect(self._update_layers)
         if isinstance(self.vb, ExViewBox):
             self.vb.layers = self._layers
@@ -1127,8 +1101,8 @@ class ExPlotItem(pg.PlotItem):
             - the small auto range button on the lower left corner of the plot does
               not simply activate auto range but behaves as 'View All'
         """
-        scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap('auto'), 14, self)
-        scrolling_range_reset_button.mode = 'auto'
+        scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap("auto"), 14, self)
+        scrolling_range_reset_button.mode = "auto"
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
         self.vb.sigRangeChangedManually.connect(self._handle_zoom_with_scrolling_plot_fixed_xrange)
         self._orig_auto_btn = self.autoBtn
@@ -1213,7 +1187,9 @@ class ExPlotItem(pg.PlotItem):
         """
         for item in items_to_recreate:
             try:
-                new_item = item.clone(object_to_create_from=item)
+                new_item = cast(LivePlotCurve, item).clone(
+                    object_to_create_from=cast(LivePlotCurve, item),
+                )
                 layer = item.layer_id
                 self.addItem(layer=layer, item=new_item)
                 self.removeItem(item)
@@ -1358,14 +1334,10 @@ class PlotItemLayerCollection:
                         valid layer
         """
         if layer is None or not layer.id:
-            raise ValueError(
-                "Layer can not be added because it or its identifier is not defined."
-            )
+            raise ValueError("Layer can not be added because it or its identifier is not defined.")
         if self._layers.get(layer.id, None) is not None:
-            raise KeyError(
-                f"Layer with the identifier '{layer.id}' has already been added."
-                f"Either rename the layer or remove the already existing one before adding."
-            )
+            raise KeyError(f"Layer with the identifier '{layer.id}' has already been added."
+                           f"Either rename the layer or remove the already existing one before adding.")
         self._layers[layer.id] = layer
         self._pot_item_viewbox_reference_range[layer.id] = layer.axis_item.range
 
@@ -1413,25 +1385,23 @@ class PlotItemLayerCollection:
         if link:
             # filter by range changes that are executed on the
             plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.connect(
-                self._handle_axis_triggered_mouse_event
+                self._handle_axis_triggered_mouse_event,
             )
             plot_item_layer.view_box.sigRangeChangedManually.connect(
-                self._handle_layer_manual_range_change
+                self._handle_layer_manual_range_change,
             )
             # when plot item gets moved, check if move other layers should be moved
             plot_item_layer.view_box.sigYRangeChanged.connect(
-                self._handle_layer_y_range_change
+                self._handle_layer_y_range_change,
             )
             for layer in self:
                 self._pot_item_viewbox_reference_range[layer.id] = layer.axis_item.range
         else:
             # Remove connections again
             plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.disconnect(
-                self._handle_axis_triggered_mouse_event
+                self._handle_axis_triggered_mouse_event,
             )
-            plot_item_layer.view_box.sigYRangeChanged.disconnect(
-                self._handle_layer_y_range_change
-            )
+            plot_item_layer.view_box.sigYRangeChanged.disconnect(self._handle_layer_y_range_change)
 
     @property
     def all(self) -> List[PlotItemLayer]:
@@ -1461,7 +1431,7 @@ class PlotItemLayerCollection:
     def _set_range_change_forwarding(
             self,
             change_is_manual: Optional[bool] = None,
-            mouse_event_valid: Optional[bool] = None
+            mouse_event_valid: Optional[bool] = None,
     ) -> None:
         """
         With passing True, a manual range change of the ViewBox of a layer will be applied
@@ -1490,7 +1460,7 @@ class PlotItemLayerCollection:
         """Set the flag that forwards range changes to true"""
         self._set_range_change_forwarding(
             change_is_manual=False,
-            mouse_event_valid=True
+            mouse_event_valid=True,
         )
 
     def _handle_axis_triggered_mouse_event(self, mouse_event_on_axis: bool) -> None:
@@ -1518,7 +1488,7 @@ class PlotItemLayerCollection:
             self,
             moved_viewbox: pg.ViewBox,
             new_range: Tuple[float, float],
-            *args
+            *args,
     ) -> None:
         """Handle a view-range change in the PlotItems Viewbox
 
@@ -1539,7 +1509,7 @@ class PlotItemLayerCollection:
             self._apply_range_change_to_other_layers(
                 moved_viewbox=moved_viewbox,
                 new_range=new_range,
-                moved_layer=layer
+                moved_layer=layer,
             )
         self._reset_range_change_forwarding()
         # Update saved range even if not caused by manual update (f.e. by "View All")
@@ -1550,7 +1520,7 @@ class PlotItemLayerCollection:
             self,
             moved_viewbox: pg.ViewBox,
             new_range: Tuple[float, float],
-            moved_layer: PlotItemLayer
+            moved_layer: PlotItemLayer,
     ) -> None:
         """Update the y ranges of all layers
 
@@ -1590,9 +1560,7 @@ class PlotItemLayerCollection:
                     layer_viewbox_old_max
                     + moved_distance_max * relation_to_moved_viewbox
                 )
-                layer.view_box.setRange(
-                    yRange=(layer_viewbox_new_min, layer_viewbox_new_max), padding=0.0
-                )
+                layer.view_box.setRange(yRange=(layer_viewbox_new_min, layer_viewbox_new_max), padding=0.0)
                 self._pot_item_viewbox_reference_range[layer.id][0] = layer_viewbox_new_min
                 self._pot_item_viewbox_reference_range[layer.id][1] = layer_viewbox_new_max
 
@@ -1614,7 +1582,7 @@ class ExViewBox(pg.ViewBox):
         padding: Optional[float] = None,
         items: Optional[List[pg.GraphicsItem]] = None,
         auto_range_x_axis: bool = True,
-        **kwargs
+        **kwargs,
     ) -> None:
         """ Overwritten auto range
 
@@ -1638,20 +1606,18 @@ class ExViewBox(pg.ViewBox):
             if padding is None:
                 padding = 0.05
             plot_item_view_box: ExViewBox = self._layer_collection.get(
-                identifier=PlotItemLayer.default_layer_id
+                identifier=PlotItemLayer.default_layer_id,
             ).view_box
-            other_viewboxes: List[ExViewBox] = list(
-                filter(
-                    lambda element: element is not plot_item_view_box and element.addedItems,
-                    self._layer_collection.view_boxes
-                )
-            )
+            other_viewboxes: List[ExViewBox] = list(filter(
+                lambda element: element is not plot_item_view_box and element.addedItems,
+                self._layer_collection.view_boxes,
+            ))
             goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
             bounds_list: List[QRectF] = []
             for view_box in other_viewboxes:
                 bounds_list.append(view_box._bounding_rect_from(
                     another_vb=plot_item_view_box,
-                    items=items
+                    items=items,
                 ))
             for bound in bounds_list:
                 # Get common bounding rectangle for all items in all layers
@@ -1662,14 +1628,14 @@ class ExViewBox(pg.ViewBox):
             else:
                 y_range: Tuple[float, float] = (
                     goal_range.bottom(),
-                    goal_range.top()
+                    goal_range.top(),
                 )
                 plot_item_view_box.set_range_manually(yRange=y_range, padding=padding)
 
     def wheelEvent(
         self,
         ev: QGraphicsSceneWheelEvent,
-        axis: Optional[int] = None
+        axis: Optional[int] = None,
     ) -> None:
         """
         Overwritten because we want to make sure the manual range
@@ -1680,14 +1646,14 @@ class ExViewBox(pg.ViewBox):
             ev: Wheel event that was detected
             axis: integer representing an axis, 0 -> x, 1 -> y
         """
-        self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
+        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().wheelEvent(ev=ev, axis=axis)
-        self.sigRangeChanged.emit(self, self.state['viewRange'])
+        self.sigRangeChanged.emit(self, self.state["viewRange"])
 
     def mouseDragEvent(
         self,
         ev: MouseDragEvent,
-        axis: Optional[int] = None
+        axis: Optional[int] = None,
     ) -> None:
         """
         Overwritten because we want to make sure the manual range
@@ -1698,9 +1664,9 @@ class ExViewBox(pg.ViewBox):
             ev: Mouse Drag event that was detected
             axis: integer representing an axis, 0 -> x, 1 -> y
         """
-        self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
+        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().mouseDragEvent(ev=ev, axis=axis)
-        self.sigRangeChanged.emit(self, self.state['viewRange'])
+        self.sigRangeChanged.emit(self, self.state["viewRange"])
 
     def set_range_manually(self, **kwargs) -> None:
         """ Set range manually
@@ -1720,7 +1686,7 @@ class ExViewBox(pg.ViewBox):
         self.setRange(**kwargs)
 
     @property
-    def layers(self) -> PlotItemLayerCollection:
+    def layers(self) -> Optional[PlotItemLayerCollection]:
         """Collection of layers that are included in this PlotItem."""
         return self._layer_collection
 
@@ -1732,7 +1698,7 @@ class ExViewBox(pg.ViewBox):
     def _bounding_rect_from(
             self,
             another_vb: "ExViewBox",
-            items: Optional[List[pg.GraphicsItem]]
+            items: Optional[List[pg.GraphicsItem]],
     ) -> QRectF:
         """
         Map a view box bounding rectangle to the coordinates of an other one.
@@ -1751,25 +1717,25 @@ class ExViewBox(pg.ViewBox):
         bounds: QRectF = self.childrenBoundingRect(items=items)
         y_range_vb_destination = (
             another_vb.targetRect().top(),
-            another_vb.targetRect().bottom()
+            another_vb.targetRect().bottom(),
         )
         y_min_in_destination_vb = self._map_y_value_to(
             another_yrange=y_range_vb_destination,
-            y_val=bounds.bottom()
+            y_val=bounds.bottom(),
         )
         y_max_in_destination_vb = self._map_y_value_to(
             another_yrange=y_range_vb_destination,
-            y_val=bounds.top()
+            y_val=bounds.top(),
         )
         return QRectF(
             bounds.x(), y_min_in_destination_vb,
-            bounds.width(), y_max_in_destination_vb - y_min_in_destination_vb
+            bounds.width(), y_max_in_destination_vb - y_min_in_destination_vb,
         )
 
     def _map_y_value_to(
         self,
         another_yrange: Tuple[float, float],
-        y_val: float
+        y_val: float,
     ) -> float:
         """
         Map a y coordinate to the other layer by setting up the transformation
@@ -1800,7 +1766,7 @@ class ExViewBox(pg.ViewBox):
         # pylint: disable=invalid-name
         source_y_range = (
             self.targetRect().top(),
-            self.targetRect().bottom()
+            self.targetRect().bottom(),
         )
         m: float = (another_yrange[1] - another_yrange[0]) / \
                    (source_y_range[1] - source_y_range[0])

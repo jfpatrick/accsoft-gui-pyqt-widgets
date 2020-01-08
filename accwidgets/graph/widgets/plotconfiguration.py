@@ -1,5 +1,5 @@
 """Configuration classes for the ExPlotWidget"""
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, cast
 from enum import IntEnum
 import numpy as np
 
@@ -55,8 +55,8 @@ class TimeSpan:
         if right is None or np.isnan(right) or np.isinf(right):
             right = 0.0
         TimeSpan._validate(left, right)
-        self.left_boundary_offset: float = left
-        self.right_boundary_offset: float = right
+        self.left_boundary_offset: float = cast(float, left)
+        self.right_boundary_offset: float = cast(float, right)
 
     def __str__(self) -> str:
         """Readable string representation of a ExPlotWidget TimeSpan"""
@@ -93,11 +93,9 @@ class TimeSpan:
             ValueError: The left boundary is smaller than the right one.
         """
         if left is not None and left < right:
-            raise ValueError(
-                f"The passed left boundary with offset (now - {left}) "
-                f"points to a more recent time stamp than the right "
-                f"boundary with offset (now - {right})."
-            )
+            raise ValueError(f"The passed left boundary with offset (now - {left}) "
+                             f"points to a more recent time stamp than the right "
+                             f"boundary with offset (now - {right}).")
 
 
 class ExPlotWidgetConfig:
@@ -134,9 +132,7 @@ class ExPlotWidgetConfig:
                 they will represent them.
         """
         self._plotting_style: PlotWidgetStyle = plotting_style
-        self._time_span: TimeSpan
-        # Use property to transform the value:
-        self.time_span = time_span
+        self._time_span: TimeSpan = ExPlotWidgetConfig._to_time_span(time_span=time_span)
         self._time_progress_line: bool = time_progress_line
 
     def __str__(self) -> str:
@@ -163,13 +159,17 @@ class ExPlotWidgetConfig:
     @time_span.setter
     def time_span(self, time_span: Union[TimeSpan, float, int, None]) -> None:
         """How many seconds of data the plot should show."""
+        self._time_span = ExPlotWidgetConfig._to_time_span(time_span=time_span)
+
+    @staticmethod
+    def _to_time_span(time_span: Union[TimeSpan, float, int, None]) -> TimeSpan:
         if time_span is None:
             # Time span without left boundary
-            self._time_span = TimeSpan(left=None, right=0.0)
+            return TimeSpan(left=None, right=0.0)
         elif isinstance(time_span, (float, int)):
-            self._time_span = TimeSpan(left=time_span, right=0.0)
+            return TimeSpan(left=time_span, right=0.0)
         else:
-            self._time_span = time_span
+            return time_span
 
     @property
     def time_progress_line(self) -> bool:

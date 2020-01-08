@@ -19,13 +19,11 @@ class MainWindow(QMainWindow):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
         # One source of data for our curve
-        data_source_1 = example_sources.SinusCurveSource(
-            x_offset=0.0, y_offset=0, updates_per_second=5
-        )
+        data_source_1 = example_sources.SinusCurveSource(x_offset=0.0, y_offset=0, updates_per_second=5)
         # Our plot we want to add our curve to
         self.plot = accgraph.ScrollingPlotWidget(
             parent=self,
-            time_span=accgraph.TimeSpan(10.0)
+            time_span=accgraph.TimeSpan(10.0),
         )
         # A curve receiving its data from the prior defined
         # data source.

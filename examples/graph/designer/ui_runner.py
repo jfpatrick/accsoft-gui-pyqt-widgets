@@ -37,24 +37,22 @@ class Ui(
         # Create items to add to the plots
         cyclic_item = accgraph.LivePlotCurve.from_plot_item(
             plot_item=self.cyclic_plot.plotItem,
-            data_source=RandomDataSource(500)
+            data_source=RandomDataSource(500),
         )
         scrolling_item_1 = accgraph.LivePlotCurve.from_plot_item(
             plot_item=self.scrolling_plot.plotItem,
-            data_source=RandomDataSource(1000)
+            data_source=RandomDataSource(1000),
         )
         scrolling_item_2 = accgraph.LivePlotCurve.from_plot_item(
             plot_item=self.scrolling_plot.plotItem,
-            data_source=RandomDataSource(500)
+            data_source=RandomDataSource(500),
         )
         static_item_1 = pg.BarGraphItem(
             x=[0.0, 1.0, 2.0, 3.0],
             height=[1.0, 0.5, -0.5, 1.0],
-            width=0.75
+            width=0.75,
         )
-        static_item_2 = pg.PlotDataItem(
-            y=[1.0, 0.5, -0.5, 1.0]
-        )
+        static_item_2 = pg.PlotDataItem(y=[1.0, 0.5, -0.5, 1.0])
         # Add items
         self.static_plot.plotItem.addItem(static_item_1)
         self.static_plot.plotItem.addItem(static_item_2, layer="y_0")
@@ -76,12 +74,10 @@ class RandomDataSource(accgraph.UpdateSource):
 
     def emit(self) -> None:
         """Emit new float value"""
-        self.sig_new_data[accgraph.PointData].emit(
-            accgraph.PointData(
-                x_value=datetime.now().timestamp(),
-                y_value=random.uniform(0.0, 10.0)
-            )
-        )
+        self.sig_new_data[accgraph.PointData].emit(accgraph.PointData(
+            x_value=datetime.now().timestamp(),
+            y_value=random.uniform(0.0, 10.0),
+        ))
 
 
 def run():

@@ -27,7 +27,7 @@ class PlotWidgetTestWindow(QMainWindow):
         plot_config: ExPlotWidgetConfig,
         item_to_add: Union[Type[DataModelBasedItem], str, None] = None,
         opts: Optional[Dict] = None,
-        should_create_timing_source: bool = True
+        should_create_timing_source: bool = True,
     ):
         """Constructor :param plot_config: Configuration for the Plot Widget
 
@@ -47,7 +47,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self.data_source_mock: MockDataSource = MockDataSource()
         self.plot_config: ExPlotWidgetConfig = plot_config
         self.plot: ExPlotWidget = ExPlotWidget(
-            timing_source=self.time_source_mock, config=plot_config
+            timing_source=self.time_source_mock, config=plot_config,
         )
         self.item_to_add: Union[Type[DataModelBasedItem], str, None] = item_to_add
         self.opts: dict = opts

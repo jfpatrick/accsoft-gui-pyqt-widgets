@@ -21,7 +21,7 @@ def test_check_sorting_of_many_points():
     np.random.shuffle(actual_x)
     actual_y = np.copy(actual_x)
     actual_x, actual_y = accgraph.BaseSortedDataBuffer.sorted_data_arrays(
-        primary_values=actual_x, secondary_values_list=[actual_y]
+        primary_values=actual_x, secondary_values_list=[actual_y],
     )
     assert np.array_equal(expected_x, actual_x)
     assert np.array_equal(expected_y, actual_y[0])
@@ -37,7 +37,7 @@ def test_sorting_lists_with_different_lengths():
     np.random.shuffle(actual_y)
     with pytest.raises(ValueError):
         accgraph.BaseSortedDataBuffer.sorted_data_arrays(
-            primary_values=actual_x, secondary_values_list=[actual_y]
+            primary_values=actual_x, secondary_values_list=[actual_y],
         )
 
 
@@ -51,7 +51,7 @@ def test_sorting_lists_with_different_dimensions():
     np.random.shuffle(actual_y)
     with pytest.raises(ValueError):
         accgraph.BaseSortedDataBuffer.sorted_data_arrays(
-            primary_values=actual_x, secondary_values_list=[actual_y]
+            primary_values=actual_x, secondary_values_list=[actual_y],
         )
 
 
@@ -64,7 +64,7 @@ def test_sorting_of_empty_lists():
     np.random.shuffle(actual_x)
     np.random.shuffle(actual_y)
     accgraph.BaseSortedDataBuffer.sorted_data_arrays(
-        primary_values=actual_x, secondary_values_list=[actual_y]
+        primary_values=actual_x, secondary_values_list=[actual_y],
     )
     assert np.array_equal(expected_x, actual_x)
     assert np.array_equal(expected_y, actual_y)
@@ -74,7 +74,7 @@ def test_sorting_of_empty_lists():
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
 def test_subset_creation_with_clipping_of_data_model_without_nan_values(
-        length_for_buffer
+        length_for_buffer,
 ):
     """Subset Creation with """
     buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
@@ -108,13 +108,13 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     # Start on value, End in between values
     subset = buffer.subset_for_primary_val_range(start=2.0, end=7.9, interpolated=True)
     expected = create_expected_tuple_from_list(
-        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9]
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 7.9],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start on value, End on value
     subset = buffer.subset_for_primary_val_range(start=2.0, end=8.0, interpolated=True)
     expected = create_expected_tuple_from_list(
-        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start on value, End after last value
@@ -135,7 +135,7 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     # Start between values, End on value
     subset = buffer.subset_for_primary_val_range(start=2.3, end=8.0, interpolated=True)
     expected = create_expected_tuple_from_list(
-        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], [2.3, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
     )
     assert np.allclose(subset, expected, equal_nan=True)
     # Start between values, End between values
@@ -162,21 +162,21 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
 def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
-        length_for_buffer
+        length_for_buffer,
 ):
     """Check same subsets as with buffer without nans with an full buffer and an buffer with empty places left"""
     buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
     buffer.add_entry(x_value=np.nan, y_value=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([0.0, 1.0]), y_values=np.array([0.0, 1.0])
+        x_values=np.array([0.0, 1.0]), y_values=np.array([0.0, 1.0]),
     )
     buffer.add_entry(x_value=np.nan, y_value=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([2.0, 3.0]), y_values=np.array([2.0, 3.0])
+        x_values=np.array([2.0, 3.0]), y_values=np.array([2.0, 3.0]),
     )
     buffer.add_entry(x_value=np.nan, y_value=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([4.0, 5.0]), y_values=np.array([4.0, 5.0])
+        x_values=np.array([4.0, 5.0]), y_values=np.array([4.0, 5.0]),
     )
     buffer.add_entry(x_value=np.nan, y_value=np.nan)
 
@@ -217,7 +217,7 @@ def test_add_empty_list():
     """Check if an empty list of entries is handled correctly when appended"""
     buffer = accgraph.SortedCurveDataBuffer(size=10)
     buffer.add_list_of_entries(
-        x_values=np.array([]), y_values=np.array([])
+        x_values=np.array([]), y_values=np.array([]),
     )
     assert buffer.is_empty
 
@@ -232,7 +232,7 @@ def test_add_empty_list():
 def test_buffer_size_configurability(
         qtbot,
         item_to_add: Tuple[accgraph.DataModelBasedItem, str],
-        use_convenience_functions: bool
+        use_convenience_functions: bool,
 ):
     """Test if the datamodels buffer size is properly configurable."""
     window = MinimalTestWindow()
@@ -245,14 +245,14 @@ def test_buffer_size_configurability(
         convenience_function = getattr(plot_item, item_to_add[1])
         item = convenience_function(
             data_source=data_source,
-            buffer_size=10
+            buffer_size=10,
         )
     else:
         # create items by hand and
         item = item_to_add[0].from_plot_item(  # type: ignore
             plot_item=plot_item,
             data_source=data_source,
-            buffer_size=10
+            buffer_size=10,
         )
         plot_item.addItem(item=item)
     # Check if the datamodel has created a buffer in the right size

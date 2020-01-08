@@ -46,7 +46,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     @staticmethod
     def check_plotting_style_support(
             plot_config: ExPlotWidgetConfig,
-            supported_styles: List[PlotWidgetStyle]
+            supported_styles: List[PlotWidgetStyle],
     ) -> None:
         """ Check an items plotting style compatibility
 
