@@ -2,22 +2,23 @@
 Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
-import sys
 import logging
-from typing import Union, List, Tuple, Dict, Type, cast
+from typing import Tuple, Dict, Optional, cast, Type
 from copy import copy
 
 import numpy as np
 import pyqtgraph as pg
 
 from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import LiveCurveDataModel
+from accwidgets.graph.datamodel.itemdatamodel import LiveCurveDataModel, StaticCurveDataModel
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR, CurveData
+from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
+    AbstractBaseDataModel,
     AbstractDataModelBasedItemMeta,
 )
+from accwidgets.graph.datamodel.datastructures import CurveData
 from accwidgets.graph.widgets.plotconfiguration import PlotWidgetStyle
 from accwidgets.graph.widgets.plottimespan import CyclicPlotTimeSpan
 from typing import TYPE_CHECKING
@@ -25,12 +26,6 @@ if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
 
 _LOGGER = logging.getLogger(__name__)
-
-_PLOTTING_STYLE_TO_CLASS_MAPPING = {
-    PlotWidgetStyle.SCROLLING_PLOT: "ScrollingPlotCurve",
-    PlotWidgetStyle.CYCLIC_PLOT: "CyclicPlotCurve",
-}
-"""which plotting style is achieved by which class"""
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [
@@ -55,42 +50,27 @@ _PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
 ]
 
 
-class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
-
-    supported_plotting_styles: List[PlotWidgetStyle] = [*_PLOTTING_STYLE_TO_CLASS_MAPPING]
-    """List of plotting styles which are supported by this class's create factory function"""
+class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
 
     def __init__(
-        self,
-        plot_item: "ExPlotItem",
-        data_source: Union[UpdateSource, LiveCurveDataModel],
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-        pen=DEFAULT_COLOR,
-        **plotdataitem_kwargs,
+            self,
+            plot_item: "ExPlotItem",
+            data_model: AbstractBaseDataModel,
+            pen=DEFAULT_COLOR,
+            **plotdataitem_kwargs,
     ):
         """Base class for different live data curves.
 
         Args:
             plot_item: plot item the curve should fit to
-            data_source: source the curve receives data from
-            buffer_size: count of values the curve's data model's buffer should
-                         hold at max
-            pen: pen the curve should be drawn with, is part of the plotdataitem
+            data_model: Data Model the curve is based on
+            pen: pen the curve should be drawn with, is part of the PlotDataItem
                  base class parameters
             **plotdataitem_kwargs: keyword arguments fo the base class
 
         Raises:
             ValueError: The passes data source is not usable as a source for data
         """
-        if isinstance(data_source, UpdateSource):
-            data_model = LiveCurveDataModel(
-                data_source=data_source,
-                buffer_size=buffer_size,
-            )
-        elif isinstance(data_source, LiveCurveDataModel):
-            data_model = data_source
-        else:
-            raise ValueError(f"Data Source of type {type(data_source)} can not be used as a source or model for data.")
         DataModelBasedItem.__init__(
             self,
             data_model=data_model,
@@ -103,13 +83,14 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
         if pen is not None:
             self.setPen(pen)
 
-    @staticmethod
+    @classmethod
     def from_plot_item(
+            cls,
             plot_item: "ExPlotItem",
             data_source: UpdateSource,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
             **plotdataitem_kwargs,
-    ) -> "LivePlotCurve":
+    ) -> "AbstractBasePlotCurve":
         """Factory method for creating curve object fitting to the given plot item.
 
         This function allows easier creation of the right object instead of creating
@@ -120,56 +101,90 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
             plot_item: plot item the item should fit to
             data_source: source the item receives data from
             buffer_size: count of values the item's data model's buffer should hold at max
-            **buffer_size: keyword arguments for the items base class
+            **plotdataitem_kwargs: keyword arguments for the items base class
 
         Returns:
-            the created item
+            A new Curve which receives data from the passed data source.
+
+        Raises:
+            ValueError: The item does not fit the passed plot item's plotting style.
         """
-        DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_item.plot_config,
-            supported_styles=LivePlotCurve.supported_plotting_styles,
-        )
-        # get class fitting to plotting style and return instance
-        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_item.plot_config.plotting_style]
-        item_class: Type = getattr(sys.modules[__name__], class_name)
-        return item_class(
-            plot_item=plot_item,
+        subclass = cls.get_subclass_fitting_plotting_style(plot_item=plot_item)
+        data_model = subclass.data_model_type(
             data_source=data_source,
             buffer_size=buffer_size,
+        )
+        return subclass(
+            plot_item=plot_item,
+            data_model=data_model,
             **plotdataitem_kwargs,
         )
 
-    @staticmethod
+
+class LivePlotCurve(AbstractBasePlotCurve):
+
+    data_model_type = LiveCurveDataModel
+
+    def __init__(
+            self,
+            plot_item: "ExPlotItem",
+            data_source: Optional[UpdateSource] = None,
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
+            data_model: Optional[LiveCurveDataModel] = None,
+            pen=DEFAULT_COLOR,
+            **plotdataitem_kwargs,
+    ):
+        """
+        Live Plot Curve, abstract base class for all live data curves like
+        the scrolling and cyclic curve. Either Data Source of data model have
+        to be set.
+
+        Args:
+            plot_item: Plot Item the curve is created for
+            data_source: Source updates are passed through.
+            buffer_size: Buffer Size.
+            data_model: If a valid data model is passed, data source and buffer
+                        size are ignored
+            **plotdataitem_kwargs: Further Keyword Arguments for the PlotDataItem
+        """
+        if (data_model is None or not isinstance(data_model, LiveCurveDataModel)) and data_source is not None:
+            data_model = LiveCurveDataModel(
+                data_source=data_source,
+                buffer_size=buffer_size,
+            )
+        if data_model is not None:
+            super().__init__(
+                plot_item=plot_item,
+                data_model=data_model,
+                pen=pen,
+                **plotdataitem_kwargs,
+            )
+
+    @classmethod
     def clone(
-        object_to_create_from: "LivePlotCurve",
-        **plotdataitem_kwargs,
+            cls: Type["LivePlotCurve"],
+            object_to_create_from: "LivePlotCurve",
+            **plotdataitem_kwargs,
     ) -> "LivePlotCurve":
         """
-        Clone graph item from existing one. The datamodel is shared, but the new graph item
+        Clone graph item from existing one. The data model is shared, but the new graph item
         is fitted to the old graph item's parent plot item's style. If this one has changed
         since the creation of the old graph item, the new graph item will have the new style.
 
         Args:
-            object_to_create_from: object which f.e. datamodel should be taken from
+            object_to_create_from: object which f.e. data model should be taken from
             **plotdataitem_kwargs: Keyword arguments for the PlotDataItem base class
 
         Returns:
-            New live data curve with the datamodel from the old passed one
+            New live data curve with the data model from the old passed one
         """
-        plot_config = object_to_create_from._parent_plot_item.plot_config
-        DataModelBasedItem.check_plotting_style_support(
-            plot_config=plot_config,
-            supported_styles=LivePlotCurve.supported_plotting_styles,
-        )
-        # get class fitting to plotting style and return instance
-        class_name: str = _PLOTTING_STYLE_TO_CLASS_MAPPING[plot_config.plotting_style]
-        item_class: Type = getattr(sys.modules[__name__], class_name)
-        # Take opts from old item except ones passed explicitly
+        item_class = LivePlotCurve.get_subclass_fitting_plotting_style(
+            plot_item=object_to_create_from._parent_plot_item)
         kwargs = copy(object_to_create_from.opts)
         kwargs.update(plotdataitem_kwargs)
-        return item_class(
+        return cast(Type[LivePlotCurve], item_class)(
             plot_item=object_to_create_from._parent_plot_item,
-            data_source=object_to_create_from._data_model,
+            data_model=object_to_create_from._data_model,
             **kwargs,
         )
 
@@ -243,11 +258,14 @@ class LivePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataM
 
 class CyclicPlotCurve(LivePlotCurve):
 
+    supported_plotting_style = PlotWidgetStyle.CYCLIC_PLOT
+
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_source: Union[UpdateSource, LiveCurveDataModel],
+            data_source: Optional[UpdateSource] = None,
             buffer_size: int = DEFAULT_BUFFER_SIZE,
+            data_model: Optional[LiveCurveDataModel] = None,
             pen=DEFAULT_COLOR,
             **plotdataitem_kwargs,
     ):
@@ -264,10 +282,11 @@ class CyclicPlotCurve(LivePlotCurve):
 
         Args:
             plot_item: plot item the curve should fit to
-            data_source: source the curve receives data from
+            data_source: Data Source which emits new data to the data model
             buffer_size: count of values the curve's data model's buffer should
                          hold at max
-            pen: pen the curve should be drawn with, is part of the plotdataitem
+            data_model: data model the curve receives its data from which it displays
+            pen: pen the curve should be drawn with, is part of the PlotDataItem
                  base class parameters
             **plotdataitem_kwargs: keyword arguments fo the base class
 
@@ -276,6 +295,7 @@ class CyclicPlotCurve(LivePlotCurve):
         """
         super().__init__(
             plot_item=plot_item,
+            data_model=data_model,
             data_source=data_source,
             buffer_size=buffer_size,
             pen=pen,
@@ -359,6 +379,8 @@ class ScrollingPlotCurve(LivePlotCurve):
     The shown range has always the same length.
     """
 
+    supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
+
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
         if self.opts.get("pen", None) is not None:
@@ -374,3 +396,20 @@ class ScrollingPlotCurve(LivePlotCurve):
                                                                   end=self._parent_plot_item.time_span.end)
         self._set_data(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)
+
+
+class StaticPlotCurve(AbstractBasePlotCurve):
+
+    """
+    Bar Graph Item for displaying static data, where new arriving data replaces
+    the old one entirely.
+
+    One example use case would be displaying waveform plots.
+    """
+
+    supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
+    data_model_type = StaticCurveDataModel
+
+    def update_item(self) -> None:
+        """Get the full data of the data buffer and display it."""
+        self.setData(*self._data_model.full_data_buffer)

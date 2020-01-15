@@ -111,13 +111,14 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
 
     def update(self, timestamp: float) -> None:
         """Update time span area with the given current time as timestamp"""
-        if timestamp is not None and not np.isnan(timestamp):
-            self._last_time_stamp = timestamp
-            if self._first_time_span_update and self._start == 0.0:
-                self._start = timestamp
-                self._end = timestamp + self.time_span.size
-                self._first_time_span_update = False
-            self._cycle = int(timestamp - self._start) // self.time_span.size
+        if not np.isnan(timestamp) and not np.isinf(timestamp):
+            if timestamp is not None and not np.isnan(timestamp):
+                self._last_time_stamp = timestamp
+                if self._first_time_span_update and self._start == 0.0:
+                    self._start = timestamp
+                    self._end = timestamp + self.time_span.size
+                    self._first_time_span_update = False
+                self._cycle = int(timestamp - self._start) // self.time_span.size
 
     def x_pos(self, timestamp: float) -> float:
         """The positioning of time spans is always in the same x range."""
