@@ -3,7 +3,7 @@
 import abc
 import logging
 from typing import List
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, cast, TypeVar
 
 import numpy as np
 import pyqtgraph as pg
@@ -16,7 +16,16 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+_T = TypeVar("_T", bound="DataModelBasedItem")
+
+
 class DataModelBasedItem(metaclass=abc.ABCMeta):
+
+    supported_plotting_style: PlotWidgetStyle = None  # type: ignore
+    """Which plotting style does this item support?"""
+
+    data_model_type: Type[AbstractBaseDataModel] = None  # type: ignore
+    """Which is the default data model type for this item."""
 
     def __init__(
         self,
@@ -37,6 +46,37 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         self._data_model.sig_data_model_changed.connect(self._handle_data_model_change)
         self._parent_plot_item: "ExPlotItem" = parent_plot_item
         self._layer_id: str = ""
+
+    @classmethod
+    def get_subclass_fitting_plotting_style(
+            cls: Type[_T],
+            plot_item: "ExPlotItem",
+    ) -> Type[_T]:
+        """
+
+        Args:
+            plot_item: Plot Item, which the item should be searched for
+
+        Returns:
+            View Item class, Data Model
+        """
+        fitting_classes: List[Type[_T]] = [
+            c for c in DataModelBasedItem.all_subclasses(cls)
+            if plot_item.plot_config.plotting_style == cast(DataModelBasedItem, c).supported_plotting_style
+        ]
+        if not fitting_classes:
+            raise ValueError(f"No fitting subclass could be found for the plot item "
+                             f"with style {plot_item.plot_config.plotting_style.value}.")
+        elif len(fitting_classes) > 1:
+            _LOGGER.warning(f"Multiple fitting subclasses could be found for the plot "
+                            f"item with style {plot_item.plot_config.plotting_style.value}")
+        return fitting_classes[0]
+
+    @staticmethod
+    def all_subclasses(cls):
+        """Search for all subclasses of a class recursively."""
+        return set(cls.__subclasses__()).union(
+            [s for c in cls.__subclasses__() for s in DataModelBasedItem.all_subclasses(c)])
 
     @abc.abstractmethod
     def update_item(self) -> None:
@@ -91,11 +131,13 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         This we can do by passing the new timestamp to the parent plot item.
         Additional functionality can be implemented in each subclass
         """
-        if not self._parent_plot_item.timing_source_attached:
+        plot = self._parent_plot_item
+        if not plot.timing_source_attached and plot.timing_source_compatible:
             possible_ts = self._data_model.max_primary_val
             if possible_ts is not None and not np.isnan(possible_ts):
                 self._parent_plot_item.update_timestamp(possible_ts)
-        elif self._parent_plot_item.timing_source_attached and self._parent_plot_item.last_timestamp != -1.0:
+        elif not plot.timing_source_compatible or \
+                (plot.timing_source_attached and plot.last_timestamp != -1.0):
             self.update_item()
 
 

@@ -201,6 +201,80 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         self.sig_new_data[accgraph.CurveData].emit(curve)
 
 
+class WaveformSinusSource(accgraph.UpdateSource):
+
+    def __init__(
+            self,
+            curve_length: int = 100,
+            x_start: float = 0.0,
+            x_stop: float = 2 * math.pi,
+            y_offset: float = 0.0,
+            updates_per_second: float = 30,
+            type: SinusCurveSourceEmitTypes = SinusCurveSourceEmitTypes.POINT,
+    ):
+        """
+        Update Source which emits different scaled, complete sinus curves.
+        Compared to the SinusCurveSource, the curve is not emitted one value
+        at a time, but the entire curve, each time with a different scaling.
+
+        X values will stay the same each time
+
+        This source can be f.e. used in Waveform Plots.
+
+        Args:
+            curve_length: Amount of x and y values
+            x_start: Smallest x value
+            x_stop: Biggest x value
+            y_offset: Offset in y direction
+            updates_per_second: How often per second is a new curve emitted
+            type: In what type should the sinus curve be emitted
+        """
+        super().__init__()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._create_new_values)
+        self.timer.start(1000 / updates_per_second)
+        self.type = type
+        self.y_offset = y_offset
+        self.x = np.linspace(x_start, x_stop, curve_length)
+        self.y_base = np.sin(self.x)
+
+    def _create_new_values(self):
+        """Create a new value representing a sinus curve in some way."""
+        sin = self.y_base * np.sin(datetime.now().timestamp())
+        data = self._create_value(y=sin)
+        self.sig_new_data[type(data)].emit(data)
+
+    def _create_value(self, y: np.ndarray):
+        """Create a data wrapper based on the requested type."""
+        if self.type == SinusCurveSourceEmitTypes.POINT:
+            return accgraph.CurveData(
+                x_values=self.x,
+                y_values=y + self.y_offset,
+            )
+        elif self.type == SinusCurveSourceEmitTypes.BAR:
+            return accgraph.BarCollectionData(
+                x_values=self.x,
+                y_values=np.zeros(len(self.x)) + self.y_offset + 0.5 * y,
+                heights=y,
+            )
+        elif self.type == SinusCurveSourceEmitTypes.INJECTIONBAR:
+            y = abs(y)
+            return accgraph.InjectionBarCollectionData(
+                x_values=self.x,
+                y_values=np.zeros(len(self.x)) + self.y_offset,
+                heights=y,
+                widths=0.5 * y,
+                labels=np.array(["{:.2f}".format(_y) for _y in y]))
+        elif self.type == SinusCurveSourceEmitTypes.INFINITELINE:
+            sin = np.sin(datetime.now().timestamp())
+            r = (self.x[-1] - self.x[0]) / len(self.x)
+            x = self.x + sin * r
+            return accgraph.TimestampMarkerCollectionData(
+                x_values=x,
+                colors=np.array([["r", "g", "b"][i] for i, _ in enumerate(range(len(self.x)))]),
+                labels=np.array(["{:.2f}".format(_x) for _x in x]))
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                 Timing Source
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

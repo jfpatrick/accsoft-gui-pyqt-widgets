@@ -6,24 +6,34 @@ import pytest
 import pyqtgraph as pg
 import numpy as np
 
-from accwidgets.graph import (LiveBarGraphItem,
-                              LiveTimestampMarker,
-                              LiveInjectionBarGraphItem,
-                              LivePlotCurve,
-                              ExPlotItem, ExPlotWidget,
-                              ExPlotWidgetConfig, BarData,
-                              DataModelBasedItem,
-                              TimestampMarkerData, InjectionBarData,
-                              PlotWidgetStyle, PointData,
-                              RelativeTimeAxisItem,
-                              ScrollingBarGraphItem,
-                              ScrollingTimestampMarker,
-                              ScrollingInjectionBarGraphItem,
-                              ScrollingPlotCurve,
-                              CyclicPlotCurve,
-                              TimeAxisItem,
-                              UpdateSource,
-                              TimeSpan)
+from accwidgets.graph import (
+    LiveBarGraphItem,
+    LiveTimestampMarker,
+    LiveInjectionBarGraphItem,
+    LivePlotCurve,
+    StaticPlotCurve,
+    StaticBarGraphItem,
+    StaticInjectionBarGraphItem,
+    StaticTimestampMarker,
+    ExPlotItem,
+    ExPlotWidget,
+    ExPlotWidgetConfig,
+    BarData,
+    DataModelBasedItem,
+    TimestampMarkerData,
+    InjectionBarData,
+    PlotWidgetStyle,
+    PointData,
+    RelativeTimeAxisItem,
+    ScrollingBarGraphItem,
+    ScrollingTimestampMarker,
+    ScrollingInjectionBarGraphItem,
+    ScrollingPlotCurve,
+    CyclicPlotCurve,
+    TimeAxisItem,
+    UpdateSource,
+    TimeSpan,
+)
 
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
@@ -57,6 +67,27 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
     return False
 
 
+@pytest.mark.parametrize("item_to_add", [
+    StaticPlotCurve,
+    StaticBarGraphItem,
+    StaticInjectionBarGraphItem,
+    StaticTimestampMarker,
+])
+def test_static_plot_widget_creation(
+        qtbot,
+        item_to_add: Type[DataModelBasedItem],
+) -> None:
+    window = PlotWidgetTestWindow(
+        plot_config=ExPlotWidgetConfig(
+            plotting_style=PlotWidgetStyle.STATIC_PLOT,
+        ),
+        item_to_add=item_to_add)
+    window.show()
+    qtbot.addWidget(window)
+    assert len(window.plot.plotItem.data_model_items) == 1
+    assert isinstance(window.plot.plotItem.data_model_items[0], item_to_add)
+
+
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize("time_span", [2, 100])
 @pytest.mark.parametrize("plotting_style", [
@@ -70,7 +101,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
     (LiveTimestampMarker, "injectionbar"),
     (LiveInjectionBarGraphItem, ""),
 ])
-def test_all_available_widget_configurations(
+def test_live_plot_widget_creation(
     qtbot,
     time_span: int,
     plotting_style: PlotWidgetStyle,

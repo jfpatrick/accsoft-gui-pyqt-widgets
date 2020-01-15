@@ -22,18 +22,22 @@ from accwidgets.graph.widgets.axisitems import (
 )
 from accwidgets.graph.widgets.dataitems.bargraphitem import (
     LiveBarGraphItem,
+    AbstractBaseBarGraphItem,
 )
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
 )
 from accwidgets.graph.widgets.dataitems.timestampmarker import (
+    AbstractBaseTimestampMarker,
     LiveTimestampMarker,
 )
 from accwidgets.graph.widgets.dataitems.injectionbaritem import (
+    AbstractBaseInjectionBarGraphItem,
     LiveInjectionBarGraphItem,
 )
 from accwidgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
+    AbstractBasePlotCurve,
     ScrollingPlotCurve,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
@@ -143,7 +147,8 @@ class ExPlotItem(pg.PlotItem):
             params: params for c, for backwards compatibility to the original function
             data_source: source for new data that the curve should display
             layer: identifier of the layer the new curve is supposed to be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
+            buffer_size: maximum count of values the data model buffer should hold, used for live
+                         data displaying.
             **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
 
         Returns:
@@ -156,13 +161,11 @@ class ExPlotItem(pg.PlotItem):
             params = params or {}
             self.addItem(item=c, **params)
             return c
-        new_plot = (pg.PlotDataItem(**plotdataitem_kwargs)
-                    if data_source is None
-                    else LivePlotCurve.from_plot_item(plot_item=self,
-                                                      data_source=data_source,
-                                                      buffer_size=buffer_size,
-                                                      **plotdataitem_kwargs)
-                    )
+        new_plot = pg.PlotDataItem(**plotdataitem_kwargs) if data_source is None else \
+            AbstractBasePlotCurve.from_plot_item(plot_item=self,
+                                                 data_source=data_source,
+                                                 buffer_size=buffer_size,
+                                                 **plotdataitem_kwargs)
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
@@ -192,13 +195,11 @@ class ExPlotItem(pg.PlotItem):
             BarGraphItem or LiveBarGraphItem, depending on the passed parameters,
             that was added to the plot.
         """
-        new_plot: pg.BarGraphItem = (pg.BarGraphItem(**bargraph_kwargs)
-                                     if data_source is None
-                                     else LiveBarGraphItem.from_plot_item(plot_item=self,
-                                                                          data_source=data_source,
-                                                                          buffer_size=buffer_size,
-                                                                          **bargraph_kwargs)
-                                     )
+        new_plot = pg.BarGraphItem(**bargraph_kwargs) if data_source is None else \
+            AbstractBaseBarGraphItem.from_plot_item(plot_item=self,
+                                                    data_source=data_source,
+                                                    buffer_size=buffer_size,
+                                                    **bargraph_kwargs)
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
@@ -224,7 +225,7 @@ class ExPlotItem(pg.PlotItem):
         Returns:
             LiveInjectionBarGraphItem that was added to the plot.
         """
-        new_plot: LiveInjectionBarGraphItem = LiveInjectionBarGraphItem.from_plot_item(
+        new_plot = AbstractBaseInjectionBarGraphItem.from_plot_item(
             plot_item=self,
             data_source=data_source,
             buffer_size=buffer_size,
@@ -248,13 +249,13 @@ class ExPlotItem(pg.PlotItem):
 
         Args:
             data_source (UpdateSource): Source for data related updates,
-            buffer_size: maximum count of values the datamodel buffer should hold
+            buffer_size: maximum count of values the data model buffer should hold
             *graphicsobjectargs: Arguments passed to the GraphicsObject base class
 
         Returns:
             LiveTimestampMarker that was added to the plot.
         """
-        new_plot: LiveTimestampMarker = LiveTimestampMarker.from_plot_item(
+        new_plot: AbstractBaseTimestampMarker = AbstractBaseTimestampMarker.from_plot_item(
             *graphicsobjectargs,
             plot_item=self,
             data_source=data_source,
@@ -368,11 +369,23 @@ class ExPlotItem(pg.PlotItem):
         return pg.PlotItem.plot(*args, clear=clear, params=params)
 
     @property
-    def live_items(self) -> List[DataModelBasedItem]:
-        """All DataModelBasedItem instances added to the PlotItem. Pure PyQtGraph
+    def data_model_items(self) -> List[DataModelBasedItem]:
+        """All data model based items added to the PlotItem. Pure PyQtGraph
         components or other objects are filtered out.
         """
         return [curve for curve in self.items if isinstance(curve, DataModelBasedItem)]
+
+    @property
+    def live_items(self) -> List[DataModelBasedItem]:
+        """All live data items added to the PlotItem. Pure PyQtGraph
+        components or other objects are filtered out.
+        """
+        return [curve for curve in self.items if isinstance(curve, (
+            LivePlotCurve,
+            LiveBarGraphItem,
+            LiveInjectionBarGraphItem,
+            LiveTimestampMarker,
+        ))]
 
     @property
     def live_curves(self) -> List[LivePlotCurve]:
@@ -854,6 +867,15 @@ class ExPlotItem(pg.PlotItem):
             pass  # this can happen if the plot has been deleted.
 
     @property
+    def timing_source_compatible(self) -> bool:
+        """
+        Can the plot in the current configuration work with timing sources? This is the case in:
+            - Scrolling Live Data Plots
+            - Cyclic Live Data Plots
+        """
+        return _STYLE_TO_TIMESPAN_MAPPING.get(self.plot_config.plotting_style) is not None
+
+    @property
     def timing_source_attached(self) -> bool:
         """True, if the plot is attached to a timing source."""
         return self._timing_source_attached
@@ -1071,7 +1093,7 @@ class ExPlotItem(pg.PlotItem):
 
     def _prepare_timing_source_attachment(self, timing_source: Optional[UpdateSource]) -> None:
         """Initialized everything needed for connection to the timing-source"""
-        if timing_source:
+        if timing_source and self.timing_source_compatible:
             self._timing_source_attached = True
             timing_source.sig_new_timestamp.connect(self.update_timestamp)
         else:

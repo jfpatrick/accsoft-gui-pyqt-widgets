@@ -6,14 +6,15 @@ from typing import Optional, Type, Union, Dict
 
 from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
 
-from accwidgets.graph import (LiveBarGraphItem,
-                              LiveTimestampMarker,
-                              LiveInjectionBarGraphItem,
-                              LivePlotCurve,
-                              ExPlotWidget,
-                              ExPlotWidgetConfig,
-                              DataModelBasedItem,
-                              PlotWidgetStyle)
+from accwidgets.graph import (
+    AbstractBasePlotCurve,
+    AbstractBaseBarGraphItem,
+    AbstractBaseInjectionBarGraphItem,
+    AbstractBaseTimestampMarker,
+    ExPlotWidget,
+    ExPlotWidgetConfig,
+    DataModelBasedItem,
+)
 
 from .mock_data_source import MockDataSource
 from .mock_timing_source import MockTimingSource
@@ -61,15 +62,21 @@ class PlotWidgetTestWindow(QMainWindow):
 
     def add_item(self):
         """Add requested item to the """
-        if self.item_to_add == LivePlotCurve:
-            self.plot.addCurve(data_source=self.data_source_mock, **self.opts)
-        elif self.plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT:
-            if self.item_to_add == LiveBarGraphItem:
-                self.plot.addBarGraph(data_source=self.data_source_mock, **self.opts)
-            elif self.item_to_add == LiveInjectionBarGraphItem:
-                self.plot.addInjectionBar(data_source=self.data_source_mock, **self.opts)
-            elif self.item_to_add == LiveTimestampMarker:
-                self.plot.addTimestampMarker(data_source=self.data_source_mock)
+        try:
+            if self.item_to_add is not None:
+                if issubclass(self.item_to_add, AbstractBasePlotCurve):
+                    self.plot.addCurve(data_source=self.data_source_mock, **self.opts)
+                elif issubclass(self.item_to_add, AbstractBaseBarGraphItem):
+                    self.plot.addBarGraph(data_source=self.data_source_mock, **self.opts)
+                elif issubclass(self.item_to_add, AbstractBaseInjectionBarGraphItem):
+                    self.plot.addInjectionBar(data_source=self.data_source_mock, **self.opts)
+                elif issubclass(self.item_to_add, AbstractBaseTimestampMarker):
+                    self.plot.addTimestampMarker(data_source=self.data_source_mock)
+        except ValueError:
+            # ValueError -> Configuration does not support the required
+            #               Test has to check if this is wanted, but here
+            #               it is allowed to fail
+            pass
 
 
 class MinimalTestWindow(QMainWindow):

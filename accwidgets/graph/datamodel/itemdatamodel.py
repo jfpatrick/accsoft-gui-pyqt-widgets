@@ -2,7 +2,7 @@
 
 import abc
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, cast
 
 import numpy as np
 from qtpy.QtCore import QObject, Signal, Slot
@@ -40,7 +40,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     happened to the data stored by the data model
     """
 
-    def __init__(self, data_source: UpdateSource):
+    def __init__(self, data_source: UpdateSource, **_):
         """
         Abstract base class that defines signals and slots that all derived data
         models can use to publish and implement to react to data related changes.
@@ -61,6 +61,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
 
         Args:
             data_source: source for data updates this data-model connects to.
+            **_: Swallows unused keyword arguments
         """
         super().__init__()
         self._data_source = data_source
@@ -84,6 +85,15 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     def data_source(self) -> UpdateSource:
         """Source for data updates the data-model is attached to."""
         return self._data_source
+
+    @property
+    @abc.abstractmethod
+    def full_data_buffer(self) -> Tuple[np.ndarray, ...]:
+        """
+        Return the data saved in the data model as a tuple of numpy arrays.
+        The count of numpy arrays are dependent on the type of data model.
+        """
+        pass
 
     def _connect_to_data_source(self) -> None:
         """
@@ -131,8 +141,7 @@ class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
         super().__init__(data_source=data_source)
         self._buffer_size = buffer_size
         self._full_data_buffer: BaseSortedDataBuffer
-        self._data_source = data_source
-        self._non_fitting_data_info_printed: bool = False
+        self.non_fitting_data_info_printed: bool = False
 
     def replace_data_source(self, data_source: UpdateSource, clear_buffer: bool = True):
         """
@@ -165,10 +174,9 @@ class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
 
     @property
     def full_data_buffer(self) -> Tuple[np.ndarray, ...]:
-        """The full inner data as a tuple containing numpy arrays.
-        How many numpy arrays are included is depending on the type of
-        the data buffer, see implementation (primary_values and all secondary
-        values)
+        """
+        Return the data saved in the data model as a tuple of numpy arrays.
+        The count of numpy arrays are dependent on the type of data model.
         """
         return self._full_data_buffer.as_np_array()
 
@@ -253,10 +261,10 @@ class LiveCurveDataModel(AbstractLiveDataModel):
             )
             self.sig_data_model_changed.emit()
         else:
-            if not self._non_fitting_data_info_printed:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
                 _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
                                 f"line graph datamodel or is invalid and will be ignored.")
-                self._non_fitting_data_info_printed = True
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
 class LiveBarGraphDataModel(AbstractLiveDataModel):
@@ -297,10 +305,10 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
             )
             self.sig_data_model_changed.emit()
         else:
-            if not self._non_fitting_data_info_printed:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
                 _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not "
                                 f"fit this bar graph datamodel or is invalid and will be ignored.")
-                self._non_fitting_data_info_printed = True
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
 class LiveInjectionBarDataModel(AbstractLiveDataModel):
@@ -342,10 +350,10 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
             )
             self.sig_data_model_changed.emit()
         else:
-            if not self._non_fitting_data_info_printed:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
                 _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
                                 f"this injection-bar datamodel or is invalid and will be ignored.")
-                self._non_fitting_data_info_printed = True
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
 class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
@@ -380,7 +388,178 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
             )
             self.sig_data_model_changed.emit()
         else:
-            if not self._non_fitting_data_info_printed:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
                 _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
                                 f"this timestamp mark datamodel or is invalid and will be ignored.")
-                self._non_fitting_data_info_printed = True
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+
+
+class StaticCurveDataModel(AbstractBaseDataModel):
+
+    def __init__(self, data_source: UpdateSource, **_):
+        """
+        Data model for a static curve. If new data arrives, the
+        old one will be replaced entirely with the new one.
+
+        Args:
+            data_source: Source for the new arriving data
+            **_: Swallow unused keyword arguments
+        """
+        super().__init__(data_source=data_source)
+        self._x_values: np.ndarray = np.array([])
+        self._y_values: np.ndarray = np.array([])
+
+    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+        if isinstance(data, PointData) and data.is_valid():
+            self._x_values = np.array([data.x_value])
+            self._y_values = np.array([data.y_value])
+            self.sig_data_model_changed.emit()
+        elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
+            self._x_values = data.x_values
+            self._y_values = data.y_values
+            self.sig_data_model_changed.emit()
+        else:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
+                                f"line graph data model or is invalid and will be ignored.")
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Return the data saved in the data model as a tuple of numpy arrays
+        in the form (x_values, y_values).
+        """
+        return self._x_values, self._y_values
+
+
+class StaticBarGraphDataModel(AbstractBaseDataModel):
+
+    def __init__(self, data_source: UpdateSource, **_):
+        """
+        Data model for a static bar graph. If new data arrives, the
+        old one will be replaced.
+
+        Args:
+            data_source: Source for the new arriving data
+            **_: Swallow unused keyword arguments
+        """
+        super().__init__(data_source=data_source)
+        self._x_values: np.ndarray = np.array([])
+        self._y_values: np.ndarray = np.array([])
+        self._heights: np.ndarray = np.array([])
+
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+        if isinstance(data, BarData) and data.is_valid():
+            self._x_values = np.array([data.x_value])
+            self._y_values = np.array([data.y_value])
+            self._heights = np.array([data.height])
+            self.sig_data_model_changed.emit()
+        elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
+            self._x_values = data.x_values
+            self._y_values = data.y_values
+            self._heights = data.heights
+            self.sig_data_model_changed.emit()
+        else:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
+                                f"bar graph datamodel or is invalid and will be ignored.")
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the data saved in the data model as a tuple of numpy arrays
+        in the form (x_values, y_values, height_values).
+        """
+        return self._x_values, self._y_values, self._heights
+
+
+class StaticInjectionBarDataModel(AbstractBaseDataModel):
+
+    def __init__(self, data_source: UpdateSource, **_):
+        """
+        Data model for a static injection bar graph. If new data arrives, the
+        old one will be replaced.
+
+        Args:
+            data_source: Source for the new arriving data
+            **_: Swallow unused keyword arguments
+        """
+        super().__init__(data_source=data_source)
+        self._x_values: np.ndarray = np.array([])
+        self._y_values: np.ndarray = np.array([])
+        self._heights: np.ndarray = np.array([])
+        self._widths: np.ndarray = np.array([])
+        self._labels: np.ndarray = np.array([])
+
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+        if isinstance(data, InjectionBarData) and data.is_valid():
+            self._x_values = np.array([data.x_value])
+            self._y_values = np.array([data.y_value])
+            self._heights = np.array([data.height])
+            self._widths = np.array([data.width])
+            self._labels = np.array([data.label])
+            self.sig_data_model_changed.emit()
+        elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
+            self._x_values = data.x_values
+            self._y_values = data.y_values
+            self._heights = data.heights
+            self._widths = data.widths
+            self._labels = data.labels
+            self.sig_data_model_changed.emit()
+        else:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
+                                f"injection bar data model or is invalid and will be ignored.")
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the data saved in the data model as a tuple of numpy arrays
+        in the form (x_values, y_values, height_values, width_values, labels).
+        """
+        return self._x_values, self._y_values, self._heights, self._widths, self._labels
+
+
+class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
+
+    def __init__(self, data_source: UpdateSource, **_):
+        """
+        Data model for a static time stamp markers. If new data arrives, the
+        old one will be replaced.
+
+        Args:
+            data_source: Source for the new arriving data
+            **_: Swallow unused keyword arguments
+        """
+        super().__init__(data_source=data_source)
+        self._x_values: np.ndarray = np.array([])
+        self._colors: np.ndarray = np.array([])
+        self._labels: np.ndarray = np.array([])
+
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+        if isinstance(data, TimestampMarkerData) and data.is_valid():
+            self._x_values = np.array([data.x_value])
+            self._colors = np.array([data.color])
+            self._labels = np.array([data.label])
+            self.sig_data_model_changed.emit()
+        elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
+            self._x_values = data.x_values
+            self._colors = data.colors
+            self._labels = data.labels
+            self.sig_data_model_changed.emit()
+        else:
+            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
+                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
+                                f"timestamp marker data model or is invalid and will be ignored.")
+                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the data saved in the data model as a tuple of numpy arrays
+        in the form (x_values, color_string_values, labels).
+        """
+        return self._x_values, self._colors, self._labels
