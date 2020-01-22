@@ -1,8 +1,12 @@
 # Placeholder for user defined entries. If you would like to extend this file, please put your entries in this section.
 
+# Output file for pytests test coverage check
 *.coverage
 htmlcov
 coverage
+
+# Output directory for the documentation files generated with Sphinx
+docs/sphinx-out/
 
 # End of placeholder for user defined entries
 

@@ -81,10 +81,12 @@ EXTRA_REQUIRES["linting"] = [
     "flake8-blind-except>=0.1.1&&<2",
     "flake8-bugbear>=19.8.0&&<20",
 ]
-EXTRA_REQUIRES["docs"] = [
-    "Sphinx~=2.1.2",
-    "recommonmark~=0.6.0",
-    "sphinx-rtd-theme~=0.4.3",
+EXTRA_REQUIRES["doc"] = [
+    "Sphinx>=2.1.2&&<2.2",
+    "recommonmark>=0.6.0&&<0.7",
+    "sphinx-rtd-theme>=0.4.3&&<0.5",
+    "sphinx-autodoc-typehints>=1.10.3&&<2",
+    "sphinxcontrib-napoleon2>=1.0&&<2",
 ]
 EXTRA_REQUIRES["release"] = [
     "twine~=1.13.0",

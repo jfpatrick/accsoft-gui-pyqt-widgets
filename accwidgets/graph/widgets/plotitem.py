@@ -1766,13 +1766,14 @@ class ExViewBox(pg.ViewBox):
 
         As given we can use the view viewboxes y ranges
         (x -> source vb, y -> destination vb) .
-            m * x_1 + c = y_1
 
-            m * x_2 + c = y_2
+        m * x_1 + c = y_1
 
-            -> m = (y_2 - y_1) / (x_2 - x_1)
+        m * x_2 + c = y_2
 
-            -> c = y_1 - m * x_1
+        -> m = (y_2 - y_1) / (x_2 - x_1)
+
+        -> c = y_1 - m * x_1
 
         With this we can transform any y coordinate from the source vb to the
         destination vb.
