@@ -736,7 +736,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             y_offset = -offset
         if (
                 True not in np.isnan(np.array([x, y, x_offset, y_offset]))
-                and cast(ExPlotWidget, self).legend is not None
+                and cast(ExPlotWidget, self).plotItem.legend is not None
         ):
             cast(ExPlotWidget, self).plotItem.legend.anchor(
                 itemPos=(x, y),
