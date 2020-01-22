@@ -26,7 +26,7 @@ from accwidgets.graph.datamodel.datastructures import (
     InjectionBarCollectionData,
     InjectionBarData,
     PointData,
-    PlottingItemDataStructure,
+    PlottingItemData,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     @Slot(InjectionBarCollectionData)
     @Slot(TimestampMarkerData)
     @Slot(TimestampMarkerCollectionData)
-    def _handle_data_update_signal(self, data: PlottingItemDataStructure) -> None:
+    def _handle_data_update_signal(self, data: PlottingItemData) -> None:
         """Handle arriving data"""
         pass
 

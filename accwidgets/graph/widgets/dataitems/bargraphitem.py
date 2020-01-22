@@ -179,7 +179,7 @@ class ScrollingBarGraphItem(LiveBarGraphItem):
                 end=self._parent_plot_item.time_span.end,
             )
             if curve_x.size == curve_y.size and curve_x.size > 0:
-                self.setOpts(x=curve_x, y=curve_y, height=height, width=width)
+                self.setOpts(x=curve_x, y0=curve_y, height=height, width=width)
 
 
 class StaticBarGraphItem(AbstractBaseBarGraphItem):
@@ -199,4 +199,4 @@ class StaticBarGraphItem(AbstractBaseBarGraphItem):
         if np.isnan(width):
             width = min(abs(np.ediff1d(curve_x)[1:]))
         if curve_x.size == curve_y.size and curve_x.size > 0:
-            self.setOpts(x=curve_x, y=curve_y, height=height, width=width)
+            self.setOpts(x=curve_x, y0=curve_y, height=height, width=width)

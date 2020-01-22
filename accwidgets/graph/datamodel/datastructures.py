@@ -12,7 +12,7 @@ different length arrays into an .
 import warnings
 import logging
 import abc
-from typing import List, Union, Optional, Any, NamedTuple
+from typing import List, Union, Optional, Any, NamedTuple, Sequence
 
 import numpy as np
 import pyqtgraph as pg
@@ -23,7 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class InvalidDataStructureWarning(Warning):
     """
-    Warning for an invalid Data Structure. PlottingItemDataStructure should emit
+    Warning for an invalid Data Structure. PlottingItemData should emit
     this if they are invalid, which means that they can not be drawn
     in their fitting graph-type.
     """
@@ -133,8 +133,8 @@ class CurveData(PlottingItemData):
 
     def __init__(
             self,
-            x_values: Union[List[float], np.ndarray],
-            y_values: Union[List[float], np.ndarray],
+            x_values: Sequence[float],
+            y_values: Sequence[float],
             parent=None,
     ):
         """Collection of data for points representing a curve.
@@ -149,9 +149,9 @@ class CurveData(PlottingItemData):
             parent: Parent object for the base class
         """
         super().__init__(parent)
-        if isinstance(x_values, list):
+        if not isinstance(x_values, np.ndarray):
             x_values = np.array(x_values)
-        if isinstance(y_values, list):
+        if not isinstance(y_values, np.ndarray):
             y_values = np.array(y_values)
         if x_values.size != y_values.size:
             raise ValueError(f"The curve cannot be created with different count of x"
@@ -279,9 +279,9 @@ class BarCollectionData(PlottingItemData):
 
     def __init__(
             self,
-            x_values: Union[list, np.ndarray],
-            y_values: Union[list, np.ndarray],
-            heights: Union[list, np.ndarray],
+            x_values: Sequence[float],
+            y_values: Sequence[float],
+            heights: Sequence[float],
             parent=None,
     ):
         """Collection of data for multiple bars
@@ -297,11 +297,11 @@ class BarCollectionData(PlottingItemData):
             parent: Parent object for the base class
         """
         super().__init__(parent)
-        if isinstance(x_values, list):
+        if not isinstance(x_values, np.ndarray):
             x_values = np.array(x_values)
-        if isinstance(y_values, list):
+        if not isinstance(y_values, np.ndarray):
             y_values = np.array(y_values)
-        if isinstance(heights, list):
+        if not isinstance(heights, np.ndarray):
             heights = np.array(heights)
         if not x_values.size == y_values.size == heights.size:
             raise ValueError(f"The bar collection cannot be created with different length "
@@ -444,11 +444,11 @@ class InjectionBarCollectionData(PlottingItemData):
 
     def __init__(
         self,
-        x_values: Union[List, np.ndarray],
-        y_values: Union[List, np.ndarray],
-        heights: Union[List, np.ndarray],
-        widths: Union[List, np.ndarray],
-        labels: Union[List, np.ndarray],
+        x_values: Sequence[float],
+        y_values: Sequence[float],
+        heights: Sequence[float],
+        widths: Sequence[float],
+        labels: Sequence[str],
         parent: Optional[QObject] = None,
     ):
         """Collection of data for multiple injection bars.
@@ -466,15 +466,15 @@ class InjectionBarCollectionData(PlottingItemData):
             parent: parent item of the base class
         """
         super().__init__(parent)
-        if isinstance(x_values, list):
+        if not isinstance(x_values, np.ndarray):
             x_values = np.array(x_values)
-        if isinstance(y_values, list):
+        if not isinstance(y_values, np.ndarray):
             y_values = np.array(y_values)
-        if isinstance(heights, list):
+        if not isinstance(heights, np.ndarray):
             heights = np.array(heights)
-        if isinstance(widths, list):
+        if not isinstance(widths, np.ndarray):
             widths = np.array(widths)
-        if isinstance(labels, list):
+        if not isinstance(labels, np.ndarray):
             labels = np.array(labels)
         if not x_values.size == y_values.size == heights.size == widths.size == labels.size:
             raise ValueError(f"The injection bar collection cannot be created with different length "
@@ -620,9 +620,9 @@ class TimestampMarkerCollectionData(PlottingItemData):
 
     def __init__(
             self,
-            x_values: Union[List, np.ndarray],
-            colors: Union[List, np.ndarray],
-            labels: Union[List, np.ndarray],
+            x_values: Sequence[float],
+            colors: Sequence[str],
+            labels: Sequence[str],
             parent=None,
     ):
         """Collection of data for timestamp markers
@@ -642,22 +642,23 @@ class TimestampMarkerCollectionData(PlottingItemData):
             parent: parent item for the base class
         """
         super().__init__(parent=parent)
-        if isinstance(x_values, list):
+        if not isinstance(x_values, np.ndarray):
             x_values = np.array(x_values)
-        if isinstance(colors, list):
+        if not isinstance(colors, np.ndarray):
             colors = np.array(colors)
-            # Catch invalid colors and replace with the default color to prevent exceptions
-            for index, color in enumerate(colors):
-                try:
-                    pg.mkColor(color)
-                except Exception:  # pylint: disable=broad-except
-                    # mkColor() raises Exception every time it can not interpret the passed color
-                    # In these cases we want to fall back to our default color
-                    _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
-                                    f"since '{color}' can not be used as a color.")
-                    colors[index] = DEFAULT_COLOR
-        if isinstance(labels, list):
+        if not isinstance(labels, np.ndarray):
             labels = np.array(labels)
+        # Catch invalid colors and replace with the default color to prevent exceptions
+        for index, color in enumerate(colors):
+            try:
+                pg.mkColor(color)
+            except Exception:  # pylint: disable=broad-except
+                # mkColor() raises Exception every time it can not interpret the passed color
+                # In these cases we want to fall back to our default color
+                _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
+                                f"since '{color}' can not be used as a color.")
+                colors[index] = DEFAULT_COLOR
+        # Check length of passed sequences
         if not x_values.size == colors.size == labels.size:
             raise ValueError(f"The timestamp marker collection cannot be created with different length "
                              f"parameters: ({x_values.size}, {colors.size}, {labels.size})")
@@ -770,16 +771,3 @@ class CurveDataWithTime:
             )
         except ValueError:
             return False
-
-
-PlottingItemDataStructure = Union[
-    PointData,
-    CurveData,
-    BarData,
-    BarCollectionData,
-    InjectionBarData,
-    InjectionBarCollectionData,
-    TimestampMarkerData,
-    TimestampMarkerCollectionData,
-]
-"""Union with all data-structure classes from this module (useful for type hints in slots)"""
