@@ -1,3 +1,8 @@
+include:
+  - project: 'acc-co/devops/python/acc-py-devtools'
+    file: 'acc_py_devtools/templates/gitlab-ci/python.yml'
+
+
 stages:
   - Code Quality
   - Unit Tests
@@ -32,13 +37,15 @@ pytest:
   stage: Unit Tests
   script:
     - pip install .[testing]
-    - run_headless python -m pytest --random-order --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
+    - run_headless python -m pytest --random-order --junitxml=report.xml --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
   artifacts:
     name: coverage-report
     paths:
       - coverage
     when: on_success
     expire_in: 1 month
+    reports:
+      junit: report.xml
 
 twine:
   image: $ACCPY_PYQT_DOCKER_IMAGE
@@ -56,15 +63,17 @@ twine:
       - $ACCPY_NEXUS_USER != null
       - $ACCPY_NEXUS_PASSWD != null
 
+
 sphinx:
+  extends: .acc_py_build_docs
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Release
-  script:
-    - pip install .[docs]
-    - echo "Sphinx command is coming in the future..."
-  when: manual
   only:
     refs:
       - master
       - develop
-      - tags
+
+sphinx on tag:
+  extends: .acc_py_build_docs_on_tag
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Release
