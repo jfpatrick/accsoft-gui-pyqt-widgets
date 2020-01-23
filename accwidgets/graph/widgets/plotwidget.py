@@ -666,11 +666,10 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                     y_alignment=old_pos[1],
                 )
             else:
-                if cast(ExPlotWidget, self).plotItem.legend is not None:
-                    cast(ExPlotWidget, self).removeItem(
-                        cast(ExPlotWidget, self).plotItem.legend,
-                    )
-                    cast(ExPlotWidget, self).plotItem.legend.deleteLater()
+                legend = cast(ExPlotWidget, self).plotItem.legend
+                if legend is not None:
+                    cast(ExPlotWidget, self).removeItem(legend)
+                    legend.deleteLater()
                     cast(ExPlotWidget, self).plotItem.legend = None
             cast(ExPlotWidget, self).update()
 
@@ -734,11 +733,9 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         elif y_alignment == LegendYAlignmentOptions.Bottom:
             y = 1
             y_offset = -offset
-        if (
-                True not in np.isnan(np.array([x, y, x_offset, y_offset]))
-                and cast(ExPlotWidget, self).plotItem.legend is not None
-        ):
-            cast(ExPlotWidget, self).plotItem.legend.anchor(
+        legend = cast(ExPlotWidget, self).plotItem.legend
+        if True not in np.isnan(np.array([x, y, x_offset, y_offset])) and legend is not None:
+            legend.anchor(
                 itemPos=(x, y),
                 parentPos=(x, y),
                 offset=(x_offset, y_offset),
