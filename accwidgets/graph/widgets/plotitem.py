@@ -20,6 +20,7 @@ from accwidgets.graph.widgets.axisitems import (
     RelativeTimeAxisItem,
     TimeAxisItem,
 )
+from accwidgets.graph.widgets.legenditem import ExLegendItem
 from accwidgets.graph.widgets.dataitems.bargraphitem import (
     LiveBarGraphItem,
     AbstractBaseBarGraphItem,
@@ -865,6 +866,30 @@ class ExPlotItem(pg.PlotItem):
                 self.autoBtn.hide()
         except RuntimeError:
             pass  # this can happen if the plot has been deleted.
+
+    def addLegend(
+            self,
+            size: Optional[Tuple[float, float]] = None,
+            offset: Tuple[float, float] = (30, 30),
+    ) -> ExLegendItem:
+        """
+        Create a new LegendItem and anchor it over the internal ViewBox.
+        Plots will be automatically displayed in the legend if they
+        are created with the 'name' argument.
+
+        This overwritten version allows configuring text and background color.
+
+        Args:
+            size: Fixed size for the LegendItem
+            offset: Static offset for the LegendItem
+
+        Returns:
+            ExLegendItem instance which was added to the PlotItem's default
+            ViewBox
+        """
+        self.legend: Optional[ExLegendItem] = ExLegendItem(size=size, offset=offset)
+        self.legend.setParentItem(self.getViewBox())
+        return self.legend
 
     @property
     def timing_source_compatible(self) -> bool:
