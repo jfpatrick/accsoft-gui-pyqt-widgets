@@ -1,13 +1,17 @@
 """Scrolling Bar Chart for live data plotting"""
 
-from typing import Type, Dict, Optional, cast
+from typing import Type, Dict, Union, cast
 from copy import copy
 
 import numpy as np
 import pyqtgraph as pg
 
 from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import LiveBarGraphDataModel, StaticBarGraphDataModel
+from accwidgets.graph.datamodel.itemdatamodel import (
+    LiveBarGraphDataModel,
+    StaticBarGraphDataModel,
+    AbstractBaseDataModel,
+)
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
@@ -16,6 +20,7 @@ from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
+from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -26,7 +31,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_model: LiveBarGraphDataModel,
+            data_model: AbstractBaseDataModel,
             **bargraphitem_kwargs,
     ):
         """Base class for different live bar graph plots.
@@ -84,12 +89,12 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
 
     data_model_type = LiveBarGraphDataModel
 
+    @deprecated_param_alias(data_source="data_model")
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_source: Optional[UpdateSource] = None,
+            data_model: Union[LiveBarGraphDataModel, UpdateSource],
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            data_model: Optional[LiveBarGraphDataModel] = None,
             **bargraphitem_kwargs,
     ):
         """
@@ -98,15 +103,16 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
 
         Args:
             plot_item: Plot Item the curve is created for
-            data_source: Source updates are passed through.
-            buffer_size: Buffer Size.
-            data_model: If a valid data model is passed, data source and buffer
-                        size are ignored
+            data_model: Either an Update Source or a already initialized data
+                        model
+            buffer_size: Buffer size, which will be passed to the data model,
+                         will only be used if the data_model is only an Update
+                         Source.
             **bargraphitem_kwargs: Further Keyword Arguments for the BarGraphItem
         """
-        if (data_model is None or not isinstance(data_model, LiveBarGraphDataModel)) and data_source is not None:
+        if isinstance(data_model, UpdateSource):
             data_model = LiveBarGraphDataModel(
-                data_source=data_source,
+                data_source=data_model,
                 buffer_size=buffer_size,
             )
         if data_model is not None:
@@ -115,6 +121,9 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
                 data_model=data_model,
                 **bargraphitem_kwargs,
             )
+        else:
+            raise TypeError("Need either data source or data model to create "
+                            f"a {type(self).__name__} instance")
 
     @classmethod
     def clone(

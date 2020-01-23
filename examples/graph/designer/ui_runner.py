@@ -75,8 +75,8 @@ class RandomDataSource(accgraph.UpdateSource):
     def emit(self) -> None:
         """Emit new float value"""
         self.sig_new_data[accgraph.PointData].emit(accgraph.PointData(
-            x_value=datetime.now().timestamp(),
-            y_value=random.uniform(0.0, 10.0),
+            x=datetime.now().timestamp(),
+            y=random.uniform(0.0, 10.0),
         ))
 
 

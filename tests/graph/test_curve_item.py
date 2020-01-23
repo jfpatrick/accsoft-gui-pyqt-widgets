@@ -47,7 +47,7 @@ def test_simple_linear_data_append(qtbot):
     assert curve.last_timestamp == 10.0
     buffer = _make_curve_from_buffer(curve)
     assert np.allclose(buffer.timestamps, expected_data)
-    assert np.allclose(buffer.y_values, expected_data)
+    assert np.allclose(buffer.y, expected_data)
 
 
 def test_plot_after_first_timing_update(qtbot):
@@ -59,12 +59,12 @@ def test_plot_after_first_timing_update(qtbot):
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
     # Start actual testing
     time.create_new_value(0.0)
     data.create_new_value(0.5, 0.5)
-    expected_full = CurveDataWithTime(timestamps=[0.5], x_values=[], y_values=[0.5])
-    expected_new = CurveDataWithTime(timestamps=[0.5], x_values=[0.5], y_values=[0.5])
+    expected_full = CurveDataWithTime(timestamps=[0.5], x=[], y=[0.5])
+    expected_new = CurveDataWithTime(timestamps=[0.5], x=[0.5], y=[0.5])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(plot_item, [], [], [], [])
 
@@ -78,14 +78,14 @@ def test_plot_before_first_timing_update(qtbot):
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
-    expected_new = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
+    expected_new = CurveDataWithTime(timestamps=[], x=[], y=[])
     # Start actual testing
     data.create_new_value(0.5, 0.5)
-    expected_full = CurveDataWithTime(timestamps=[0.5], x_values=[], y_values=[0.5])
+    expected_full = CurveDataWithTime(timestamps=[0.5], x=[], y=[0.5])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     time.create_new_value(0.0)
-    expected_new = CurveDataWithTime(timestamps=[0.5], x_values=[0.5], y_values=[0.5])
+    expected_new = CurveDataWithTime(timestamps=[0.5], x=[0.5], y=[0.5])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(plot_item, [], [], [], [])
 
@@ -113,13 +113,13 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
     # Start actual testing
     time.create_new_value(0.0)
     data.create_new_value(0.0, 0.0)
     data.create_new_value(1.0, 1.0)
-    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0], x_values=[], y_values=[0.0, 1.0])
-    expected_new = CurveDataWithTime(timestamps=[0.0, 1.0], x_values=[0.0, 1.0], y_values=[0.0, 1.0])
+    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0], x=[], y=[0.0, 1.0])
+    expected_new = CurveDataWithTime(timestamps=[0.0, 1.0], x=[0.0, 1.0], y=[0.0, 1.0])
     expected_new_curve_x_values = [0.0]
     expected_new_curve_y_values = [0.0]
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
@@ -145,8 +145,8 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     data.create_new_value(2.0, 0.0)
     expected_new_curve_x_values = [0.0, 1.0, 1.5]
     expected_new_curve_y_values = [0.0, 1.0, 0.5]
-    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[], y_values=[0.0, 1.0, 0.0])
-    expected_new = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 0.0])
+    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[], y=[0.0, 1.0, 0.0])
+    expected_new = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 0.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(plot_item, expected_new_curve_x_values, expected_new_curve_y_values, [], [])
     time.create_new_value(2.0)
@@ -154,9 +154,9 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     expected_old_curve_y_values = [0.0, 1.0, 0.0]
     expected_new_curve_x_values = [0.0]
     expected_new_curve_y_values = [0.0]
-    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[], y_values=[0.0, 1.0, 0.0])
-    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 0.0])
-    expected_new = CurveDataWithTime(timestamps=[2.0], x_values=[0.0], y_values=[0.0])
+    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[], y=[0.0, 1.0, 0.0])
+    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 0.0])
+    expected_new = CurveDataWithTime(timestamps=[2.0], x=[0.0], y=[0.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -195,15 +195,15 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
     expected_new_curve_y_values = [2.0, 2.75]
     expected_full = CurveDataWithTime(
         timestamps=[0.0, 0.75, 1.75, 2.75],
-        x_values=[],
-        y_values=[0.0, 0.75, 1.75, 2.75],
+        x=[],
+        y=[0.0, 0.75, 1.75, 2.75],
     )
     expected_old = CurveDataWithTime(
         timestamps=[0.0, 0.75, 1.75],
-        x_values=[0.0, 0.75, 1.75],
-        y_values=[0.0, 0.75, 1.75],
+        x=[0.0, 0.75, 1.75],
+        y=[0.0, 0.75, 1.75],
     )
-    expected_new = CurveDataWithTime(timestamps=[2.75], x_values=[0.75], y_values=[2.75])
+    expected_new = CurveDataWithTime(timestamps=[2.75], x=[0.75], y=[2.75])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -223,15 +223,15 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
     expected_new_curve_y_values = [4.0, 4.75]
     expected_full = CurveDataWithTime(
         timestamps=[0.0, 0.75, 1.75, 2.75, 3.75, 4.0, 4.75],
-        x_values=[],
-        y_values=[0.0, 0.75, 1.75, 2.75, 3.75, 4.0, 4.75],
+        x=[],
+        y=[0.0, 0.75, 1.75, 2.75, 3.75, 4.0, 4.75],
     )
     expected_old = CurveDataWithTime(
         timestamps=[2.75, 3.75, 4.0],
-        x_values=[2.75 - 2.0, 3.75 - 2.0, 4.0 - 2.0],
-        y_values=[2.75, 3.75, 4.0],
+        x=[2.75 - 2.0, 3.75 - 2.0, 4.0 - 2.0],
+        y=[2.75, 3.75, 4.0],
     )
-    expected_new = CurveDataWithTime(timestamps=[4.0, 4.75], x_values=[0.0, 0.75], y_values=[4.0, 4.75])
+    expected_new = CurveDataWithTime(timestamps=[4.0, 4.75], x=[0.0, 0.75], y=[4.0, 4.75])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -263,9 +263,9 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     expected_old_curve_y_values = [0.0, 1.0, 2.0]
     expected_new_curve_x_values = [0.0]
     expected_new_curve_y_values = [2.0]
-    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[], y_values=[0.0, 1.0, 2.0])
-    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 2.0])
-    expected_new = CurveDataWithTime(timestamps=[2.0], x_values=[0.0], y_values=[2.0])
+    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[], y=[0.0, 1.0, 2.0])
+    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0])
+    expected_new = CurveDataWithTime(timestamps=[2.0], x=[0.0], y=[2.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -301,9 +301,9 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     expected_old_curve_y_values = [1.0, 2.0]
     expected_new_curve_x_values = [0.0, 0.5]
     expected_new_curve_y_values = [2.0, 2.5]
-    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0, 2.5], x_values=[], y_values=[0.0, 1.0, 2.0, 2.5])
-    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 2.0])
-    expected_new = CurveDataWithTime(timestamps=[2.0, 2.5], x_values=[0.0, 0.5], y_values=[2.0, 2.5])
+    expected_full = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0, 2.5], x=[], y=[0.0, 1.0, 2.0, 2.5])
+    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0])
+    expected_new = CurveDataWithTime(timestamps=[2.0, 2.5], x=[0.0, 0.5], y=[2.0, 2.5])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -319,11 +319,11 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     expected_new_curve_y_values = [2.0, 2.5, 3.0]
     expected_full = CurveDataWithTime(
         timestamps=[0.0, 1.0, 2.0, 2.5, 3.5],
-        x_values=[],
-        y_values=[0.0, 1.0, 2.0, 2.5, 3.5],
+        x=[],
+        y=[0.0, 1.0, 2.0, 2.5, 3.5],
     )
-    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 2.0])
-    expected_new = CurveDataWithTime(timestamps=[2.0, 2.5, 3.5], x_values=[0.0, 0.5, 1.5], y_values=[2.0, 2.5, 3.5])
+    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0])
+    expected_new = CurveDataWithTime(timestamps=[2.0, 2.5, 3.5], x=[0.0, 0.5, 1.5], y=[2.0, 2.5, 3.5])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -361,14 +361,14 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     data.create_new_value(4.0, 4.0)
     expected_full = CurveDataWithTime(
         timestamps=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
-        x_values=[],
-        y_values=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
+        x=[],
+        y=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
     )
-    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x_values=[0.0, 1.0, 2.0], y_values=[0.0, 1.0, 2.0])
+    expected_old = CurveDataWithTime(timestamps=[0.0, 1.0, 2.0], x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0])
     expected_new = CurveDataWithTime(
         timestamps=[2.0, 2.5, 3.5, 4.0],
-        x_values=[0.0, 0.5, 1.5, 2.0],
-        y_values=[2.0, 2.5, 3.5, 4.0],
+        x=[0.0, 0.5, 1.5, 2.0],
+        y=[2.0, 2.5, 3.5, 4.0],
     )
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
@@ -385,15 +385,15 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     expected_new_curve_y_values = [4.0]
     expected_full = CurveDataWithTime(
         timestamps=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
-        x_values=[],
-        y_values=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
+        x=[],
+        y=[0.0, 1.0, 2.0, 2.5, 3.5, 4.0],
     )
     expected_old = CurveDataWithTime(
         timestamps=[2.0, 2.5, 3.5, 4.0],
-        x_values=[0.0, 0.5, 1.5, 2.0],
-        y_values=[2.0, 2.5, 3.5, 4.0],
+        x=[0.0, 0.5, 1.5, 2.0],
+        y=[2.0, 2.5, 3.5, 4.0],
     )
-    expected_new = CurveDataWithTime(timestamps=[4.0], x_values=[0.0], y_values=[4.0])
+    expected_new = CurveDataWithTime(timestamps=[4.0], x=[0.0], y=[4.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -463,9 +463,9 @@ def test_data_delivered_in_wrong_order(qtbot):
     expected_old_curve_y_values: List[float] = []
     expected_new_curve_x_values = [0.5, 1.0]
     expected_new_curve_y_values = [0.5, 1.0]
-    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[], y_values=[0.5, 1.0])
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
-    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[0.5, 1.0], y_values=[0.5, 1.0])
+    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x=[], y=[0.5, 1.0])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
+    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x=[0.5, 1.0], y=[0.5, 1.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -484,14 +484,14 @@ def test_data_delivered_in_wrong_order(qtbot):
     expected_new_curve_y_values = [0.5, 1.0, 1.25, 1.5, 1.75]
     expected_full = CurveDataWithTime(
         timestamps=[0.5, 1.0, 1.25, 1.5, 1.75],
-        x_values=[],
-        y_values=[0.5, 1.0, 1.25, 1.5, 1.75],
+        x=[],
+        y=[0.5, 1.0, 1.25, 1.5, 1.75],
     )
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
     expected_new = CurveDataWithTime(
         timestamps=[0.5, 1.0, 1.25, 1.5, 1.75],
-        x_values=[0.5, 1.0, 1.25, 1.5, 1.75],
-        y_values=[0.5, 1.0, 1.25, 1.5, 1.75],
+        x=[0.5, 1.0, 1.25, 1.5, 1.75],
+        y=[0.5, 1.0, 1.25, 1.5, 1.75],
     )
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
@@ -510,15 +510,15 @@ def test_data_delivered_in_wrong_order(qtbot):
     expected_new_curve_y_values = [2.0, 2.1]
     expected_full = CurveDataWithTime(
         timestamps=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9, 2.1],
-        x_values=[],
-        y_values=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9, 2.1],
+        x=[],
+        y=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9, 2.1],
     )
     expected_old = CurveDataWithTime(
         timestamps=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9],
-        x_values=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9],
-        y_values=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9],
+        x=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9],
+        y=[0.5, 1.0, 1.25, 1.5, 1.75, 1.9],
     )
-    expected_new = CurveDataWithTime(timestamps=[2.1], x_values=[2.1 - 2.0], y_values=[2.1])
+    expected_new = CurveDataWithTime(timestamps=[2.1], x=[2.1 - 2.0], y=[2.1])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -548,9 +548,9 @@ def test_timestamp_delivered_in_wrong_order(qtbot):
     expected_old_curve_y_values: List[float] = []
     expected_new_curve_x_values = [0.5, 1.0]
     expected_new_curve_y_values = [0.5, 1.0]
-    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[], y_values=[0.5, 1.0])
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
-    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[0.5, 1.0], y_values=[0.5, 1.0])
+    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x=[], y=[0.5, 1.0])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
+    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x=[0.5, 1.0], y=[0.5, 1.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -575,9 +575,9 @@ def test_timestamp_delivered_in_wrong_order(qtbot):
     expected_old_curve_y_values = [0.5, 1.0, 2.0]
     expected_new_curve_x_values = [2.0 - 2.0, 2.1 - 2.0]
     expected_new_curve_y_values = [2.0, 2.1]
-    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0, 2.1], x_values=[], y_values=[0.5, 1.0, 2.1])
-    expected_old = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[0.5, 1.0], y_values=[0.5, 1.0])
-    expected_new = CurveDataWithTime(timestamps=[2.1], x_values=[2.1 - 2.0], y_values=[2.1])
+    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0, 2.1], x=[], y=[0.5, 1.0, 2.1])
+    expected_old = CurveDataWithTime(timestamps=[0.5, 1.0], x=[0.5, 1.0], y=[0.5, 1.0])
+    expected_new = CurveDataWithTime(timestamps=[2.1], x=[2.1 - 2.0], y=[2.1])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -624,9 +624,9 @@ def test_no_timing_source_attached(qtbot):
     expected_old_curve_y_values: List[float] = []
     expected_new_curve_x_values = [0.5, 1.0]
     expected_new_curve_y_values = [0.5, 1.0]
-    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[], y_values=[0.5, 1.0])
-    expected_old = CurveDataWithTime(timestamps=[], x_values=[], y_values=[])
-    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x_values=[0.5, 1.0], y_values=[0.5, 1.0])
+    expected_full = CurveDataWithTime(timestamps=[0.5, 1.0], x=[], y=[0.5, 1.0])
+    expected_old = CurveDataWithTime(timestamps=[], x=[], y=[])
+    expected_new = CurveDataWithTime(timestamps=[0.5, 1.0], x=[0.5, 1.0], y=[0.5, 1.0])
     assert _check_curves(plot_item, expected_full, expected_old, expected_new)
     assert _check_plot_data_items_data(
         plot_item,
@@ -798,7 +798,7 @@ def _check_curves(
 def _make_curve_from_buffer(curve: CyclicPlotCurve):
     """For easier comparison of the buffers content, we wrap it in a curve object"""
     x_values, y_values = curve._data_model.full_data_buffer
-    return CurveDataWithTime(timestamps=x_values, x_values=np.array([]), y_values=y_values)
+    return CurveDataWithTime(timestamps=x_values, x=np.array([]), y=y_values)
 
 
 def _make_curve_from_buffers_new_part(curve: CyclicPlotCurve) -> CurveDataWithTime:
@@ -813,8 +813,8 @@ def _make_curve_from_buffers_new_part(curve: CyclicPlotCurve) -> CurveDataWithTi
     )
     return CurveDataWithTime(
         timestamps=x_values,
-        x_values=x_values - time_span.curr_offset,
-        y_values=y_values,
+        x=x_values - time_span.curr_offset,
+        y=y_values,
     )
 
 
@@ -830,8 +830,8 @@ def _make_curve_from_buffers_old_part(curve: CyclicPlotCurve) -> CurveDataWithTi
     )
     return CurveDataWithTime(
         timestamps=x_values,
-        x_values=x_values - time_span.prev_offset,
-        y_values=y_values,
+        x=x_values - time_span.prev_offset,
+        y=y_values,
     )
 
 
@@ -868,10 +868,10 @@ def _check_plot_data_items_data(
         if isinstance(expected_oc_y, List):
             expected_oc_y = np.array(expected_oc_y)
         result = (
-            np.allclose(data.new_curve.x_values, expected_nc_x)
-            and np.allclose(data.new_curve.y_values, expected_nc_y)
-            and np.allclose(data.old_curve.x_values, expected_oc_x)
-            and np.allclose(data.old_curve.y_values, expected_oc_y)
+            np.allclose(data.new_curve.x, expected_nc_x)
+            and np.allclose(data.new_curve.y, expected_nc_y)
+            and np.allclose(data.old_curve.x, expected_oc_x)
+            and np.allclose(data.old_curve.y, expected_oc_y)
         )
     except:   # noqa: bare-except
         return False
@@ -899,10 +899,10 @@ def equals(one: CyclicPlotCurve, two: CyclicPlotCurve) -> bool:
     ):
         return False
     try:
-        return (np.allclose(two._clipped_curve_old.y_values, one._clipped_curve_old.y_values)
-                and np.allclose(two._clipped_curve_old.x_values, one._clipped_curve_old.x_values)
-                and np.allclose(two._clipped_curve_new.x_values, one._clipped_curve_new.x_values)
-                and np.allclose(two._clipped_curve_new.y_values, one._clipped_curve_new.y_values))
+        return (np.allclose(two._clipped_curve_old.y, one._clipped_curve_old.y)
+                and np.allclose(two._clipped_curve_old.x, one._clipped_curve_old.x)
+                and np.allclose(two._clipped_curve_new.x, one._clipped_curve_new.x)
+                and np.allclose(two._clipped_curve_new.y, one._clipped_curve_new.y))
     except ValueError:
         return False
 

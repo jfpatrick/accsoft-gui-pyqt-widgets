@@ -10,6 +10,8 @@ import pytest
 import numpy as np
 from accwidgets import graph as accgraph
 
+from .mock_utils.utils import warn_always
+
 
 class PointNamedTuple(NamedTuple):
 
@@ -49,10 +51,11 @@ class TimestampMarkerNamedTuple(NamedTuple):
     PointNamedTuple(0.0, np.nan),
     PointNamedTuple(0.0, None),
 ])
-def test_valid_point_data(recwarn, warn_always, combinations: PointNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_point_data(recwarn, combinations: PointNamedTuple):
     _ = accgraph.PointData(
-        x_value=cast(float, combinations.x),
-        y_value=cast(float, combinations.y),
+        x=cast(float, combinations.x),
+        y=cast(float, combinations.y),
     )
     assert len(recwarn) == 0
 
@@ -61,11 +64,12 @@ def test_valid_point_data(recwarn, warn_always, combinations: PointNamedTuple):
     PointNamedTuple(np.nan, 0.0),
     PointNamedTuple(None, 0.0),
 ])
-def test_invalid_point_data(warn_always, combinations):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_point_data(combinations):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.PointData(
-            x_value=cast(float, combinations.x),
-            y_value=cast(float, combinations.y),
+            x=cast(float, combinations.x),
+            y=cast(float, combinations.y),
         )
 
 
@@ -73,10 +77,11 @@ def test_invalid_point_data(warn_always, combinations):
     PointNamedTuple([0.0, np.nan, 1.0, 2.0, 3.0], [0.0, np.nan, 1.0, np.nan, 2.0]),
     PointNamedTuple([0.0, None, 1.0, 2.0, 3.0], [0.0, None, 1.0, None, 2.0]),
 ])
-def test_valid_curve_data(recwarn, warn_always, combinations: PointNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_curve_data(recwarn, combinations: PointNamedTuple):
     curve = accgraph.CurveData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
     )
     assert len(recwarn) == 0
     assert np.allclose(curve.is_valid(), np.array([True, True, True, True, True]))
@@ -86,10 +91,11 @@ def test_valid_curve_data(recwarn, warn_always, combinations: PointNamedTuple):
     PointNamedTuple([0.0, np.nan, np.nan, 3.0], [0.0, 1.0, np.nan, np.nan]),
     PointNamedTuple([0.0, None, None, 3.0], [0.0, 1.0, None, None]),
 ])
-def test_invalid_curve_data(recwarn, warn_always, combinations: PointNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_curve_data(recwarn, combinations: PointNamedTuple):
     curve = accgraph.CurveData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
     )
     assert len(recwarn) == 1
     assert recwarn.pop(accgraph.InvalidDataStructureWarning)
@@ -101,7 +107,7 @@ def test_invalid_curve_data(recwarn, warn_always, combinations: PointNamedTuple)
 ])
 def test_curve_data_one_different_length(combinations: PointNamedTuple):
     with pytest.raises(ValueError):
-        _ = accgraph.CurveData(x_values=cast(List[float], combinations.x), y_values=cast(List[float], combinations.y))
+        _ = accgraph.CurveData(x=cast(List[float], combinations.x), y=cast(List[float], combinations.y))
 
 
 # ~~~~~~~~~~ Bargraph Data-Structures ~~~~~~~~~~
@@ -112,10 +118,11 @@ def test_curve_data_one_different_length(combinations: PointNamedTuple):
     BarNamedTuple(0.0, np.nan, 2.0),
     BarNamedTuple(0.0, None, 2.0),
 ])
-def test_valid_bar_data(recwarn, warn_always, combinations: BarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_bar_data(recwarn, combinations: BarNamedTuple):
     _ = accgraph.BarData(
-        x_value=cast(float, combinations.x),
-        y_value=cast(float, combinations.y),
+        x=cast(float, combinations.x),
+        y=cast(float, combinations.y),
         height=cast(float, combinations.h),
     )
     assert len(recwarn) == 0
@@ -135,11 +142,12 @@ def test_valid_bar_data(recwarn, warn_always, combinations: BarNamedTuple):
     BarNamedTuple(np.nan, np.nan, np.nan),
     BarNamedTuple(None, None, None),
 ])
-def test_invalid_bar_data(warn_always, combinations: BarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_bar_data(combinations: BarNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.BarData(
-            x_value=cast(float, combinations.x),
-            y_value=cast(float, combinations.y),
+            x=cast(float, combinations.x),
+            y=cast(float, combinations.y),
             height=cast(float, combinations.h),
         )
 
@@ -148,10 +156,11 @@ def test_invalid_bar_data(warn_always, combinations: BarNamedTuple):
     BarNamedTuple([0.0, 0.0], [1.0, np.nan], [2.0, 2.0]),
     BarNamedTuple([0.0, 0.0], [1.0, None], [2.0, 2.0]),
 ])
-def test_valid_bar_collection_data(recwarn, warn_always, combinations: BarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_bar_collection_data(recwarn, combinations: BarNamedTuple):
     bar_collection = accgraph.BarCollectionData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
         heights=cast(List[float], combinations.h),
     )
     assert len(recwarn) == 0
@@ -170,10 +179,11 @@ def test_valid_bar_collection_data(recwarn, warn_always, combinations: BarNamedT
         [2.0, 2.0, None, None, None, 2.0, 2.0, None],
     ),
 ])
-def test_invalid_bar_collection_data(recwarn, warn_always, combinations: BarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_bar_collection_data(recwarn, combinations: BarNamedTuple):
     bar_collection = accgraph.BarCollectionData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
         heights=cast(List[float], combinations.h),
     )
     assert len(recwarn) == 1
@@ -190,8 +200,8 @@ def test_invalid_bar_collection_data(recwarn, warn_always, combinations: BarName
 def test_bar_collection_data_multiple_different_length(combinations):
     with pytest.raises(ValueError):
         _ = accgraph.BarCollectionData(
-            x_values=cast(List[float], combinations.x),
-            y_values=cast(List[float], combinations.y),
+            x=cast(List[float], combinations.x),
+            y=cast(List[float], combinations.y),
             heights=cast(List[float], combinations.h),
         )
 
@@ -202,8 +212,8 @@ def test_bar_collection_data_multiple_different_length(combinations):
 def test_bar_collection_data_one_different_length(combinations):
     with pytest.raises(ValueError):
         _ = accgraph.BarCollectionData(
-            x_values=cast(List[float], combinations.x),
-            y_values=cast(List[float], combinations.y),
+            x=cast(List[float], combinations.x),
+            y=cast(List[float], combinations.y),
             heights=cast(List[float], combinations.h),
         )
 
@@ -219,10 +229,11 @@ def test_bar_collection_data_one_different_length(combinations):
     InjectionBarNamedTuple(0.0, 1.0, np.nan, np.nan, ""),
     InjectionBarNamedTuple(0.0, 1.0, None, None, ""),
 ])
-def test_valid_injection_bar_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_injection_bar_data(recwarn, combinations: InjectionBarNamedTuple):
     _ = accgraph.InjectionBarData(
-        x_value=cast(float, combinations.x),
-        y_value=cast(float, combinations.y),
+        x=cast(float, combinations.x),
+        y=cast(float, combinations.y),
         height=cast(float, combinations.h),
         width=cast(float, combinations.w),
         label=cast(str, combinations.l),
@@ -256,11 +267,12 @@ def test_valid_injection_bar_data(recwarn, warn_always, combinations: InjectionB
     InjectionBarNamedTuple(np.nan, np.nan, np.nan, np.nan, ""),
     InjectionBarNamedTuple(None, None, None, None, ""),
 ])
-def test_invalid_injection_bar_data(warn_always, combinations: InjectionBarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_injection_bar_data(combinations: InjectionBarNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.InjectionBarData(
-            x_value=cast(float, combinations.x),
-            y_value=cast(float, combinations.y),
+            x=cast(float, combinations.x),
+            y=cast(float, combinations.y),
             height=cast(float, combinations.h),
             width=cast(float, combinations.w),
             label=cast(str, combinations.l),
@@ -283,10 +295,11 @@ def test_invalid_injection_bar_data(warn_always, combinations: InjectionBarNamed
         ["", "", "", ""],
     ),
 ])
-def test_valid_injection_bar_collection_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_injection_bar_collection_data(recwarn, combinations: InjectionBarNamedTuple):
     bar_collection = accgraph.InjectionBarCollectionData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
         heights=cast(List[float], combinations.h),
         widths=cast(List[float], combinations.w),
         labels=cast(List[str], combinations.l),
@@ -311,10 +324,11 @@ def test_valid_injection_bar_collection_data(recwarn, warn_always, combinations:
         ["", "", "", "", "", "", "", "", "", "", "", "", "", ""],
     ),
 ])
-def test_invalid_injection_bar_collection_data(recwarn, warn_always, combinations: InjectionBarNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_injection_bar_collection_data(recwarn, combinations: InjectionBarNamedTuple):
     bar_collection = accgraph.InjectionBarCollectionData(
-        x_values=cast(List[float], combinations.x),
-        y_values=cast(List[float], combinations.y),
+        x=cast(List[float], combinations.x),
+        y=cast(List[float], combinations.y),
         heights=cast(List[float], combinations.h),
         widths=cast(List[float], combinations.w),
         labels=cast(List[str], combinations.l),
@@ -338,8 +352,8 @@ def test_invalid_injection_bar_collection_data(recwarn, warn_always, combination
 def test_injection_bar_collection_data_multiple_different_length(combinations: InjectionBarNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.InjectionBarCollectionData(
-            x_values=cast(List[float], combinations.x),
-            y_values=cast(List[float], combinations.y),
+            x=cast(List[float], combinations.x),
+            y=cast(List[float], combinations.y),
             heights=cast(List[float], combinations.h),
             widths=cast(List[float], combinations.w),
             labels=cast(List[str], combinations.l),
@@ -352,8 +366,8 @@ def test_injection_bar_collection_data_multiple_different_length(combinations: I
 def test_injection_bar_collection_data_one_different_length(combinations: InjectionBarNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.InjectionBarCollectionData(
-            x_values=cast(List[float], combinations.x),
-            y_values=cast(List[float], combinations.y),
+            x=cast(List[float], combinations.x),
+            y=cast(List[float], combinations.y),
             heights=cast(List[float], combinations.h),
             widths=cast(List[float], combinations.w),
             labels=cast(List[str], combinations.l),
@@ -367,9 +381,10 @@ def test_injection_bar_collection_data_one_different_length(combinations: Inject
     TimestampMarkerNamedTuple(0.0, None, ""),
     TimestampMarkerNamedTuple(0.0, None, ""),
 ])
-def test_valid_timestamp_marker_data(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_timestamp_marker_data(recwarn, combinations: TimestampMarkerNamedTuple):
     _ = accgraph.TimestampMarkerData(
-        x_value=cast(float, combinations.x),
+        x=cast(float, combinations.x),
         color=cast(str, combinations.c),
         label=cast(str, combinations.l),
     )
@@ -382,9 +397,10 @@ def test_valid_timestamp_marker_data(recwarn, warn_always, combinations: Timesta
     TimestampMarkerNamedTuple(0.0, None, "label"),
     TimestampMarkerNamedTuple(0.0, "red, comrade, use red", "label"),
 ])
-def test_invalid_timestamp_marker_color(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_timestamp_marker_color(recwarn, combinations: TimestampMarkerNamedTuple):
     data = accgraph.TimestampMarkerData(
-        x_value=cast(float, combinations.x),
+        x=cast(float, combinations.x),
         color=cast(str, combinations.c),
         label=cast(str, combinations.l),
     )
@@ -399,9 +415,10 @@ def test_invalid_timestamp_marker_color(recwarn, warn_always, combinations: Time
         ["label 0", "label 1", "label 2", "label 3"],
     ),
 ])
-def test_invalid_timestamp_marker_collection_color(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_timestamp_marker_collection_color(recwarn, combinations: TimestampMarkerNamedTuple):
     data = accgraph.TimestampMarkerCollectionData(
-        x_values=cast(List[float], combinations.x),
+        x=cast(List[float], combinations.x),
         colors=cast(List[str], combinations.c),
         labels=cast(List[str], combinations.l),
     )
@@ -413,18 +430,20 @@ def test_invalid_timestamp_marker_collection_color(recwarn, warn_always, combina
     TimestampMarkerNamedTuple(np.nan, "r", ""),
     TimestampMarkerNamedTuple(None, "r", ""),
 ])
-def test_invalid_timestamp_marker_data(warn_always, combinations: TimestampMarkerNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_timestamp_marker_data(combinations: TimestampMarkerNamedTuple):
     with pytest.warns(accgraph.InvalidDataStructureWarning):
         _ = accgraph.TimestampMarkerData(
-            x_value=cast(float, combinations.x),
+            x=cast(float, combinations.x),
             color=cast(str, combinations.c),
             label=cast(str, combinations.l),
         )
 
 
-def test_valid_timestamp_marker_collection_data(recwarn, warn_always):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_timestamp_marker_collection_data(recwarn):
     bar_collection = accgraph.TimestampMarkerCollectionData(
-        x_values=[0.0],
+        x=[0.0],
         colors=["r"],
         labels=[""],
     )
@@ -444,9 +463,10 @@ def test_valid_timestamp_marker_collection_data(recwarn, warn_always):
         ["", "", ""],
     ),
 ])
-def test_invalid_timestamp_marker_collection_data(recwarn, warn_always, combinations: TimestampMarkerNamedTuple):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_timestamp_marker_collection_data(recwarn, combinations: TimestampMarkerNamedTuple):
     bar_collection = accgraph.TimestampMarkerCollectionData(
-        x_values=cast(List[float], combinations.x),
+        x=cast(List[float], combinations.x),
         colors=cast(List[str], combinations.c),
         labels=cast(List[str], combinations.l),
     )
@@ -462,7 +482,7 @@ def test_invalid_timestamp_marker_collection_data(recwarn, warn_always, combinat
 def test_timestamp_marker_collection_data_multiple_different_length(combinations: TimestampMarkerNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.TimestampMarkerCollectionData(
-            x_values=cast(List[float], combinations.x),
+            x=cast(List[float], combinations.x),
             colors=cast(List[str], combinations.c),
             labels=cast(List[str], combinations.l),
         )
@@ -475,7 +495,7 @@ def test_timestamp_marker_collection_data_multiple_different_length(combinations
 def test_timestamp_marker_collection_data_one_different_length(combinations: TimestampMarkerNamedTuple):
     with pytest.raises(ValueError):
         _ = accgraph.TimestampMarkerCollectionData(
-            x_values=cast(List[float], combinations.x),
+            x=cast(List[float], combinations.x),
             colors=cast(List[str], combinations.c),
             labels=cast(List[str], combinations.l),
         )

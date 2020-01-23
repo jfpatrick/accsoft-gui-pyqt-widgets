@@ -140,16 +140,16 @@ def create_fitting_object_collection(data_model: accgraph.AbstractLiveDataModel,
 def _create_point_data(value: float) -> accgraph.PointData:
     """Create PointData"""
     return accgraph.PointData(
-        x_value=value,
-        y_value=value + 0.1,
+        x=value,
+        y=value + 0.1,
     )
 
 
 def _create_curve_data(values: np.ndarray) -> accgraph.CurveData:
     """Create PointData"""
     return accgraph.CurveData(
-        x_values=values,
-        y_values=values + 0.1,
+        x=values,
+        y=values + 0.1,
     )
 
 
@@ -163,8 +163,8 @@ def _create_curve_data_model_expected_content(x_values: List[float]) -> Tuple[np
 def _create_bar_data(value: float) -> accgraph.BarData:
     """Create BarData, To save some lines of code"""
     return accgraph.BarData(
-        x_value=value,
-        y_value=value + 0.1,
+        x=value,
+        y=value + 0.1,
         height=value + 0.2,
     )
 
@@ -172,8 +172,8 @@ def _create_bar_data(value: float) -> accgraph.BarData:
 def _create_bar_data_collection(values: np.ndarray) -> accgraph.BarCollectionData:
     """Create BarData, To save some lines of code"""
     return accgraph.BarCollectionData(
-        x_values=values,
-        y_values=values + 0.1,
+        x=values,
+        y=values + 0.1,
         heights=values + 0.2,
     )
 
@@ -189,8 +189,8 @@ def _create_bar_graph_data_model_expected_content(x_values: List[float]) -> Tupl
 def _create_injection_bar_data(value: float) -> accgraph.InjectionBarData:
     """Create InjectionBarData, To save some lines of code"""
     return accgraph.InjectionBarData(
-        x_value=value,
-        y_value=value + 0.1,
+        x=value,
+        y=value + 0.1,
         height=value + 0.2,
         width=value + 0.3,
         label=str(value + 0.4),
@@ -200,8 +200,8 @@ def _create_injection_bar_data(value: float) -> accgraph.InjectionBarData:
 def _create_injection_bar_data_collection(values: np.ndarray) -> accgraph.InjectionBarCollectionData:
     """Create InjectionBarData, To save some lines of code"""
     return accgraph.InjectionBarCollectionData(
-        x_values=values,
-        y_values=values + 0.1,
+        x=values,
+        y=values + 0.1,
         heights=values + 0.2,
         widths=values + 0.3,
         labels=np.array([str(value + 0.4) for value in values]),
@@ -221,7 +221,7 @@ def _create_injection_bar_data_model_expected_content(x_values: List[float]) -> 
 def _create_infinite_line(value: float, color: str) -> accgraph.TimestampMarkerData:
     """Create Timestamp Marker Data, To save some lines of code"""
     return accgraph.TimestampMarkerData(
-        x_value=value,
+        x=value,
         color=color,
         label=str(value + 0.1),
     )
@@ -230,7 +230,7 @@ def _create_infinite_line(value: float, color: str) -> accgraph.TimestampMarkerD
 def _create_infinite_line_collection(values: np.ndarray, colors: np.ndarray) -> accgraph.TimestampMarkerCollectionData:
     """Create Timestamp Marker Data, To save some lines of code"""
     return accgraph.TimestampMarkerCollectionData(
-        x_values=values,
+        x=values,
         colors=colors,
         labels=np.array([str(value + 0.1) for value in values]),
     )

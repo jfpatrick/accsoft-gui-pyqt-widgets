@@ -250,14 +250,14 @@ class LiveCurveDataModel(AbstractLiveDataModel):
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, PointData) and data.is_valid():
             self._full_data_buffer.add_entry(
-                x_value=data.x_value,
-                y_value=data.y_value,
+                x=data.x,
+                y=data.y,
             )
             self.sig_data_model_changed.emit()
         elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
-                x_values=data.x_values,
-                y_values=data.y_values,
+                x=data.x,
+                y=data.y,
             )
             self.sig_data_model_changed.emit()
         else:
@@ -295,12 +295,12 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, BarData) and data.is_valid():
-            self._full_data_buffer.add_entry(x_value=data.x_value, y_value=data.y_value, height=data.height)
+            self._full_data_buffer.add_entry(x=data.x, y=data.y, height=data.height)
             self.sig_data_model_changed.emit()
         elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
-                x_values=data.x_values,
-                y_values=data.y_values,
+                x=data.x,
+                y=data.y,
                 heights=data.heights,
             )
             self.sig_data_model_changed.emit()
@@ -333,8 +333,8 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, InjectionBarData) and data.is_valid():
             self._full_data_buffer.add_entry(
-                x_value=data.x_value,
-                y_value=data.y_value,
+                x=data.x,
+                y=data.y,
                 height=data.height,
                 width=data.width,
                 label=data.label,
@@ -342,8 +342,8 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
             self.sig_data_model_changed.emit()
         elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
-                x_values=data.x_values,
-                y_values=data.y_values,
+                x=data.x,
+                y=data.y,
                 heights=data.heights,
                 widths=data.widths,
                 labels=data.labels,
@@ -378,11 +378,11 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
         Data that does not have the right type will just be ignored.
         This allows attaching the same source to multiple datamodels"""
         if isinstance(data, TimestampMarkerData) and data.is_valid():
-            self._full_data_buffer.add_entry(x_value=data.x_value, color=data.color, label=data.label)
+            self._full_data_buffer.add_entry(x=data.x, color=data.color, label=data.label)
             self.sig_data_model_changed.emit()
         elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
-                x_values=data.x_values,
+                x=data.x,
                 colors=data.colors,
                 labels=data.labels,
             )
@@ -411,12 +411,12 @@ class StaticCurveDataModel(AbstractBaseDataModel):
 
     def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
         if isinstance(data, PointData) and data.is_valid():
-            self._x_values = np.array([data.x_value])
-            self._y_values = np.array([data.y_value])
+            self._x_values = np.array([data.x])
+            self._y_values = np.array([data.y])
             self.sig_data_model_changed.emit()
         elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
-            self._x_values = data.x_values
-            self._y_values = data.y_values
+            self._x_values = data.x
+            self._y_values = data.y
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
@@ -451,13 +451,13 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
         if isinstance(data, BarData) and data.is_valid():
-            self._x_values = np.array([data.x_value])
-            self._y_values = np.array([data.y_value])
+            self._x_values = np.array([data.x])
+            self._y_values = np.array([data.y])
             self._heights = np.array([data.height])
             self.sig_data_model_changed.emit()
         elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
-            self._x_values = data.x_values
-            self._y_values = data.y_values
+            self._x_values = data.x
+            self._y_values = data.y
             self._heights = data.heights
             self.sig_data_model_changed.emit()
         else:
@@ -495,15 +495,15 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
         if isinstance(data, InjectionBarData) and data.is_valid():
-            self._x_values = np.array([data.x_value])
-            self._y_values = np.array([data.y_value])
+            self._x_values = np.array([data.x])
+            self._y_values = np.array([data.y])
             self._heights = np.array([data.height])
             self._widths = np.array([data.width])
             self._labels = np.array([data.label])
             self.sig_data_model_changed.emit()
         elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
-            self._x_values = data.x_values
-            self._y_values = data.y_values
+            self._x_values = data.x
+            self._y_values = data.y
             self._heights = data.heights
             self._widths = data.widths
             self._labels = data.labels
@@ -541,12 +541,12 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
         if isinstance(data, TimestampMarkerData) and data.is_valid():
-            self._x_values = np.array([data.x_value])
+            self._x_values = np.array([data.x])
             self._colors = np.array([data.color])
             self._labels = np.array([data.label])
             self.sig_data_model_changed.emit()
         elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
-            self._x_values = data.x_values
+            self._x_values = data.x
             self._colors = data.colors
             self._labels = data.labels
             self.sig_data_model_changed.emit()

@@ -3,7 +3,7 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 """
 
 import logging
-from typing import Tuple, Dict, Optional, cast, Type
+from typing import Tuple, Dict, cast, Type, Union
 from copy import copy
 
 import numpy as np
@@ -21,6 +21,7 @@ from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
 from accwidgets.graph.datamodel.datastructures import CurveData
 from accwidgets.graph.widgets.plotconfiguration import PlotWidgetStyle
 from accwidgets.graph.widgets.plottimespan import CyclicPlotTimeSpan
+from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -125,12 +126,12 @@ class LivePlotCurve(AbstractBasePlotCurve):
 
     data_model_type = LiveCurveDataModel
 
+    @deprecated_param_alias(data_source="data_model")
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_source: Optional[UpdateSource] = None,
+            data_model: Union[UpdateSource, LiveCurveDataModel],
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            data_model: Optional[LiveCurveDataModel] = None,
             pen=DEFAULT_COLOR,
             **plotdataitem_kwargs,
     ):
@@ -141,15 +142,16 @@ class LivePlotCurve(AbstractBasePlotCurve):
 
         Args:
             plot_item: Plot Item the curve is created for
-            data_source: Source updates are passed through.
-            buffer_size: Buffer Size.
-            data_model: If a valid data model is passed, data source and buffer
-                        size are ignored
+            data_model: Either an Update Source or a already initialized data
+                        model
+            buffer_size: Buffer size, which will be passed to the data model,
+                         will only be used if the data_model is only an Update
+                         Source.
             **plotdataitem_kwargs: Further Keyword Arguments for the PlotDataItem
         """
-        if (data_model is None or not isinstance(data_model, LiveCurveDataModel)) and data_source is not None:
+        if isinstance(data_model, UpdateSource):
             data_model = LiveCurveDataModel(
-                data_source=data_source,
+                data_source=data_model,
                 buffer_size=buffer_size,
             )
         if data_model is not None:
@@ -159,6 +161,9 @@ class LivePlotCurve(AbstractBasePlotCurve):
                 pen=pen,
                 **plotdataitem_kwargs,
             )
+        else:
+            raise TypeError("Need either data source or data model to create "
+                            f"a {type(self).__name__} instance")
 
     @classmethod
     def clone(
@@ -260,12 +265,12 @@ class CyclicPlotCurve(LivePlotCurve):
 
     supported_plotting_style = PlotWidgetStyle.CYCLIC_PLOT
 
+    @deprecated_param_alias(data_source="data_model")
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_source: Optional[UpdateSource] = None,
+            data_model: Union[UpdateSource, LiveCurveDataModel],
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            data_model: Optional[LiveCurveDataModel] = None,
             pen=DEFAULT_COLOR,
             **plotdataitem_kwargs,
     ):
@@ -282,10 +287,11 @@ class CyclicPlotCurve(LivePlotCurve):
 
         Args:
             plot_item: plot item the curve should fit to
-            data_source: Data Source which emits new data to the data model
-            buffer_size: count of values the curve's data model's buffer should
-                         hold at max
-            data_model: data model the curve receives its data from which it displays
+            data_model: Either an Update Source or a already initialized data
+                        model
+            buffer_size: Buffer size, which will be passed to the data model,
+                         will only be used if the data_model is only an Update
+                         Source.
             pen: pen the curve should be drawn with, is part of the PlotDataItem
                  base class parameters
             **plotdataitem_kwargs: keyword arguments fo the base class
@@ -296,7 +302,6 @@ class CyclicPlotCurve(LivePlotCurve):
         super().__init__(
             plot_item=plot_item,
             data_model=data_model,
-            data_source=data_source,
             buffer_size=buffer_size,
             pen=pen,
             **plotdataitem_kwargs,
@@ -323,20 +328,20 @@ class CyclicPlotCurve(LivePlotCurve):
         data_x: np.ndarray = np.array([])
         data_y: np.ndarray = np.array([])
         if (
-            self._clipped_curve_new.x_values.size != 0
-            and self._clipped_curve_new.y_values.size != 0
+            self._clipped_curve_new.x.size != 0
+            and self._clipped_curve_new.y.size != 0
         ):
-            data_x = np.concatenate((data_x, self._clipped_curve_new.x_values))
-            data_y = np.concatenate((data_y, self._clipped_curve_new.y_values))
+            data_x = np.concatenate((data_x, self._clipped_curve_new.x))
+            data_y = np.concatenate((data_y, self._clipped_curve_new.y))
         if (
-            self._clipped_curve_old.x_values.size != 0
-            and self._clipped_curve_old.y_values.size != 0
+            self._clipped_curve_old.x.size != 0
+            and self._clipped_curve_old.y.size != 0
         ):
             if data_x.size != 0 and data_y.size != 0:
                 data_x = np.concatenate((data_x, np.array([np.nan])))
                 data_y = np.concatenate((data_y, np.array([np.nan])))
-            data_x = np.concatenate((data_x, self._clipped_curve_old.x_values))
-            data_y = np.concatenate((data_y, self._clipped_curve_old.y_values))
+            data_x = np.concatenate((data_x, self._clipped_curve_old.x))
+            data_y = np.concatenate((data_y, self._clipped_curve_old.y))
         if data_x.size != 0 and data_y.size != 0:
             self.clear()
             self._set_data(x=data_x, y=data_y)
@@ -352,8 +357,8 @@ class CyclicPlotCurve(LivePlotCurve):
         end = self._parent_plot_item.last_timestamp
         x_values, y_values = self._data_model.subset_for_xrange(start=start, end=end, interpolated=True)
         self._clipped_curve_new = CurveData(
-            x_values=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).curr_offset,
-            y_values=y_values,
+            x=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).curr_offset,
+            y=y_values,
         )
 
     def _update_old_curve_data_item(self) -> None:
@@ -367,8 +372,8 @@ class CyclicPlotCurve(LivePlotCurve):
         end = cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_end
         x_values, y_values = self._data_model.subset_for_xrange(start=start, end=end, interpolated=True)
         self._clipped_curve_old = CurveData(
-            x_values=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_offset,
-            y_values=y_values,
+            x=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_offset,
+            y=y_values,
         )
 
 
@@ -395,7 +400,7 @@ class ScrollingPlotCurve(LivePlotCurve):
             curve_x, curve_y = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
                                                                   end=self._parent_plot_item.time_span.end)
         self._set_data(x=curve_x, y=curve_y)
-        self._data_item_data = CurveData(x_values=curve_x, y_values=curve_y)
+        self._data_item_data = CurveData(x=curve_x, y=curve_y)
 
 
 class StaticPlotCurve(AbstractBasePlotCurve):
