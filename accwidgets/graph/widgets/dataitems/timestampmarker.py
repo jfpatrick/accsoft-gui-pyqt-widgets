@@ -1,6 +1,6 @@
 """Scrolling Bar Chart for live data plotting"""
 
-from typing import List, Type, Optional
+from typing import List, Type, Union
 
 import pyqtgraph as pg
 from qtpy.QtGui import QPainter
@@ -8,7 +8,11 @@ from qtpy.QtWidgets import QGraphicsItem
 from qtpy.QtCore import QRectF
 
 from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import LiveTimestampMarkerDataModel, StaticTimestampMarkerDataModel
+from accwidgets.graph.datamodel.itemdatamodel import (
+    LiveTimestampMarkerDataModel,
+    StaticTimestampMarkerDataModel,
+    AbstractBaseDataModel,
+)
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
     DataModelBasedItem,
@@ -17,6 +21,7 @@ from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
+from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -29,14 +34,14 @@ class AbstractBaseTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metacla
     def __init__(
             self,
             *graphicsobjectargs,
-            data_model: LiveTimestampMarkerDataModel,
+            data_model: AbstractBaseDataModel,
             plot_item: "ExPlotItem",
     ):
         """ Base class for an InfiniteLine based marking of specific timestamps
 
         Args:
             *graphicsobjectargs: Positional arguments for baseclass GraphicsObject
-            data_source: source for data updates
+            data_model: Data Model the Timestamp Marker is based on
             plot_item: PlotItem this item will be added to
         """
         pg.GraphicsObject.__init__(self, *graphicsobjectargs)
@@ -151,13 +156,13 @@ class LiveTimestampMarker(AbstractBaseTimestampMarker):
 
     data_model_type = LiveTimestampMarkerDataModel
 
+    @deprecated_param_alias(data_source="data_model")
     def __init__(
             self,
             *graphicsobjectargs,
             plot_item: "ExPlotItem",
-            data_source: Optional[UpdateSource] = None,
+            data_model: Union[UpdateSource, LiveTimestampMarkerDataModel],
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            data_model: Optional[LiveTimestampMarkerDataModel] = None,
     ):
         """
         Live Timestamp Marker Item, abstract base class for all live
@@ -167,14 +172,15 @@ class LiveTimestampMarker(AbstractBaseTimestampMarker):
         Args:
             *graphicsobjectargs: Positional arguments for baseclass GraphicsObject
             plot_item: Plot Item the curve is created for
-            data_source: Source updates are passed through
-            buffer_size: Buffer Size.
-            data_model: If a valid data model is passed, data source and buffer
-                        size are ignored
+            data_model: Either an Update Source or a already initialized data
+                        model
+            buffer_size: Buffer size, which will be passed to the data model,
+                         will only be used if the data_model is only an Update
+                         Source.
         """
-        if (data_model is None or not isinstance(data_model, LiveTimestampMarkerDataModel)) and data_source is not None:
+        if isinstance(data_model, UpdateSource):
             data_model = LiveTimestampMarkerDataModel(
-                data_source=data_source,
+                data_source=data_model,
                 buffer_size=buffer_size,
             )
         if data_model is not None:
@@ -183,6 +189,9 @@ class LiveTimestampMarker(AbstractBaseTimestampMarker):
                 plot_item=plot_item,
                 data_model=data_model,
             )
+        else:
+            raise TypeError("Need either data source or data model to create "
+                            f"a {type(self).__name__} instance")
 
     @classmethod
     def clone(

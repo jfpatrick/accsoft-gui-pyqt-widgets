@@ -27,8 +27,8 @@ def test_point_data_from_value(input_val,
                                pass_as_sequence):
     args = [input_val] if pass_as_sequence else input_val
     actual = accgraph.PlottingItemDataFactory._to_point(*args)
-    assert actual.x_value == expected_x
-    assert actual.y_value == expected_y
+    assert actual.x == expected_x
+    assert actual.y == expected_y
 
 
 @pytest.mark.parametrize(
@@ -50,8 +50,8 @@ def test_bar_data_from_value(input_val,
     args = [input_val] if pass_as_sequence else input_val
     actual = accgraph.PlottingItemDataFactory._to_bar(*args)
     assert actual.height == expected_height
-    assert actual.x_value == expected_x
-    assert actual.y_value == expected_y
+    assert actual.x == expected_x
+    assert actual.y == expected_y
 
 
 @pytest.mark.parametrize(
@@ -73,7 +73,7 @@ def test_timestampmarker_data_from_value(input_value,
                                          pass_as_sequence):
     input_args = [input_value] if pass_as_sequence else input_value
     actual = accgraph.PlottingItemDataFactory._to_ts_marker(*input_args)
-    assert actual.x_value == expected_x
+    assert actual.x == expected_x
     assert actual.color == expected_color
     assert actual.label == expected_label
 
@@ -104,8 +104,8 @@ def test_injection_bar_data_from_value(input_values,
                                        pass_as_sequence):
     args = [input_values] if pass_as_sequence else input_values
     actual = accgraph.PlottingItemDataFactory._to_injection_bar(*args)
-    assert actual.x_value == expected_x
-    assert actual.y_value == expected_y or all(np.isnan([actual.y_value, expected_y]))
+    assert actual.x == expected_x
+    assert actual.y == expected_y or all(np.isnan([actual.y, expected_y]))
     assert actual.height == expected_height
     assert actual.width == expected_width or all(np.isnan([actual.width, expected_width]))
     assert actual.label == expected_label
@@ -128,8 +128,8 @@ def test_curve_data_from_value(input_values,
                                pass_as_sequence):
     args = [input_values] if pass_as_sequence else input_values
     actual = accgraph.PlottingItemDataFactory._to_curve(*args)
-    assert np.array_equal(actual.x_values, expected_x)
-    assert np.array_equal(actual.y_values, expected_y)
+    assert np.array_equal(actual.x, expected_x)
+    assert np.array_equal(actual.y, expected_y)
 
 
 @pytest.mark.parametrize(
@@ -150,8 +150,8 @@ def test_bar_collection_data_from_value(input_values,
     # Wrap values into array since we it is a collection
     args = [input_values] if pass_as_sequence else input_values
     actual = accgraph.PlottingItemDataFactory._to_bar_collection(*args)
-    assert np.array_equal(actual.x_values, expected_x)
-    assert np.array_equal(actual.y_values, expected_y)
+    assert np.array_equal(actual.x, expected_x)
+    assert np.array_equal(actual.y, expected_y)
     assert np.array_equal(actual.heights, expected_height)
 
 
@@ -180,10 +180,10 @@ def test_injection_bar_collection_data_from_value(input_values,
                                                   pass_as_sequence):
     args = [input_values] if pass_as_sequence else input_values
     actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*args)
-    assert np.array_equal(actual.x_values, expected_x)
+    assert np.array_equal(actual.x, expected_x)
     assert (
-        np.array_equal(actual.y_values, expected_y)
-        or all(np.isnan(actual.y_values))
+        np.array_equal(actual.y, expected_y)
+        or all(np.isnan(actual.y))
         and all(np.isnan(expected_y))
     )
     assert np.array_equal(actual.heights, expected_height)
@@ -213,7 +213,7 @@ def test_timestampmarker_collection_data_from_value(input_values,
                                                     pass_as_sequence):
     args = [input_values] if pass_as_sequence else input_values
     actual = accgraph.PlottingItemDataFactory._to_ts_marker_collection(*args)
-    assert np.array_equal(actual.x_values, expected_x)
+    assert np.array_equal(actual.x, expected_x)
     assert np.array_equal(actual.colors, expected_color)
     assert np.array_equal(actual.labels, expected_labels)
 

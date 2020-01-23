@@ -79,7 +79,7 @@ class SignalBoundDataSource(UpdateSource):
             transformation: Optional Transformation function, which translates
         """
         super().__init__(parent=None)
-        assert self.data_type is not None or self.transform is not None
+        assert data_type is not None or transformation is not None
         self.data_type: Optional[Type[PlottingItemData]] = data_type
         self.transform: Callable = (transformation
                                     or PlottingItemDataFactory.get_transformation(self.data_type))
@@ -139,20 +139,20 @@ class PlottingItemDataFactory:
     def _to_point(*args: float) -> PointData:
         args = PlottingItemDataFactory._unwrapped(*args)
         return PointData(
-            x_value=PlottingItemDataFactory._or_now(index=1,
-                                                    args=args),
-            y_value=args[0],  # mandatory
+            x=PlottingItemDataFactory._or_now(index=1,
+                                              args=args),
+            y=args[0],  # mandatory
         )
 
     @staticmethod
     def _to_bar(*args: float) -> BarData:
         args = PlottingItemDataFactory._unwrapped(*args)
         return BarData(
-            x_value=PlottingItemDataFactory._or_now(index=2,
-                                                    args=args),
-            y_value=PlottingItemDataFactory._or(index=1,
-                                                args=args,
-                                                default=0),
+            x=PlottingItemDataFactory._or_now(index=2,
+                                              args=args),
+            y=PlottingItemDataFactory._or(index=1,
+                                          args=args,
+                                          default=0),
             height=args[0],  # mandatory
         )
 
@@ -169,11 +169,11 @@ class PlottingItemDataFactory:
             label = str_param[0]
             arguments.remove(label)
         return InjectionBarData(
-            x_value=PlottingItemDataFactory._or_now(index=3,
-                                                    args=arguments),
-            y_value=PlottingItemDataFactory._or(index=1,
-                                                args=arguments,
-                                                default=np.nan),
+            x=PlottingItemDataFactory._or_now(index=3,
+                                              args=arguments),
+            y=PlottingItemDataFactory._or(index=1,
+                                          args=arguments,
+                                          default=np.nan),
             width=PlottingItemDataFactory._or(index=2,
                                               args=arguments,
                                               default=np.nan),
@@ -185,8 +185,8 @@ class PlottingItemDataFactory:
     def _to_ts_marker(*args: Union[float, str]) -> TimestampMarkerData:
         args = PlottingItemDataFactory._unwrapped(*args)
         return TimestampMarkerData(
-            x_value=PlottingItemDataFactory._or_now(index=0,
-                                                    args=args),
+            x=PlottingItemDataFactory._or_now(index=0,
+                                              args=args),
             color=PlottingItemDataFactory._or(index=2,
                                               args=args,
                                               default=DEFAULT_COLOR),
@@ -196,23 +196,23 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_curve(*args: Sequence[float]) -> PointData:
+    def _to_curve(*args: Sequence[float]) -> CurveData:
         args = PlottingItemDataFactory._collection_unwrapped(*args)
         return CurveData(
-            x_values=PlottingItemDataFactory._or_num_range(index=1,
-                                                           args=args),
-            y_values=args[0],
+            x=PlottingItemDataFactory._or_num_range(index=1,
+                                                    args=args),
+            y=args[0],
         )
 
     @staticmethod
     def _to_bar_collection(*args: Sequence[float]) -> BarCollectionData:
         args = PlottingItemDataFactory._collection_unwrapped(*args)
         return BarCollectionData(
-            x_values=PlottingItemDataFactory._or_num_range(index=2,
-                                                           args=args),
-            y_values=PlottingItemDataFactory._or_array(index=1,
-                                                       args=args,
-                                                       default=0),
+            x=PlottingItemDataFactory._or_num_range(index=2,
+                                                    args=args),
+            y=PlottingItemDataFactory._or_array(index=1,
+                                                args=args,
+                                                default=0),
             heights=args[0],
         )
 
@@ -228,11 +228,11 @@ class PlottingItemDataFactory:
             label = string_params[0]
             arguments.remove(label)
         return InjectionBarCollectionData(
-            x_values=PlottingItemDataFactory._or_num_range(index=3,
-                                                           args=arguments),
-            y_values=PlottingItemDataFactory._or_array(index=1,
-                                                       args=arguments,
-                                                       default=np.nan),
+            x=PlottingItemDataFactory._or_num_range(index=3,
+                                                    args=arguments),
+            y=PlottingItemDataFactory._or_array(index=1,
+                                                args=arguments,
+                                                default=np.nan),
             heights=arguments[0],  # mandatory
             widths=PlottingItemDataFactory._or_array(index=2,
                                                      args=arguments,
@@ -246,7 +246,7 @@ class PlottingItemDataFactory:
     ) -> TimestampMarkerCollectionData:
         args = PlottingItemDataFactory._collection_unwrapped(*args)
         return TimestampMarkerCollectionData(
-            x_values=cast(Sequence[float], args[0]),  # mandatory
+            x=cast(Sequence[float], args[0]),  # mandatory
             colors=PlottingItemDataFactory._or_array(index=2,
                                                      args=args,
                                                      default=DEFAULT_COLOR),

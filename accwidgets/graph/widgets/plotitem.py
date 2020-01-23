@@ -451,7 +451,7 @@ class ExPlotItem(pg.PlotItem):
             self.single_curve_value_slot_source = UpdateSource()
         if self.single_curve_value_slot_curve is None:
             self.single_curve_value_slot_curve = self.addCurve(data_source=self.single_curve_value_slot_source)
-        new_data = PointData(x_value=datetime.now().timestamp(), y_value=data)
+        new_data = PointData(x=datetime.now().timestamp(), y=data)
         self.single_curve_value_slot_source.sig_new_data.emit(new_data)
 
     # ~~~~~~~~~~ Layers ~~~~~~~~~

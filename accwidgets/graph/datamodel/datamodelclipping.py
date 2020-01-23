@@ -42,8 +42,8 @@ def intersect(
         "first_after_index": -1,
         "intersection": PointData(np.nan, np.nan),
     }
-    x_positions = graph_points.x_values
-    y_positions = graph_points.y_values
+    x_positions = graph_points.x
+    y_positions = graph_points.y
     if len(x_positions) != len(y_positions):
         LOGGER.error(f"Length:({len(x_positions)}, {len(y_positions)}), Passed Points: {graph_points}")
         raise ValueError("The count of X indices and Y values is not the same.")
@@ -53,12 +53,12 @@ def intersect(
     # Line is actually in between two points -> Calculate intersection point
     if result["last_before_index"] != -1 and result["first_after_index"] != -1:
         last_before_obj = PointData(
-            x_value=x_positions[surrounding_points["before"]],
-            y_value=y_positions[surrounding_points["before"]],
+            x=x_positions[surrounding_points["before"]],
+            y=y_positions[surrounding_points["before"]],
         )
         first_after_obj = PointData(
-            x_value=x_positions[surrounding_points["after"]],
-            y_value=y_positions[surrounding_points["after"]],
+            x=x_positions[surrounding_points["after"]],
+            y=y_positions[surrounding_points["after"]],
         )
         # Intersection between Old Curve
         result["intersection"] = calc_intersection(last_before_obj, first_after_obj, vertical_line_x_position)
@@ -79,28 +79,28 @@ def calc_intersection(point_1: PointData, point_2: PointData, new_point_x_positi
         intersection can be calculated from the given points an empty
         dictionary will be returned
     """
-    if point_2.x_value < point_1.x_value:
+    if point_2.x < point_1.x:
         LOGGER.debug("Parameters are in wrong order. This might hint, that a bug appeared in the code before. \n"
                      f"Point 1:     {point_1} \n"
                      f"Point 2:     {point_2} \n"
                      f"X Position:  {new_point_x_position}")
         point_1, point_2 = point_2, point_1
     if (
-        new_point_x_position > point_2.x_value
-        or new_point_x_position < point_1.x_value
+        new_point_x_position > point_2.x
+        or new_point_x_position < point_1.x
     ):
         LOGGER.debug("New position not between the passed points, listing their X positions: \n"
-                     f"New= {new_point_x_position}, P1= {point_1.x_value}, P2= {point_2.x_value}")
+                     f"New= {new_point_x_position}, P1= {point_1.x}, P2= {point_2.x}")
         return PointData()
-    if point_2.x_value == point_1.x_value:
-        return PointData(x_value=point_1.x_value, y_value=point_1.y_value)
+    if point_2.x == point_1.x:
+        return PointData(x=point_1.x, y=point_1.y)
     # Calculate intersection with boundary
-    delta_p1_p2_x = point_2.x_value - point_1.x_value
-    delta_p1_p2_y = point_2.y_value - point_1.y_value
-    delta_p1_line_x = new_point_x_position - point_1.x_value
-    temp_x = point_1.x_value + delta_p1_p2_x * (delta_p1_line_x / delta_p1_p2_x)
-    temp_y = point_1.y_value + delta_p1_p2_y * (delta_p1_line_x / delta_p1_p2_x)
-    return PointData(x_value=temp_x, y_value=temp_y)
+    delta_p1_p2_x = point_2.x - point_1.x
+    delta_p1_p2_y = point_2.y - point_1.y
+    delta_p1_line_x = new_point_x_position - point_1.x
+    temp_x = point_1.x + delta_p1_p2_x * (delta_p1_line_x / delta_p1_p2_x)
+    temp_y = point_1.y + delta_p1_p2_y * (delta_p1_line_x / delta_p1_p2_x)
+    return PointData(x=temp_x, y=temp_y)
 
 
 def bin_search_surrounding_points(

@@ -6,10 +6,12 @@ import numpy as np
 import pytest
 
 from accwidgets import graph as accgraph
+from .mock_utils.utils import warn_always
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_valid_curves(qtbot, minimal_test_window, warn_always, recwarn, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_curves(qtbot, minimal_test_window, recwarn, missing_value):
     data_source = accgraph.UpdateSource()
     minimal_test_window.plot.addCurve(data_source=data_source, pen="r")
     model: accgraph.LiveCurveDataModel = minimal_test_window.plot.plotItem.live_curves[0].model()
@@ -17,25 +19,25 @@ def test_valid_curves(qtbot, minimal_test_window, warn_always, recwarn, missing_
     np.testing.assert_equal(buffer[0], [])
     np.testing.assert_equal(buffer[1], [])
     # valid
-    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=2.0))
+    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=0.0, y=2.0))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0])
     np.testing.assert_equal(buffer[1], [2.0])
     # valid
-    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=1.0, y_value=missing_value))
+    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=1.0, y=missing_value))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0, 1.0])
     np.testing.assert_equal(buffer[1], [2.0, np.nan])
     # valid
-    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=missing_value, y_value=missing_value))
+    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=missing_value, y=missing_value))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0, 1.0, np.nan])
     np.testing.assert_equal(buffer[1], [2.0, np.nan, np.nan])
     # valid
-    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=missing_value))
+    data_source.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=0.0, y=missing_value))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0, 0.0, 1.0, np.nan])
@@ -43,23 +45,24 @@ def test_valid_curves(qtbot, minimal_test_window, warn_always, recwarn, missing_
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_invalid_curves(qtbot, minimal_test_window, warn_always, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_curves(qtbot, minimal_test_window, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addCurve(data_source=ds, pen="r")
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=missing_value, y_value=2.0))
+        ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=missing_value, y=2.0))
     buffer: accgraph.SortedCurveDataBuffer = minimal_test_window.plot.plotItem.live_curves[0].model().full_data_buffer
     np.testing.assert_equal(buffer[0], [])
     np.testing.assert_equal(buffer[1], [])
     # valid
-    ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=0.0, y_value=3.0))
+    ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=0.0, y=3.0))
     buffer: accgraph.SortedCurveDataBuffer = minimal_test_window.plot.plotItem.live_curves[0].model().full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0])
     np.testing.assert_equal(buffer[1], [3.0])
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x_value=missing_value, y_value=4.0))
+        ds.sig_new_data[accgraph.PointData].emit(accgraph.PointData(x=missing_value, y=4.0))
     buffer: accgraph.SortedCurveDataBuffer = minimal_test_window.plot.plotItem.live_curves[0].model().full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0])
     np.testing.assert_equal(buffer[1], [3.0])
@@ -69,19 +72,20 @@ def test_invalid_curves(qtbot, minimal_test_window, warn_always, missing_value):
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_valid_bars(qtbot, minimal_test_window, recwarn, warn_always, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_bars(qtbot, minimal_test_window, recwarn, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addBarGraph(data_source=ds)
     model: accgraph.LiveBarGraphDataModel = minimal_test_window.plot.plotItem.live_bar_graphs[0].model()
     # valid
-    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x_value=1.0, y_value=missing_value, height=2.0))
+    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x=1.0, y=missing_value, height=2.0))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [1.0])
     np.testing.assert_equal(buffer[1], [0.0])
     np.testing.assert_equal(buffer[2], [2.0])
     # valid
-    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x_value=0.0, y_value=1.0, height=2.0))
+    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x=0.0, y=1.0, height=2.0))
     assert len(recwarn) == 0
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0, 1.0])
@@ -90,26 +94,27 @@ def test_valid_bars(qtbot, minimal_test_window, recwarn, warn_always, missing_va
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_invalid_bars(qtbot, minimal_test_window, warn_always, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_bars(qtbot, minimal_test_window, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addBarGraph(data_source=ds)
     model: accgraph.LiveBarGraphDataModel = minimal_test_window.plot.plotItem.live_bar_graphs[0].model()
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x_value=1.0, y_value=1.0, height=missing_value))
+        ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x=1.0, y=1.0, height=missing_value))
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [])
     np.testing.assert_equal(buffer[1], [])
     np.testing.assert_equal(buffer[2], [])
     # valid
-    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x_value=1.0, y_value=missing_value, height=2.0))
+    ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x=1.0, y=missing_value, height=2.0))
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [1.0])
     np.testing.assert_equal(buffer[1], [0.0])
     np.testing.assert_equal(buffer[2], [2.0])
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x_value=missing_value, y_value=1.0, height=1.0))
+        ds.sig_new_data[accgraph.BarData].emit(accgraph.BarData(x=missing_value, y=1.0, height=1.0))
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [1.0])
     np.testing.assert_equal(buffer[1], [0.0])
@@ -120,13 +125,14 @@ def test_invalid_bars(qtbot, minimal_test_window, warn_always, missing_value):
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_valid_injection_bars(qtbot, minimal_test_window, warn_always, recwarn, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_injection_bars(qtbot, minimal_test_window, recwarn, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addInjectionBar(data_source=ds)
     model: accgraph.LiveInjectionBarDataModel = minimal_test_window.plot.plotItem.live_injection_bars[0].model()
     # valid
-    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=0.0,
-                                                                              y_value=1.0,
+    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=0.0,
+                                                                              y=1.0,
                                                                               height=missing_value,
                                                                               width=1.0,
                                                                               label="1"))
@@ -138,8 +144,8 @@ def test_valid_injection_bars(qtbot, minimal_test_window, warn_always, recwarn, 
     np.testing.assert_equal(buffer[3], [1.0])
     np.testing.assert_equal(buffer[4], ["1"])
     # valid
-    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=1.0,
-                                                                              y_value=1.0,
+    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=1.0,
+                                                                              y=1.0,
                                                                               height=1.0,
                                                                               width=missing_value,
                                                                               label="2"))
@@ -151,8 +157,8 @@ def test_valid_injection_bars(qtbot, minimal_test_window, warn_always, recwarn, 
     np.testing.assert_equal(buffer[3], [1.0, np.nan])
     np.testing.assert_equal(buffer[4], ["1", "2"])
     # valid
-    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=2.0,
-                                                                              y_value=1.0,
+    ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=2.0,
+                                                                              y=1.0,
                                                                               height=missing_value,
                                                                               width=missing_value,
                                                                               label="3"))
@@ -166,14 +172,15 @@ def test_valid_injection_bars(qtbot, minimal_test_window, warn_always, recwarn, 
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_invalid_injection_bars(qtbot, minimal_test_window, warn_always, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_injection_bars(qtbot, minimal_test_window, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addInjectionBar(data_source=ds)
     model: accgraph.LiveInjectionBarDataModel = minimal_test_window.plot.plotItem.live_injection_bars[0].model()
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=missing_value,
-                                                                                  y_value=1.0,
+        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=missing_value,
+                                                                                  y=1.0,
                                                                                   height=1.0,
                                                                                   width=1.0,
                                                                                   label="6"))
@@ -186,8 +193,8 @@ def test_invalid_injection_bars(qtbot, minimal_test_window, warn_always, missing
     assert buffer[4].size == 0
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=5.0,
-                                                                                  y_value=missing_value,
+        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=5.0,
+                                                                                  y=missing_value,
                                                                                   height=1.0,
                                                                                   width=1.0,
                                                                                   label="7"))
@@ -200,8 +207,8 @@ def test_invalid_injection_bars(qtbot, minimal_test_window, warn_always, missing
     assert buffer[4].size == 0
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x_value=missing_value,
-                                                                                  y_value=missing_value,
+        ds.sig_new_data[accgraph.InjectionBarData].emit(accgraph.InjectionBarData(x=missing_value,
+                                                                                  y=missing_value,
                                                                                   height=1.0,
                                                                                   width=1.0,
                                                                                   label="8"))
@@ -218,12 +225,13 @@ def test_invalid_injection_bars(qtbot, minimal_test_window, warn_always, missing
 
 
 @pytest.mark.parametrize("missing_value", ["", None])
-def test_valid_timestamp_markers(qtbot, minimal_test_window, warn_always, recwarn, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_valid_timestamp_markers(qtbot, minimal_test_window, recwarn, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addTimestampMarker(data_source=ds)
     model: accgraph.TimestampMarkerData = minimal_test_window.plot.plotItem.live_timestamp_markers[0].model()
     # valid
-    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x_value=0.0,
+    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=0.0,
                                                                                     color=missing_value,
                                                                                     label="1"))
     assert len(recwarn) == 0
@@ -232,7 +240,7 @@ def test_valid_timestamp_markers(qtbot, minimal_test_window, warn_always, recwar
     np.testing.assert_equal(buffer[1], ["w"])
     np.testing.assert_equal(buffer[2], ["1"])
     # valid
-    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x_value=1.0,
+    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=1.0,
                                                                                     color="r",
                                                                                     label=missing_value))
     assert len(recwarn) == 0
@@ -241,7 +249,7 @@ def test_valid_timestamp_markers(qtbot, minimal_test_window, warn_always, recwar
     np.testing.assert_equal(buffer[1], ["w", "r"])
     np.testing.assert_equal(buffer[2], ["1", ""])
     # valid
-    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x_value=2.0,
+    ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=2.0,
                                                                                     color=missing_value,
                                                                                     label=missing_value))
     assert len(recwarn) == 0
@@ -252,13 +260,14 @@ def test_valid_timestamp_markers(qtbot, minimal_test_window, warn_always, recwar
 
 
 @pytest.mark.parametrize("missing_value", [np.nan, None])
-def test_invalid_timestamp_markers(qtbot, minimal_test_window, warn_always, missing_value):
+@warn_always(accgraph.InvalidDataStructureWarning)
+def test_invalid_timestamp_markers(qtbot, minimal_test_window, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addTimestampMarker(data_source=ds)
     model: accgraph.TimestampMarkerData = minimal_test_window.plot.plotItem.live_timestamp_markers[0].model()
     # invalid
     with pytest.warns(accgraph.InvalidDataStructureWarning):
-        ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x_value=missing_value,
+        ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=missing_value,
                                                                                         color="r",
                                                                                         label="1"))
     buffer = model.full_data_buffer

@@ -460,21 +460,21 @@ def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):
     """Emit a the fitting data for the type of the added item"""
     if item_to_add == LivePlotCurve or isinstance(item_to_add, str) and item_to_add == "ScatterPlot":
         point = PointData(
-            x_value=data_x,
-            y_value=data_y,
+            x=data_x,
+            y=data_y,
         )
         data_source.emit_new_object(point)
     elif item_to_add == LiveBarGraphItem:
         bar = BarData(
-            x_value=data_x,
-            y_value=data_y,
+            x=data_x,
+            y=data_y,
             height=data_y,
         )
         data_source.emit_new_object(bar)
     elif item_to_add == LiveInjectionBarGraphItem:
         i_bar = InjectionBarData(
-            x_value=data_x,
-            y_value=data_y,
+            x=data_x,
+            y=data_y,
             height=data_y,
             width=1,
             label=str(data_x),
@@ -482,7 +482,7 @@ def emit_fitting_value(item_to_add, data_source, data_x: float, data_y: float):
         data_source.emit_new_object(i_bar)
     elif item_to_add == LiveTimestampMarker:
         line = TimestampMarkerData(
-            x_value=data_x,
+            x=data_x,
             color="r",
             label=str(data_x),
         )

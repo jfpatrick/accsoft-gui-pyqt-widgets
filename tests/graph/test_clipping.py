@@ -16,7 +16,7 @@ def _point(x_val, y_val) -> PointData:
         x_val: X Value
         y_val: Y Value
     """
-    return PointData(x_value=x_val, y_value=y_val)
+    return PointData(x=x_val, y=y_val)
 
 
 def _curve(x_val, y_val) -> CurveData:
@@ -26,7 +26,7 @@ def _curve(x_val, y_val) -> CurveData:
         x_val: X Value
         y_val: Y Value
     """
-    return CurveData(x_values=x_val, y_values=y_val)
+    return CurveData(x=x_val, y=y_val)
 
 
 def test_binary_search_line_between_and_even_number_of_points():
@@ -186,8 +186,8 @@ def test_calc_intersection_intersect_in_the_middle_with_zero():
     point_2 = _point(2, 2)
     line = 1
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 1
-    assert result.y_value == 1
+    assert result.x == 1
+    assert result.y == 1
 
 
 def test_calc_intersection_intersect_in_the_middle_with_zero_float_result():
@@ -195,8 +195,8 @@ def test_calc_intersection_intersect_in_the_middle_with_zero_float_result():
     point_2 = _point(2, 1)
     line = 1
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 1
-    assert result.y_value == 0.5
+    assert result.x == 1
+    assert result.y == 0.5
 
 
 def test_calc_intersection_intersect_in_the_middle_without_zero():
@@ -204,8 +204,8 @@ def test_calc_intersection_intersect_in_the_middle_without_zero():
     point_2 = _point(200.0, 200.0)
     line = 150.0
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 150.0
-    assert result.y_value == 150.0
+    assert result.x == 150.0
+    assert result.y == 150.0
 
 
 def test_calc_intersection_intersect_in_the_middle_with_negative():
@@ -213,8 +213,8 @@ def test_calc_intersection_intersect_in_the_middle_with_negative():
     point_2 = _point(100.0, 100.0)
     line = 0
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 0.0
-    assert result.y_value == 0.0
+    assert result.x == 0.0
+    assert result.y == 0.0
 
 
 def test_calc_intersection_intersect_in_the_middle_both_negative():
@@ -222,8 +222,8 @@ def test_calc_intersection_intersect_in_the_middle_both_negative():
     point_2 = _point(-100.0, -100.0)
     line = -150.0
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == -150.0
-    assert result.y_value == -150.0
+    assert result.x == -150.0
+    assert result.y == -150.0
 
 
 def test_calc_intersection_same_points_and_intersection_on_them():
@@ -231,8 +231,8 @@ def test_calc_intersection_same_points_and_intersection_on_them():
     point_2 = _point(0, 0)
     line = 0
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 0
-    assert result.y_value == 0
+    assert result.x == 0
+    assert result.y == 0
 
 
 def test_calc_intersection_in_front_of_range_negative():
@@ -240,8 +240,8 @@ def test_calc_intersection_in_front_of_range_negative():
     point_2 = _point(2, 2)
     line = -1
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value is np.nan
-    assert result.y_value is np.nan
+    assert result.x is np.nan
+    assert result.y is np.nan
 
 
 def test_calc_intersection_after_range():
@@ -249,8 +249,8 @@ def test_calc_intersection_after_range():
     point_2 = _point(2, 2)
     line = 3
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value is np.nan
-    assert result.y_value is np.nan
+    assert result.x is np.nan
+    assert result.y is np.nan
 
 
 def test_calc_intersection_wrong_order_in_front_of_range():
@@ -258,8 +258,8 @@ def test_calc_intersection_wrong_order_in_front_of_range():
     point_2 = _point(0, 0)
     line = 1
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 1
-    assert result.y_value == 1
+    assert result.x == 1
+    assert result.y == 1
 
 
 def test_calc_intersection_wrong_order_on_end_of_range():
@@ -267,8 +267,8 @@ def test_calc_intersection_wrong_order_on_end_of_range():
     point_2 = _point(0, 0)
     line = 2
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value == 2
-    assert result.y_value == 2
+    assert result.x == 2
+    assert result.y == 2
 
 
 def test_calc_intersection_wrong_order_after_range():
@@ -276,8 +276,8 @@ def test_calc_intersection_wrong_order_after_range():
     point_2 = _point(0, 0)
     line = 3
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value is np.nan
-    assert result.y_value is np.nan
+    assert result.x is np.nan
+    assert result.y is np.nan
 
 
 def test_calc_intersection_wrong_order_in_front_of_range_negative():
@@ -285,8 +285,8 @@ def test_calc_intersection_wrong_order_in_front_of_range_negative():
     point_2 = _point(0, 0)
     line = -1
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x_value is np.nan
-    assert result.y_value is np.nan
+    assert result.x is np.nan
+    assert result.y is np.nan
 
 
 def test_intersect_in_range():
@@ -299,8 +299,8 @@ def test_intersect_in_range():
     assert result["first_after_index"] == 2
     intersection = result["intersection"]
     if isinstance(intersection, PointData):
-        assert intersection.x_value == 1.5
-        assert intersection.y_value == 1.5
+        assert intersection.x == 1.5
+        assert intersection.y == 1.5
     else:
         raise ValueError("Intersection is not an instance of PointData")
 
@@ -315,8 +315,8 @@ def test_intersect_on_first_element():
     assert result["first_after_index"] == 0
     intersection = result["intersection"]
     if isinstance(intersection, PointData):
-        assert intersection.x_value == 0
-        assert intersection.y_value == 0
+        assert intersection.x == 0
+        assert intersection.y == 0
     else:
         raise ValueError("Intersection is not an instance of PointData")
 
@@ -342,8 +342,8 @@ def test_intersect_on_last_element():
     assert result["first_after_index"] == 4
     intersection = result["intersection"]
     if isinstance(intersection, PointData):
-        assert intersection.x_value == 4.0
-        assert intersection.y_value == 4.0
+        assert intersection.x == 4.0
+        assert intersection.y == 4.0
     else:
         raise ValueError("Intersection is not an instance of PointData")
 

@@ -18,6 +18,8 @@ import numpy as np
 import pyqtgraph as pg
 from qtpy.QtCore import QObject
 
+from ..util import deprecated_param_alias
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -73,7 +75,8 @@ DEFAULT_COLOR = "w"
 
 class PointData(PlottingItemData):
 
-    def __init__(self, x_value: float = np.nan, y_value: float = np.nan, parent=None):
+    @deprecated_param_alias(x_value="x", y_value="y")
+    def __init__(self, x: float = np.nan, y: float = np.nan, parent=None):
         """
         Data for a 2D point with x and y value
 
@@ -82,25 +85,25 @@ class PointData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_value: x-value of the point.
-            y_value: y-value of the point.
+            x: x-value of the point.
+            y: y-value of the point.
             parent: Parent object for the base class
         """
         super().__init__(parent=parent)
-        self.x_value: float = x_value if x_value is not None else np.nan
-        self.y_value: float = y_value if y_value is not None else np.nan
+        self.x: float = x if x is not None else np.nan
+        self.y: float = y if y is not None else np.nan
         # Check validity on creation to warn user in case the point is invalid
         self.is_valid(warn=True)
 
     def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ == other.__class__
-            and self.x_value == other.x_value
-            and self.y_value == other.y_value
+            and self.x == other.x
+            and self.y == other.y
         )
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value})"
+        return f"{type(self).__name__}: (x={self.x}, y={self.y})"
 
     def is_valid(self, warn: bool = False) -> bool:
         """Check if the PointData is valid
@@ -114,7 +117,7 @@ class PointData(PlottingItemData):
         Returns:
             True if the point is valid
         """
-        if np.isnan(self.x_value) and not np.isnan(self.y_value):
+        if np.isnan(self.x) and not np.isnan(self.y):
             if warn:
                 msg = "A point with NaN as the x value and a value other than NaN as a y-value " \
                       f"is not valid. If you emit {self} to an curve, " \
@@ -126,15 +129,16 @@ class PointData(PlottingItemData):
     @property
     def is_nan(self) -> bool:
         """Either the x value or the y value is nan."""
-        return np.isnan(self.x_value) or np.isnan(self.y_value)
+        return np.isnan(self.x) or np.isnan(self.y)
 
 
 class CurveData(PlottingItemData):
 
+    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
             self,
-            x_values: Sequence[float],
-            y_values: Sequence[float],
+            x: Sequence[float],
+            y: Sequence[float],
             parent=None,
     ):
         """Collection of data for points representing a curve.
@@ -144,20 +148,20 @@ class CurveData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_values: list of x values of the points
-            y_values: list of y values of the points
+            x: list of x values of the points
+            y: list of y values of the points
             parent: Parent object for the base class
         """
         super().__init__(parent)
-        if not isinstance(x_values, np.ndarray):
-            x_values = np.array(x_values)
-        if not isinstance(y_values, np.ndarray):
-            y_values = np.array(y_values)
-        if x_values.size != y_values.size:
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        if x.size != y.size:
             raise ValueError(f"The curve cannot be created with different count of x"
-                             f" ({x_values.size}) and y values ({y_values.size}).")
-        self.x_values: np.ndarray = x_values
-        self.y_values: np.ndarray = y_values
+                             f" ({x.size}) and y values ({y.size}).")
+        self.x: np.ndarray = x
+        self.y: np.ndarray = y
         # Check validity on creation to warn user in case some points are invalid
         self.is_valid(warn=True)
 
@@ -166,14 +170,14 @@ class CurveData(PlottingItemData):
             return False
         try:
             return (
-                np.allclose(self.x_values, other.x_values)
-                and np.allclose(self.y_values, other.y_values)
+                np.allclose(self.x, other.x)
+                and np.allclose(self.y, other.y)
             )
         except ValueError:
             return False
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_values}, y={self.y_values})"
+        return f"{type(self).__name__}: (x={self.x}, y={self.y})"
 
     def is_valid(self, warn: bool = False) -> np.ndarray:
         """Check if all points in the collection are valid
@@ -188,8 +192,8 @@ class CurveData(PlottingItemData):
             Bool array which contains True, if the point at that index is valid
         """
         problems: List[str] = []
-        valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x_data, y_data) in enumerate(zip(self.x_values, self.y_values)):
+        valid_indices = np.ones(self.x.size, dtype=bool)
+        for index, (x_data, y_data) in enumerate(zip(self.x, self.y)):
             if (x_data is None or np.isnan(x_data)) and (y_data is not None and not np.isnan(y_data)):
                 problems.append(f"Point {index}: (x={x_data}, y={y_data})")
                 valid_indices[index] = False
@@ -204,11 +208,12 @@ class CurveData(PlottingItemData):
 
 class BarData(PlottingItemData):
 
+    @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(
             self,
             height: float,
-            x_value: float,
-            y_value: float = np.nan,
+            x: float = np.nan,
+            y: float = np.nan,
             parent=None,
     ):
         """Data of a bar for a bar graph
@@ -219,28 +224,28 @@ class BarData(PlottingItemData):
 
         Args:
             height: height of the bar
-            x_value: x position that represents the center of the bar
-            y_value: y position that represents the center of the bar
+            x: x position that represents the center of the bar
+            y: y position that represents the center of the bar
             parent: Parent object for the base class
         """
         super().__init__(parent)
         self.height: float = height if height is not None else np.nan
-        self.x_value: float = x_value if x_value is not None else np.nan
+        self.x: float = x if x is not None else np.nan
         # y -> nan has to be replaced with 0, otherwise bar won't be drawn
-        self.y_value: float = y_value if y_value is not None and not np.isnan(y_value) else 0.0
+        self.y: float = y if y is not None and not np.isnan(y) else 0.0
         # Check validity on creation to warn user in case the bar is invalid
         self.is_valid(warn=True)
 
     def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ != other.__class__
-            and self.x_value != other.x_value
-            and self.y_value != other.y_value
+            and self.x != other.x
+            and self.y != other.y
             and self.height != other.height
         )
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value}, height={self.height})"
+        return f"{type(self).__name__}: (x={self.x}, y={self.y}, height={self.height})"
 
     def is_valid(self, warn: bool = False) -> bool:
         """Check if the BarData is valid
@@ -261,7 +266,7 @@ class BarData(PlottingItemData):
             True if the bar is valid
         """
         problems: List[str] = []
-        if np.isnan(self.x_value):
+        if np.isnan(self.x):
             problems.append("NaN as the x value is not valid")
         if np.isnan(self.height):
             problems.append("NaN as the height is not valid")
@@ -277,10 +282,11 @@ class BarData(PlottingItemData):
 
 class BarCollectionData(PlottingItemData):
 
+    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
             self,
-            x_values: Sequence[float],
-            y_values: Sequence[float],
+            x: Sequence[float],
+            y: Sequence[float],
             heights: Sequence[float],
             parent=None,
     ):
@@ -291,23 +297,23 @@ class BarCollectionData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_values: list of x positions that represent the center of the bar
-            y_values: list of y positions that represent the center of the bar
+            x: list of x positions that represent the center of the bar
+            y: list of y positions that represent the center of the bar
             heights: list of bar heights
             parent: Parent object for the base class
         """
         super().__init__(parent)
-        if not isinstance(x_values, np.ndarray):
-            x_values = np.array(x_values)
-        if not isinstance(y_values, np.ndarray):
-            y_values = np.array(y_values)
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
         if not isinstance(heights, np.ndarray):
             heights = np.array(heights)
-        if not x_values.size == y_values.size == heights.size:
+        if not x.size == y.size == heights.size:
             raise ValueError(f"The bar collection cannot be created with different length "
-                             f"parameters: ({x_values.size}, {y_values.size}, {heights.size}).")
-        self.x_values: np.ndarray = x_values
-        self.y_values: np.ndarray = np.nan_to_num(y_values, copy=True)
+                             f"parameters: ({x.size}, {y.size}, {heights.size}).")
+        self.x: np.ndarray = x
+        self.y: np.ndarray = np.nan_to_num(y, copy=True)
         self.heights: np.ndarray = heights
         # Check validity on creation to warn user in case some bars are invalid
         self.is_valid(warn=True)
@@ -316,15 +322,15 @@ class BarCollectionData(PlottingItemData):
         if self.__class__ != other.__class__:
             return False
         try:
-            return (np.allclose(self.x_values, other.x_values)
-                    and np.allclose(self.y_values, other.y_values)
+            return (np.allclose(self.x, other.x)
+                    and np.allclose(self.y, other.y)
                     and np.array_equal(self.heights, other.heights))
         except ValueError:
             return False
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_values}, " \
-            f"y={self.y_values}, height={self.heights})"
+        return f"{type(self).__name__}: (x={self.x}, " \
+            f"y={self.y}, height={self.heights})"
 
     def is_valid(self, warn: bool = False) -> bool:
         """Check if all bars are valid
@@ -345,8 +351,8 @@ class BarCollectionData(PlottingItemData):
             Bool array which contains True, if the bar at that index is valid
         """
         problems: List[str] = []
-        valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x_data, y_data, height) in enumerate(zip(self.x_values, self.y_values, self.heights)):
+        valid_indices = np.ones(self.x.size, dtype=bool)
+        for index, (x_data, y_data, height) in enumerate(zip(self.x, self.y, self.heights)):
             if (x_data is None or np.isnan(x_data)) or (height is None or np.isnan(height)):
                 problems.append(f"Bar {index}: (x={x_data}, y={y_data}, height={height})")
                 valid_indices[index] = False
@@ -361,10 +367,11 @@ class BarCollectionData(PlottingItemData):
 
 class InjectionBarData(PlottingItemData):
 
+    @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(
         self,
-        x_value: float,
-        y_value: float,
+        x: float,
+        y: float,
         height: float = np.nan,
         width: float = np.nan,
         label: str = "",
@@ -377,16 +384,16 @@ class InjectionBarData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_value: x position of the center of the bar
-            y_value: y position of the center of the bar
+            x: x position of the center of the bar
+            y: y position of the center of the bar
             height: length of the vertical line of the bar
             width: length of the vertical line of the bar
             label: text displayed at the top of the bar
             parent: parent item of the base class
         """
         super().__init__(parent)
-        self.x_value: float = x_value if x_value is not None else np.nan
-        self.y_value: float = y_value if y_value is not None else np.nan
+        self.x: float = x if x is not None else np.nan
+        self.y: float = y if y is not None else np.nan
         self.height: float = height if height is not None else np.nan
         self.width: float = width if width is not None else np.nan
         self.label: str = label if label is not None else ""
@@ -396,15 +403,15 @@ class InjectionBarData(PlottingItemData):
     def __eq__(self, other: Any) -> bool:
         return (
             self.__class__ == other.__class__
-            and self.x_value == other.x_value
-            and self.y_value == other.y_value
+            and self.x == other.x
+            and self.y == other.y
             and self.height == other.height
             and self.width == other.width
             and self.label == other.label
         )
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_value}, y={self.y_value}, " \
+        return f"{type(self).__name__}: (x={self.x}, y={self.y}, " \
             f"height={self.height}, width={self.width}, label={self.label})"
 
     def is_valid(self, warn: bool = False) -> bool:
@@ -426,9 +433,9 @@ class InjectionBarData(PlottingItemData):
             True if the injection bar is valid
         """
         problems: List[str] = []
-        if np.isnan(self.x_value):
+        if np.isnan(self.x):
             problems.append("NaN as the x value is not valid")
-        if np.isnan(self.y_value):
+        if np.isnan(self.y):
             problems.append("NaN as the y value is not valid")
         if problems:
             if warn:
@@ -442,10 +449,11 @@ class InjectionBarData(PlottingItemData):
 
 class InjectionBarCollectionData(PlottingItemData):
 
+    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
         self,
-        x_values: Sequence[float],
-        y_values: Sequence[float],
+        x: Sequence[float],
+        y: Sequence[float],
         heights: Sequence[float],
         widths: Sequence[float],
         labels: Sequence[str],
@@ -458,30 +466,30 @@ class InjectionBarCollectionData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_values: list of x positions of the center of each bar
-            y_values: list of y positions of the center of each bar
+            x: list of x positions of the center of each bar
+            y: list of y positions of the center of each bar
             heights: list of lengths of the vertical lines of a bar
             widths: list of lengths of the horizontal lines of a bar
             labels: list of texts displayed at the top of each bar
             parent: parent item of the base class
         """
         super().__init__(parent)
-        if not isinstance(x_values, np.ndarray):
-            x_values = np.array(x_values)
-        if not isinstance(y_values, np.ndarray):
-            y_values = np.array(y_values)
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
         if not isinstance(heights, np.ndarray):
             heights = np.array(heights)
         if not isinstance(widths, np.ndarray):
             widths = np.array(widths)
         if not isinstance(labels, np.ndarray):
             labels = np.array(labels)
-        if not x_values.size == y_values.size == heights.size == widths.size == labels.size:
+        if not x.size == y.size == heights.size == widths.size == labels.size:
             raise ValueError(f"The injection bar collection cannot be created with different length "
-                             f"parameters: ({x_values.size}, {y_values.size}, {heights.size},"
+                             f"parameters: ({x.size}, {y.size}, {heights.size},"
                              f"{widths.size}, {labels.size}).")
-        self.x_values: np.ndarray = x_values
-        self.y_values: np.ndarray = y_values
+        self.x: np.ndarray = x
+        self.y: np.ndarray = y
         self.heights: np.ndarray = np.nan_to_num(heights)
         self.widths: np.ndarray = np.nan_to_num(widths)
         self.labels: np.ndarray = labels
@@ -493,8 +501,8 @@ class InjectionBarCollectionData(PlottingItemData):
             return False
         try:
             return (
-                np.allclose(self.x_values, other.x_values)
-                and np.allclose(self.y_values, other.y_values)
+                np.allclose(self.x, other.x)
+                and np.allclose(self.y, other.y)
                 and np.allclose(self.heights, other.heights)
                 and np.allclose(self.widths, other.widths)
                 and np.array_equal(self.labels, other.labels)
@@ -503,7 +511,7 @@ class InjectionBarCollectionData(PlottingItemData):
             return False
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_values}, y={self.y_values}, " \
+        return f"{type(self).__name__}: (x={self.x}, y={self.y}, " \
             f"heights={self.heights}, widths={self.widths}, labels={self.labels})"
 
     def is_valid(self, warn: bool = False) -> bool:
@@ -525,8 +533,8 @@ class InjectionBarCollectionData(PlottingItemData):
             Bool array, with true if the injection bar at this index is valid
         """
         problems: List[str] = []
-        valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x_data, y_data, height, width, label) in enumerate(zip(self.x_values, self.y_values, self.heights, self.widths, self.labels)):
+        valid_indices = np.ones(self.x.size, dtype=bool)
+        for index, (x_data, y_data, height, width, label) in enumerate(zip(self.x, self.y, self.heights, self.widths, self.labels)):
             if x_data is None or np.isnan(x_data) or y_data is None or np.isnan(y_data):
                 problems.append(f"InjectionBarData {index}: (x={x_data}, y={y_data}, height={height}, width={width}, labels={label})")
                 valid_indices[index] = False
@@ -541,9 +549,10 @@ class InjectionBarCollectionData(PlottingItemData):
 
 class TimestampMarkerData(PlottingItemData):
 
+    @deprecated_param_alias(x_value="x")
     def __init__(
             self,
-            x_value: float,
+            x: float,
             color: str = DEFAULT_COLOR,
             label: str = "",
             parent=None,
@@ -555,13 +564,13 @@ class TimestampMarkerData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_value: x position of the timestamp marker's vertical line
+            x: x position of the timestamp marker's vertical line
             color: of the vertical line, accepts the same arguments as pyqtgraph's mkColor
             label: text that is shown on the top of the line
             parent: parent item for the base class
         """
         super().__init__(parent)
-        self.x_value: float = x_value if x_value is not None else np.nan
+        self.x: float = x if x is not None else np.nan
         # Catch invalid colors and replace with the default color to prevent exceptions
         try:
             pg.mkColor(color)
@@ -579,14 +588,14 @@ class TimestampMarkerData(PlottingItemData):
     def __eq__(self, other):
         return (
             self.__class__ == other.__class__
-            and self.x_value == other.x_value
+            and self.x == other.x
             and self.label == other.label
             and self.color == other.color
         )
 
     def __str__(self):
         return f"{type(self).__name__}: " \
-            f"(x={self.x_value}, color={self.color}, label={self.label})"
+            f"(x={self.x}, color={self.color}, label={self.label})"
 
     def is_valid(self, warn: bool = False) -> bool:
         """Check if the timestamp marker is valid
@@ -606,7 +615,7 @@ class TimestampMarkerData(PlottingItemData):
         Returns:
             True if the timestamp marker is valid
         """
-        if np.isnan(self.x_value):
+        if np.isnan(self.x):
             if warn:
                 warning_message = "NaN is not a valid x value for the timestamp " \
                                   "marker. If you emit this timeline to an graph, " \
@@ -618,9 +627,10 @@ class TimestampMarkerData(PlottingItemData):
 
 class TimestampMarkerCollectionData(PlottingItemData):
 
+    @deprecated_param_alias(x_values="x")
     def __init__(
             self,
-            x_values: Sequence[float],
+            x: Sequence[float],
             colors: Sequence[str],
             labels: Sequence[str],
             parent=None,
@@ -633,7 +643,7 @@ class TimestampMarkerCollectionData(PlottingItemData):
         can be invalid.
 
         Args:
-            x_values: list of x positions of multiple timestamp markers'
+            x: list of x positions of multiple timestamp markers'
                       vertical lines
             colors: list of colors of multiple timestamp markers' vertical
                     lines
@@ -642,8 +652,8 @@ class TimestampMarkerCollectionData(PlottingItemData):
             parent: parent item for the base class
         """
         super().__init__(parent=parent)
-        if not isinstance(x_values, np.ndarray):
-            x_values = np.array(x_values)
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
         if not isinstance(colors, np.ndarray):
             colors = np.array(colors)
         if not isinstance(labels, np.ndarray):
@@ -659,10 +669,10 @@ class TimestampMarkerCollectionData(PlottingItemData):
                                 f"since '{color}' can not be used as a color.")
                 colors[index] = DEFAULT_COLOR
         # Check length of passed sequences
-        if not x_values.size == colors.size == labels.size:
+        if not x.size == colors.size == labels.size:
             raise ValueError(f"The timestamp marker collection cannot be created with different length "
-                             f"parameters: ({x_values.size}, {colors.size}, {labels.size})")
-        self.x_values: np.ndarray = x_values
+                             f"parameters: ({x.size}, {colors.size}, {labels.size})")
+        self.x: np.ndarray = x
         self.colors: np.ndarray = colors
         self.labels: np.ndarray = labels
         # Check validity on creation to warn user in case some timestamp markers are invalid
@@ -673,7 +683,7 @@ class TimestampMarkerCollectionData(PlottingItemData):
             return False
         try:
             return (
-                np.allclose(self.x_values, other.x_values)
+                np.allclose(self.x, other.x)
                 and np.allclose(self.colors, other.colors)
                 and np.allclose(self.labels, other.labels)
             )
@@ -681,7 +691,7 @@ class TimestampMarkerCollectionData(PlottingItemData):
             return False
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}: (x={self.x_values}, colors={self.colors}, labels={self.labels})"
+        return f"{type(self).__name__}: (x={self.x}, colors={self.colors}, labels={self.labels})"
 
     def is_valid(self, warn: bool = False) -> np.ndarray:
         """Check if the timestamp markers are valid
@@ -701,8 +711,8 @@ class TimestampMarkerCollectionData(PlottingItemData):
             Bool Array with True, if the the marker at that position is valid
         """
         problems: List[str] = []
-        valid_indices = np.ones(self.x_values.size, dtype=bool)
-        for index, (x_data, color, label) in enumerate(zip(self.x_values, self.colors, self.labels)):
+        valid_indices = np.ones(self.x.size, dtype=bool)
+        for index, (x_data, color, label) in enumerate(zip(self.x, self.colors, self.labels)):
             if x_data is None or np.isnan(x_data):
                 problems.append(f"TimestampMarker {index}: (x={x_data}, color={color}, labels={label})")
                 valid_indices[index] = False
@@ -730,10 +740,11 @@ class CyclicPlotCurveData(NamedTuple):
 
 class CurveDataWithTime:
 
+    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
             self,
-            x_values: Union[List, np.ndarray],
-            y_values: Union[List, np.ndarray],
+            x: Union[List, np.ndarray],
+            y: Union[List, np.ndarray],
             timestamps: Union[List, np.ndarray],
     ):
         """Curve data with x values and timestamps
@@ -743,21 +754,21 @@ class CurveDataWithTime:
         timestamp. This happens f.e. in case of the Cyclic Plot
 
         Args:
-            x_values: x values of the points creating the curve
-            y_values: y values of the points creating the curve
+            x: x values of the points creating the curve
+            y: y values of the points creating the curve
             timestamps: timestamps of the points creating the curve
         """
-        if isinstance(x_values, list):
-            x_values = np.array(x_values)
-        if isinstance(y_values, list):
-            y_values = np.array(y_values)
+        if isinstance(x, list):
+            x = np.array(x)
+        if isinstance(y, list):
+            y = np.array(y)
         if isinstance(timestamps, list):
             timestamps = np.array(timestamps)
-        if timestamps.size != y_values.size:
+        if timestamps.size != y.size:
             raise ValueError(f"The curve cannot be created with different count of y "
-                             f"({y_values.size}) and timestamps ({timestamps.size}).")
-        self.x_values: np.ndarray = x_values
-        self.y_values: np.ndarray = y_values
+                             f"({y.size}) and timestamps ({timestamps.size}).")
+        self.x: np.ndarray = x
+        self.y: np.ndarray = y
         self.timestamps: np.ndarray = timestamps
 
     def __eq__(self, other: Any) -> bool:
@@ -766,8 +777,8 @@ class CurveDataWithTime:
         try:
             return(
                 np.allclose(self.timestamps, other.timestamps)
-                and np.allclose(self.x_values, other.x_values)
-                and np.allclose(self.y_values, other.y_values)
+                and np.allclose(self.x, other.x)
+                and np.allclose(self.y, other.y)
             )
         except ValueError:
             return False

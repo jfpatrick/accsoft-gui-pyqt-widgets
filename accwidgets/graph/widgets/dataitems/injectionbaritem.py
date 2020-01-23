@@ -1,13 +1,17 @@
 """Scrolling Bar Chart for live-data plotting"""
 
-from typing import List, Type, Optional, cast
+from typing import List, Type, Union, cast
 from copy import copy
 
 import pyqtgraph as pg
 import numpy as np
 
 from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import LiveInjectionBarDataModel, StaticInjectionBarDataModel
+from accwidgets.graph.datamodel.itemdatamodel import (
+    LiveInjectionBarDataModel,
+    StaticInjectionBarDataModel,
+    AbstractBaseDataModel,
+)
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
@@ -17,6 +21,7 @@ from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
 from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
+from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -33,14 +38,14 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
 
     def __init__(
         self,
-        data_model: StaticInjectionBarDataModel,
+        data_model: AbstractBaseDataModel,
         plot_item: "ExPlotItem",
         **errorbaritem_kwargs,
     ):
         """Base class for different live bar graph plots.
 
         Args:
-            data_source: source the item receives data from
+            data_model: Data model for the curve which holds the
             plot_item: plot_item the item should fit in style
             **errorbaritem_kwargs: keyword arguments for the base class
         """
@@ -156,12 +161,12 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
 
     data_model_type = LiveInjectionBarDataModel
 
+    @deprecated_param_alias(data_source="data_model")
     def __init__(
             self,
             plot_item: "ExPlotItem",
-            data_source: Optional[UpdateSource] = None,
+            data_model: Union[LiveInjectionBarDataModel, UpdateSource],
             buffer_size: int = DEFAULT_BUFFER_SIZE,
-            data_model: Optional[LiveInjectionBarDataModel] = None,
             **errorbaritem_kwargs,
     ):
         """
@@ -171,15 +176,16 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
 
         Args:
             plot_item: Plot Item the curve is created for
-            data_source: Source updates are passed through
-            buffer_size: Buffer Size.
-            data_model: If a valid data model is passed, data source and buffer
-                        size are ignored
+            data_model: Either an Update Source or a already initialized data
+                        model
+            buffer_size: Buffer size, which will be passed to the data model,
+                         will only be used if the data_model is only an Update
+                         Source.
             **errorbaritem_kwargs: Further Keyword Arguments for the ErrorBarItem
         """
-        if (data_model is None or not isinstance(data_model, LiveInjectionBarDataModel)) and data_source is not None:
+        if isinstance(data_model, UpdateSource):
             data_model = LiveInjectionBarDataModel(
-                data_source=data_source,
+                data_source=data_model,
                 buffer_size=buffer_size,
             )
         if data_model is not None:
@@ -188,6 +194,9 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
                 data_model=data_model,
                 **errorbaritem_kwargs,
             )
+        else:
+            raise TypeError("Need either data source or data model to create "
+                            f"a {type(self).__name__} instance")
 
     @staticmethod
     def _prepare_error_bar_item_params(**errorbaritem_kwargs):

@@ -69,21 +69,21 @@ class SinusCurveSource(accgraph.UpdateSource):
     def _create_new_value(self, emit_type: SinusCurveSourceEmitTypes) -> None:
         if emit_type == SinusCurveSourceEmitTypes.POINT:
             new_data = accgraph.PointData(
-                x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
+                x=datetime.now().timestamp() + self.x_offset,
+                y=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
             self.sig_new_data[accgraph.PointData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
-                x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
+                x=datetime.now().timestamp() + self.x_offset,
+                y=math.sin(datetime.now().timestamp()) + self.y_offset,
                 height=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
             self.sig_new_data[accgraph.BarData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
-                x_value=datetime.now().timestamp() + self.x_offset,
-                y_value=math.sin(datetime.now().timestamp()) + self.y_offset,
+                x=datetime.now().timestamp() + self.x_offset,
+                y=math.sin(datetime.now().timestamp()) + self.y_offset,
                 height=2.0,
                 width=0.0,
                 label=str(self.label_counter),
@@ -101,7 +101,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 color = "r"
                 label = f"NOMINAL \nLEIRDUMP ({self.label_counter})"
             new_data = accgraph.TimestampMarkerData(
-                x_value=datetime.now().timestamp() + self.x_offset,
+                x=datetime.now().timestamp() + self.x_offset,
                 color=color,
                 label=label,
             )
@@ -184,19 +184,19 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
 
     def _emit_next_live_point(self) -> None:
         new_data = accgraph.PointData(
-            x_value=self.x_values_live[self.current_index],
-            y_value=self.y_values_live[self.current_index],
+            x=self.x_values_live[self.current_index],
+            y=self.y_values_live[self.current_index],
         )
         self.sig_new_data[accgraph.PointData].emit(new_data)
 
     def _emit_separator(self) -> None:
-        separator = accgraph.PointData(x_value=np.nan, y_value=np.nan)
+        separator = accgraph.PointData(x=np.nan, y=np.nan)
         self.sig_new_data[accgraph.PointData].emit(separator)
 
     def _emit_data_from_logging_system(self) -> None:
         curve = accgraph.CurveData(
-            x_values=np.array(self.x_values_logging),
-            y_values=np.array(self.y_values_logging),
+            x=np.array(self.x_values_logging),
+            y=np.array(self.y_values_logging),
         )
         self.sig_new_data[accgraph.CurveData].emit(curve)
 
@@ -248,20 +248,20 @@ class WaveformSinusSource(accgraph.UpdateSource):
         """Create a data wrapper based on the requested type."""
         if self.type == SinusCurveSourceEmitTypes.POINT:
             return accgraph.CurveData(
-                x_values=self.x,
-                y_values=y + self.y_offset,
+                x=self.x,
+                y=y + self.y_offset,
             )
         elif self.type == SinusCurveSourceEmitTypes.BAR:
             return accgraph.BarCollectionData(
-                x_values=self.x,
-                y_values=np.zeros(len(self.x)) + self.y_offset + 0.5 * y,
+                x=self.x,
+                y=np.zeros(len(self.x)) + self.y_offset + 0.5 * y,
                 heights=y,
             )
         elif self.type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             y = abs(y)
             return accgraph.InjectionBarCollectionData(
-                x_values=self.x,
-                y_values=np.zeros(len(self.x)) + self.y_offset,
+                x=self.x,
+                y=np.zeros(len(self.x)) + self.y_offset,
                 heights=y,
                 widths=0.5 * y,
                 labels=np.array(["{:.2f}".format(_y) for _y in y]))
@@ -270,7 +270,7 @@ class WaveformSinusSource(accgraph.UpdateSource):
             r = (self.x[-1] - self.x[0]) / len(self.x)
             x = self.x + sin * r
             return accgraph.TimestampMarkerCollectionData(
-                x_values=x,
+                x=x,
                 colors=np.array([["r", "g", "b"][i] for i, _ in enumerate(range(len(self.x)))]),
                 labels=np.array(["{:.2f}".format(_x) for _x in x]))
 

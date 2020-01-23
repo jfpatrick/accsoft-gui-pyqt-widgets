@@ -79,8 +79,8 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
     """Subset Creation with """
     buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
     buffer.add_list_of_entries(
-        x_values=np.arange(start=0.0, stop=10.0),
-        y_values=np.arange(start=0.0, stop=10.0),
+        x=np.arange(start=0.0, stop=10.0),
+        y=np.arange(start=0.0, stop=10.0),
     )
 
     # Start in front of first value, End in between values
@@ -166,19 +166,19 @@ def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
 ):
     """Check same subsets as with buffer without nans with an full buffer and an buffer with empty places left"""
     buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
-    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_entry(x=np.nan, y=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([0.0, 1.0]), y_values=np.array([0.0, 1.0]),
+        x=np.array([0.0, 1.0]), y=np.array([0.0, 1.0]),
     )
-    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_entry(x=np.nan, y=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([2.0, 3.0]), y_values=np.array([2.0, 3.0]),
+        x=np.array([2.0, 3.0]), y=np.array([2.0, 3.0]),
     )
-    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_entry(x=np.nan, y=np.nan)
     buffer.add_list_of_entries(
-        x_values=np.array([4.0, 5.0]), y_values=np.array([4.0, 5.0]),
+        x=np.array([4.0, 5.0]), y=np.array([4.0, 5.0]),
     )
-    buffer.add_entry(x_value=np.nan, y_value=np.nan)
+    buffer.add_entry(x=np.nan, y=np.nan)
 
     # Span the whole array
     subset = buffer.subset_for_primary_val_range(start=-1.0, end=7.0, interpolated=True)
@@ -217,7 +217,7 @@ def test_add_empty_list():
     """Check if an empty list of entries is handled correctly when appended"""
     buffer = accgraph.SortedCurveDataBuffer(size=10)
     buffer.add_list_of_entries(
-        x_values=np.array([]), y_values=np.array([]),
+        x=np.array([]), y=np.array([]),
     )
     assert buffer.is_empty
 

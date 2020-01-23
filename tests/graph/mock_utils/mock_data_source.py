@@ -22,10 +22,10 @@ class MockDataSource(accgraph.UpdateSource):
             type_to_emit: Type of the data that is supposed to be emitted
         """
         if type_to_emit == accgraph.PointData and isinstance(value, float):
-            new_data = accgraph.PointData(x_value=timestamp, y_value=value)
+            new_data = accgraph.PointData(x=timestamp, y=value)
             self.sig_new_data[accgraph.PointData].emit(new_data)
         elif type_to_emit == accgraph.BarData and isinstance(value, List):
-            new_data = accgraph.BarData(x_value=timestamp, y_value=value[0], height=value[1])
+            new_data = accgraph.BarData(x=timestamp, y=value[0], height=value[1])
             self.sig_new_data[accgraph.BarData].emit(new_data)
 
     def emit_new_object(
