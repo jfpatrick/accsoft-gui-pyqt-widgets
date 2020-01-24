@@ -1,9 +1,8 @@
 """Module with base classes for attaching pyqtgraph based items to a datamodel"""
 
 import abc
-import logging
-from typing import List
-from typing import TYPE_CHECKING, Type, cast, TypeVar
+import warnings
+from typing import TYPE_CHECKING, Type, cast, TypeVar, List
 
 import numpy as np
 import pyqtgraph as pg
@@ -12,8 +11,6 @@ from accwidgets.graph.datamodel.itemdatamodel import AbstractBaseDataModel
 from accwidgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
-
-_LOGGER = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T", bound="DataModelBasedItem")
@@ -61,22 +58,32 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
             View Item class, Data Model
         """
         fitting_classes: List[Type[_T]] = [
-            c for c in DataModelBasedItem.all_subclasses(cls)
+            c for c in DataModelBasedItem.plotting_style_subclasses(cls)
             if plot_item.plot_config.plotting_style == cast(DataModelBasedItem, c).supported_plotting_style
         ]
         if not fitting_classes:
             raise ValueError(f"No fitting subclass could be found for the plot item "
                              f"with style {plot_item.plot_config.plotting_style.value}.")
         elif len(fitting_classes) > 1:
-            _LOGGER.warning(f"Multiple fitting subclasses could be found for the plot "
-                            f"item with style {plot_item.plot_config.plotting_style.value}")
+            warnings.warn(f"Multiple fitting subclasses could be found for "
+                          f"the plot item with style "
+                          f"{plot_item.plot_config.plotting_style.name} : "
+                          f"{fitting_classes}")
         return fitting_classes[0]
 
     @staticmethod
-    def all_subclasses(cls):
-        """Search for all subclasses of a class recursively."""
-        return set(cls.__subclasses__()).union(
-            [s for c in cls.__subclasses__() for s in DataModelBasedItem.all_subclasses(c)])
+    def plotting_style_subclasses(cls):
+        """
+        Search for all subclasses of a class recursively, which support a
+        specific plotting style. Derived classes
+        """
+        subclasses: List[Type[DataModelBasedItem]] = []
+        for c in cls.__subclasses__():
+            if cast(DataModelBasedItem, c).supported_plotting_style is None:
+                subclasses += DataModelBasedItem.plotting_style_subclasses(c)
+            else:
+                subclasses.append(c)
+        return subclasses
 
     @abc.abstractmethod
     def update_item(self) -> None:

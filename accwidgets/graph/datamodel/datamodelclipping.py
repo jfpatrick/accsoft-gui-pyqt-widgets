@@ -1,6 +1,6 @@
 """ Clipping functionality for linegraph datamodel """
 
-import logging
+import warnings
 from typing import Dict, List, Union
 
 import numpy as np
@@ -10,8 +10,6 @@ from accwidgets.graph.datamodel.datastructures import (
     CurveDataWithTime,
     PointData,
 )
-
-LOGGER = logging.getLogger(__name__)
 
 
 def intersect(
@@ -45,8 +43,9 @@ def intersect(
     x_positions = graph_points.x
     y_positions = graph_points.y
     if len(x_positions) != len(y_positions):
-        LOGGER.error(f"Length:({len(x_positions)}, {len(y_positions)}), Passed Points: {graph_points}")
-        raise ValueError("The count of X indices and Y values is not the same.")
+        raise ValueError("The count of X indices and Y values is not the same."
+                         "Length:({len(x_positions)}, {len(y_positions)}), "
+                         "Passed Points: {graph_points}")
     surrounding_points = bin_search_surrounding_points(x_positions, vertical_line_x_position)
     result["last_before_index"] = surrounding_points["before"]
     result["first_after_index"] = surrounding_points["after"]
@@ -80,17 +79,15 @@ def calc_intersection(point_1: PointData, point_2: PointData, new_point_x_positi
         dictionary will be returned
     """
     if point_2.x < point_1.x:
-        LOGGER.debug("Parameters are in wrong order. This might hint, that a bug appeared in the code before. \n"
-                     f"Point 1:     {point_1} \n"
-                     f"Point 2:     {point_2} \n"
-                     f"X Position:  {new_point_x_position}")
+        warnings.warn("Parameters are in wrong order. This might hint, that "
+                      "a bug appeared in the code before. \n"
+                      f"Point 1: {point_1}, Point 2: {point_2}, "
+                      f"X Position:  {new_point_x_position}")
         point_1, point_2 = point_2, point_1
     if (
         new_point_x_position > point_2.x
         or new_point_x_position < point_1.x
     ):
-        LOGGER.debug("New position not between the passed points, listing their X positions: \n"
-                     f"New= {new_point_x_position}, P1= {point_1.x}, P2= {point_2.x}")
         return PointData()
     if point_2.x == point_1.x:
         return PointData(x=point_1.x, y=point_1.y)

@@ -5,7 +5,7 @@ that are able to safe different types and amount of data
 
 import abc
 import math
-import logging
+import warnings
 from typing import Optional, Tuple, List, Union
 
 import numpy as np
@@ -15,8 +15,6 @@ from accwidgets.graph.datamodel.datastructures import PointData
 from accwidgets.graph.util import deprecated_param_alias
 
 DEFAULT_BUFFER_SIZE: int = 100000
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
@@ -52,8 +50,8 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         size = size or DEFAULT_BUFFER_SIZE
         if size < 3:
             size = DEFAULT_BUFFER_SIZE
-            _LOGGER.warning(f"The requested data-buffer size is too small. As size the default "
-                            f"{DEFAULT_BUFFER_SIZE} entries will be used")
+            warnings.warn(f"The requested data-buffer size is too small. As size the default "
+                          f"{DEFAULT_BUFFER_SIZE} entries will be used")
         self._size = size
         self._primary_values: np.ndarray = np.array([])
         self._secondary_values_lists: List[np.ndarray] = []

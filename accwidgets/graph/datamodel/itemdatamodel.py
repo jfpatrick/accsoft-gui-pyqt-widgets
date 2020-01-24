@@ -1,7 +1,7 @@
 """ Data Model for one single curve. """
 
 import abc
-import logging
+import warnings
 from typing import Optional, Tuple, Union, cast
 
 import numpy as np
@@ -29,7 +29,14 @@ from accwidgets.graph.datamodel.datastructures import (
     PlottingItemData,
 )
 
-_LOGGER = logging.getLogger(__name__)
+
+class WrongDataType(Warning):
+    """
+    Warning for an invalid Data Structure. PlottingItemData should emit
+    this if they are invalid, which means that they can not be drawn
+    in their fitting graph-type.
+    """
+    pass
 
 
 class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
@@ -262,8 +269,8 @@ class LiveCurveDataModel(AbstractLiveDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
-                                f"line graph datamodel or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                              f"{type(self).__name__} or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
@@ -306,8 +313,8 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not "
-                                f"fit this bar graph datamodel or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not "
+                              f"fit this bar graph datamodel or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
@@ -351,8 +358,8 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
-                                f"this injection-bar datamodel or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit "
+                              f"this injection-bar datamodel or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
@@ -389,8 +396,8 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit "
-                                f"this timestamp mark datamodel or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit "
+                              f"this timestamp mark datamodel or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
 
@@ -420,8 +427,8 @@ class StaticCurveDataModel(AbstractBaseDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
-                                f"line graph data model or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                              f"line graph data model or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
     @property
@@ -462,8 +469,8 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
-                                f"bar graph datamodel or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                              f"bar graph datamodel or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
     @property
@@ -510,8 +517,8 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
-                                f"injection bar data model or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                              f"injection bar data model or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
     @property
@@ -552,8 +559,8 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
             self.sig_data_model_changed.emit()
         else:
             if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                _LOGGER.warning(f"Data {data} of type {type(data).__name__} does not fit this "
-                                f"timestamp marker data model or is invalid and will be ignored.")
+                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                              f"timestamp marker data model or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
     @property

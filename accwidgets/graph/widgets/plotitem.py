@@ -2,7 +2,7 @@
 Base class for modified PlotItems that handle data displaying in the ExtendedPlotWidget
 """
 
-import logging
+import warnings
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union, Type, cast
 
@@ -47,8 +47,6 @@ from accwidgets.graph.widgets.plotconfiguration import (
 )
 from accwidgets.graph.datamodel.datastructures import PointData
 from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, CyclicPlotTimeSpan, BasePlotTimeSpan
-
-_LOGGER = logging.getLogger(__name__)
 
 
 # Mapping of plotting styles to a fitting axis style
@@ -157,8 +155,8 @@ class ExPlotItem(pg.PlotItem):
         """
         # Catch calls from superclasses deprecated addCurve() expecting a PlotDataItem
         if c and isinstance(c, pg.PlotDataItem):
-            _LOGGER.warning("Calling addCurve() for adding an already created PlotDataItem is deprecated, "
-                            "please use addItem() for this purpose.")
+            warnings.warn("Calling addCurve() for adding an already created PlotDataItem is deprecated, "
+                          "please use addItem() for this purpose.")
             params = params or {}
             self.addItem(item=c, **params)
             return c
@@ -364,9 +362,9 @@ class ExPlotItem(pg.PlotItem):
             clear: clear all plots before displaying new data
             params: meta-parameters to associate with this data
         """
-        _LOGGER.warning("PlotItem.plot should not be used for plotting curves with "
-                        "the ExPlotItem, please use the PlotDataItem and addItem "
-                        "or ExPlotItem.addCurve for this purpose.")
+        warnings.warn("PlotItem.plot should not be used for plotting curves with "
+                      "the ExPlotItem, please use the PlotDataItem and addItem "
+                      "or ExPlotItem.addCurve for this purpose.")
         return pg.PlotItem.plot(*args, clear=clear, params=params)
 
     @property
@@ -1546,11 +1544,12 @@ class PlotItemLayerCollection:
         Args:
             moved_viewbox: Viewbox that was originally moved
             new_range: new range the ViewBox now shows
-            *args: Does not get used, this is just for catching additionally passed arguments
-                in case the Event sends more values than expected
+            *args: Does not get used, this is just for catching additionally
+                   passed arguments in case the Event sends more values than
+                   expected
         """
         if args:
-            _LOGGER.info(f"More values were received than expected: {args}")
+            warnings.warn(f"More values were received than expected: {args}")
         layer = self.get()
         if all(self._forward_range_change_to_other_layers):
             self._apply_range_change_to_other_layers(

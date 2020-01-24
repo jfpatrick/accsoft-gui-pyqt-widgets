@@ -2,7 +2,6 @@
 Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
-import logging
 from typing import Tuple, Dict, cast, Type, Union
 from copy import copy
 
@@ -25,8 +24,6 @@ from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
-
-_LOGGER = logging.getLogger(__name__)
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [
