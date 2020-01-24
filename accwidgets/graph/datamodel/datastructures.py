@@ -10,7 +10,6 @@ different length arrays into an .
 """
 
 import warnings
-import logging
 import abc
 from typing import List, Union, Optional, Any, NamedTuple, Sequence
 
@@ -20,14 +19,19 @@ from qtpy.QtCore import QObject
 
 from ..util import deprecated_param_alias
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class InvalidDataStructureWarning(Warning):
     """
     Warning for an invalid Data Structure. PlottingItemData should emit
     this if they are invalid, which means that they can not be drawn
     in their fitting graph-type.
+    """
+    pass
+
+
+class WrongValueWarning(Warning):
+    """
+    Warning that a value is not as expected.
     """
     pass
 
@@ -577,8 +581,8 @@ class TimestampMarkerData(PlottingItemData):
         except Exception:  # pylint: disable=broad-except
             # mkColor() raises Exception every time it can not interpret the passed color
             # In these cases we want to fall back to our default color
-            _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
-                            f"since '{color}' can not be used as a color.")
+            warnings.warn(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
+                          f"since '{color}' can not be used as a color.", WrongValueWarning)
             color = DEFAULT_COLOR
         self.color: str = color if color is not None else DEFAULT_COLOR
         self.label: str = label if label is not None else ""
@@ -665,8 +669,8 @@ class TimestampMarkerCollectionData(PlottingItemData):
             except Exception:  # pylint: disable=broad-except
                 # mkColor() raises Exception every time it can not interpret the passed color
                 # In these cases we want to fall back to our default color
-                _LOGGER.warning(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
-                                f"since '{color}' can not be used as a color.")
+                warnings.warn(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
+                              f"since '{color}' can not be used as a color.", WrongValueWarning)
                 colors[index] = DEFAULT_COLOR
         # Check length of passed sequences
         if not x.size == colors.size == labels.size:

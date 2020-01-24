@@ -225,7 +225,7 @@ def test_invalid_injection_bars(qtbot, minimal_test_window, missing_value):
 
 
 @pytest.mark.parametrize("missing_value", ["", None])
-@warn_always(accgraph.InvalidDataStructureWarning)
+@warn_always(accgraph.WrongValueWarning)
 def test_valid_timestamp_markers(qtbot, minimal_test_window, recwarn, missing_value):
     ds = accgraph.UpdateSource()
     minimal_test_window.plot.addTimestampMarker(data_source=ds)
@@ -234,7 +234,7 @@ def test_valid_timestamp_markers(qtbot, minimal_test_window, recwarn, missing_va
     ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=0.0,
                                                                                     color=missing_value,
                                                                                     label="1"))
-    assert len(recwarn) == 0
+    assert recwarn.pop(accgraph.WrongValueWarning)
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0])
     np.testing.assert_equal(buffer[1], ["w"])
@@ -252,7 +252,7 @@ def test_valid_timestamp_markers(qtbot, minimal_test_window, recwarn, missing_va
     ds.sig_new_data[accgraph.TimestampMarkerData].emit(accgraph.TimestampMarkerData(x=2.0,
                                                                                     color=missing_value,
                                                                                     label=missing_value))
-    assert len(recwarn) == 0
+    assert recwarn.pop(accgraph.WrongValueWarning)
     buffer = model.full_data_buffer
     np.testing.assert_equal(buffer[0], [0.0, 1.0, 2.0])
     np.testing.assert_equal(buffer[1], ["w", "r", "w"])

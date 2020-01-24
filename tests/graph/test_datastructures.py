@@ -376,53 +376,62 @@ def test_injection_bar_collection_data_one_different_length(combinations: Inject
 
 # ~~~~~~~~~~ Timestamp Marker Data-Structures ~~~~~~~~~~
 
-@pytest.mark.parametrize("combinations", [
-    TimestampMarkerNamedTuple(0.0, "r", ""),
-    TimestampMarkerNamedTuple(0.0, None, ""),
-    TimestampMarkerNamedTuple(0.0, None, ""),
+@pytest.mark.parametrize("combinations, expected_warnings", [
+    (TimestampMarkerNamedTuple(0.0, "r", ""), []),
+    (TimestampMarkerNamedTuple(0.0, None, ""), [accgraph.WrongValueWarning]),
+    (TimestampMarkerNamedTuple(0.0, None, ""), [accgraph.WrongValueWarning]),
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
-def test_valid_timestamp_marker_data(recwarn, combinations: TimestampMarkerNamedTuple):
+def test_valid_timestamp_marker_data(recwarn,
+                                     combinations: TimestampMarkerNamedTuple,
+                                     expected_warnings):
     _ = accgraph.TimestampMarkerData(
         x=cast(float, combinations.x),
         color=cast(str, combinations.c),
         label=cast(str, combinations.l),
     )
-    assert len(recwarn) == 0
+    for warning in expected_warnings:
+        assert recwarn.pop(warning)
 
 
-@pytest.mark.parametrize("combinations", [
-    TimestampMarkerNamedTuple(0.0, "", "label"),
-    TimestampMarkerNamedTuple(0.0, "#XYZ", "label"),
-    TimestampMarkerNamedTuple(0.0, None, "label"),
-    TimestampMarkerNamedTuple(0.0, "red, comrade, use red", "label"),
+@pytest.mark.parametrize("combinations, expected_warnings", [
+    (TimestampMarkerNamedTuple(0.0, "", "label"), [accgraph.WrongValueWarning]),
+    (TimestampMarkerNamedTuple(0.0, "#XYZ", "label"), [accgraph.WrongValueWarning]),
+    (TimestampMarkerNamedTuple(0.0, None, "label"), [accgraph.WrongValueWarning]),
+    (TimestampMarkerNamedTuple(0.0, "red, comrade, use red", "label"), [accgraph.WrongValueWarning]),
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
-def test_invalid_timestamp_marker_color(recwarn, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_color(recwarn,
+                                        combinations: TimestampMarkerNamedTuple,
+                                        expected_warnings):
     data = accgraph.TimestampMarkerData(
         x=cast(float, combinations.x),
         color=cast(str, combinations.c),
         label=cast(str, combinations.l),
     )
-    assert len(recwarn) == 0
+    for w in expected_warnings:
+        assert recwarn.pop(w)
     assert data.color == accgraph.DEFAULT_COLOR
 
 
-@pytest.mark.parametrize("combinations", [
-    TimestampMarkerNamedTuple(
+@pytest.mark.parametrize("combinations, expected_warning", [
+    (TimestampMarkerNamedTuple(
         [0.0, 1.0, 2.0, 3.0],
         ["", "#XYZ", None, "red, comrade, use red"],
         ["label 0", "label 1", "label 2", "label 3"],
-    ),
+    ), [accgraph.WrongValueWarning]),
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
-def test_invalid_timestamp_marker_collection_color(recwarn, combinations: TimestampMarkerNamedTuple):
+def test_invalid_timestamp_marker_collection_color(recwarn,
+                                                   combinations: TimestampMarkerNamedTuple,
+                                                   expected_warning):
     data = accgraph.TimestampMarkerCollectionData(
         x=cast(List[float], combinations.x),
         colors=cast(List[str], combinations.c),
         labels=cast(List[str], combinations.l),
     )
-    assert len(recwarn) == 0
+    for w in expected_warning:
+        assert recwarn.pop(w)
     assert np.array_equal(data.colors, [accgraph.DEFAULT_COLOR, accgraph.DEFAULT_COLOR, accgraph.DEFAULT_COLOR, accgraph.DEFAULT_COLOR])
 
 

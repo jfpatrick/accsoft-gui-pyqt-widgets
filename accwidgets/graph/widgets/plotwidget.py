@@ -5,7 +5,7 @@ Extended Widget for custom plotting with simple configuration wrappers
 from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast
 from copy import deepcopy
 import json
-import logging
+import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -27,8 +27,6 @@ from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMark
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
 from accwidgets.graph.widgets.axisitems import ExAxisItem
 from accwidgets.graph.designer import designer_check
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class ExPlotWidget(pg.PlotWidget):
@@ -842,19 +840,22 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """QtDesigner setter function for the PlotItems axis ranges"""
         try:
             axis_ranges: Dict[str, Tuple[float, float]] = json.loads(new_val)
+            disable_ar = cast(ExPlotWidget, self).plotItem.getViewBox().autoRangeEnabled()[1]
             cast(ExPlotWidget, self).setRange(
                 xRange=axis_ranges.pop("x", None),
                 yRange=axis_ranges.pop("y", None),
                 padding=0.0,
-                disableAutoRange=False,
+                disableAutoRange=disable_ar,
             )
             for layer, range_tuple in axis_ranges.items():
                 # Check if range was given in the right form
                 if layer in self._get_layer_ids():
+                    disable_ar = cast(ExPlotWidget, self).plotItem.getViewBox(
+                        layer=layer).autoRangeEnabled()[1]
                     cast(ExPlotWidget, self).plotItem.getViewBox(layer=layer).setRange(
                         yRange=range_tuple,
                         padding=0.0,
-                        disableAutoRange=False,
+                        disableAutoRange=disable_ar,
                     )
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
@@ -866,11 +867,13 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     def _get_axis_auto_range(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
-        auto_ranges_dict = {}
-        auto_ranges_dict.update({"x": cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()[0]})
-        auto_ranges_dict.update({"y": cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()[1]})
+        ar_enabled = cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()
+        auto_ranges_dict = {
+            "x": bool(ar_enabled[0]),
+            "y": bool(ar_enabled[1]),
+        }
         for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
-            auto_ranges_dict.update({layer.id: layer.view_box.autoRangeEnabled()[1]})
+            auto_ranges_dict[layer.id] = bool(layer.view_box.autoRangeEnabled()[1])
         return json.dumps(auto_ranges_dict)
 
     def _set_axis_auto_range(self, new_val: str) -> None:
@@ -1096,14 +1099,14 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
 
     def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
-                                "since a cyclic plot can not be drawn without both boundaries defined.")
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+                          "since a cyclic plot can not be drawn without both boundaries defined.")
         return False
 
     def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
-                                "since a cyclic plot can not be drawn without both boundaries defined.")
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+                          "since a cyclic plot can not be drawn without both boundaries defined.")
 
     leftBoundaryEnabled: bool = Property(
         bool,
@@ -1157,42 +1160,42 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
 
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'setShowTimeLine' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return False
 
     def _set_show_time_line(self, new_val: bool) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'setShowTimeLine' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
     """Vertical Line displaying the current time stamp, not supported by the static plotting style"""
 
     def _get_time_span(self) -> float:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'timeSpan' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return 0.0
 
     def _set_time_span(self, new_val: float) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'timeSpan' is not supposed to be used with at static plot. "
-                                "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
     """Range from which the plot displays data, not supported by the static plotting style"""
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'rightBoundary' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
         return False
 
     def _set_right_time_span_boundary(self, new_val: float) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'rightBoundary' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
 
     rightBoundary: float = Property(
         float,
@@ -1204,14 +1207,14 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundary' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
         return False
 
     def _set_left_time_span_boundary(self, new_val: float) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundary' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
 
     leftBoundary: float = Property(
         float,
@@ -1223,14 +1226,14 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
         return False
 
     def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
         if not designer_check.is_designer():
-            _LOGGER.warning(msg="Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
-                                "since it does not use any time span.")
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+                          "since it does not use any time span.")
 
     leftBoundaryEnabled: bool = Property(
         bool,

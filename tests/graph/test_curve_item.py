@@ -719,7 +719,7 @@ def test_nan_values_in_scatter_plot(
     for expected in expected_warnings:
         warning = recwarn.pop(expected)
         assert issubclass(warning.category, expected)
-    assert len(recwarn) == 0
+    assert len(recwarn) == len(expected_warnings)
 
 
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
