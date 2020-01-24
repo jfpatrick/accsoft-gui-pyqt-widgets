@@ -30,7 +30,7 @@ mypy:
   stage: Code Quality
   script:
     - pip install .[linting]
-    - mypy .
+    - mypy . docs
 
 pytest:
   image: $ACCPY_PYQT_DOCKER_IMAGE

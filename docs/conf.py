@@ -12,6 +12,7 @@
 # In our case we have to point Sphinx to the accwidgets package
 # which is located two directories upwards.
 
+from typing import List
 from datetime import datetime
 from accwidgets import __version__
 
@@ -43,7 +44,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to sphinx_doc directory, that match files and
 # directories to ignore when looking for sphinx_doc files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns: List[str] = []
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -56,7 +57,7 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path: List[str] = []
 
 html_short_title = f"{project} v{__version__}"
 html_title = f"{html_short_title} docs"
