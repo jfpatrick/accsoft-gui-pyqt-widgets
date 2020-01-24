@@ -79,19 +79,19 @@ class SignalBoundDataSource(UpdateSource):
             transformation: Optional Transformation function, which translates
         """
         super().__init__(parent=None)
-        assert data_type is not None or transformation is not None
-        self.data_type: Optional[Type[PlottingItemData]] = data_type
+        data_type_specified = data_type is not None
+        transform_specified = transformation is not None
+
+        if data_type_specified == transform_specified:
+            raise ValueError("You must specify either data_type or transformation")
         self.transform: Callable = (transformation
-                                    or PlottingItemDataFactory.get_transformation(self.data_type))
+                                    or PlottingItemDataFactory.get_transformation(data_type))
         sig.connect(self._emit_point)
 
     def _emit_point(self,
                     *args: Union[float, str, Sequence[float], Sequence[str]]):
-        envelope = self.transform(*args)
-        # In case a transformation function was given but no data type
-        if self.data_type is None:
-            self.data_type = cast(Type[PlottingItemData], type(envelope))
-        self.sig_new_data[self.data_type].emit(envelope)
+        transformed_data = self.transform(*args)
+        self.sig_new_data[type(transformed_data)].emit(transformed_data)
 
 
 class PlottingItemDataFactory:
