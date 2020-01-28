@@ -1,6 +1,17 @@
 """Module for signal based updates for the graph and implementation"""
 
-from typing import Optional, Callable, cast, Type, Sequence, Union, Any
+from typing import (
+    Optional,
+    Callable,
+    cast,
+    Type,
+    Sequence,
+    Union,
+    Any,
+    Tuple,
+    List,
+    Dict,
+)
 from datetime import datetime
 import numpy as np
 
@@ -102,6 +113,8 @@ class PlottingItemDataFactory:
     transformation function by using the static method get_transformation().
     """
 
+    TIMESTAMP_HEADER_FIELD = "acqStamp"
+
     @staticmethod
     def get_transformation(
             data_type: Optional[Type[PlottingItemData]],
@@ -137,23 +150,25 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_point(*args: float) -> PointData:
-        args = PlottingItemDataFactory._unwrapped(*args)
+        arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return PointData(
             x=PlottingItemDataFactory._or_now(index=1,
-                                              args=args),
-            y=args[0],  # mandatory
+                                              args=arguments,
+                                              acq_timestamp=timestamp),
+            y=arguments[0],  # mandatory
         )
 
     @staticmethod
     def _to_bar(*args: float) -> BarData:
-        args = PlottingItemDataFactory._unwrapped(*args)
+        arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return BarData(
             x=PlottingItemDataFactory._or_now(index=2,
-                                              args=args),
+                                              args=arguments,
+                                              acq_timestamp=timestamp),
             y=PlottingItemDataFactory._or(index=1,
-                                          args=args,
+                                          args=arguments,
                                           default=0),
-            height=args[0],  # mandatory
+            height=arguments[0],  # mandatory
         )
 
     @staticmethod
@@ -162,7 +177,7 @@ class PlottingItemDataFactory:
         **Attention**: String parameters will automatically set as label,
         no matter where they are positioned.
         """
-        arguments = PlottingItemDataFactory._unwrapped(*args)
+        arguments, timestamp = PlottingItemDataFactory._separate(*args)
         label = ""
         str_param = [i for i in arguments if isinstance(i, str)]
         if str_param:
@@ -170,7 +185,8 @@ class PlottingItemDataFactory:
             arguments.remove(label)
         return InjectionBarData(
             x=PlottingItemDataFactory._or_now(index=3,
-                                              args=arguments),
+                                              args=arguments,
+                                              acq_timestamp=timestamp),
             y=PlottingItemDataFactory._or(index=1,
                                           args=arguments,
                                           default=np.nan),
@@ -183,44 +199,45 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_ts_marker(*args: Union[float, str]) -> TimestampMarkerData:
-        args = PlottingItemDataFactory._unwrapped(*args)
+        arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return TimestampMarkerData(
             x=PlottingItemDataFactory._or_now(index=0,
-                                              args=args),
+                                              args=arguments,
+                                              acq_timestamp=timestamp),
             color=PlottingItemDataFactory._or(index=2,
-                                              args=args,
+                                              args=arguments,
                                               default=DEFAULT_COLOR),
             label=PlottingItemDataFactory._or(index=1,
-                                              args=args,
+                                              args=arguments,
                                               default=""),
         )
 
     @staticmethod
     def _to_curve(*args: Sequence[float]) -> CurveData:
-        args = PlottingItemDataFactory._collection_unwrapped(*args)
+        arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return CurveData(
             x=PlottingItemDataFactory._or_num_range(index=1,
-                                                    args=args),
-            y=args[0],
+                                                    args=arguments),
+            y=arguments[0],
         )
 
     @staticmethod
     def _to_bar_collection(*args: Sequence[float]) -> BarCollectionData:
-        args = PlottingItemDataFactory._collection_unwrapped(*args)
+        arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return BarCollectionData(
             x=PlottingItemDataFactory._or_num_range(index=2,
-                                                    args=args),
+                                                    args=arguments),
             y=PlottingItemDataFactory._or_array(index=1,
-                                                args=args,
+                                                args=arguments,
                                                 default=0),
-            heights=args[0],
+            heights=arguments[0],
         )
 
     @staticmethod
     def _to_injection_bar_collection(
             *args: Sequence[Union[float, str]],
     ) -> InjectionBarCollectionData:
-        arguments = PlottingItemDataFactory._collection_unwrapped(*args)
+        arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         label = np.zeros(len(arguments[0]), str)
         string_params = [i for i in arguments
                          if not any((not isinstance(j, str) for j in i))]
@@ -244,14 +261,14 @@ class PlottingItemDataFactory:
     def _to_ts_marker_collection(
             *args: Sequence[Union[float, str]],
     ) -> TimestampMarkerCollectionData:
-        args = PlottingItemDataFactory._collection_unwrapped(*args)
+        arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return TimestampMarkerCollectionData(
-            x=cast(Sequence[float], args[0]),  # mandatory
+            x=cast(Sequence[float], arguments[0]),  # mandatory
             colors=PlottingItemDataFactory._or_array(index=2,
-                                                     args=args,
+                                                     args=arguments,
                                                      default=DEFAULT_COLOR),
             labels=PlottingItemDataFactory._or_array(index=1,
-                                                     args=args,
+                                                     args=arguments,
                                                      default=""),
         )
 
@@ -259,16 +276,17 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _or_now(index: int,
-                args: Sequence[Union[str, float]]) -> float:
-        """Either the value at the given index or the current time's
-        time stamp."""
-        return PlottingItemDataFactory._or(index,
-                                           args,
-                                           datetime.now().timestamp())
+                args: List[Union[str, float]],
+                acq_timestamp: Union[None, float]) -> float:
+        """Either the value at the given index, the acquisition timestamp from
+        the header or the current time's time stamp locally calculated.
+        """
+        default = acq_timestamp if acq_timestamp is not None else datetime.now().timestamp()
+        return PlottingItemDataFactory._or(index, args, default)
 
     @staticmethod
     def _or_num_range(index: int,
-                      args: Sequence[Sequence[float]]) -> Sequence[float]:
+                      args: List[Sequence[float]]) -> Sequence[float]:
         """Either the value at the given index or a range from 0 to the length
         as one of the entries in args."""
         return PlottingItemDataFactory._or(index,
@@ -276,7 +294,7 @@ class PlottingItemDataFactory:
                                            np.arange(0, len(args[0])))
 
     @staticmethod
-    def _or_array(index: int, args: Sequence[Any], default: Any) -> Any:
+    def _or_array(index: int, args: List[Any], default: Any) -> Any:
         """Return either the value in args at the given index or and array made
         from the passed default value (same length as other args entries)."""
         try:
@@ -285,30 +303,42 @@ class PlottingItemDataFactory:
             return np.array([default for _ in range(len(args[0]))])
 
     @staticmethod
-    def _or(index: int, args: Sequence[Any], default: Any) -> Any:
+    def _or(index: int, args: List[Any], default: Any) -> Any:
         """Return either the value in args at the given index or the passed
         default value."""
         try:
             return args[index]
         except IndexError:
-            if isinstance(default, float) and np.isnan(default):
-                print(index)
-                print(args)
-                print(default)
             return default
 
     @staticmethod
-    def _unwrapped(*args):
-        if len(args) == 1 and isinstance(args[0], (Sequence, np.ndarray)):
-            return list(args[0])
-        return list(args)
+    def _separate(*args) -> Tuple[List[Union[float, str]], Optional[float]]:
+        """Separate the header's timestamp from the arguments."""
+        ts = None
+        arguments, header = PlottingItemDataFactory._extract_header(
+            list(args))
+        if header:
+            ts = PlottingItemDataFactory._extract_ts(header)
+        return arguments, ts
 
     @staticmethod
-    def _collection_unwrapped(*args):
-        if (
-                len(args) == 1
-                and isinstance(args[0], (Sequence, np.ndarray))
-                and isinstance(args[0][0], (Sequence, np.ndarray))
-        ):
-            return list(args[0])
-        return list(args)
+    def _extract_header(args: List) -> Tuple[List, Optional[Dict]]:
+        """Remove headers from the last position of the arguments if
+        they are there."""
+        header: Optional[Dict] = None
+        if args and isinstance(args[-1], dict):
+            header = args.pop(-1)
+        return args, header
+
+    @staticmethod
+    def _extract_ts(header: Dict[str, Union[datetime, float]]) -> Optional[float]:
+        """
+        Extract the timestamp field from the header.
+        """
+        ts: Union[datetime, float, None] = None
+        ts = header.get(PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD)  # type: ignore
+        try:
+            ts = ts.timestamp()  # type: ignore
+        except AttributeError:
+            pass  # 'header' == None or 'ts' is float
+        return cast(Optional[float], ts)

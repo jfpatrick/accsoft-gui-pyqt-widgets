@@ -859,13 +859,13 @@ def _check_plot_data_items_data(
             old_curve=curve._clipped_curve_old,
             new_curve=curve._clipped_curve_new,
         )
-        if isinstance(expected_nc_x, List):
+        if isinstance(expected_nc_x, list):
             expected_nc_x = np.array(expected_nc_x)
-        if isinstance(expected_nc_y, List):
+        if isinstance(expected_nc_y, list):
             expected_nc_y = np.array(expected_nc_y)
-        if isinstance(expected_oc_x, List):
+        if isinstance(expected_oc_x, list):
             expected_oc_x = np.array(expected_oc_x)
-        if isinstance(expected_oc_y, List):
+        if isinstance(expected_oc_y, list):
             expected_oc_y = np.array(expected_oc_y)
         result = (
             np.allclose(data.new_curve.x, expected_nc_x)
