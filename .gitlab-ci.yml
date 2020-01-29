@@ -21,7 +21,7 @@ flake8:
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Code Quality
   script:
-    - pip install .[linting]
+    - pip install .[lint]
     - export LANG=en_US.UTF-8  # Otherwise, flake8 might fail with UnicodeDecodeError: 'ascii' codec can't decode byte
     - flake8
 
@@ -29,14 +29,14 @@ mypy:
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Code Quality
   script:
-    - pip install .[linting]
+    - pip install .[lint]
     - mypy . docs
 
 pytest:
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Unit Tests
   script:
-    - pip install .[testing]
+    - pip install .[test]
     - run_headless python -m pytest --random-order --junitxml=report.xml --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
   artifacts:
     name: coverage-report
