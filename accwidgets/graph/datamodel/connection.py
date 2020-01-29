@@ -149,7 +149,7 @@ class PlottingItemDataFactory:
                         f"for data type '{data_type}'")
 
     @staticmethod
-    def _to_point(*args: float) -> PointData:
+    def _to_point(*args: float) -> PointData:  # last argument can be header dict
         arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return PointData(
             x=PlottingItemDataFactory._or_now(index=1,
@@ -159,7 +159,7 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_bar(*args: float) -> BarData:
+    def _to_bar(*args: float) -> BarData:  # last argument can be header dict
         arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return BarData(
             x=PlottingItemDataFactory._or_now(index=2,
@@ -172,7 +172,9 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_injection_bar(*args: Union[float, str]) -> InjectionBarData:
+    def _to_injection_bar(
+            *args: Union[float, str],
+    ) -> InjectionBarData:  # last argument can be header dict
         """
         **Attention**: String parameters will automatically set as label,
         no matter where they are positioned.
@@ -198,7 +200,9 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_ts_marker(*args: Union[float, str]) -> TimestampMarkerData:
+    def _to_ts_marker(
+            *args: Union[float, str],
+    ) -> TimestampMarkerData:  # last argument can be header dict
         arguments, timestamp = PlottingItemDataFactory._separate(*args)
         return TimestampMarkerData(
             x=PlottingItemDataFactory._or_now(index=0,
@@ -213,7 +217,9 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_curve(*args: Sequence[float]) -> CurveData:
+    def _to_curve(
+        *args: Sequence[float],
+    ) -> CurveData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return CurveData(
             x=PlottingItemDataFactory._or_num_range(index=1,
@@ -222,7 +228,9 @@ class PlottingItemDataFactory:
         )
 
     @staticmethod
-    def _to_bar_collection(*args: Sequence[float]) -> BarCollectionData:
+    def _to_bar_collection(
+        *args: Sequence[float],
+    ) -> BarCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return BarCollectionData(
             x=PlottingItemDataFactory._or_num_range(index=2,
@@ -236,7 +244,7 @@ class PlottingItemDataFactory:
     @staticmethod
     def _to_injection_bar_collection(
             *args: Sequence[Union[float, str]],
-    ) -> InjectionBarCollectionData:
+    ) -> InjectionBarCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         label = np.zeros(len(arguments[0]), str)
         string_params = [i for i in arguments
@@ -260,7 +268,7 @@ class PlottingItemDataFactory:
     @staticmethod
     def _to_ts_marker_collection(
             *args: Sequence[Union[float, str]],
-    ) -> TimestampMarkerCollectionData:
+    ) -> TimestampMarkerCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return TimestampMarkerCollectionData(
             x=cast(Sequence[float], arguments[0]),  # mandatory

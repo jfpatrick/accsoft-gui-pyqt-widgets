@@ -1,13 +1,12 @@
 """
 Setup file for Pip.
-For user dependencies:                  pip install .
-For developer additional dependencies:  pip install .[testing]
 """
-
-import os
-from typing import Dict, List
+import itertools
+from typing import Dict, List, Union, DefaultDict
+from collections import defaultdict
 from pathlib import Path
 import versioneer
+import configparser  # For requirements parsing
 
 from setuptools import setup, PEP420PackageFinder
 
@@ -18,98 +17,83 @@ from setuptools import setup, PEP420PackageFinder
 # version.
 find_packages = PEP420PackageFinder.find
 
+PROJECT_ROOT: Path = Path(__file__).parent.absolute()
 
-FOUND_USER_DEPS_FILES = []
-FOUND_DEV_DEPS_FILES = []
-# Files to search for -> requirements = minimal deps to run, dev_requirements = deps for running tests...
-USR_DEPS_FILENAME = "requirements.txt"
-DEV_DEPS_FILENAME = "dev_requirements.txt"
-DEV_DEPS_MAP_KEY = "testing"
-CURRENT_FILE_LOCATION = os.path.abspath(os.path.dirname(__file__))
+PACKAGE_NAME = "accwidgets"
+# File defining reuqirements
+DEPENDENCY_FILE = "dependencies.ini"
+# Dependency Options for widget depdendencies
+DEPENDENCY_OPTIONS = {"core", "test", "docs"}
+# Section for commonly defined
+SHARED_OPTIONS = {"lint", "release"}
 
-PACKAGES = ["accwidgets"]
-INSTALL_REQUIRES: List[str] = []
-EXTRA_REQUIRES: Dict[str, List[str]] = {DEV_DEPS_MAP_KEY: []}
 
-print(f"Search for files {USR_DEPS_FILENAME} and {DEV_DEPS_FILENAME} recursively, "
-      f"starting from {CURRENT_FILE_LOCATION}")
-print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start Search ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-for package in PACKAGES:
-    folder_to_search = (
-        CURRENT_FILE_LOCATION
-        + ("" if CURRENT_FILE_LOCATION[-1] == os.path.sep else os.path.sep)
-        + package
-    )
-    print(f"Search folder:                     {folder_to_search}")
-    for root, _, files in os.walk(
-        folder_to_search,
-        onerror=(lambda err, folder=folder_to_search: print(f"{folder} not found.")),  # type: ignore
-    ):
-        for file in files:
-            if DEV_DEPS_FILENAME == file:
-                print(f"Found developer requirements file: {os.path.join(root, file)}")
-                FOUND_DEV_DEPS_FILES.append(os.path.join(root, file))
-            elif USR_DEPS_FILENAME == file:
-                print(f"Found user requirements file:      {os.path.join(root, file)}")
-                FOUND_USER_DEPS_FILES.append(os.path.join(root, file))
+def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
+    """
+    Parse the requirements from the requirement ini file and combine them
+    for setuptools.
+    """
+    config = configparser.ConfigParser()
+    config.read(PROJECT_ROOT / DEPENDENCY_FILE)
+    requirements: DefaultDict[str, List[str]] = defaultdict(list)
+    # Shared project dependencies
+    for option in SHARED_OPTIONS:
+        package_reqs = config.get(PACKAGE_NAME, option, fallback="")
+        requirements[option] = [r.strip() for r in package_reqs.split(",")]
+    config.remove_section(PACKAGE_NAME)
+    # Widget dependencies
+    sections = config.sections()
+    print(f"Found following sections in dependency file: {sections}.")
+    for section in sections:
+        print(f"Found following Options in Section '{section}': "
+              f"{list(dict(config[section]))}")
+        for option in dict(config[section]):
+            if option not in DEPENDENCY_OPTIONS:
+                raise Exception(
+                    f"Invalid dependency option '{option}' was found in "
+                    f"section '{section}', supported are only "
+                    f"following options: {', '.join(DEPENDENCY_OPTIONS)}.")
+            requirement_string = config.get(section,
+                                            option,
+                                            fallback="")
+            widget_reqs = [e.strip() for e in requirement_string.split(",")]
+            requirements[option].extend(widget_reqs)
+    return {
+        "core": requirements["core"],
+        "extra": {
+            **requirements,
+            "dev": requirements["test"] + requirements["lint"],
+            "all": list(itertools.chain(*requirements.values())),
+        },
+    }
 
-for usr_dep_file in FOUND_USER_DEPS_FILES:
-    with open(os.path.join(usr_dep_file), "r") as f:
-        deps = f.read().split("\n")
-        print(f"Collecting user dependencies:      {deps}")
-        INSTALL_REQUIRES += deps
 
-for dev_dep_file in FOUND_DEV_DEPS_FILES:
-    with open(os.path.join(dev_dep_file), "r") as f:
-        deps = f.read().split("\n")
-        print(f"Collecting developer dependencies: {deps}")
-        EXTRA_REQUIRES["testing"] += deps
+REQUIREMENTS = parse_requirements()
+print(f"Requirements after parsing: {REQUIREMENTS}")
 
-EXTRA_REQUIRES["linting"] = [
-    "mypy~=0.720",
-    "pylint>=2.3.1&&<3",
-    "pylint-unittest>=0.1.3&&<2",
-    "flake8>=3.7.8&&<4",
-    "flake8-quotes>=2.1.0&&<3",
-    "flake8-commas>=2&&<3",
-    "flake8-colors>=0.1.6&&<2",
-    "flake8-rst>=0.7.1&&<2",
-    "flake8-breakpoint>=1.1.0&&<2",
-    "flake8-pyi>=19.3.0&&<20",
-    "flake8-comprehensions>=2.2.0&&<3",
-    "flake8-builtins-unleashed>=1.3.1&&<2",
-    "flake8-blind-except>=0.1.1&&<2",
-    "flake8-bugbear>=19.8.0&&<20",
-]
-EXTRA_REQUIRES["doc"] = [
-    "Sphinx>=2.1.2&&<2.2",
-    "recommonmark>=0.6.0&&<0.7",
-    "sphinx-rtd-theme>=0.4.3&&<0.5",
-    "sphinx-autodoc-typehints>=1.10.3&&<2",
-    "sphinxcontrib-napoleon2>=1.0&&<2",
-]
-EXTRA_REQUIRES["release"] = [
-    "twine~=1.13.0",
-    "wheel~=0.33.4",
-]
 
-curr_dir: Path = Path(__file__).parent.absolute()
-
-with curr_dir.joinpath("README.md").open() as f:
+# Readme -> Long Description
+with PROJECT_ROOT.joinpath("README.md").open() as f:
     long_description = f.read()
 
 setup(
-    name="accwidgets",
+    name=PACKAGE_NAME,
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="PyQt-based widgets for CERN accelerator controls",
     long_description=long_description,
     author="Fabian Sorn",
     author_email="fabian.sorn@cern.ch",
-    packages=find_packages(exclude=("examples", "docs", "tests", "build*", "dist*", "*.egg-info")),
+    packages=find_packages(
+        exclude=("examples",
+                 "docs",
+                 "tests",
+                 "build*",
+                 "dist*",
+                 "*.egg-info")),
     url="https://wikis.cern.ch/display/ACCPY/Widgets",
-    install_requires=INSTALL_REQUIRES,
-    extras_require=EXTRA_REQUIRES,
+    install_requires=REQUIREMENTS["core"],
+    extras_require=REQUIREMENTS["extra"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: X11 Applications :: Qt",
