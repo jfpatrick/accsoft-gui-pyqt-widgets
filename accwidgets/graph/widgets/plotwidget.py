@@ -26,7 +26,7 @@ from accwidgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBar
 from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
 from accwidgets.graph.widgets.axisitems import ExAxisItem
-from accwidgets.graph.designer import designer_check
+from accwidgets import designer_check
 
 
 class ExPlotWidget(pg.PlotWidget):
