@@ -1,5 +1,5 @@
 import enum
-from typing import Union, Optional, Tuple, List
+from typing import Union, Optional, Tuple, List, cast
 import json
 
 import numpy as np
@@ -130,7 +130,7 @@ class LayerEditorTableModel(QAbstractTableModel):
             return str(section)
         return ""
 
-    def append(self) -> None:
+    def append(self):
         """Append a new layer to the plot."""
         self.beginInsertRows(QModelIndex(), len(self.all_axes), len(self.all_axes))
         new_layers = self.plot.layerIDs[:]
@@ -234,21 +234,21 @@ class LayerEditorTableModel(QAbstractTableModel):
             return self._get_view_range(axis=axis)[1]
         return QVariant()
 
-    def _set_data(self, index: QModelIndex, value=Union[float, str]) -> None:
+    def _set_data(self, index: QModelIndex, value: Union[float, str, bool, QVariant]) -> None:
         if isinstance(value, QVariant):
             value = value.toString()
         column = self.columns[index.column()]
         axis = self.all_axes[index.row()]
         if column == AxisEditorTableModelColumnNames.axis_identifier:
-            self._set_axis_identifier(axis=axis, identifier=value)
+            self._set_axis_identifier(axis=axis, identifier=cast(str, value))
         if column == AxisEditorTableModelColumnNames.axis_label:
-            self._set_axis_label(axis=axis, label=value)
+            self._set_axis_label(axis=axis, label=cast(str, value))
         if column == AxisEditorTableModelColumnNames.axis_auto_range:
-            self._set_axis_auto_range(axis=axis, auto_range=value)
+            self._set_axis_auto_range(axis=axis, auto_range=cast(bool, value))
         if column == AxisEditorTableModelColumnNames.view_range_min:
-            self._set_view_range(axis=axis, vr_min=value)
+            self._set_view_range(axis=axis, vr_min=cast(float, value))
         if column == AxisEditorTableModelColumnNames.view_range_max:
-            self._set_view_range(axis=axis, vr_max=value)
+            self._set_view_range(axis=axis, vr_max=cast(float, value))
 
     def _set_axis_identifier(self, axis: str, identifier: str) -> None:
         # Make sure the identifier is not yet taken by another layer
