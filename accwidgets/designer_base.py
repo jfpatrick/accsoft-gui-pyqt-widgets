@@ -1,11 +1,6 @@
-"""
-Do not import this file as 'from designer_base import *' or similar in
-your module that is imported into QtDesigner (See ExPlotWidgetPluginBase
-for why). If you want to use something from this module, import it explicitly.
-"""
-
-import os
-from typing import Type, Optional, List
+import warnings
+from pathlib import Path
+from typing import Type, Optional, List, TypeVar
 from qtpy.QtWidgets import QWidget, QAction
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtDesigner import (
@@ -15,27 +10,29 @@ from qtpy.QtDesigner import (
     QPyDesignerTaskMenuExtension,
     QExtensionManager,
 )
-from accwidgets import graph as accgraph
+from accwidgets.designer_check import set_designer
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # |                              Extensions                                   |
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Note: The extension classes are not derived from PYDM classes but compatible
-#       with them, which makes it much easier to register WidgetsExtensions in
-#       Comrad, since both offer the same functions.
-
 class WidgetsExtension:
 
     def __init__(self, widget: QWidget):
-        """Base Wrapper Class for Widgets Extension."""
+        """
+        Base Wrapper Class for Widgets Extension.
+
+        Note: The extension classes are not derived from PyDM classes but compatible
+        with them, which makes it much easier to register WidgetsExtensions in
+        ComRAD, since both offer the same functions.
+        """
         self.widget = widget
 
     def actions(self) -> List[QAction]:
         """
         Actions which are added to the task menu by the extension. Providing this function
-        will make the Extension compatible to PYDM Task Menu extensions.
+        will make the Extension compatible to PyDM Task Menu extensions.
         """
         raise NotImplementedError
 
@@ -104,9 +101,6 @@ class WidgetsExtensionFactory(QExtensionFactory):
         Returns:
             Extension instance or None depending of what object and iid are passed
         """
-        if not isinstance(obj, accgraph.ExPlotWidget):
-            return None
-
         # For now check the iid for TaskMenu...
         if iid == "org.qt-project.Qt.Designer.TaskMenu":
             return WidgetsTaskMenuExtension(obj, parent)
@@ -123,23 +117,31 @@ class WidgetsExtensionFactory(QExtensionFactory):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def _icon(name: str) -> QIcon:
+def _icon(name: str, base_path: Optional[Path] = None) -> QIcon:
     """ Load icons by their file name from folder 'icons' """
-    curr_dir = os.path.abspath(os.path.dirname(__file__))
-    icon_path = os.path.join(curr_dir, "icons", f"{name}.ico")
-    if not os.path.isfile(icon_path):
-        print(f"Warning: Icon '{name}' cannot be found at {str(icon_path)}")
-    pixmap = QPixmap(icon_path)
+    if base_path is None:
+        base_path = Path(__file__).absolute().parent
+    icon_path = base_path / "icons" / f"{name}.ico"
+    if not icon_path.is_file():
+        warnings.warn(f"Icon '{name}' cannot be found at {str(icon_path)}")
+    pixmap = QPixmap(str(icon_path))
     return QIcon(pixmap)
 
 
-class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
+_E = TypeVar("_E", bound=WidgetsExtension)
 
-    # pylint: disable=invalid-name, no-self-use
 
-    def __init__(self, widget_class: Type, extensions: List[Type]):
+class WidgetPluginBase(QPyDesignerCustomWidgetPlugin):
+
+    def __init__(self,
+                 widget_class: Type[QWidget],
+                 extensions: List[Type[_E]],
+                 group_name: str,
+                 tooltip: Optional[str] = None,
+                 whats_this: Optional[str] = None,
+                 icon_base_path: Optional[Path] = None):
         """
-        Base for ExPlotWidget based plugins for QtDesigner.
+        Base for accwidgets plugins for QtDesigner.
         Use the factory method for creating plugin classes from this.
         Make sure this class is not included in your modules namespace
         that is imported from QtDesigner. QtDesigner will try to initialize
@@ -147,11 +149,20 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
 
         Args:
             widget_class: widget class this plugin is based on
+            extensions: list of extensions applied to the widget in Designer
+            group_name: name of the group to put the widget to
+            tootip: contents of the tooltip for the widget
+            whats_this: contents of the whatsThis for the widget
+            icon_base_path: path to the basedir of "icons" folder
         """
-        accgraph.designer_check.set_designer()
+        set_designer()
         QPyDesignerCustomWidgetPlugin.__init__(self)
         self.initialized = False
         self._widget_class: Type = widget_class
+        self._group_name = group_name
+        self._whats_this = whats_this
+        self._icon_base_path = icon_base_path
+        self._tooltip = tooltip
         self.extensions: List[Type] = extensions
         # Will be set in initialize
         self.manager: Optional[QExtensionManager] = None
@@ -202,23 +213,20 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
 
     def group(self) -> str:
         """
-        Return a common group name so all AccPyQtGraph Widgets are together in
-        Qt Designer.
+        Name of the section where the widget will be placed to.
         """
-        return "Graph"
+        return self._group_name
 
     def toolTip(self) -> str:
         """Tooltip for the widget provided by this plugin"""
-        return "Extended Plot Widget with live data plotting capabilities."
+        return self._tooltip or ""
 
     def whatsThis(self) -> str:
         """
         A longer description of the widget for Qt Designer. By default, this
         is the entire class docstring.
         """
-        return "The Extended Plot Widget is a plotting widget based on PyQtGraph's " \
-               "PlotWidget that provides additional functionality like live data " \
-               "plotting capabilities, proper multi y axis plotting and more."
+        return self._whats_this or ""
 
     def isContainer(self) -> bool:
         """
@@ -230,7 +238,7 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
         """
         Return a QIcon to represent this widget in Qt Designer.
         """
-        return _icon(self._widget_class.__name__)
+        return _icon(self._widget_class.__name__, base_path=self._icon_base_path)
 
     def domXml(self) -> str:
         """
@@ -251,28 +259,44 @@ class ExPlotWidgetPluginBase(QPyDesignerCustomWidgetPlugin):
         return self._widget_class.__module__
 
 
-def ex_plot_widget_plugin_factory(widget_class: Type, extensions: List):
+_T = TypeVar("_T", bound=WidgetPluginBase)
+
+
+def create_plugin(widget_class: Type[QWidget],
+                  extensions: List[Type[_E]],
+                  group: str,
+                  cls: Type[_T] = WidgetPluginBase,
+                  tooltip: Optional[str] = None,
+                  whats_this: Optional[str] = None,
+                  icon_base_path: Optional[Path] = None):
     """
     Create a qt designer plugin based on the passed widget class.
 
     Args:
         widget_class: Widget class that the plugin should be constructed from
         extensions: List of Extensions that the widget should have
+        group: Name of the group to put widget to
+        cls: Subclass of WidgetPluginBase if you want to customize the behavior of the plugin
+        tootip: contents of the tooltip for the widget
+        whats_this: contents of the whatsThis for the widget
+        icon_base_path: path to the basedir of "icons" folder
 
     Returns:
-        Plugin class based on ExPlotWidgetPlugin
+        Plugin class based on WidgetPluginBase
     """
 
-    class Plugin(ExPlotWidgetPluginBase):
+    class Plugin(cls):  # type: ignore
 
         """Plugin Template for creating plugin classes for different widgets"""
 
-        __doc__ = "QtDesigner Plugin for {}".format(widget_class.__name__)
+        __doc__ = "Qt Designer plugin for {}".format(widget_class.__name__)
 
         def __init__(self):
-            super(Plugin, self).__init__(
-                widget_class=widget_class,
-                extensions=extensions,
-            )
+            super().__init__(widget_class=widget_class,
+                             extensions=extensions,
+                             group_name=group,
+                             icon_base_path=icon_base_path,
+                             tooltip=tooltip,
+                             whats_this=whats_this)
 
     return Plugin

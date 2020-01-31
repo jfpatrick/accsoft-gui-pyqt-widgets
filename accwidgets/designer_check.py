@@ -13,11 +13,11 @@ _IS_DESIGNER = False
 
 def is_designer() -> bool:
     """Check, if code has been run from designer"""
-    global _IS_DESIGNER  # pylint: disable=global-statement
+    global _IS_DESIGNER
     return _IS_DESIGNER
 
 
 def set_designer() -> None:
     """Call to set flag, that code has been run from designer"""
-    global _IS_DESIGNER  # pylint: disable=global-statement
+    global _IS_DESIGNER
     _IS_DESIGNER = True

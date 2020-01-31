@@ -20,7 +20,7 @@ from qtpy.QtWidgets import (
 )
 
 from accwidgets import graph as accgraph
-from accwidgets.graph.designer.designer_base import WidgetsExtension
+from accwidgets.designer_base import WidgetsExtension
 
 
 class AxisEditorTableModelColumnNames(enum.Enum):
