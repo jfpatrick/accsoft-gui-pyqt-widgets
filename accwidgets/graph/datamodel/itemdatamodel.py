@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Union, cast
 import numpy as np
 from qtpy.QtCore import QObject, Signal, Slot
 
+from accwidgets.common import AbstractQObjectMeta
 from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.datamodel.datamodelbuffer import (
     DEFAULT_BUFFER_SIZE,
@@ -17,7 +18,6 @@ from accwidgets.graph.datamodel.datamodelbuffer import (
     SortedInjectionBarsDataBuffer,
 )
 from accwidgets.graph.datamodel.datastructures import (
-    AbstractQObjectMeta,
     BarCollectionData,
     BarData,
     CurveData,

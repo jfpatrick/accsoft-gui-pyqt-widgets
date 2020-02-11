@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="PropertyEdit" name="set_propedit">
+        <property name="toolTip">
+         <string/>
+        </property>
+        <property name="buttons" stdset="0">
+         <enum>PropertyEdit::Set</enum>
+        </property>
+        <property name="title" stdset="0">
+         <string>Editable</string>
+        </property>
+        <property name="decoration" stdset="0">
+         <enum>PropertyEdit::GroupBox</enum>
+        </property>
+        <property name="fields" stdset="0">
+         <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: true, &quot;label&quot;: &quot;Amplitude (mA)&quot;}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: true, &quot;label&quot;: &quot;Frequency (Hz)&quot;}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: true, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: true, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="PropertyEdit" name="get_propedit">
+          <property name="toolTip">
+           <string/>
+          </property>
+          <property name="buttons" stdset="0">
+           <enum>PropertyEdit::Get</enum>
+          </property>
+          <property name="decoration" stdset="0">
+           <enum>PropertyEdit::Frame</enum>
+          </property>
+          <property name="fields" stdset="0">
+           <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: false, &quot;label&quot;: &quot;Amplitude (mA)&quot;}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: false, &quot;label&quot;: &quot;Frequency (Hz)&quot;}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: false, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: false, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <spacer name="verticalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Control system value</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="cs_label">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PropertyEdit</class>
+   <extends>QWidget</extends>
+   <header>accwidgets.property_edit.propedit</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

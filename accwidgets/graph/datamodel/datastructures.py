@@ -18,6 +18,7 @@ import pyqtgraph as pg
 from qtpy.QtCore import QObject
 
 from ..util import deprecated_param_alias
+from accwidgets.common import AbstractQObjectMeta
 
 
 class InvalidDataStructureWarning(Warning):
@@ -33,20 +34,6 @@ class WrongValueWarning(Warning):
     """
     Warning that a value is not as expected.
     """
-    pass
-
-
-class AbstractQObjectMeta(type(QObject), abc.ABCMeta):  # type: ignore
-
-    """ Metaclass for abstract classes based on QObject
-
-    A class inheriting from QObject with ABCMeta as metaclass will lead to
-    an metaclass conflict:
-
-    TypeError: metaclass conflict: the metaclass of a derived class must be
-    a (non-strict) subclass of the meta-classes of all its bases
-    """
-
     pass
 
 
