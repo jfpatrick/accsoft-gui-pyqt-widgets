@@ -147,7 +147,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._set_btn = QPushButton("Set")
         self._get_btn.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         self._set_btn.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
-        self._get_btn.clicked.connect(self._do_get)
+        self._get_btn.clicked.connect(self.valueRequested.emit)
         self._set_btn.clicked.connect(self._do_set)
         self._button_box.setContentsMargins(0, 0, 0, 0)
         self._left_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -350,9 +350,6 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _recalculate_button_box(self):
         self._get_btn.setVisible(self.buttons & PropertyEdit.Buttons.GET)
         self._set_btn.setVisible(self.buttons & PropertyEdit.Buttons.SET)
-
-    def _do_get(self):
-        self.valueRequested.emit()
 
     def _do_set(self):
         new_val = self._widget_delegate.read_value(self._partial_set)
