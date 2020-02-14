@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
         property_edit = PropertyEdit(title="Proton-Ion Config")
         property_edit.decoration = PropertyEdit.Decoration.FRAME
         property_edit.buttons = PropertyEdit.Buttons.SET | PropertyEdit.Buttons.GET
+        property_edit.sendOnlyUpdatedValues = False
         property_edit.fields = [
             PropertyEditField(field="amplitude", label="Amplitude (mA)", editable=True, type=PropertyEdit.ValueType.REAL),
             PropertyEditField(field="frequency", label="Frequency (Hz)", editable=True, type=PropertyEdit.ValueType.INTEGER),

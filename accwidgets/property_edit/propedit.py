@@ -129,7 +129,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         QWidget.__init__(self, parent)
         # self._property_name: Optional[str] = property_name
         self._title: Optional[str] = title
-        self._partial_set: bool = True
+        self._send_only_updated: bool = True
         self._buttons: PropertyEdit.Buttons = PropertyEdit.Buttons(_QtDesignerButtons.Neither)
         self._button_position = PropertyEdit.ButtonPosition.BOTTOM
         self._widget_config: List[PropertyEditField] = []
@@ -223,13 +223,13 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     decoration: "PropertyEdit.Decoration" = Property(_QtDesignerDecoration, _get_decoration, _set_decoration)
     """Decoration of the widget to visually group fields together."""
 
-    def _get_use_partial_set(self) -> bool:
-        return self._partial_set
+    def _get_send_only_updated_values(self) -> bool:
+        return self._send_only_updated
 
-    def _set_use_partial_set(self, new_val: bool):
-        self._partial_set = new_val
+    def _set_send_only_updated_values(self, new_val: bool):
+        self._send_only_updated = new_val
 
-    usePartialSet: bool = Property(bool, _get_use_partial_set, _set_use_partial_set)
+    sendOnlyUpdatedValues: bool = Property(bool, _get_send_only_updated_values, _set_send_only_updated_values)
     """If ``True``, only values from editable fields will be sent on pressing 'Set' button. Otherwise, all values will be sent."""
 
     def _get_fields(self) -> List[PropertyEditField]:
@@ -352,7 +352,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._set_btn.setVisible(self.buttons & PropertyEdit.Buttons.SET)
 
     def _do_set(self):
-        new_val = self._widget_delegate.read_value(self._partial_set)
+        new_val = self._widget_delegate.read_value(self._send_only_updated)
         self.valueUpdated.emit(new_val)
 
     def _update_layout(self, new_layout: QLayout):
@@ -485,12 +485,12 @@ class AbstractPropertyEditWidgetDelegate(metaclass=ABCMeta):
             else:
                 warnings.warn("Won't be displaying data on deleted weak reference")
 
-    def read_value(self, allow_partial: bool) -> Dict[str, Any]:
+    def read_value(self, send_only_updated: bool) -> Dict[str, Any]:
         """
         Called by :class:`PropertyEdit` to collect the property value to be sent to the control system.
 
         Args:
-            allow_partial: When True, only writable properties will be composed into the dictionary.
+            send_only_updated: When ``True``, only changed fields will be composed into the dictionary.
 
         Returns:
             Dictionary representing device property value.
@@ -499,12 +499,14 @@ class AbstractPropertyEditWidgetDelegate(metaclass=ABCMeta):
         for field_id, refs in self.widget_map.items():
             weak_widget, config = refs
 
-            if allow_partial and not config.editable:
+            if send_only_updated and not config.editable:
                 continue
 
             widget = weak_widget()
             if widget is not None:
-                res[field_id] = self.send_data(field_id=field_id, user_data=config.user_data, widget=widget, item_type=config.type)
+                new_val = self.send_data(field_id=field_id, user_data=config.user_data, widget=widget, item_type=config.type)
+                if (not send_only_updated) or (send_only_updated and new_val != self.last_value.get(field_id)):
+                    res[field_id] = new_val
             else:
                 warnings.warn("Won't be sending data from deleted weak reference")
         return res

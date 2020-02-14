@@ -332,14 +332,16 @@ def test_fields(qtbot: QtBot, config, expected_widgets):
         assert expected_type(displayed_value) == expected_value
 
 
-@pytest.mark.parametrize("use_partial, expected_val", [
-    (True, {"str": "val1", "int": 10}),
-    (False, {"str": "val1", "int": 10, "bool": True, "float": 0.5}),
+@pytest.mark.parametrize("send_only_updated, str_input_val, expected_val", [
+    (True, "val1", {}),
+    (True, "val2", {"str": "val2"}),
+    (False, "val1", {"str": "val1", "int": 10, "bool": True, "float": 0.5}),
+    (False, "val2", {"str": "val2", "int": 10, "bool": True, "float": 0.5}),
 ])
-def test_partial_set(qtbot: QtBot, use_partial, expected_val):
+def test_send_only_updated_set(qtbot: QtBot, send_only_updated, str_input_val, expected_val):
     widget = PropertyEdit()
     qtbot.addWidget(widget)
-    widget.usePartialSet = use_partial
+    widget.sendOnlyUpdatedValues = send_only_updated
     widget.fields = [
         (PropertyEditField(field="str", type=PropertyEdit.ValueType.STRING, editable=True)),
         (PropertyEditField(field="int", type=PropertyEdit.ValueType.INTEGER, editable=True)),
@@ -351,7 +353,9 @@ def test_partial_set(qtbot: QtBot, use_partial, expected_val):
         "int": 10,
         "bool": True,
         "float": 0.5,
+        "unconfigured": "unconfigured-value",  # Should not be sent. We don't want hidden values being sent.
     })
+    widget.findChild(QLineEdit).setText(str_input_val)
     spy = QSignalSpy(widget.valueUpdated)
     widget._set_btn.click()
     value_updated_spy = spy[0]
@@ -501,13 +505,13 @@ def test_abstract_delegate_read_value_not_called_for_expired_weakref(qtbot: QtBo
             mocked_method.assert_not_called()
 
 
-@pytest.mark.parametrize("use_partial, editable, should_be_called", [
+@pytest.mark.parametrize("send_only_updated, editable, should_be_called", [
     (True, True, True),
     (False, True, True),
     (True, False, False),
     (False, False, True),
 ])
-def test_abstract_delegate_read_value(qtbot: QtBot, use_partial, editable, should_be_called):
+def test_abstract_delegate_read_value(qtbot: QtBot, send_only_updated, editable, should_be_called):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
     qtbot.addWidget(widget)
@@ -517,8 +521,8 @@ def test_abstract_delegate_read_value(qtbot: QtBot, use_partial, editable, shoul
                                                           type=PropertyEdit.ValueType.STRING,
                                                           editable=editable))
     with mock.patch.object(delegate, "send_data") as mocked_method:
-        # Not called for read-only fields in partial mode
-        delegate.read_value(use_partial)
+        # Not called for read-only fields in send_only_updated mode
+        delegate.read_value(send_only_updated)
         if should_be_called:
             mocked_method.assert_called_once()
         else:
