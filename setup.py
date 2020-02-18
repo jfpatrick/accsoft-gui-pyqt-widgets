@@ -104,7 +104,7 @@ setup(
         "Typing :: Typed",
     ],
     package_data={
-        "": ["*.ico"],
+        "": ["*.ico", "*.ui"],
     },
     platforms=["centos7"],
     test_suite="tests",
