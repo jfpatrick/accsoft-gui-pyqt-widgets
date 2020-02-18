@@ -1,4 +1,5 @@
 import warnings
+from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Type, Optional, List, TypeVar
 from qtpy.QtWidgets import QWidget, QAction
@@ -17,7 +18,7 @@ from accwidgets.designer_check import set_designer
 # |                              Extensions                                   |
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class WidgetsExtension:
+class WidgetsExtension(metaclass=ABCMeta):
 
     def __init__(self, widget: QWidget):
         """
@@ -29,12 +30,13 @@ class WidgetsExtension:
         """
         self.widget = widget
 
+    @abstractmethod
     def actions(self) -> List[QAction]:
         """
         Actions which are added to the task menu by the extension. Providing this function
         will make the Extension compatible to PyDM Task Menu extensions.
         """
-        raise NotImplementedError
+        pass
 
 
 class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
@@ -81,7 +83,7 @@ class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
 class WidgetsExtensionFactory(QExtensionFactory):
 
     def __init__(self, parent: QWidget = None):
-        """Factory of instanciating Task Menu extensions. """
+        """Factory of instantiating Task Menu extensions. """
         super().__init__(parent)
 
     def createExtension(
@@ -131,7 +133,7 @@ def _icon(name: str, base_path: Optional[Path] = None) -> QIcon:
 _E = TypeVar("_E", bound=WidgetsExtension)
 
 
-class WidgetPluginBase(QPyDesignerCustomWidgetPlugin):
+class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
 
     def __init__(self,
                  widget_class: Type[QWidget],
@@ -259,16 +261,16 @@ class WidgetPluginBase(QPyDesignerCustomWidgetPlugin):
         return self._widget_class.__module__
 
 
-_T = TypeVar("_T", bound=WidgetPluginBase)
+_T = TypeVar("_T", bound=WidgetDesignerPlugin)
 
 
 def create_plugin(widget_class: Type[QWidget],
                   extensions: List[Type[_E]],
                   group: str,
-                  cls: Type[_T] = WidgetPluginBase,
+                  cls: Type[_T] = WidgetDesignerPlugin,
                   tooltip: Optional[str] = None,
                   whats_this: Optional[str] = None,
-                  icon_base_path: Optional[Path] = None):
+                  icon_base_path: Optional[Path] = None) -> Type:
     """
     Create a qt designer plugin based on the passed widget class.
 
@@ -276,13 +278,13 @@ def create_plugin(widget_class: Type[QWidget],
         widget_class: Widget class that the plugin should be constructed from
         extensions: List of Extensions that the widget should have
         group: Name of the group to put widget to
-        cls: Subclass of WidgetPluginBase if you want to customize the behavior of the plugin
+        cls: Subclass of :class:`WidgetDesignerPlugin` if you want to customize the behavior of the plugin
         tootip: contents of the tooltip for the widget
         whats_this: contents of the whatsThis for the widget
         icon_base_path: path to the basedir of "icons" folder
 
     Returns:
-        Plugin class based on WidgetPluginBase
+        Plugin class based on :class:`WidgetDesignerPlugin`
     """
 
     class Plugin(cls):  # type: ignore
