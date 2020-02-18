@@ -1,5 +1,6 @@
 from freezegun import freeze_time
 from datetime import datetime
+from dateutil.tz import tzoffset
 
 import pytest
 import numpy as np
@@ -7,8 +8,10 @@ import numpy as np
 import accwidgets.graph as accgraph
 
 
-STATIC_TIME = datetime(year=2020, day=1, month=1)
-HEADER_TIME = datetime(year=2019, day=1, month=1)
+# We have to make the freeze time utc, otherwise freeze-gun seems to
+# take the current timezone which lets tests fail
+STATIC_TIME = datetime(year=2020, day=1, month=1, tzinfo=tzoffset("UTC+0", 0))
+HEADER_TIME = datetime(year=2019, day=1, month=1, tzinfo=tzoffset("UTC+0", 0))
 ACQ_TS_FIELD = accgraph.PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD
 HEADER_INFO = {ACQ_TS_FIELD: HEADER_TIME}
 
