@@ -317,7 +317,7 @@ class ExPlotItem(pg.PlotItem):
                               will be completely empty after clearing.
         """
         super().clear()
-        if not clear_decorators:
+        if not clear_decorators and self._time_span is not None:
             self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 
     def removeItem(self, item: pg.GraphicsObject) -> None:

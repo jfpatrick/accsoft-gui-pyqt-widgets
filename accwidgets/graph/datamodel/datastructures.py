@@ -59,12 +59,25 @@ class PlottingItemData(QObject, metaclass=AbstractQObjectMeta):
         """
         pass
 
+    @property
+    @abc.abstractmethod
+    def is_collection(self) -> bool:
+        """Check if data structure is collection
+        This flag can be simply implemented as a class variable
+
+        Returns:
+            True, if the data structure is a collection
+        """
+        pass
+
 
 # use this instead of defining default colors by hand
 DEFAULT_COLOR = "w"
 
 
 class PointData(PlottingItemData):
+
+    is_collection = False
 
     @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(self, x: float = np.nan, y: float = np.nan, parent=None):
@@ -124,6 +137,8 @@ class PointData(PlottingItemData):
 
 
 class CurveData(PlottingItemData):
+
+    is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
@@ -199,6 +214,8 @@ class CurveData(PlottingItemData):
 
 class BarData(PlottingItemData):
 
+    is_collection = False
+
     @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(
             self,
@@ -272,6 +289,8 @@ class BarData(PlottingItemData):
 
 
 class BarCollectionData(PlottingItemData):
+
+    is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
@@ -358,6 +377,8 @@ class BarCollectionData(PlottingItemData):
 
 class InjectionBarData(PlottingItemData):
 
+    is_collection = False
+
     @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(
         self,
@@ -439,6 +460,8 @@ class InjectionBarData(PlottingItemData):
 
 
 class InjectionBarCollectionData(PlottingItemData):
+
+    is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(
@@ -540,6 +563,8 @@ class InjectionBarCollectionData(PlottingItemData):
 
 class TimestampMarkerData(PlottingItemData):
 
+    is_collection = False
+
     @deprecated_param_alias(x_value="x")
     def __init__(
             self,
@@ -617,6 +642,8 @@ class TimestampMarkerData(PlottingItemData):
 
 
 class TimestampMarkerCollectionData(PlottingItemData):
+
+    is_collection = True
 
     @deprecated_param_alias(x_values="x")
     def __init__(
