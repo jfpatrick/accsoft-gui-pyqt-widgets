@@ -508,3 +508,18 @@ def test_timestamp_marker_collection_data_one_different_length(combinations: Tim
             colors=cast(List[str], combinations.c),
             labels=cast(List[str], combinations.l),
         )
+
+
+@pytest.mark.parametrize("dtype, is_collection", [
+    (accgraph.PointData, False),
+    (accgraph.BarData, False),
+    (accgraph.InjectionBarData, False),
+    (accgraph.TimestampMarkerData, False),
+    (accgraph.CurveData, True),
+    (accgraph.BarCollectionData, True),
+    (accgraph.InjectionBarCollectionData, True),
+    (accgraph.TimestampMarkerCollectionData, True),
+])
+def test_is_collection(dtype, is_collection):
+    """Test if the data structures are properly aware if they are collections"""
+    assert dtype.is_collection == is_collection

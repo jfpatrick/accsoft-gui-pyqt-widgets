@@ -2,12 +2,13 @@
 
 import abc
 import warnings
-from typing import TYPE_CHECKING, Type, cast, TypeVar, List
+from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
 
 import numpy as np
 import pyqtgraph as pg
 
 from accwidgets.graph.datamodel.itemdatamodel import AbstractBaseDataModel
+from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -26,7 +27,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        data_model: AbstractBaseDataModel,
+        data_model: Union[AbstractBaseDataModel, UpdateSource],
         parent_plot_item: "ExPlotItem",
     ):
         """Base class for data source / data model based graph items
@@ -36,9 +37,13 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         item is attached to the data source and can react to changes in its data.
 
         Args:
-            data_model: data model for the item
+            data_model: data model for the item. If an update source is passed,
+                        we will initialize the data model the subclass lists
+                        in the class attribute 'data_model_type'
             parent_plot_item: plot item this item is displayed in
         """
+        if isinstance(data_model, UpdateSource):
+            data_model = self.data_model_type(data_source=data_model)
         self._data_model: AbstractBaseDataModel = data_model
         self._data_model.sig_data_model_changed.connect(self._handle_data_model_change)
         self._parent_plot_item: "ExPlotItem" = parent_plot_item
