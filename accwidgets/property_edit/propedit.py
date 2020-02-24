@@ -1,4 +1,5 @@
 import json
+import sys
 import warnings
 import weakref
 from typing import Optional, List, Dict, Tuple, cast, Any, Union
@@ -532,9 +533,17 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
                 widget.setText("<Runtime value>")
             return widget
         if item_type == PropertyEdit.ValueType.INTEGER:
-            return QSpinBox(parent)
+            widget = QSpinBox(parent)
+            max_val = 2**sys.int_info.bits_per_digit  # can't use sys.maxsize here, as it supplies "long" size overflowing Qt
+            widget.setMaximum(max_val - 1)
+            widget.setMinimum(-max_val + 1)
+            return widget
         if item_type == PropertyEdit.ValueType.REAL:
-            return QDoubleSpinBox(parent)
+            widget = QDoubleSpinBox(parent)
+            max_val = sys.float_info.max
+            widget.setMaximum(max_val)
+            widget.setMinimum(-max_val)
+            return widget
         if item_type == PropertyEdit.ValueType.BOOLEAN:
             return QCheckBox(parent)
         if item_type == PropertyEdit.ValueType.STRING:
