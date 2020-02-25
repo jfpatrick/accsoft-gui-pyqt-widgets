@@ -9,6 +9,7 @@ from typing import Type
 
 import numpy as np
 import pytest
+from unittest.mock import patch
 
 from accwidgets import graph as accgraph
 
@@ -312,3 +313,51 @@ def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataMod
     assert data_model.max_primary_val == 4.0
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
     assert data_model.max_primary_val == 4.0
+
+
+# ~~~~~~~~~~~~ Test data model when editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+@patch.object(accgraph.UpdateSource, accgraph.UpdateSource.handle_data_model_edit.__name__)
+def test_editable_curve_datamodel_notifying(MockedUpdateSource):
+    """Tests, that editing is properly propagated to the update source"""
+    data_source = MockedUpdateSource()
+    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+    # Initial update from the update source
+    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[0, 1, 2, 3, 4])
+    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.handle_data_model_edit.assert_not_called()
+    # Another update from the source
+    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[0, 1, 2, 1, 0])
+    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.handle_data_model_edit.assert_not_called()
+    edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[4, 3, 2, 1, 0])
+    data_model.handle_editing(edited_data)
+    data_source.handle_data_model_edit.assert_not_called()
+    data_model.send_current_state()
+    data_source.handle_data_model_edit.assert_called_with(edited_data)
+
+
+def test_editable_curve_datamodel():
+    """Tests, that editing is properly propagated to the update source"""
+    def to_curve_data(array):
+        return accgraph.CurveData(array[0], array[1])
+    data_source = accgraph.UpdateSource()
+    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+    # Initial update from the update source
+    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[0, 1, 2, 3, 4])
+    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    assert to_curve_data(data_model.full_data_buffer) == source_data
+    # Another update from the source
+    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[0, 1, 2, 1, 0])
+    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    assert to_curve_data(data_model.full_data_buffer) == source_data
+    edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
+                                     y=[4, 3, 2, 1, 0])
+    data_model.handle_editing(edited_data)
+    assert to_curve_data(data_model.full_data_buffer) == edited_data
