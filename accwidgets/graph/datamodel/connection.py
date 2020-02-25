@@ -15,7 +15,7 @@ from typing import (
 from datetime import datetime
 import numpy as np
 
-from qtpy.QtCore import QObject, Signal
+from qtpy.QtCore import QObject, Signal, Slot
 from accwidgets.graph.datamodel.datastructures import (
     DEFAULT_COLOR,
     BarCollectionData,
@@ -43,6 +43,9 @@ class UpdateSource(QObject):
 
     Additionally the update source can be used to publish other updates to a
     plot, f.e. timestamps that are used by the plot as the current time.
+
+    To use update source for editable charts, just implement the
+    handle_data_model_edit slot.
     """
 
     # TODO: Range Change Signal not used yet.
@@ -59,6 +62,18 @@ class UpdateSource(QObject):
         [TimestampMarkerData],
         [TimestampMarkerCollectionData],
     )
+
+    @Slot(CurveData)
+    def handle_data_model_edit(data: CurveData):
+        """
+        Handler function for changes made to the data model from the view.
+        This handler is normally used to send back an edited data set to the
+        source the data originally originated from.
+
+        Args:
+            data: Entire data after editing
+        """
+        pass
 
 
 class SignalBoundDataSource(UpdateSource):

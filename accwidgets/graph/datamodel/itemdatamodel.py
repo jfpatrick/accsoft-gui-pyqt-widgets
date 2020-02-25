@@ -28,6 +28,7 @@ from accwidgets.graph.datamodel.datastructures import (
     PointData,
     PlottingItemData,
 )
+from accwidgets.graph.common import History
 
 
 class WrongDataType(Warning):
@@ -43,8 +44,17 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
 
     sig_data_model_changed = Signal()
     """
-    General purpose signal informing that any changed
-    happened to the data stored by the data model
+    General purpose signal informing that any changed happened to the data
+    stored by the data model. Emitting this change means that the change did not
+    come from the view (f.e. if it is in editing mode), but from the update
+    update source.
+    """
+
+    sig_data_model_edited = Signal([CurveData])
+    """
+    Signal informing that the data model was edited from the view. Emitting this
+    signal means that the edit should be sent back to the source it is coming
+    from.
     """
 
     def __init__(self, data_source: UpdateSource, **_):
@@ -108,6 +118,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         all update signals to the fitting handler slots in both ways.
         """
         self._data_source.sig_new_data.connect(self._handle_data_update_signal)
+        self.sig_data_model_edited.connect(self._data_source.handle_data_model_edit)
 
     def _disconnect_from_data_source(self) -> None:
         """
@@ -115,6 +126,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         calling, none of both will receive any updates from the other anymore.
         """
         self._data_source.sig_new_data.disconnect(self._handle_data_update_signal)
+        self.sig_data_model_edited.disconnect(self._data_source.handle_data_model_edit)
 
     # ~~~~~ Mandatory to implement in non abstract derived classes ~~~~~~~~~~~~
 
@@ -130,6 +142,12 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     @Slot(TimestampMarkerCollectionData)
     def _handle_data_update_signal(self, data: PlottingItemData) -> None:
         """Handle arriving data"""
+        pass
+
+    @abc.abstractmethod
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """Slot for receiving data model edits from the view."""
         pass
 
 
@@ -214,6 +232,11 @@ class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
         if np.isnan(primary_values[i]):
             return None
         return primary_values[i]
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """We do not care about / allow editing in live data plotting"""
+        pass
 
 
 class LiveCurveDataModel(AbstractLiveDataModel):
@@ -416,20 +439,24 @@ class StaticCurveDataModel(AbstractBaseDataModel):
         self._x_values: np.ndarray = np.array([])
         self._y_values: np.ndarray = np.array([])
 
-    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+    def _set_data(self, data: Union[PointData, CurveData]) -> bool:
         if isinstance(data, PointData) and data.is_valid():
             self._x_values = np.array([data.x])
             self._y_values = np.array([data.y])
-            self.sig_data_model_changed.emit()
+            return True
         elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
             self._x_values = data.x
             self._y_values = data.y
+            return True
+        if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
+            warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
+                          f"line graph data model or is invalid and will be ignored.")
+            cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
+        return False
+
+    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+        if self._set_data(data=data):
             self.sig_data_model_changed.emit()
-        else:
-            if not cast(AbstractLiveDataModel, self).non_fitting_data_info_printed:
-                warnings.warn(f"Data {data} of type {type(data).__name__} does not fit this "
-                              f"line graph data model or is invalid and will be ignored.")
-                cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
     @property
     def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -438,6 +465,11 @@ class StaticCurveDataModel(AbstractBaseDataModel):
         in the form (x_values, y_values).
         """
         return self._x_values, self._y_values
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """We do not care about / allow editing in live data plotting"""
+        pass
 
 
 class StaticBarGraphDataModel(AbstractBaseDataModel):
@@ -480,6 +512,11 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
         in the form (x_values, y_values, height_values).
         """
         return self._x_values, self._y_values, self._heights
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """We do not care about / allow editing in live data plotting"""
+        pass
 
 
 class StaticInjectionBarDataModel(AbstractBaseDataModel):
@@ -529,6 +566,11 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
         """
         return self._x_values, self._y_values, self._heights, self._widths, self._labels
 
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """We do not care about / allow editing in live data plotting"""
+        pass
+
 
 class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
 
@@ -570,3 +612,73 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
         in the form (x_values, color_string_values, labels).
         """
         return self._x_values, self._colors, self._labels
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """We do not care about / allow editing in live data plotting"""
+        pass
+
+
+class EditableCurveDataModel(StaticCurveDataModel):
+
+    def __init__(self, data_source: UpdateSource, **kwargs):
+        """
+        Editable curve data model that extends the static Curve Data Model
+        with editing capabilities.
+
+        Args:
+            data_source: Source for the new arriving data
+            kwargs: Further keyword arguments for the base class
+        """
+        StaticCurveDataModel.__init__(self, data_source=data_source, **kwargs)
+        self._history = History[CurveData]()
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData) -> None:
+        """
+        Receives a change from e.g. a view which allows editing, saves it
+        in the data model. This does not yet send it through the update source.
+        """
+        if self._set_data(data=data):
+            self._history.save_state(data)
+
+    def send_current_state(self) -> bool:
+        """
+        Send the state back through the update source.
+
+        Returns:
+            True, there was a state to send
+        """
+        state = self._history.current_state
+        if state is not None:
+            self.sig_data_model_edited.emit(state)
+            return True
+        return False
+
+    @property
+    def undoable(self) -> bool:
+        """Is there an older state we can roll back to?"""
+        return self._history.undoable
+
+    @property
+    def redoable(self) -> bool:
+        """Is there a newer state we can jump to?"""
+        return self._history.redoable
+
+    def undo(self) -> None:
+        """Jump to the next older state."""
+        if self.undoable:
+            state = self._history.undo()
+            if isinstance(state, (PointData, CurveData)):
+                self.set_data(data=state)
+            else:
+                warnings.warn(f"State {state} can't be applied.")
+
+    def redo(self) -> None:
+        """Jump to the next newer state."""
+        if self.redoable:
+            state = self._history.redo()
+            if isinstance(state, (PointData, CurveData)):
+                self.set_data(data=state)
+            else:
+                warnings.warn(f"State {state} can't be applied.")
