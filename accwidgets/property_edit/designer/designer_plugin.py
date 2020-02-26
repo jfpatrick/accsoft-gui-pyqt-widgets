@@ -1,5 +1,5 @@
 """
-Module containing QtDesigner plugin for different type of graphs.
+Module containing QtDesigner plugin for PropertyEdit widget.
 """
 
 from pathlib import Path
