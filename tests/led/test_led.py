@@ -102,6 +102,47 @@ def test_status_setter(qtbot: QtBot):
     assert widget.color == Led.Status.color_for_status(Led.Status.ERROR)
 
 
+@pytest.mark.parametrize("alignment", [
+    Led.Alignment.CENTER,
+    Led.Alignment.TOP,
+    Led.Alignment.BOTTOM,
+    Led.Alignment.LEFT,
+    Led.Alignment.RIGHT,
+])
+def test_alignment_getter(qtbot: QtBot, alignment):
+    widget = Led()
+    qtbot.addWidget(widget)
+    widget._alignment = alignment
+    assert widget.alignment == alignment
+
+
+@pytest.mark.parametrize("alignment, width, height, edge, x_center, y_center", [
+    (Led.Alignment.CENTER, 20, 50, 20, 10, 25),
+    (Led.Alignment.CENTER, 50, 20, 20, 25, 10),
+    (Led.Alignment.TOP, 20, 50, 20, 10, 10),
+    (Led.Alignment.TOP, 50, 20, 20, 25, 10),
+    (Led.Alignment.BOTTOM, 20, 50, 20, 10, 40),
+    (Led.Alignment.BOTTOM, 50, 20, 20, 25, 10),
+    (Led.Alignment.LEFT, 20, 50, 20, 10, 25),
+    (Led.Alignment.LEFT, 50, 20, 20, 10, 10),
+    (Led.Alignment.RIGHT, 20, 50, 20, 10, 25),
+    (Led.Alignment.RIGHT, 50, 20, 20, 40, 10),
+])
+def test_alignment_setter(qtbot: QtBot, alignment, width, height, edge, x_center, y_center):
+    widget = Led()
+    qtbot.addWidget(widget)
+    widget.resize(width, height)
+    old_x_center, old_y_center, old_edge = widget._bubble_center
+    assert old_edge == edge
+    assert old_x_center == width / 2.0
+    assert old_y_center == height / 2.0
+    widget.alignment = alignment
+    new_x_center, new_y_center, new_edge = widget._bubble_center
+    assert new_x_center == x_center
+    assert new_y_center == y_center
+    assert new_edge == edge
+
+
 def test_resize_recalculates_both_gradients(qtbot: QtBot):
     widget = Led()
     with mock.patch(f"accwidgets.led.led.Led._accent_grad", new_callable=mock.PropertyMock, return_value=QColor(0, 0, 0)) as prop_mock:
@@ -109,6 +150,17 @@ def test_resize_recalculates_both_gradients(qtbot: QtBot):
         prop_mock.assert_not_called()
         with mock.patch.object(widget, "_grad_for_color", return_value=QColor(0, 0, 0)) as method_mock:
             widget.resizeEvent(mock.MagicMock())
+            method_mock.assert_called_once()
+            prop_mock.assert_called_once()
+
+
+def test_alignment_setter_recalculates_both_gradients(qtbot: QtBot):
+    widget = Led()
+    with mock.patch(f"accwidgets.led.led.Led._accent_grad", new_callable=mock.PropertyMock, return_value=QColor(0, 0, 0)) as prop_mock:
+        qtbot.addWidget(widget)
+        prop_mock.assert_not_called()
+        with mock.patch.object(widget, "_grad_for_color", return_value=QColor(0, 0, 0)) as method_mock:
+            widget.alignment = Led.Alignment.BOTTOM
             method_mock.assert_called_once()
             prop_mock.assert_called_once()
 

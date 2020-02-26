@@ -624,7 +624,9 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
         # TODO: This needs to be updated with smarter widgets when they are available (e.g. combobox that can work with EnumSets).
         if not editable:
             if item_type == PropertyEdit.ValueType.BOOLEAN:
-                return Led(parent)
+                widget = Led(parent)
+                widget.alignment = Led.Alignment.LEFT
+                return widget
 
             widget = QLabel(parent)
             if is_designer():
