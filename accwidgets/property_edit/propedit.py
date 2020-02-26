@@ -2,6 +2,7 @@ import json
 import sys
 import warnings
 import weakref
+import numpy as np
 from typing import Optional, List, Dict, Tuple, cast, Any, Union, TypeVar, Generic, Callable
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum, IntFlag, auto
@@ -591,8 +592,16 @@ class AbstractPropertyEditWidgetDelegate(metaclass=ABCMeta):
             widget = weak_widget()
             if widget is not None:
                 new_val = self.send_data(field_id=field_id, user_data=config.user_data, widget=widget, item_type=config.type)
-                if (not send_only_updated) or (send_only_updated and new_val != self.last_value.get(field_id)):
-                    res[field_id] = new_val
+                if send_only_updated:
+                    last_val = self.last_value.get(field_id)
+                    if isinstance(new_val, np.ndarray) and isinstance(last_val, np.ndarray):
+                        # We need all() call, otherwise it results in array of bools
+                        vals_equal = new_val.shape == last_val.shape and (new_val == last_val).all()
+                    else:
+                        vals_equal = new_val == last_val
+                    if vals_equal:
+                        continue
+                res[field_id] = new_val
             else:
                 warnings.warn("Won't be sending data from deleted weak reference")
         return res
