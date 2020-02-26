@@ -137,8 +137,8 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
 
     def __init__(self,
                  widget_class: Type[QWidget],
-                 extensions: List[Type[_E]],
                  group_name: str,
+                 extensions: Optional[List[Type[_E]]] = None,
                  tooltip: Optional[str] = None,
                  whats_this: Optional[str] = None,
                  icon_base_path: Optional[Path] = None):
@@ -165,7 +165,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         self._whats_this = whats_this
         self._icon_base_path = icon_base_path
         self._tooltip = tooltip
-        self.extensions: List[Type] = extensions
+        self.extensions: List[Type] = extensions or []
         # Will be set in initialize
         self.manager: Optional[QExtensionManager] = None
 
@@ -265,9 +265,9 @@ _T = TypeVar("_T", bound=WidgetDesignerPlugin)
 
 
 def create_plugin(widget_class: Type[QWidget],
-                  extensions: List[Type[_E]],
                   group: str,
                   cls: Type[_T] = WidgetDesignerPlugin,
+                  extensions: Optional[List[Type[_E]]] = None,
                   tooltip: Optional[str] = None,
                   whats_this: Optional[str] = None,
                   icon_base_path: Optional[Path] = None) -> Type:

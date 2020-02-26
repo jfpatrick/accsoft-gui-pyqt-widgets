@@ -7,6 +7,7 @@ Documentation of accwidgets
 
     graph/sphinx/graphic_widgets_index
     property_edit/sphinx/index
+    led/index
 
 accwidgets is a collection of widgets for PyQt for the AccPy community.
 For learning about the different provided widgets visit their sub pages above. Many
