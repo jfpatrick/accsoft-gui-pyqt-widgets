@@ -64,7 +64,6 @@ class Led(QWidget, _QtDesignerStatus):
             parent: Optional parent widget.
         """
         super().__init__(parent)
-        self.setAutoFillBackground(True)
         self._painter = QPainter()
         self._color = QColor(127, 127, 127)
         self._brush = QBrush(self._grad_for_color(self._color))
