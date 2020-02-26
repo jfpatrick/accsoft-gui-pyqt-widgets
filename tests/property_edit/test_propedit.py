@@ -3,11 +3,11 @@ from typing import cast
 from pytestqt.qtbot import QtBot
 from unittest import mock
 from qtpy.QtWidgets import (QFormLayout, QVBoxLayout, QHBoxLayout, QGroupBox, QFrame, QLabel, QDoubleSpinBox,
-                            QSpinBox, QComboBox, QLineEdit, QCheckBox)
+                            QSpinBox, QComboBox, QLineEdit, QCheckBox, QWidget)
 from PyQt5.QtTest import QSignalSpy  # TODO: qtpy does not seem to expose QSignalSpy: https://github.com/spyder-ide/qtpy/issues/197
 from accwidgets.property_edit.propedit import (PropertyEdit, PropertyEditField, PropertyEditWidgetDelegate,
-                                               _unpack_designer_fields, _pack_designer_fields,
-                                               AbstractPropertyEditWidgetDelegate,
+                                               _unpack_designer_fields, _pack_designer_fields, PropertyEditFormLayoutDelegate,
+                                               AbstractPropertyEditWidgetDelegate, AbstractPropertyEditLayoutDelegate,
                                                _QtDesignerButtons, _QtDesignerDecoration, _QtDesignerButtonPosition)
 
 
@@ -78,9 +78,9 @@ def test_set_value(qtbot: QtBot, value, expected_values, fields):
     qtbot.addWidget(widget)
     widget.fields = config
     widget.setValue(value)
-    assert widget._form.rowCount() == len(config)
+    assert widget._widget_layout.rowCount() == len(config)
     for idx, expected_value, getter, conf in zip(range(len(getters)), expected_values, getters, config):
-        inner_widget = widget._form.itemAt(idx, QFormLayout.FieldRole).widget()
+        inner_widget = widget._widget_layout.itemAt(idx, QFormLayout.FieldRole).widget()
         displayed_value = getattr(inner_widget, getter)()
         if expected_value is None:
             assert not displayed_value
@@ -308,7 +308,7 @@ def test_fields(qtbot: QtBot, config, expected_widgets):
     qtbot.addWidget(widget)
     widget.show()
     widget.fields = config
-    assert widget._form.rowCount() == len(expected_widgets)
+    assert widget._widget_layout.rowCount() == len(expected_widgets)
     widget.setValue({
         "str": "val1",
         "int": 10,
@@ -321,10 +321,9 @@ def test_fields(qtbot: QtBot, config, expected_widgets):
     separated_lists = list(zip(*expected_widgets))
     combined_iter = zip(indexes, *separated_lists, expected_widget_values)
     for idx, widget_type, getter, expected_label, expected_value in combined_iter:
-        label_widget = widget._form.itemAt(idx, QFormLayout.LabelRole).widget()
+        label_widget = widget._widget_layout.itemAt(idx, QFormLayout.LabelRole).widget()
         assert isinstance(label_widget, QLabel)
-        inner_widget = widget._form.itemAt(idx, QFormLayout.FieldRole).widget()
-        print(idx, getattr(inner_widget, getter)())
+        inner_widget = widget._widget_layout.itemAt(idx, QFormLayout.FieldRole).widget()
         assert isinstance(inner_widget, widget_type)
         displayed_value = getattr(inner_widget, getter)()
         expected_type = type(expected_value)
@@ -405,6 +404,18 @@ def test_widget_delegate():
 
     delegate = MyCustomDelegate()
     assert delegate.read_value(True) == {}
+
+
+def test_layout_delegate():
+
+    class MyCustomDelegate(AbstractPropertyEditLayoutDelegate[QVBoxLayout]):
+        """Testing subclassing"""
+
+        def create_layout(self) -> QVBoxLayout:
+            return QVBoxLayout()
+
+        def layout_widgets(self, *args, **kwargs):
+            pass
 
 
 def test_abstract_delegate_widget_for_item_recreates_expired_weakref(qtbot: QtBot):
@@ -743,3 +754,60 @@ def test_pack_fields(value_type,
 
     with mock.patch("json.dumps", side_effect=lambda obj: obj):
         assert _pack_designer_fields(input) == expected
+
+
+@pytest.mark.parametrize("config, expected_call_cnt", [
+    ([
+        (PropertyEditField(field="str", type=PropertyEdit.ValueType.STRING, editable=True)),
+        (PropertyEditField(field="int", type=PropertyEdit.ValueType.INTEGER, editable=True)),
+    ], 2),
+    ([], 0),
+])
+def test_default_layout_delegate_calls_widget_delegate_create_method(qtbot: QtBot, config, expected_call_cnt):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.fields = config
+    widget_delegate = widget.widget_delegate
+    layout_delegate = widget.layout_delegate
+    with mock.patch.object(widget_delegate, "create_widget", return_value=QWidget()) as mocked_method:
+        layout_delegate.layout_widgets(layout=layout_delegate.create_layout(),
+                                       widget_config=config,
+                                       parent=widget,
+                                       create_widget=mocked_method)
+        assert len(mocked_method.mock_calls) == expected_call_cnt
+
+
+def test_layout_delegate_setter_updates_layout_on_new_delegate(qtbot: QtBot):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+
+    assert widget._layout.children()[1] == widget._button_box
+    assert widget._layout.children()[0] == widget._widget_layout
+    orig_widget_layout = widget._layout.children()[0]
+
+    widget.layout_delegate = PropertyEditFormLayoutDelegate()
+    assert widget._layout.children()[1] == widget._button_box
+    assert widget._layout.children()[0] != orig_widget_layout
+    assert widget._layout.children()[0] == widget._widget_layout
+    assert isinstance(widget._layout.children()[0], type(widget.layout_delegate.create_layout()))
+
+
+def test_layout_delegate_setter_does_not_updates_layout_on_same_delegate(qtbot: QtBot):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+
+    assert widget._layout.children()[1] == widget._button_box
+    assert widget._layout.children()[0] == widget._widget_layout
+    orig_widget_layout = widget._layout.children()[0]
+
+    existing_delegate = widget.layout_delegate
+    widget.layout_delegate = existing_delegate
+    assert widget._layout.children()[1] == widget._button_box
+    assert widget._layout.children()[0] == orig_widget_layout
+    assert widget._layout.children()[0] == widget._widget_layout
+
+
+def test_initial_layout_is_form(qtbot: QtBot):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    assert isinstance(widget._widget_layout, QFormLayout)

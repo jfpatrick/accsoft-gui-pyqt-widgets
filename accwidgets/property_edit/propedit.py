@@ -2,20 +2,22 @@ import json
 import sys
 import warnings
 import weakref
-from typing import Optional, List, Dict, Tuple, cast, Any, Union
+import numpy as np
+from typing import Optional, List, Dict, Tuple, cast, Any, Union, TypeVar, Generic, Callable
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum, IntFlag, auto
 from qtpy.QtWidgets import (QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QSpinBox, QFormLayout, QLabel,
                             QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QLayout, QSizePolicy, QSpacerItem)
 from qtpy.QtCore import Property, Q_ENUMS, QObjectCleanupHandler, Qt, Signal, Slot
 from dataclasses import dataclass
+from accwidgets.generics import GenericMeta
 from accwidgets.designer_check import is_designer
 
 
 @dataclass
 class PropertyEditField:
     """
-    Data strcuture for the field configuration of :class:`PropertyEdit`.
+    Data structure for the field configuration of :class:`PropertyEdit`.
     """
 
     field: str
@@ -134,18 +136,22 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._buttons: PropertyEdit.Buttons = PropertyEdit.Buttons(_QtDesignerButtons.Neither)
         self._button_position = PropertyEdit.ButtonPosition.BOTTOM
         self._widget_config: List[PropertyEditField] = []
-        self._widget_delegate = PropertyEditWidgetDelegate()
+        self._widget_delegate: AbstractPropertyEditWidgetDelegate = PropertyEditWidgetDelegate()
+        self._layout_delegate: AbstractPropertyEditLayoutDelegate = PropertyEditFormLayoutDelegate()
 
         # Assuming None frame in the beginning
         self._decoration_type: PropertyEdit.Decoration = PropertyEdit.Decoration.NONE
-        self._form = QFormLayout()
-        self._form.setLabelAlignment(Qt.AlignLeft)
-        self._form.setFormAlignment(Qt.AlignVCenter)
+        self._widget_layout = self._layout_delegate.create_layout()
+        self._widget_layout.setObjectName("widget_layout")
         self._decoration: Union[QFrame, QGroupBox, None] = None
         self._layout = QVBoxLayout(self)
+        self._layout.setObjectName("main_layout")
         self._button_box = QHBoxLayout()
+        self._button_box.setObjectName("button_box_layout")
         self._get_btn = QPushButton("Get")
+        self._get_btn.setObjectName("get_btn")
         self._set_btn = QPushButton("Set")
+        self._set_btn.setObjectName("set_btn")
         self._get_btn.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         self._set_btn.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
         self._get_btn.clicked.connect(self.valueRequested.emit)
@@ -155,7 +161,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._right_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._button_box.addWidget(self._get_btn)
         self._button_box.addWidget(self._set_btn)
-        self._layout.addLayout(self._form)
+        self._layout.addLayout(self._widget_layout)
         self._layout.addLayout(self._button_box)
         self._add_button_stretch()  # This goes along with the default position = bottom
 
@@ -248,24 +254,49 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     """Configuration for the fields that construct the form of widgets inside this container."""
 
     @property
-    def widget_delegate(self):
+    def widget_delegate(self) -> "AbstractPropertyEditWidgetDelegate":
         """Delegate that controls the inner widget appearance."""
         return self._widget_delegate
 
     @widget_delegate.setter
-    def widget_delegate(self, new_val: "PropertyEditWidgetDelegate"):
+    def widget_delegate(self, new_val: "AbstractPropertyEditWidgetDelegate"):
         """Delegate that controls the inner widget appearance."""
+        if new_val == self._widget_delegate:
+            return
         self._widget_delegate = new_val
         self._layout_widgets()
 
-    def _layout_widgets(self):
-        for _ in range(self._form.rowCount()):
-            self._form.removeRow(0)
+    @property
+    def layout_delegate(self) -> "AbstractPropertyEditLayoutDelegate":
+        """Delegate that controls the layout of the inner widgets."""
+        return self._layout_delegate
 
-        for conf in self._widget_config:
-            label = conf.label or conf.field
-            widget = self._widget_delegate.widget_for_item(config=conf, parent=self)
-            self._form.addRow(label, widget)
+    @layout_delegate.setter
+    def layout_delegate(self, new_val: "AbstractPropertyEditLayoutDelegate"):
+        """Delegate that controls the layout of the inner widgets."""
+        if new_val == self._layout_delegate:
+            return
+        self._layout_delegate = new_val
+        new_widget_layout = new_val.create_layout()
+        new_widget_layout.setObjectName("widget_layout")
+        old_widget_layout = self._widget_layout
+        _clean_layout(old_widget_layout)
+        self._layout.removeItem(old_widget_layout)
+        old_widget_layout.deleteLater()
+        self._widget_layout = new_widget_layout
+        self._layout.addLayout(new_widget_layout)
+
+        # InsertLayout does not prepend the layout, so we instead remove all of them and re-add
+        self._layout.removeItem(self._button_box)
+        self._layout.addLayout(self._button_box)
+        self._layout_widgets()
+
+    def _layout_widgets(self):
+        _clean_layout(self._widget_layout)
+        self._layout_delegate.layout_widgets(layout=self._widget_layout,
+                                             widget_config=self._widget_config,
+                                             create_widget=self._widget_delegate.widget_for_item,
+                                             parent=self)
 
     def _recalculate_layout(self):
         if self._button_position == PropertyEdit.ButtonPosition.BOTTOM:
@@ -279,7 +310,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         if isinstance(self._layout, desired_type):
             return
         new_layout = desired_type()
-        for child in self._layout.children():
+        for child in self._layout.children():  # children of a layout are always layouts
             self._layout.removeItem(child)
             new_layout.addLayout(child)
 
@@ -296,6 +327,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         QObjectCleanupHandler().add(self._layout)
 
         layout_container.setLayout(new_layout)
+        new_layout.setObjectName("main_layout")
         self._layout = new_layout
 
     def _add_button_stretch(self):
@@ -331,6 +363,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
             return
 
         new_container = desired_container()
+        new_container.setObjectName("decoration_container")
         self._decoration = new_container
         if desired_container == QFrame:
             frame = cast(QFrame, new_container)
@@ -366,6 +399,59 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         QObjectCleanupHandler().add(self.layout())
 
         self.setLayout(new_layout)
+
+
+L = TypeVar("L", bound=QLayout)
+
+
+class AbstractPropertyEditLayoutDelegate(Generic[L], metaclass=GenericMeta):
+    """
+    Class for defining delegates that handle the layout inside the :class:`PropertyEdit` widget.
+    """
+
+    @abstractmethod
+    def create_layout(self) -> L:
+        """
+        Creates layout for to place the widgets and labels inside.
+
+        Returns:
+            New layout instance.
+        """
+        pass
+
+    @abstractmethod
+    def layout_widgets(self, layout: L, widget_config: List[PropertyEditField], create_widget: Callable[[PropertyEditField, Optional[QWidget]], QWidget], parent: Optional[QWidget] = None):
+        """
+        Adds widgets to the layout created via :meth:`create_layout`.
+
+        Delegate does not need to clean the layout from existing widgets, it is done for him.
+        It also should not cached layout, but act on the one given via this method arguments.
+
+        Args:
+            layout: Existing layout instance that should be updated with new widgets.
+            widget_config: Configuration of the fields inside :class:`PropertyEdit`.
+            create_widget: Factory method that will construct a :class:`QWidget` instance to be added to the layout.
+            parent: Owner of the constructed widgets to be passed into "create_widget" function.
+        """
+        pass
+
+
+class PropertyEditFormLayoutDelegate(AbstractPropertyEditLayoutDelegate[QFormLayout]):
+    """
+    Default implementation for delegate that can handle the creation of the layout for :class:`PropertyEdit`.
+    """
+
+    def create_layout(self) -> QFormLayout:
+        layout = QFormLayout()
+        layout.setLabelAlignment(Qt.AlignLeft)
+        layout.setFormAlignment(Qt.AlignVCenter)
+        return layout
+
+    def layout_widgets(self, layout: QFormLayout, widget_config: List[PropertyEditField], create_widget: Callable[[PropertyEditField, Optional[QWidget]], QWidget], parent: Optional[QWidget] = None):
+        for conf in widget_config:
+            label = conf.label or conf.field
+            widget = create_widget(conf, parent)
+            layout.addRow(label, widget)
 
 
 class AbstractPropertyEditWidgetDelegate(metaclass=ABCMeta):
@@ -506,8 +592,16 @@ class AbstractPropertyEditWidgetDelegate(metaclass=ABCMeta):
             widget = weak_widget()
             if widget is not None:
                 new_val = self.send_data(field_id=field_id, user_data=config.user_data, widget=widget, item_type=config.type)
-                if (not send_only_updated) or (send_only_updated and new_val != self.last_value.get(field_id)):
-                    res[field_id] = new_val
+                if send_only_updated:
+                    last_val = self.last_value.get(field_id)
+                    if isinstance(new_val, np.ndarray) and isinstance(last_val, np.ndarray):
+                        # We need all() call, otherwise it results in array of bools
+                        vals_equal = new_val.shape == last_val.shape and (new_val == last_val).all()
+                    else:
+                        vals_equal = new_val == last_val
+                    if vals_equal:
+                        continue
+                res[field_id] = new_val
             else:
                 warnings.warn("Won't be sending data from deleted weak reference")
         return res
@@ -659,3 +753,12 @@ def _pack_designer_fields(input: List[PropertyEditField]) -> str:
 
     json_obj = list(map(map_field, input))
     return json.dumps(json_obj)
+
+
+def _clean_layout(layout: QLayout):
+    for _ in range(layout.count()):
+        item = layout.takeAt(0)
+        widget = cast(Optional[QWidget], item.widget())
+        if widget:
+            widget.setParent(None)
+            widget.deleteLater()
