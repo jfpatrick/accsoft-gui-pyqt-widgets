@@ -9,6 +9,7 @@ from accwidgets.property_edit.propedit import (PropertyEdit, PropertyEditField, 
                                                _unpack_designer_fields, _pack_designer_fields, PropertyEditFormLayoutDelegate,
                                                AbstractPropertyEditWidgetDelegate, AbstractPropertyEditLayoutDelegate,
                                                _QtDesignerButtons, _QtDesignerDecoration, _QtDesignerButtonPosition)
+from accwidgets.led import Led
 
 
 @pytest.mark.parametrize("field", ["f1", "", None])
@@ -60,7 +61,7 @@ def test_enum_user_data(options, result):
     [
         (PropertyEditField(field="str", type=PropertyEdit.ValueType.STRING, editable=False), "text"),
         (PropertyEditField(field="int", type=PropertyEdit.ValueType.INTEGER, editable=False), "text"),
-        (PropertyEditField(field="bool", type=PropertyEdit.ValueType.BOOLEAN, editable=False), "text"),
+        (PropertyEditField(field="bool", type=PropertyEdit.ValueType.BOOLEAN, editable=False), None),
         (PropertyEditField(field="float", type=PropertyEdit.ValueType.REAL, editable=False), "text"),
         (PropertyEditField(field="enum", type=PropertyEdit.ValueType.ENUM, editable=False, user_data=PropertyEdit.ValueType.enum_user_data([("none", 0), ("one", 4), ("two", 5)])), "text"),
     ],
@@ -80,6 +81,8 @@ def test_set_value(qtbot: QtBot, value, expected_values, fields):
     widget.setValue(value)
     assert widget._widget_layout.rowCount() == len(config)
     for idx, expected_value, getter, conf in zip(range(len(getters)), expected_values, getters, config):
+        if getter is None:
+            continue
         inner_widget = widget._widget_layout.itemAt(idx, QFormLayout.FieldRole).widget()
         displayed_value = getattr(inner_widget, getter)()
         if expected_value is None:
@@ -228,7 +231,7 @@ def test_title(qtbot: QtBot):
     ], [
         (QLabel, "text", "label1"),
         (QLabel, "text", "label2"),
-        (QLabel, "text", "label3"),
+        (Led, "_get_status", "label3"),
         (QLabel, "text", "label4"),
         (QLabel, "text", "label5"),
     ],
@@ -242,7 +245,7 @@ def test_title(qtbot: QtBot):
     ], [
         (QLabel, "text", "str"),
         (QLabel, "text", "int"),
-        (QLabel, "text", "bool"),
+        (Led, "_get_status", "bool"),
         (QLabel, "text", "float"),
         (QLabel, "text", "enum"),
     ],
@@ -277,7 +280,7 @@ def test_title(qtbot: QtBot):
     [
         (QLabel, "text", "str"),
         (QLabel, "text", "int"),
-        (QLabel, "text", "bool"),
+        (Led, "_get_status", "bool"),
         (QLabel, "text", "float"),
         (QLabel, "text", "enum"),
     ],
@@ -543,7 +546,7 @@ def test_abstract_delegate_read_value(qtbot: QtBot, send_only_updated, editable,
 @pytest.mark.parametrize("editable, value_type, expected_widget_type", [
     (False, PropertyEdit.ValueType.INTEGER, QLabel),
     (False, PropertyEdit.ValueType.REAL, QLabel),
-    (False, PropertyEdit.ValueType.BOOLEAN, QLabel),
+    (False, PropertyEdit.ValueType.BOOLEAN, Led),
     (False, PropertyEdit.ValueType.STRING, QLabel),
     (False, PropertyEdit.ValueType.ENUM, QLabel),
     (True, PropertyEdit.ValueType.INTEGER, QSpinBox),
@@ -564,21 +567,21 @@ def test_delegate_create_widget(qtbot: QtBot, editable, value_type, expected_wid
     assert isinstance(new_widget, expected_widget_type)
 
 
-@pytest.mark.parametrize("editable, value_type, sent_value, expected_method_call, expected_method_arg", [
-    (False, PropertyEdit.ValueType.INTEGER, 2, "setNum", 2),
-    (False, PropertyEdit.ValueType.REAL, 2.5, "setNum", 2.5),
-    (False, PropertyEdit.ValueType.BOOLEAN, True, "setText", "True"),
-    (False, PropertyEdit.ValueType.STRING, "val", "setText", "val"),
-    (False, PropertyEdit.ValueType.ENUM, 4, "setText", "one"),
-    (False, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setText", "custom-text"),
-    (True, PropertyEdit.ValueType.INTEGER, 2, "setValue", 2),
-    (True, PropertyEdit.ValueType.REAL, 2.5, "setValue", 2.5),
-    (True, PropertyEdit.ValueType.BOOLEAN, True, "setChecked", True),
-    (True, PropertyEdit.ValueType.STRING, "val", "setText", "val"),
-    (True, PropertyEdit.ValueType.ENUM, 4, "setCurrentIndex", 1),
-    (True, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setCurrentIndex", 1),
+@pytest.mark.parametrize("editable, value_type, sent_value, expected_method_call, expected_method_arg, property_mock", [
+    (False, PropertyEdit.ValueType.INTEGER, 2, "setNum", 2, False),
+    (False, PropertyEdit.ValueType.REAL, 2.5, "setNum", 2.5, False),
+    (False, PropertyEdit.ValueType.BOOLEAN, True, "status", Led.Status.ON, True),
+    (False, PropertyEdit.ValueType.STRING, "val", "setText", "val", False),
+    (False, PropertyEdit.ValueType.ENUM, 4, "setText", "one", False),
+    (False, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setText", "custom-text", False),
+    (True, PropertyEdit.ValueType.INTEGER, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.REAL, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.BOOLEAN, True, "setChecked", True, False),
+    (True, PropertyEdit.ValueType.STRING, "val", "setText", "val", False),
+    (True, PropertyEdit.ValueType.ENUM, 4, "setCurrentIndex", 1, False),
+    (True, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setCurrentIndex", 1, False),
 ])
-def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, expected_method_call, expected_method_arg):
+def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, expected_method_call, expected_method_arg, property_mock):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
     qtbot.addWidget(widget)
@@ -590,9 +593,11 @@ def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, e
                                                                    editable=editable,
                                                                    user_data=ud))
     assert hasattr(new_widget, expected_method_call)
-    with mock.patch.object(new_widget, expected_method_call) as mocked_method:
+    with mock.patch(f"{new_widget.__class__.__module__}.{new_widget.__class__.__qualname__}.{expected_method_call}",
+                    new_callable=mock.PropertyMock if property_mock else mock.MagicMock) as mocked_method:
+        qtbot.addWidget(new_widget)
         delegate.display_data(field_id="test", value=sent_value, item_type=value_type, user_data=ud, widget=new_widget)
-        mocked_method.assert_called_with(expected_method_arg)
+        mocked_method.assert_called_once_with(expected_method_arg)
 
 
 @pytest.mark.parametrize("editable, value_type, sent_value, expected_msg", [
@@ -605,7 +610,6 @@ def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, e
     (False, PropertyEdit.ValueType.ENUM, [0, "label"], r"Can't set data \[0, 'label'\] to QLabel. Unexpected enum value received."),
     (True, PropertyEdit.ValueType.ENUM, [0, "label"], r"Can't set data \[0, 'label'\] to QComboBox. Unexpected enum value received."),
     (False, PropertyEdit.ValueType.INTEGER, {}, r"Can't set data {} to QLabel. Unsupported data type."),
-    (False, PropertyEdit.ValueType.BOOLEAN, {}, r"Can't set data {} to QLabel. Unsupported data type."),
     (False, PropertyEdit.ValueType.REAL, {}, r"Can't set data {} to QLabel. Unsupported data type."),
     (False, PropertyEdit.ValueType.STRING, {}, r"Can't set data {} to QLabel. Unsupported data type."),
 ])
@@ -627,7 +631,7 @@ def test_delegate_display_data_warns(qtbot: QtBot, editable, value_type, sent_va
 @pytest.mark.parametrize("editable, value_type, sent_value, expected_method_call, expected_method_return_val", [
     (False, PropertyEdit.ValueType.INTEGER, 2, "text", 2),
     (False, PropertyEdit.ValueType.REAL, 2.5, "text", 2.5),
-    (False, PropertyEdit.ValueType.BOOLEAN, True, "text", True),
+    (False, PropertyEdit.ValueType.BOOLEAN, True, None, True),
     (False, PropertyEdit.ValueType.STRING, "val", "text", "val"),
     (False, PropertyEdit.ValueType.ENUM, 4, "text", 4),
     (True, PropertyEdit.ValueType.INTEGER, 2, "value", 2),
@@ -650,9 +654,11 @@ def test_delegate_send_data(qtbot: QtBot, editable, value_type, sent_value, expe
     delegate.value_updated({
         "test": sent_value,
     })
-    assert hasattr(new_widget, expected_method_call)
     res = delegate.send_data(field_id="test", user_data=ud, widget=new_widget, item_type=value_type)
     assert res == expected_method_return_val
+    if expected_method_call is None:
+        return
+    assert hasattr(new_widget, expected_method_call)
     with mock.patch.object(new_widget, expected_method_call) as mocked_method:
         delegate.send_data(field_id="test", user_data=ud, widget=new_widget, item_type=value_type)
         if isinstance(new_widget, QLabel):
