@@ -57,7 +57,7 @@ class AbstractBaseTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metacla
         }
 
     @classmethod
-    def from_plot_item(
+    def from_plot_item(  # type: ignore
             cls,
             *graphicsobjectargs,
             plot_item: "ExPlotItem",

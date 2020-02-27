@@ -14,6 +14,7 @@ from typing import (
 )
 from datetime import datetime
 import numpy as np
+import collections
 
 from qtpy.QtCore import QObject, Signal, Slot
 from accwidgets.graph.datamodel.datastructures import (
@@ -110,13 +111,21 @@ class SignalBoundDataSource(UpdateSource):
 
         if data_type_specified == transform_specified:
             raise ValueError("You must specify either data_type or transformation")
+        self._data_type = data_type
         self.transform: Callable = (transformation
                                     or PlottingItemDataFactory.get_transformation(data_type))
         sig.connect(self._emit_point)
 
     def _emit_point(self,
                     *args: Union[float, str, Sequence[float], Sequence[str]]):
-        transformed_data = self.transform(*args)
+        if (
+            self._data_type is not None
+            and len(args) == 1
+            and PlottingItemDataFactory.should_unwrap(args[0], self._data_type)
+        ):
+            transformed_data = self.transform(*args[0])  # type: ignore
+        else:
+            transformed_data = self.transform(*args)
         self.sig_new_data[type(transformed_data)].emit(transformed_data)
 
 
@@ -129,6 +138,43 @@ class PlottingItemDataFactory:
     """
 
     TIMESTAMP_HEADER_FIELD = "acqStamp"
+
+    @staticmethod
+    def transform(
+        dtype: PlottingItemData,
+        *values: Union[float, str, Sequence[float], Sequence[str]],
+    ) -> PlottingItemData:
+        """Transform the given values to the given data type."""
+        transform_func = PlottingItemDataFactory.get_transformation(dtype)
+        if (
+            PlottingItemDataFactory.should_unwrap(values[0], dtype)
+            and len(values) == 1
+        ):
+            return transform_func(*values[0])
+        else:
+            return transform_func(*values)
+
+    @staticmethod
+    def should_unwrap(value: Any, dtype: PlottingItemData) -> bool:
+        """
+        Check if the value should be unwrapped for the transformation function.
+        This is the case if the value is a list of multiple value which each
+        being a separate parameter for the transformation function.
+
+        Args:
+            value: value that will be passed to the transformation function
+            dtype: Data Type in which the value should be transformed
+
+        Returns:
+            True, if the values should be passed to the transform function
+            unwrapped
+        """
+        seqs = (collections.Sequence, np.ndarray)
+        if isinstance(value, seqs) and not isinstance(value, str):
+            if dtype.is_collection:
+                return isinstance(value[0], seqs) and not isinstance(value, str)
+            return True
+        return False
 
     @staticmethod
     def get_transformation(

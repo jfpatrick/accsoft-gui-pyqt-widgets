@@ -26,8 +26,8 @@ class MainWindow(QMainWindow):
         self.object_with_signal = ObjectWithSignal()
         # Connect the signal of the object to the value slot in the plot
         # Both float and integers are accepted by the slot
-        self.object_with_signal.new_point_available[float].connect(self.plot.addDataToSingleCurve)
-        self.object_with_signal.new_point_available[int].connect(self.plot.addDataToSingleCurve)
+        self.object_with_signal.new_point_available[float].connect(self.plot.pushData)
+        self.object_with_signal.new_point_available[int].connect(self.plot.pushData)
         self.show()
         self.resize(800, 600)
         main_container = QWidget()
