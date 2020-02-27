@@ -13,19 +13,36 @@ from qtpy.QtCore import Slot, Property, Q_ENUM
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QPen
 
-from accwidgets.graph.datamodel.connection import UpdateSource
+from accwidgets.graph.datamodel.connection import UpdateSource, PlottingItemDataFactory
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle,
     TimeSpan,
 )
-from accwidgets.graph.widgets.plotitem import ExPlotItem, PlotItemLayer, LayerIdentification
+from accwidgets.graph.widgets.plotitem import (
+    ExPlotItem,
+    PlotItemLayer,
+    LayerIdentification,
+)
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.dataitems.bargraphitem import LiveBarGraphItem
-from accwidgets.graph.widgets.dataitems.injectionbaritem import LiveInjectionBarGraphItem
+from accwidgets.graph.widgets.dataitems.plotdataitem import AbstractBasePlotCurve
+from accwidgets.graph.widgets.dataitems.bargraphitem import (
+    LiveBarGraphItem,
+    AbstractBaseBarGraphItem,
+)
+from accwidgets.graph.widgets.dataitems.injectionbaritem import (
+    LiveInjectionBarGraphItem,
+    AbstractBaseInjectionBarGraphItem,
+)
 from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
 from accwidgets.graph.widgets.axisitems import ExAxisItem
+from accwidgets.graph.datamodel.datastructures import (
+    PointData,
+    CurveData,
+    BarCollectionData,
+    InjectionBarCollectionData,
+)
 from accwidgets import designer_check
 
 
@@ -216,21 +233,6 @@ class ExPlotWidget(pg.PlotWidget):
             data_source=data_source,
             buffer_size=buffer_size,
         )
-
-    @Slot(float)
-    @Slot(int)
-    def addDataToSingleCurve(self, data) -> None:  # pylint: disable=invalid-name
-        """
-        This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn. Further calls with other data will append it
-        to the existing one.
-
-        This slot will accept single integer and float values
-        and draw them at the timestamp of their arrival.
-        """
-        self.plotItem.add_data_to_single_curve(data)
 
     def add_layer(
             self,
@@ -1034,6 +1036,35 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
     )
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
+    @Slot(float)
+    @Slot(int)
+    @Slot(tuple)
+    @Slot(list)
+    @Slot(np.ndarray)
+    @Slot(PointData)
+    def pushData(self,
+                 data: Union[int, float, Tuple, List, np.ndarray, PointData]) -> None:
+        """
+        This slot exposes the possibility to draw data on a
+        single curve in the plot. If this curve does not yet exist,
+        it will be created automatically . The data will be collected by
+        the curve and drawn. Further calls with other data will append it
+        to the existing one.
+
+        This slot will accept single integer and float values
+        and draw them at the timestamp of their arrival.
+
+        To propagate an additional x value, put it in second position in an
+        array: [y, x]
+        """
+        if not isinstance(data, PointData):
+            data = PlottingItemDataFactory.transform(PointData, data)
+        self.plotItem.plot_data_on_single_data_item(
+            data=data,
+            # ignore, bc mypy wants concrete class
+            item_type=AbstractBasePlotCurve,  # type: ignore
+        )
+
 
 class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
 
@@ -1115,6 +1146,35 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
         designable=False,
     )
     """DO NOT USE WITH A CYCLIC PLOT."""
+
+    @Slot(float)
+    @Slot(int)
+    @Slot(tuple)
+    @Slot(list)
+    @Slot(np.ndarray)
+    @Slot(PointData)
+    def pushData(self,
+                 data: Union[int, float, Tuple, List, np.ndarray, PointData]) -> None:
+        """
+        This slot exposes the possibility to draw data on a
+        single curve in the plot. If this curve does not yet exist,
+        it will be created automatically . The data will be collected by
+        the curve and drawn. Further calls with other data will append it
+        to the existing one.
+
+        This slot will accept single integer and float values
+        and draw them at the timestamp of their arrival.
+
+        To propagate an additional x value, put it in second position in an
+        array: [y, x]
+        """
+        if not isinstance(data, PointData):
+            data = PlottingItemDataFactory.transform(PointData, data)
+        self.plotItem.plot_data_on_single_data_item(
+            data=data,
+            # ignore, bc mypy wants concrete class
+            item_type=AbstractBasePlotCurve,  # type:ignore
+        )
 
 
 class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
@@ -1241,3 +1301,51 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
         _set_left_time_span_boundary_bool,
         designable=False,
     )
+
+    @Slot(np.ndarray)
+    @Slot(CurveData)
+    def replaceDataAsCurve(self, data: Union[np.ndarray, CurveData]) -> None:
+        """
+        This slot exposes the possibility to draw data on a
+        single curve in the plot. If this curve does not yet exist,
+        it will be created automatically . The data will be collected by
+        the curve and drawn.
+        A full curve is expected as either a 2D numpy array or a CurveData
+        object. The curve will replace all data shown prior to its arrival.
+        """
+        if not isinstance(data, CurveData):
+            data = PlottingItemDataFactory.transform(CurveData, data)
+        self.plotItem.plot_data_on_single_data_item(
+            data=data,
+            # ignore, bc mypy wants concrete class
+            item_type=AbstractBasePlotCurve,  # type: ignore
+        )
+
+    @Slot(BarCollectionData)
+    def replaceDataAsBarGraph(self, data: BarCollectionData) -> None:
+        """
+        This slot exposes the possibility to draw data on a
+        single bar graph in the plot. If this bar_graph does not yet exist,
+        it will be created automatically. The data will be collected by
+        the bar graph and drawn.
+        """
+        self.plotItem.plot_data_on_single_data_item(
+            data=data,
+            # ignore, bc mypy wants concrete class
+            item_type=AbstractBaseBarGraphItem,  # type: ignore
+        )
+
+    @Slot(InjectionBarCollectionData)
+    def replaceDataAsInjectionBars(self,
+                                   data: InjectionBarCollectionData) -> None:
+        """
+        This slot exposes the possibility to draw data on a single injection
+        bar graph in the plot. If this graph does not yet exist, it will be
+        created automatically. The data will be collected by the graph and
+        drawn.
+        """
+        self.plotItem.plot_data_on_single_data_item(
+            data=data,
+            # ignore, bc mypy wants concrete class
+            item_type=AbstractBaseInjectionBarGraphItem,  # type: ignore
+        )

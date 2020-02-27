@@ -39,13 +39,12 @@ from accwidgets.graph.widgets.dataitems.injectionbaritem import (
 from accwidgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
     AbstractBasePlotCurve,
-    ScrollingPlotCurve,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
-from accwidgets.graph.datamodel.datastructures import PointData
+from accwidgets.graph.datamodel.datastructures import PlottingItemData
 from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, CyclicPlotTimeSpan, BasePlotTimeSpan
 
 
@@ -118,8 +117,8 @@ class ExPlotItem(pg.PlotItem):
         self._orig_auto_btn: Optional[pg.ButtonItem] = None
         self._prepare_scrolling_plot_fixed_xrange()
         # This will only be used in combination with the singleCurveValueSlot
-        self.single_curve_value_slot_source: Optional[UpdateSource] = None
-        self.single_curve_value_slot_curve: Optional[ScrollingPlotCurve] = None
+        self.single_data_item_slot_source: Optional[UpdateSource] = None
+        self.single_value_slot_dataitem: Optional[DataModelBasedItem] = None
 
     # ~~~~~~~~~~~ Plotting Functions ~~~~~~~~~~~
 
@@ -434,23 +433,32 @@ class ExPlotItem(pg.PlotItem):
             self._update_children_items_timing()
             self._draw_style_specific_objects()
 
-    def add_data_to_single_curve(self, data: float) -> None:
+    def plot_data_on_single_data_item(self,
+                                      data: PlottingItemData,
+                                      item_type: Type[DataModelBasedItem] = AbstractBasePlotCurve) -> None:
         """
         This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn. Further calls with other data will append it
-        to the existing one.
+        single data item in the plot. If this item does not yet exist,
+        it will be created automatically. If data gets appended or not
+        is controlled by the plot item's plotting style.
 
-        This slot will accept single integer and float values
-        and draw them at the timestamp of their arrival.
+        If the item type switches, the old item is replaced with the new one.
+
+        Args:
+            data: data to plot
+            item_type: Item type which should represent the data
         """
-        if self.single_curve_value_slot_source is None:
-            self.single_curve_value_slot_source = UpdateSource()
-        if self.single_curve_value_slot_curve is None:
-            self.single_curve_value_slot_curve = self.addCurve(data_source=self.single_curve_value_slot_source)
-        new_data = PointData(x=datetime.now().timestamp(), y=data)
-        self.single_curve_value_slot_source.sig_new_data.emit(new_data)
+        if self.single_data_item_slot_source is None:
+            self.single_data_item_slot_source = UpdateSource()
+        if not isinstance(self.single_value_slot_dataitem, item_type):
+            self.removeItem(self.single_value_slot_dataitem)
+            self.single_value_slot_dataitem = None
+        if self.single_value_slot_dataitem is None:
+            item = item_type.from_plot_item(self,
+                                            self.single_data_item_slot_source)
+            self.addItem(item)
+            self.single_value_slot_dataitem = item
+        self.single_data_item_slot_source.sig_new_data[type(data)].emit(data)
 
     # ~~~~~~~~~~ Layers ~~~~~~~~~
 

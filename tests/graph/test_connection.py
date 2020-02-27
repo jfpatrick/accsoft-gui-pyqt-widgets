@@ -258,6 +258,31 @@ def test_default_transform_function_lookup(expected):
     assert isinstance(actual, expected)
 
 
+@pytest.mark.parametrize("dtype, data, should_unwrap", [
+    (accgraph.PointData, 0, False),
+    (accgraph.BarData, 0, False),
+    (accgraph.InjectionBarData, 0, False),
+    (accgraph.TimestampMarkerData, 0, False),
+    (accgraph.PointData, [0], True),
+    (accgraph.BarData, [0], True),
+    (accgraph.InjectionBarData, [0], True),
+    (accgraph.TimestampMarkerData, [0], True),
+    # Collections
+    (accgraph.CurveData, [0], False),
+    (accgraph.BarCollectionData, [0], False),
+    (accgraph.InjectionBarCollectionData, [0], False),
+    (accgraph.TimestampMarkerCollectionData, [0], False),
+    (accgraph.CurveData, [[0], [0]], True),
+    (accgraph.BarCollectionData, [[0], [0]], True),
+    (accgraph.InjectionBarCollectionData, [[0], [0]], True),
+    (accgraph.TimestampMarkerCollectionData, [[0], [0]], True),
+])
+def test_should_unwrap(dtype, data, should_unwrap):
+    actual = accgraph.PlottingItemDataFactory.should_unwrap(data,
+                                                            dtype=dtype)
+    assert actual == should_unwrap
+
+
 @pytest.mark.parametrize("input, args, header", [
     ([0.0, 1.0, 2.0, {"acqTimestamp": 0.0}], [0.0, 1.0, 2.0], {"acqTimestamp": 0.0}),
     ([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], None),

@@ -9,6 +9,7 @@ import pyqtgraph as pg
 
 from accwidgets.graph.datamodel.itemdatamodel import AbstractBaseDataModel
 from accwidgets.graph.datamodel.connection import UpdateSource
+from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
 if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
@@ -48,6 +49,33 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         self._data_model.sig_data_model_changed.connect(self._handle_data_model_change)
         self._parent_plot_item: "ExPlotItem" = parent_plot_item
         self._layer_id: str = ""
+
+    @classmethod
+    @abc.abstractmethod
+    def from_plot_item(
+            cls,
+            plot_item: "ExPlotItem",
+            data_source: UpdateSource,
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
+            **base_kargs,
+    ) -> "DataModelBasedItem":
+        """
+        Factory method for creating for creating a concrete data item class
+        for the given plot.
+
+        Args:
+            plot_item: plot item the item should fit to
+            data_source: source the item receives data from
+            buffer_size: count of values the item's data model's buffer should hold at max
+            base_kwargs: keyword arguments for the items base class
+
+        Returns:
+            Instance of the concrete class
+
+        Raises:
+            ValueError: The item does not fit the passed plot item's plotting style.
+        """
+        pass
 
     @classmethod
     def get_subclass_fitting_plotting_style(
