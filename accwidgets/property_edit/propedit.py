@@ -12,6 +12,7 @@ from qtpy.QtCore import Property, Q_ENUMS, QObjectCleanupHandler, Qt, Signal, Sl
 from dataclasses import dataclass
 from accwidgets.generics import GenericMeta
 from accwidgets.designer_check import is_designer
+from accwidgets.led import Led
 
 
 @dataclass
@@ -620,8 +621,13 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
                       user_data: Optional[Dict[str, Any]],
                       parent: Optional[QWidget] = None) -> QWidget:
         _ = field_id
-        # TODO: This needs to be updated with smarter widgets when they are available (e.g. combobox that can work with EnumSets or LED for booleans). Currently this will be overridden in ComRAD which has LEDs
+        # TODO: This needs to be updated with smarter widgets when they are available (e.g. combobox that can work with EnumSets).
         if not editable:
+            if item_type == PropertyEdit.ValueType.BOOLEAN:
+                widget = Led(parent)
+                widget.alignment = Led.Alignment.LEFT
+                return widget
+
             widget = QLabel(parent)
             if is_designer():
                 widget.setText("<Runtime value>")
@@ -675,6 +681,18 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
                 cast(QLabel, widget).setNum(value)
             else:
                 warnings.warn(f"Can't set data {value} to QLabel. Unsupported data type.")
+        elif isinstance(widget, Led):
+            if item_type == PropertyEdit.ValueType.BOOLEAN:
+                if isinstance(value, Led.Status):
+                    cast(Led, widget).status = value
+                else:
+                    cast(Led, widget).status = Led.Status.ON if value else Led.Status.OFF
+            elif item_type == PropertyEdit.ValueType.INTEGER:
+                try:
+                    status = Led.Status(value)
+                except ValueError:
+                    return
+                cast(Led, widget).status = status
         elif isinstance(widget, QSpinBox):
             cast(QSpinBox, widget).setValue(value)  # Assuming data is int here, based on the widget_for_item
         elif isinstance(widget, QDoubleSpinBox):
@@ -701,7 +719,7 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
 
     def send_data(self, field_id: str, user_data: Optional[Dict[str, Any]], item_type: PropertyEdit.ValueType, widget: QWidget) -> Any:
         _ = field_id
-        if isinstance(widget, QLabel):
+        if isinstance(widget, QLabel) or isinstance(widget, Led):
             # This is clearly non-editable field. So just read last known value
             return self.last_value.get(field_id)
         elif isinstance(widget, QSpinBox):

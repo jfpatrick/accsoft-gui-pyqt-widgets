@@ -1,4 +1,4 @@
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast, Tuple
 from enum import IntEnum
 from qtpy.QtWidgets import QWidget, QStyleOption, QStyle
 from qtpy.QtCore import Qt, QPoint, Property, Q_ENUMS, Slot, QSize
@@ -13,9 +13,17 @@ class _QtDesignerStatus:
     Error = 4
 
 
-class Led(QWidget, _QtDesignerStatus):
+class _QtDesignerAlignment:
+    Center = 0
+    Top = 1
+    Left = 2
+    Bottom = 3
+    Right = 4
 
-    Q_ENUMS(_QtDesignerStatus)
+
+class Led(QWidget, _QtDesignerStatus, _QtDesignerAlignment):
+
+    Q_ENUMS(_QtDesignerStatus, _QtDesignerAlignment)
 
     class Status(IntEnum):
         """
@@ -56,6 +64,22 @@ class Led(QWidget, _QtDesignerStatus):
                 raise ValueError(f"Status {status} does not have corresponding color.")
             return QColor(*rgb)
 
+    class Alignment(IntEnum):
+        """
+        Alignment of the LED bubble inside the widget boundaries, when boundaries are stretched to the larger
+        size along one of the axes.
+        """
+        CENTER = _QtDesignerAlignment.Center
+        """Keep the LED in the center (default)."""
+        TOP = _QtDesignerAlignment.Top
+        """Snap the LED to the top edge, when widget height is greater than width."""
+        LEFT = _QtDesignerAlignment.Left
+        """Snap the LED to the left edge, when widget width is greater than height."""
+        BOTTOM = _QtDesignerAlignment.Bottom
+        """Snap the LED to the bottom edge, when widget height is greater than width."""
+        RIGHT = _QtDesignerAlignment.Right
+        """Snap the LED to the right edge, when widget width is greater than height."""
+
     def __init__(self, parent: Optional[QWidget] = None):
         """
         Basic LED that displays a circle with certain fill color.
@@ -64,9 +88,9 @@ class Led(QWidget, _QtDesignerStatus):
             parent: Optional parent widget.
         """
         super().__init__(parent)
-        self.setAutoFillBackground(True)
         self._painter = QPainter()
         self._color = QColor(127, 127, 127)
+        self._alignment: Led.Alignment = Led.Alignment.CENTER
         self._brush = QBrush(self._grad_for_color(self._color))
         self._pen = QPen(Qt.SolidLine)
         self._accent_brush = QBrush(self._accent_grad)
@@ -120,6 +144,20 @@ class Led(QWidget, _QtDesignerStatus):
     status: "Led.Status" = Property(_QtDesignerStatus, _get_status, _set_status)
     """Status to switch LED to a predefined color."""
 
+    def _get_alignment(self) -> "Led.Alignment":
+        return self._alignment
+
+    def _set_alignment(self, new_val: "Led.Alignment"):
+        if self._alignment == new_val:
+            return
+        self._alignment = new_val
+        self._brush = QBrush(self._grad_for_color(self._color))
+        self._accent_brush = QBrush(self._accent_grad)
+        self.update()
+
+    alignment: "Led.Alignment" = Property(_QtDesignerAlignment, _get_alignment, _set_alignment)
+    """Alignment of the rendered LED inside the widget frame."""
+
     def paintEvent(self, event: QPaintEvent):
         """
         A paint event is a request to repaint all or part of a widget. It can happen for one of the following reasons:
@@ -138,15 +176,12 @@ class Led(QWidget, _QtDesignerStatus):
         self._painter.setRenderHint(QPainter.Antialiasing)
         self._painter.setBrush(self._brush)
         self._painter.setPen(self._pen)
-        rect = self.rect()
-        width = rect.width()
-        height = rect.height()
-        edge = min(width, height)
+        x_center, y_center, edge = self._bubble_center
         r = edge / 2.0 - 2.0 * max(self._pen.widthF(), 1.0)
-        self._painter.drawEllipse(QPoint(width / 2.0, height / 2.0), r, r)
+        self._painter.drawEllipse(QPoint(x_center, y_center), r, r)
         self._painter.setBrush(self._accent_brush)
         self._painter.setPen(QColor(0, 0, 0, 0))
-        self._painter.drawEllipse(QPoint(width / 2.0, height / 2.0 - edge * 0.165), edge * 0.4, edge * 0.3)
+        self._painter.drawEllipse(QPoint(x_center, y_center - edge * 0.165), edge * 0.4, edge * 0.3)
         self._painter.end()
 
     def resizeEvent(self, event: QResizeEvent):
@@ -171,8 +206,8 @@ class Led(QWidget, _QtDesignerStatus):
         self.update()
 
     def _grad_for_color(self, color: QColor) -> QLinearGradient:
-        edge = min(self.width(), self.height())
-        gradient = QLinearGradient(self.width() / 2.0, (self.height() - edge) / 2.0, self.width() / 2.0, (self.height() + edge) / 2.0)
+        x_center, y_center, edge = self._bubble_center
+        gradient = QLinearGradient(x_center, y_center - edge / 2.0, x_center, y_center + edge / 2.0)
         gradient.setColorAt(0, color)
 
         # Make a bit brighter using HSV model: https://doc.qt.io/qt-5/qcolor.html#the-hsv-color-model
@@ -184,9 +219,27 @@ class Led(QWidget, _QtDesignerStatus):
 
     @property
     def _accent_grad(self) -> QLinearGradient:
-        edge = min(self.width(), self.height())
-        top_edge = (self.height() - edge) / 2.0
-        gradient = QLinearGradient(self.width() / 2.0, top_edge + edge * 0.05, self.width() / 2.0, top_edge + edge * 0.65)
+        x_center, y_center, edge = self._bubble_center
+        top_edge = y_center - edge / 2.0
+        gradient = QLinearGradient(x_center, top_edge + edge * 0.05, x_center, top_edge + edge * 0.65)
         gradient.setColorAt(0, QColor(255, 255, 255, 200))
         gradient.setColorAt(1, QColor(255, 255, 255, 5))
         return gradient
+
+    @property
+    def _bubble_center(self) -> Tuple[float, float, float]:
+        rect = self.rect()
+        width = rect.width()
+        height = rect.height()
+        edge = min(width, height)
+        x_center = width / 2.0
+        y_center = height / 2.0
+        if self.alignment == Led.Alignment.LEFT:
+            x_center = edge / 2.0
+        elif self.alignment == Led.Alignment.RIGHT:
+            x_center = width - edge / 2.0
+        elif self.alignment == Led.Alignment.TOP:
+            y_center = edge / 2.0
+        elif self.alignment == Led.Alignment.BOTTOM:
+            y_center = height - edge / 2.0
+        return x_center, y_center, edge
