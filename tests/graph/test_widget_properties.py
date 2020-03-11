@@ -23,7 +23,7 @@ from .mock_utils.widget_test_window import MinimalTestWindow
     StaticPlotWidget,
 ])
 def test_title_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_plot_title(new_val="My title")
     assert window.plot.plotItem.titleLabel.text == "My title"
     assert window.plot._get_plot_title() == "My title"
@@ -35,7 +35,7 @@ def test_title_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_grid_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     # Show grid in x direction
     window.plot.gridOrientation = GridOrientationOptions.X
     assert window.plot.plotItem.ctrl.xGridCheck.isChecked()
@@ -63,7 +63,7 @@ def test_grid_property(qtbot, widget):
     CyclicPlotWidget,
 ])
 def test_time_line_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_show_time_line(new_val=True)
     assert window.plot._get_show_time_line()
     assert window.plot.plotItem._time_line
@@ -77,7 +77,7 @@ def test_time_line_property(qtbot, widget):
     CyclicPlotWidget,
 ])
 def test_time_span_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_left_time_span_boundary(new_val=3.1415)
     assert window.plot._get_left_time_span_boundary() == 3.1415
     assert window.plot.plotItem.plot_config.time_span.left_boundary_offset == 3.1415
@@ -92,7 +92,7 @@ def test_time_span_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_x_axis_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot.showXAxis = XAxisSideOptions.Hidden
     assert window.plot.showXAxis == XAxisSideOptions.Hidden
     window.plot.showXAxis = XAxisSideOptions.Bottom
@@ -111,7 +111,7 @@ def test_x_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_y_axis_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot.showYAxis = DefaultYAxisSideOptions.Hidden
     assert window.plot.showYAxis == DefaultYAxisSideOptions.Hidden
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
@@ -130,7 +130,7 @@ def test_y_axis_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_axis_labels_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_layer_ids(layers=["0"])
     window.plot.showXAxis = XAxisSideOptions.Bottom
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
@@ -163,7 +163,7 @@ def test_axis_labels_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_axis_ranges_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot.showXAxis = XAxisSideOptions.Bottom
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
     window.plot._set_layer_ids(layers=["0"])
@@ -215,7 +215,7 @@ def test_axis_ranges_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_ids_property(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_layer_ids(layers=["custom_layer_0"])
     assert len(window.plot.layerIDs) == 1
     assert window.plot._get_layer_ids() == ["custom_layer_0"]
@@ -236,7 +236,7 @@ def test_layer_ids_property(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_rename(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_layer_ids(layers=["0", "1"])
     labels = {
         "bottom": "x",
@@ -276,7 +276,7 @@ def test_layer_rename(qtbot, widget):
     StaticPlotWidget,
 ])
 def test_layer_removal(qtbot, widget):
-    window = MinimalTestWindow(plot_widget=widget())
+    window = MinimalTestWindow(plot=widget())
     window.plot._set_layer_ids(layers=["0", "1"])
     labels = {
         "bottom": "x",

@@ -2,14 +2,22 @@
 Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
-from typing import Tuple, Dict, cast, Type, Union
+from typing import Tuple, Dict, cast, Type, Union, Optional, List
 from copy import copy
+from enum import Flag, auto
 
 import numpy as np
 import pyqtgraph as pg
+from qtpy.QtCore import QRectF, Signal, Qt, QPointF
+from qtpy.QtWidgets import QGraphicsSceneMouseEvent
+from qtpy.QtGui import QColor, QPen, QBrush
 
 from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import LiveCurveDataModel, StaticCurveDataModel
+from accwidgets.graph.datamodel.itemdatamodel import (
+    LiveCurveDataModel,
+    StaticCurveDataModel,
+    EditableCurveDataModel,
+)
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
 from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
 from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
@@ -403,7 +411,7 @@ class ScrollingPlotCurve(LivePlotCurve):
 class StaticPlotCurve(AbstractBasePlotCurve):
 
     """
-    Bar Graph Item for displaying static data, where new arriving data replaces
+    Curve Item for displaying static data, where new arriving data replaces
     the old one entirely.
 
     One example use case would be displaying waveform plots.
@@ -415,3 +423,403 @@ class StaticPlotCurve(AbstractBasePlotCurve):
     def update_item(self) -> None:
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
+
+
+class EditablePlotCurve(AbstractBasePlotCurve):
+
+    """Curve Item for displaying editable data."""
+
+    supported_plotting_style = PlotWidgetStyle.EDITABLE
+    data_model_type = EditableCurveDataModel
+
+    sig_selection_changed = Signal(CurveData)
+    """
+    Signal informing about any changes to the current selection. If the emitted
+    data is empty, the current selection was unselected. The signal will also
+    be emitted, if the current selection has been moved around by dragging.
+    """
+
+    def __init__(
+            self,
+            plot_item: "ExPlotItem",
+            data_model: AbstractBaseDataModel,
+            pen=DEFAULT_COLOR,
+            **plotdataitem_kwargs,
+    ):
+        """Base class for different live data curves.
+
+        Args:
+            plot_item: plot item the curve should fit to
+            data_model: Data Model the curve is based on
+            pen: pen the curve should be drawn with, is part of the PlotDataItem
+                 base class parameters
+            **plotdataitem_kwargs: keyword arguments fo the base class
+
+        Raises:
+            ValueError: The passes data source is not usable as a source for data
+        """
+        AbstractBasePlotCurve.__init__(self,
+                                       plot_item=plot_item,
+                                       data_model=data_model,
+                                       pen=pen,
+                                       **plotdataitem_kwargs)
+        # We will use a separate scatter plot item for interaction with the
+        # data instead of using the scatter plot item child of the PlotDataItem
+        self._selection = DataSelectionMarker(direction=DragDirection.Y)
+        self._selection.setParentItem(self)
+        self._selected_indices: Optional[np.ndarray] = None
+
+    def select(self, selection: QRectF) -> None:
+        """
+        Select data from the curve using the passed rectangle. The rectangle
+        coordinates are given in scene coordinates.
+
+        Args:
+            selection: rectangle for selecting new points
+        """
+        self._update_selected_indices(selection)
+        if self._selected_indices is not None and len(self._selected_indices) > 0:
+            x, y = self.getData()
+            x_selection = x[self._selected_indices]
+            y_selection = y[self._selected_indices]
+            self._selection.setData(x_selection, y_selection)
+            self._stylize_selection_marker()
+            self._selection.sig_selection_moved.connect(self._selection_edited)
+            # Inform about selection changes
+            self.sig_selection_changed.emit(CurveData(x_selection, y_selection))
+        else:
+            self.unselect()
+
+    def unselect(self) -> None:
+        """Unselect prior done selections."""
+        self._update_selected_indices(None)
+        self._selection.setData([], [])
+        # Inform about point being unselected
+        self.sig_selection_changed.emit(CurveData([], []))
+        try:
+            self._selection.sig_selection_moved.disconnect(self._selection_edited)
+        except TypeError:
+            # If no selection has been made in selection mode no signal was
+            # connected
+            pass
+
+    def update_item(self) -> None:
+        """Get the full data of the data buffer and display it."""
+        self.setData(*self._data_model.full_data_buffer)
+
+    @property
+    def selection(self) -> "DataSelectionMarker":
+        """Marker item for the currently selected data."""
+        return self._selection
+
+    # ~~~~~~~~~~~~~~~ Wrapped from data model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    def send_current_state(self) -> bool:
+        """Send the state back through the update source.
+
+        Returns:
+            True if there was a state to send
+        """
+        return self._editable_model.send_current_state()
+
+    @property
+    def undoable(self) -> bool:
+        """Is there an older state we can roll back to?"""
+        return self._editable_model.undoable
+
+    @property
+    def redoable(self) -> bool:
+        """Is there a newer state we can jump to?"""
+        return self._editable_model.redoable
+
+    def undo(self) -> None:
+        """Jump to the next older state."""
+        self._editable_model.undo()
+
+    def redo(self) -> None:
+        """Jump to the next newer state."""
+        self._editable_model.redo()
+
+    # ~~~~~~~~~~~~~~~~~~~~ Private ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    def _update_selected_indices(self, selection: Optional[QRectF]) -> None:
+        """
+        Update the selection of the data selection marker with a given
+        selection rectangle
+
+        Args:
+            selection: A selected region as a rectangle or None for unselecting
+                       all prior selected points
+        """
+        if selection:
+            x0 = selection.left()
+            x1 = selection.right()
+            y0 = selection.top()
+            y1 = selection.bottom()
+            x_data, y_data = self.getData()
+            sel = np.logical_and(np.logical_and(x0 <= x_data, x_data <= x1),
+                                 np.logical_and(y0 <= y_data, y_data <= y1))
+        else:
+            x_data, y_data = self.getData()
+            sel = np.zeros_like(x_data, dtype=bool)
+        self._selected_indices = sel
+
+    def _stylize_selection_marker(self) -> None:
+        """
+        Style the selected points with different colors so they are easily
+        visible.
+        """
+        sym = self.opts.get("symbol")
+        if sym:
+            self._selection.setBrush(None)
+            self._selection.setSymbol(sym)
+        else:
+            self._selection.setBrush("w")
+        # We need a minimum size so we can comfortably drag it with the mouse
+        sym_size = max(self.opts["symbolSize"] + 2, 5)
+        self._selection.setSize(sym_size)
+        pen_color = pg.mkPen(self.opts["symbolPen"]).color()
+        sym_pen = pg.mkPen(DataSelectionMarker.complementary(pen_color))
+        sym_pen.setWidth(3)
+        self._selection.setPen(sym_pen)
+
+    def _selection_edited(self, data: np.ndarray) -> None:
+        """Apply the editing of the DataSelectionMarker to the this curve
+
+        Args:
+            data: data to apply to this curve from the selection marker
+        """
+        orig = np.array(self.getData())
+        orig[0][self._selected_indices] = data[0]
+        orig[1][self._selected_indices] = data[1]
+        # we do not want to set the view data directly but go the route through
+        # the data model, the view will be updated automatically through the
+        # connection between the view and the model
+        self._editable_model.handle_editing(CurveData(*orig))
+        # Inform about selection movement to the outside
+        self.sig_selection_changed.emit(CurveData(*data))
+
+    @property
+    def _editable_model(self) -> EditableCurveDataModel:
+        """Accessing the datamodel through this saves you from casting."""
+        return cast(EditableCurveDataModel, self.model())
+
+
+class DragDirection(Flag):
+    """
+    Enumeration for defining in the direction in which points in a
+    DataSelectionMarker should be draggable.
+    """
+    X = auto()
+    Y = auto()
+
+
+class DataSelectionMarker(pg.ScatterPlotItem):
+
+    sig_selection_moved = Signal(np.ndarray)
+    """
+    As soon as a move was done successfully, this signal will emit the new
+    position of the data displayed by this marker.
+    """
+
+    def __init__(self,
+                 direction: DragDirection = DragDirection.Y,
+                 label_points: bool = False,
+                 *args,
+                 **kwargs):
+        """
+        Data selection markers are scatter plots, that can be moved around.
+
+        Args:
+            direction: In which direction should the points be draggable
+            label_points: Label each points position individually
+            args: Positional arguments for the ScatterPlotItem
+            kwargs: Keyword arguments for the ScatterPlotItem
+        """
+        self._point_labels: List[pg.TestItem] = []
+        self._points_labeled = label_points
+        super().__init__(*args, **kwargs)
+        self._drag_direction = direction
+        # State of the current drag event
+        self._drag_start: Optional[QPointF] = None
+        self._drag_point: Optional[pg.SpotItem] = None
+        self._original_data: Optional[np.ndarray] = None
+
+    def mouseDragEvent(self, ev: QGraphicsSceneMouseEvent):
+        """Custom mouse drag event for moving the selection around.
+        If there are no points under the drag events starting position, it
+        will be ignored.
+
+        Args:
+            ev: mouse drag event to move the selection
+        """
+        if ev.button() != Qt.LeftButton:
+            ev.ignore()
+            return
+        if ev.isStart():
+            self._original_data = np.array(self.getData())
+            try:
+                self._drag_point = self.pointsAt(ev.buttonDownPos())[0]
+                self._drag_start = -1 * ev.buttonDownPos()
+                ev.accept()
+            except IndexError:
+                pass
+            return
+        elif ev.isFinish():
+            self._drag_start = None
+            self.sig_selection_moved.emit(np.array(self.getData()))
+            return
+        # Event is currently running
+        if self._drag_point is None:
+            ev.ignore()
+            return
+        else:
+            data = np.copy(self._original_data)
+            apply_x = self._drag_direction & DragDirection.X
+            apply_y = self._drag_direction & DragDirection.Y
+            x_offset = ev.pos().x() + cast(QPointF, self._drag_start).x() if apply_x else 0.0
+            y_offset = ev.pos().y() + cast(QPointF, self._drag_start).y() if apply_y else 0.0
+            if x_offset or y_offset:
+                data[0] += x_offset if apply_x else 0.0
+                data[1] += y_offset if apply_y else 0.0
+                self.setData(data[0, :], data[1, :])
+
+    def setData(self,
+                *args,
+                pos: Union[Tuple, List, np.ndarray, None] = None,
+                pxMode: Optional[bool] = None,
+                symbol: Optional[str] = None,
+                pen: Union[QPen, List[QPen], None] = None,
+                brush: Union[QBrush, List[QBrush], None] = None,
+                size: Union[float, List[float], None] = None,
+                data: Optional[List[object]] = None,
+                antialias: Optional[bool] = None,
+                name: Optional[str] = None,
+                **kwargs) -> None:
+        """Extend setData with setting labels for each point
+
+        If there is only one unnamed argument, it will be interpreted like the 'spots' argument.
+        If there are two unnamed arguments, they will be interpreted as sequences of x and y values.
+
+        Args:
+            spots: Optional list of dicts. Each dict specifies parameters for a single spot:
+                   {'pos': (x,y), 'size', 'pen', 'brush', 'symbol'}. This is just an alternate method
+                   of passing in data for the corresponding arguments.
+            x: 1D arrays of x values.
+            y: 1D arrays of y values.
+            pos: 2D structure of x,y pairs (such as Nx2 array or list of tuples)
+            pxMode: If True, spots are always the same size regardless of scaling, and size is given in px.
+                    Otherwise, size is in scene coordinates and the spots scale with the view.
+                    Default is True
+            symbol: can be one (or a list) of:
+                    * 'o'  circle (default)
+                    * 's'  square
+                    * 't'  triangle
+                    * 'd'  diamond
+                    * '+'  plus
+                    * any QPainterPath to specify custom symbol shapes. To properly obey the position and size,
+                      custom symbols should be centered at (0,0) and width and height of 1.0. Note that it is also
+                      possible to 'install' custom shapes by setting ScatterPlotItem.Symbols[key] = shape.
+            pen: The pen (or list of pens) to use for drawing spot outlines.
+            brush: The brush (or list of brushes) to use for filling spots.
+            size: The size (or list of sizes) of spots. If *pxMode* is True, this value is in pixels. Otherwise,
+                  it is in the item's local coordinate system.
+            data: a list of python objects used to uniquely identify each spot.
+            antialias: Whether to draw symbols with antialiasing. Note that if pxMode is True, symbols are
+                       always rendered with antialiasing (since the rendered symbols can be cached, this
+                       incurs very little performance cost)
+            name: The name of this item. Names are used for automatically
+                  generating LegendItem entries and by some exporters.
+        """
+        kwargs.update({
+            "pos": pen,
+            "pxMode": pxMode,
+            "symbol": symbol,
+            "pen": pen,
+            "brush": brush,
+            "size": size,
+            "data": data,
+            "antialias": antialias,
+            "name": name,
+        })
+        # We want pyqtgraph's default behavior so we do not pass unset args
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        super().setData(*args, **kwargs)
+        if self._points_labeled:
+            self._add_labels()
+        else:
+            self._remove_labels()
+
+    @property
+    def points_labeled(self) -> bool:
+        """Is each selected points position decorated with and label"""
+        return self._points_labeled
+
+    @points_labeled.setter
+    def points_labeled(self, label_points: bool) -> None:
+        """Is each selected points position decorated with and label"""
+        self._points_labeled = label_points
+
+    @property
+    def drag_direction(self) -> DragDirection:
+        """In which direction should the points be draggable"""
+        return self._drag_direction
+
+    @drag_direction.setter
+    def drag_direction(self, direction: DragDirection):
+        """In which direction should the points be draggable"""
+        self._drag_direction = direction
+
+    def _add_labels(self) -> None:
+        """
+        For each point, add a label showing the position of the point in the
+        direction it can be dragged in.
+        """
+        self._remove_labels()
+        for data in self.data:
+            text = self._point_label(x=data["x"],
+                                     y=data["y"])
+            label = pg.TextItem(text,
+                                anchor=(0.5, -0.5))
+            label.setParentItem(self)
+            label.setPos(data["x"], data["y"])
+            self._point_labels.append(label)
+
+    def _remove_labels(self) -> None:
+        """Remove all point labels"""
+        for label in self._point_labels:
+            label.setParentItem(None)
+        self._point_labels.clear()
+
+    def _point_label(self, x: float, y: float) -> str:
+        """
+        Show a label at the given position to inform the user about the offset
+        of the current drag event.
+
+        Returns:
+            location of the passed point as string
+        """
+        label = []
+        if self._drag_direction & DragDirection.X:
+            label.append("x: {:.3}".format(x))
+        if self._drag_direction & DragDirection.Y:
+            label.append("y: {:.3}".format(y))
+        return ", ".join(label)
+
+    @staticmethod
+    def complementary(color: QColor) -> QColor:
+        """
+        Get the complementary QColor to a given color. For (nearly) white, grey
+        and black colors, red is returned as the complementary color and not
+        another greyish color
+        """
+        rgb = [color.red(), color.green(), color.blue()]
+        # Color is somewhat greyish
+        if max(rgb) - min(rgb) < 10:
+            return pg.mkColor("r")
+        return QColor(
+            255 - color.red(),
+            255 - color.green(),
+            255 - color.blue(),
+            color.alpha(),
+        )

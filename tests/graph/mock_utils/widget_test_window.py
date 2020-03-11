@@ -4,7 +4,7 @@ Window with Extended PlotWidget for Testing purposes
 
 from typing import Optional, Type, Union, Dict
 
-from qtpy.QtWidgets import QGridLayout, QMainWindow, QWidget
+from qtpy.QtWidgets import QMainWindow
 
 from accwidgets.graph import (
     AbstractBasePlotCurve,
@@ -54,11 +54,7 @@ class PlotWidgetTestWindow(QMainWindow):
         self.opts: dict = opts
         self.add_item()
         self.resize(800, 600)
-        main_container = QWidget()
-        self.setCentralWidget(main_container)
-        main_layout = QGridLayout()
-        main_container.setLayout(main_layout)
-        main_layout.addWidget(self.plot)
+        self.setCentralWidget(self.plot)
 
     def add_item(self):
         """Add requested item to the """
@@ -87,26 +83,37 @@ class MinimalTestWindow(QMainWindow):
 
     def __init__(
         self,
-        plot_config: Optional[ExPlotWidgetConfig] = None,
-        plot_widget: Optional[ExPlotWidget] = None,
+        plot: Union[ExPlotWidgetConfig, ExPlotWidget, None] = None,
     ):
-        """Constructor :param plot_config: Configuration for the Plot Widget
+        """Minmal qt window setup for testing purposes
+
+        The window can be either instantiated with a plotwidget,
+        a plot configuration or nothing (if none is passed)
 
         Args:
-            plot_config (ExtendedPlotWidgetConfig): Configuration for the created plot widget
+            plot: A instantiated plot, a configuration or nothing
         """
         super().__init__()
-        self.plot_config: ExPlotWidgetConfig
-        self.plot: ExPlotWidget
-        if plot_widget:
-            self.plot = plot_widget
-            self.plot_config = plot_widget.plotItem.plot_config
-        else:
-            self.plot_config = plot_config or ExPlotWidgetConfig()
-            self.plot = ExPlotWidget(config=plot_config)
+        self._plot: Optional[ExPlotWidget] = None
+        if plot:
+            if isinstance(plot, ExPlotWidget):
+                self._plot = plot
+            elif isinstance(plot, ExPlotWidgetConfig):
+                self._plot = ExPlotWidget(config=plot)
         self.resize(800, 600)
-        main_container = QWidget()
-        self.setCentralWidget(main_container)
-        main_layout = QGridLayout()
-        main_container.setLayout(main_layout)
-        main_layout.addWidget(self.plot)
+        if self._plot:
+            self.setCentralWidget(self._plot)
+
+    @property
+    def plot(self) -> ExPlotWidget:
+        """Central plot of the window"""
+        if self._plot:
+            return self._plot
+        raise ValueError("There is not plot to access.")
+
+    @property
+    def plot_config(self) -> Optional[ExPlotWidgetConfig]:
+        """Property to access the plots configuration object"""
+        if self.plot:
+            return self.plot.plotItem.plot_config
+        return None

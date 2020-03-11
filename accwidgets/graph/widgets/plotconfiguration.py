@@ -24,6 +24,14 @@ class PlotWidgetStyle(IntEnum):
     to the same position in x range. The curve is not moving in x direction
     since its x range is fixed.
     """
+    EDITABLE = 3
+    """
+    Editable charts allow manipulating the data displayed by a curve and
+    sending it back to the process it originally came from. The plot will have
+    two states, a normal mode, where interaction with the plot will behave
+    as with a static one, and a editing mode, in which dragging on the plot
+    selects data points in a curve which should be edited.
+    """
 
 
 class TimeSpan:

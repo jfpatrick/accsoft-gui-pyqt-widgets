@@ -1,5 +1,3 @@
-# pylint: disable=missing-docstring
-
 from typing import List, Union, Optional, Tuple, Type, cast
 
 import pytest
@@ -243,7 +241,6 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
 
 
 def test_clipping_old_curve_with_progressing_time(qtbot):
-    # pylint: disable=too-many-statements
     """
     Args:
         qtbot:

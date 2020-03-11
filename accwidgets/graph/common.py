@@ -18,6 +18,7 @@ class History(Generic[_STATE]):
         """
         self._states: List[_STATE] = []
         self._current: int = -1
+        self.clear()
 
     @property
     def current_state(self) -> Optional[_STATE]:
@@ -75,3 +76,8 @@ class History(Generic[_STATE]):
         redone = self._states[self._current]
         self._current += 1
         return redone
+
+    def clear(self) -> None:
+        """Clear all states and put the history in its original state."""
+        self._states.clear()
+        self._current = -1

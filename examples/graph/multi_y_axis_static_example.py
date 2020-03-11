@@ -67,7 +67,6 @@ class MainWindow(QMainWindow):
 
 def run():
     """Run Application"""
-    # pylint: disable=missing-docstring,unused-variable
     app = QApplication(sys.argv)
     _ = MainWindow()
     sys.exit(app.exec_())

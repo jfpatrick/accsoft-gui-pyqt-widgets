@@ -15,7 +15,6 @@ import example_sources
 
 class MainWindow(QMainWindow):
 
-    # pylint: disable=too-few-public-methods
     def __init__(self):
         super().__init__()
         # Our plot should initially show 10 seconds of data
@@ -117,7 +116,6 @@ class MainWindow(QMainWindow):
 
 def run():
     """Run Application"""
-    # pylint: disable=missing-docstring,unused-variable
     app = QApplication(sys.argv)
     gui = MainWindow()  # noqa: F841
     sys.exit(app.exec_())

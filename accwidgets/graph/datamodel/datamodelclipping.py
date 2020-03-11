@@ -122,7 +122,6 @@ def bin_search_surrounding_points(
         Dictionary with before and after indices, that references the points
         in the original passed list
     """
-    # pylint: disable=too-many-branches
     surrounding_points_indices = {"before": 0, "after": len(x_list) - 1}
     if isinstance(x_list, np.ndarray):
         x_list = x_list.tolist()

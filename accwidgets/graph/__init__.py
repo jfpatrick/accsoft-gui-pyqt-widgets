@@ -14,3 +14,4 @@ from .widgets.plotconfiguration import *
 from .widgets.plottimespan import *
 from .widgets.plotitem import *
 from .widgets.plotwidget import *
+from .widgets.editingbar import *
