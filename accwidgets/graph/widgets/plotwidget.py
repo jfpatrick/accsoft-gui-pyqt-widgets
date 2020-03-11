@@ -9,7 +9,7 @@ import warnings
 
 import numpy as np
 import pyqtgraph as pg
-from qtpy.QtCore import Slot, Property, Q_ENUM
+from qtpy.QtCore import Signal, Slot, Property, Q_ENUM
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QPen
 
@@ -47,6 +47,16 @@ from accwidgets import designer_check
 
 
 class ExPlotWidget(pg.PlotWidget):
+
+    sig_selection_changed = Signal(CurveData)
+    """
+    Signal informing about any changes to the current selection of the current
+    editable item. If the emitted data is empty, the current selection was
+    unselected. The signal will also be emitted, if the current selection has
+    been moved around by dragging.
+
+    In general this signal will only be emitted in a editable configuration.
+    """
 
     def __init__(
             self,
@@ -102,9 +112,9 @@ class ExPlotWidget(pg.PlotWidget):
         )
         self._wrap_plotitem_functions()
 
-    def addCurve(  # pylint: disable=invalid-name
+    def addCurve(
             self,
-            c: Optional[pg.PlotDataItem] = None,  # pylint: disable=invalid-name
+            c: Optional[pg.PlotDataItem] = None,
             params: Optional[Any] = None,
             data_source: Optional[UpdateSource] = None,
             layer: Optional[LayerIdentification] = None,
@@ -145,7 +155,7 @@ class ExPlotWidget(pg.PlotWidget):
             **plotdataitem_kwargs,
         )
 
-    def addBarGraph(  # pylint: disable=invalid-name
+    def addBarGraph(
             self,
             data_source: Optional[UpdateSource] = None,
             layer: Optional[LayerIdentification] = None,
@@ -178,7 +188,7 @@ class ExPlotWidget(pg.PlotWidget):
             **bargraph_kwargs,
         )
 
-    def addInjectionBar(  # pylint: disable=invalid-name
+    def addInjectionBar(
             self,
             data_source: UpdateSource,
             layer: Optional[LayerIdentification] = None,
@@ -207,7 +217,7 @@ class ExPlotWidget(pg.PlotWidget):
             **errorbaritem_kwargs,
         )
 
-    def addTimestampMarker(  # pylint: disable=invalid-name
+    def addTimestampMarker(
             self,
             *graphicsobjectargs,
             data_source: UpdateSource,
@@ -319,6 +329,46 @@ class ExPlotWidget(pg.PlotWidget):
         """
         self.plotItem.update_config(config=config)
 
+    # ~~~~~~~~~~~~~~~~~~ Functionality for editble plots ~~~~~~~~~~~~~~~~~~~~~~
+
+    @property
+    def selection_mode(self) -> bool:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        return self.plotItem.selection_mode
+
+    @Slot(bool)
+    def set_selection_mode(self, enable: bool) -> None:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        self.plotItem.selection_mode = enable
+
+    @Slot()
+    def send_currents_editable_state(self) -> bool:
+        """
+        Send the state of the current editable item back to the process it
+        received it from. If there was no state change, nothing is sent.
+
+        Returns:
+            True if something was sent back
+        """
+        return self.plotItem.send_currents_editable_state()
+
+    @Slot()
+    def send_all_editables_state(self) -> List[bool]:
+        """
+        Send the states of all editable items to the processes they are
+        connected to.
+
+        Returns:
+            List of Trues, if the states of all items have been sent
+        """
+        return self.plotItem.send_all_editables_state()
+
     # ~~~~~~~~~~ Properties ~~~~~~~~~
 
     def _get_plot_title(self) -> str:
@@ -397,7 +447,6 @@ class ExPlotWidget(pg.PlotWidget):
             try:
                 potential = self._left_time_span_boundary_bool_value_cache
             except NameError:
-                print("No value cached")
                 potential = 60.0
         return potential
 
@@ -472,6 +521,7 @@ class ExPlotWidget(pg.PlotWidget):
         )
         self.setCentralItem(self.plotItem)
         self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
+        self.plotItem.sig_selection_changed.connect(self.sig_selection_changed.emit)
         del old_plot_item
 
     def _wrap_plotitem_functions(self) -> None:
@@ -490,8 +540,6 @@ class ExPlotWidget(pg.PlotWidget):
         for method in wrap_from_base_class:
             setattr(self, method, getattr(self.plotItem, method))
         self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
-
-# pylint: disable=no-member,access-member-before-definition,attribute-defined-outside-init
 
 
 class GridOrientationOptions:
@@ -785,12 +833,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """
         # Check for duplicated values
         if len(layers) != len(set(layers)):
-            print("Layers can not be updated since you have provided duplicated identifiers for them.")
+            warnings.warn("Layers can not be updated since you have provided duplicated identifiers for them.")
             return
         # Check for invalid layer identifiers
         for reserved in ExPlotWidgetProperties._reserved_axis_labels_identifiers:
             if reserved in layers:
-                print(f"Identifier entry '{reserved}' will be ignored since it is reserved.")
+                warnings.warn(f"Identifier entry '{reserved}' will be ignored since it is reserved.")
                 layers.remove(reserved)
         # Update changed identifiers
         self._update_layers(layers)
@@ -927,7 +975,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                         cast(ExPlotWidget, self).addItem(item=item, layer=name)
                         items_to_move.remove(item)
                     except RuntimeError:
-                        print(item.label)
+                        warnings.warn(item.label)
         if removed_layer_ids and added_layer_ids:
             # Rename
             for old_name, new_name in zip(removed_layer_ids, added_layer_ids):
@@ -954,9 +1002,6 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     @staticmethod
     def diff(list1, list2):
         return list(set(list1).symmetric_difference(set(list2)))
-
-
-# pylint: enable=no-member,access-member-before-definition,attribute-defined-outside-init
 
 
 class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
@@ -1349,3 +1394,129 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             # ignore, bc mypy wants concrete class
             item_type=AbstractBaseInjectionBarGraphItem,  # type: ignore
         )
+
+
+class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+
+    Q_ENUM(XAxisSideOptions)
+    Q_ENUM(DefaultYAxisSideOptions)
+    Q_ENUM(GridOrientationOptions)
+    Q_ENUM(LegendXAlignmentOptions)
+    Q_ENUM(LegendYAlignmentOptions)
+
+    def __init__(
+            self,
+            parent: Optional[QWidget] = None,
+            background: str = "default",
+            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+            **plotitem_kwargs,
+    ):
+        """
+        The EditablePlotWidget is equivalent to an ExPlotWidget which's
+        configuration contains the editable plot style. Properties that do
+        not have any effect on the ExPlotWidget in this plotting style, are
+        explicitly hidden in Qt Designer.
+
+         Args:
+            parent: parent item for this widget, will only be passed to base class
+            background: background for the widget, will only be passed to base class
+            axis_items: If the standard plot axes should be replaced, pass a dictionary
+                        with axes mapped to the position in which they should be put.
+            **plotitem_kwargs: Params passed to the plot item
+        """
+        config = ExPlotWidgetConfig(
+            plotting_style=PlotWidgetStyle.EDITABLE,
+        )
+        ExPlotWidgetProperties.__init__(self)
+        ExPlotWidget.__init__(
+            self,
+            parent=parent,
+            background=background,
+            config=config,
+            axis_items=axis_items,
+            **plotitem_kwargs,
+        )
+
+    def _get_show_time_line(self) -> bool:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at editable plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+        return False
+
+    def _set_show_time_line(self, new_val: bool) -> None:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'showTimeProgressLine is not supposed to be used with at editable plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+
+    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
+    """Vertical Line displaying the current time stamp, not supported by the editable plotting style"""
+
+    def _get_time_span(self) -> float:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+        return 0.0
+
+    def _set_time_span(self, new_val: float) -> None:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
+                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
+
+    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
+    """Range from which the plot displays data, not supported by the editable plotting style"""
+
+    def _get_right_time_span_boundary(self) -> float:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+        return False
+
+    def _set_right_time_span_boundary(self, new_val: float) -> None:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+
+    rightBoundary: float = Property(
+        float,
+        _get_right_time_span_boundary,
+        _set_right_time_span_boundary,
+        designable=False,
+    )
+    """Value of the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+        return False
+
+    def _set_left_time_span_boundary(self, new_val: float) -> None:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+
+    leftBoundary: float = Property(
+        float,
+        _get_left_time_span_boundary,
+        _set_left_time_span_boundary,
+        designable=False,
+    )
+    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+
+    def _get_left_time_span_boundary_bool(self) -> bool:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+        return False
+
+    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+        if not designer_check.is_designer():
+            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at editable plot, "
+                          "since it does not use any time span.")
+
+    leftBoundaryEnabled: bool = Property(
+        bool,
+        _get_left_time_span_boundary_bool,
+        _set_left_time_span_boundary_bool,
+        designable=False,
+    )

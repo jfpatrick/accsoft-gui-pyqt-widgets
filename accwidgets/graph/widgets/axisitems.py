@@ -37,7 +37,6 @@ class ExAxisItem(AxisItem):
         super().wheelEvent(ev)
 
 
-# pylint: disable=too-many-ancestors
 class TimeAxisItem(AxisItem):
     """Axis Item that shows timestamps as strings in format HH:MM:SS"""
 

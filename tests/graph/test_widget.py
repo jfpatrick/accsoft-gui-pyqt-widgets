@@ -88,7 +88,6 @@ def test_static_plot_widget_creation(
     assert isinstance(window.plot.plotItem.data_model_items[0], item_to_add)
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize("time_span", [2, 100])
 @pytest.mark.parametrize("plotting_style", [
     PlotWidgetStyle.SCROLLING_PLOT,
@@ -118,8 +117,6 @@ def test_live_plot_widget_creation(
         time_line: should a line at the current timestamp be drawn
         item_to_add: Type of data-item to add and the key for getting the fitting opts
     """
-    # pylint: disable=too-many-locals
-
     plot_config = ExPlotWidgetConfig(
         time_span=time_span,
         plotting_style=plotting_style,
@@ -194,7 +191,7 @@ def test_change_plot_config_on_running_plot(
         time_progress_line=time_line_change[0],
     )
     window = MinimalTestWindow(
-        plot_config=plot_config_before_change,
+        plot=plot_config_before_change,
     )
     qtbot.waitForWindowShown(window)
     plotwidget: ExPlotWidget = window.plot
@@ -279,7 +276,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
         time_span=TimeSpan(60),
         plotting_style=plotting_style,
     )
-    window = MinimalTestWindow(plot_config=config)
+    window = MinimalTestWindow(plot=config)
     window.show()
     qtbot.waitForWindowShown(window)
     plot_widget = window.plot
@@ -341,7 +338,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     config = ExPlotWidgetConfig(
         plotting_style=config_style_change[0],
     )
-    window = MinimalTestWindow(plot_config=config)
+    window = MinimalTestWindow(plot=config)
     window.show()
     qtbot.waitForWindowShown(window)
     plot_widget = window.plot

@@ -9,7 +9,7 @@ in a passed frequency.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Callable, Any
 from enum import Enum
 import math
 
@@ -273,6 +273,46 @@ class WaveformSinusSource(accgraph.UpdateSource):
                 x=x,
                 colors=np.array([["r", "g", "b"][i] for i, _ in enumerate(range(len(self.x)))]),
                 labels=np.array(["{:.2f}".format(_x) for _x in x]))
+
+
+class EditableSinusCurveDataSource(accgraph.UpdateSource):
+
+    def __init__(
+            self,
+            edit_callback: Callable[[np.ndarray], Any] = lambda x: print(x),
+    ):
+        """
+        Update Source which emits different scaled, complete sinus curves.
+        Compared to the SinusCurveSource, the curve is not emitted one value
+        at a time, but the entire curve, each time with a different scaling.
+
+        X values will stay the same each time
+
+        This source can be f.e. used in Waveform Plots.
+
+        Args:
+            edit_callback: Function which should be called as soon as the view
+                           sends back a value through this update source
+        """
+        super().__init__()
+        self.edit_callback = edit_callback
+        self.x_values = np.linspace(0, 2 * math.pi, 10)
+        self.y_values = np.sin(self.x_values)
+        self._timer = QTimer()
+        self._timer.singleShot(0, self._init_values)
+
+    def _init_values(self) -> None:
+        """Send the initial value."""
+        self.sig_new_data.emit(accgraph.CurveData(x=self.x_values,
+                                                  y=self.y_values))
+
+    def handle_data_model_edit(self, data: np.ndarray):
+        """
+        As soon as a value comes back from the view, we will call the edit
+        callback passed on initializaition with the new values. Normally this
+        function would send the values back to the control system.
+        """
+        self.edit_callback(data)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

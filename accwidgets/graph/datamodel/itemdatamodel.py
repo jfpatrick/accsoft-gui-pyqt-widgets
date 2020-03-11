@@ -641,17 +641,19 @@ class EditableCurveDataModel(StaticCurveDataModel):
         """
         if self._set_data(data=data):
             self._history.save_state(data)
+        self.sig_data_model_changed.emit()
 
     def send_current_state(self) -> bool:
         """
         Send the state back through the update source.
 
         Returns:
-            True, there was a state to send
+            True if there was a state to send
         """
         state = self._history.current_state
         if state is not None:
             self.sig_data_model_edited.emit(state)
+            self._history.clear()
             return True
         return False
 

@@ -4,11 +4,15 @@ from enum import Enum
 import numpy as np
 import pyqtgraph as pg
 import pytest
+from qtpy import QtCore
 from qtpy.QtWidgets import QAction
+# qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
+from PyQt5 import QtTest
 
 from accwidgets import graph as accgraph
 
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
+from .mock_utils.utils import sim_selection_moved
 
 
 # ~~~~~~~~~~~~~~~~ Test Helper Function and Classes ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -404,3 +408,33 @@ def test_inj_bar_plotting_slots(qtbot,
     assert len(text_labels) == len(expected[4])
     for label, text in zip(text_labels, expected[4]):
         assert label.textItem.toPlainText() == text
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~ Editabel Plot Item ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def test_send_all_editables_state(qtbot,
+                                  editable_testing_window):
+    curve_count = 5
+    qtbot.addWidget(editable_testing_window)
+    plot: accgraph.EditablePlotWidget = editable_testing_window.plot
+
+    sources: List[accgraph.UpdateSource] = []
+    curves: List[accgraph.EditablePlotCurve] = []
+    spies: List[QtTest.QSignalSpy] = []
+    for i in range(curve_count):
+        source = accgraph.UpdateSource()
+        sources.append(source)
+        curve = plot.addCurve(data_source=source)
+        curves.append(curve)
+        spies.append(QtTest.QSignalSpy(curve.model().sig_data_model_edited))
+        initial_data = accgraph.CurveData([0, 1, 2], [1 + i, 0 + i, 1 + i])
+        source.new_data(initial_data)
+
+    for i, c in list(enumerate(curves)):
+        c.select(selection=QtCore.QRectF(0, 0.5 + i, 2, 1))
+        assert len(spies[i]) == 0
+        sim_selection_moved(c._selection, (0, 1 + i), (0, 2 + i))
+        assert len(spies[i]) == 0
+
+    assert all(plot.send_all_editables_state())
+    assert all((len(s) == 1 for s in spies))

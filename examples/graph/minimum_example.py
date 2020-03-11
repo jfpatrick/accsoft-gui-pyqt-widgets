@@ -14,7 +14,6 @@ import example_sources
 class MainWindow(QMainWindow):
     """Example for the usage of the Extended PlotWidget in an QMainWindow"""
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, *args, **kwargs):
         """Create a new MainWindow instance with an Extended Plot Widget"""
         super().__init__(*args, **kwargs)
@@ -39,7 +38,6 @@ class MainWindow(QMainWindow):
 
 def run():
     """Run Application"""
-    # pylint: disable=missing-docstring,unused-variable
     app = QApplication(sys.argv)
     _ = MainWindow()
     sys.exit(app.exec_())

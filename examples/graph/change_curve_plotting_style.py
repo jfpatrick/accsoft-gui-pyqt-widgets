@@ -139,7 +139,6 @@ class MainWindow(QMainWindow):
 
 def run():
     """Run Application"""
-    # pylint: disable=missing-docstring,unused-variable
     app = QApplication(sys.argv)
     gui = MainWindow()  # noqa: F841
     sys.exit(app.exec_())

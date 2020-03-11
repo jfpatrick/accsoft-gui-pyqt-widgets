@@ -23,7 +23,6 @@ import example_sources
 
 class MainWindow(QMainWindow):
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create a source for timing update to control the time span shown by the plot
@@ -55,7 +54,6 @@ class MainWindow(QMainWindow):
 
 def run():
     """Run Application"""
-    # pylint: disable=missing-docstring,unused-variable
     app = QApplication(sys.argv)
     _ = MainWindow()
     sys.exit(app.exec_())

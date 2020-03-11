@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union, Type, cast
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
-from qtpy.QtCore import Signal, Slot, QRectF
+from qtpy.QtCore import Signal, Slot, QRectF, QPointF, Qt
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent
-from qtpy.QtGui import QPen
+from qtpy.QtGui import QPen, QGraphicsRectItem
 
 from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -39,18 +39,20 @@ from accwidgets.graph.widgets.dataitems.injectionbaritem import (
 from accwidgets.graph.widgets.dataitems.plotdataitem import (
     LivePlotCurve,
     AbstractBasePlotCurve,
+    EditablePlotCurve,
 )
 from accwidgets.graph.widgets.plotconfiguration import (
     ExPlotWidgetConfig,
     PlotWidgetStyle,
 )
-from accwidgets.graph.datamodel.datastructures import PlottingItemData
+from accwidgets.graph.datamodel.datastructures import CurveData, PlottingItemData
 from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, CyclicPlotTimeSpan, BasePlotTimeSpan
 
 
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {
     PlotWidgetStyle.STATIC_PLOT: ExAxisItem,
+    PlotWidgetStyle.EDITABLE: ExAxisItem,
     PlotWidgetStyle.CYCLIC_PLOT: RelativeTimeAxisItem,
     PlotWidgetStyle.SCROLLING_PLOT: TimeAxisItem,
 }
@@ -59,12 +61,24 @@ _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {
 # Mapping of plotting styles to a fitting time span
 _STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[BasePlotTimeSpan]]] = {
     PlotWidgetStyle.STATIC_PLOT: None,
+    PlotWidgetStyle.EDITABLE: None,
     PlotWidgetStyle.CYCLIC_PLOT: CyclicPlotTimeSpan,
     PlotWidgetStyle.SCROLLING_PLOT: ScrollingPlotTimeSpan,
 }
 
 
 class ExPlotItem(pg.PlotItem):
+
+    sig_selection_changed = Signal(CurveData)
+    """
+    Signal informing about any changes to the current selection of the current
+    editable item. If the emitted data is empty, the current selection was
+    unselected. The signal will also be emitted, if the current selection has
+    been moved around by dragging.
+
+    In general this signal will only be emitted in an editable plot
+    configuration.
+    """
 
     def __init__(
         self,
@@ -94,11 +108,13 @@ class ExPlotItem(pg.PlotItem):
             config_style=config.plotting_style,
             orientation="top",
         ))
+        viewbox = ExViewBox()
         super().__init__(
             axisItems=axis_items,
-            viewBox=ExViewBox(),
+            viewBox=viewbox,
             **plotitem_kwargs,
         )
+        viewbox.sig_selection.connect(self.select)
         self._plot_config: ExPlotWidgetConfig = config
         self._time_span: Optional[BasePlotTimeSpan] = self._create_fitting_time_span()
         self._time_line: Optional[pg.InfiniteLine] = None
@@ -119,10 +135,12 @@ class ExPlotItem(pg.PlotItem):
         # This will only be used in combination with the singleCurveValueSlot
         self.single_data_item_slot_source: Optional[UpdateSource] = None
         self.single_value_slot_dataitem: Optional[DataModelBasedItem] = None
+        # For editable mode
+        self._current_editable: Optional[EditablePlotCurve] = None
 
     # ~~~~~~~~~~~ Plotting Functions ~~~~~~~~~~~
 
-    def addCurve(  # pylint: disable=arguments-differ
+    def addCurve(
         self,
         c: Optional[pg.PlotDataItem] = None,
         params: Optional[Dict[str, Any]] = None,
@@ -167,7 +185,7 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addBarGraph(  # pylint: disable=invalid-name
+    def addBarGraph(
         self,
         data_source: Optional[UpdateSource] = None,
         layer: Optional["LayerIdentification"] = None,
@@ -201,7 +219,7 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addInjectionBar(  # pylint: disable=invalid-name
+    def addInjectionBar(
         self,
         data_source: UpdateSource,
         layer: Optional["LayerIdentification"] = None,
@@ -232,7 +250,7 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addTimestampMarker(  # pylint: disable=invalid-name
+    def addTimestampMarker(
         self,
         *graphicsobjectargs,
         data_source: UpdateSource,
@@ -262,7 +280,7 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=None, item=new_plot)
         return new_plot
 
-    def addItem(  # pylint: disable=arguments-differ
+    def addItem(
         self,
         item: Union[pg.GraphicsObject, DataModelBasedItem],
         layer: Optional["LayerIdentification"] = None,
@@ -304,6 +322,8 @@ class ExPlotItem(pg.PlotItem):
             except AttributeError:
                 pass
             self.getViewBox(layer=layer).addItem(item=item, ignoreBounds=ignoreBounds, **kwargs)
+        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+            self._connect_to_editable_item(item=cast(EditablePlotCurve, item))
 
     def clear(self, clear_decorators: bool = False) -> None:
         """
@@ -366,6 +386,53 @@ class ExPlotItem(pg.PlotItem):
                       "or ExPlotItem.addCurve for this purpose.")
         return pg.PlotItem.plot(*args, clear=clear, params=params)
 
+    def select(self, selection: QRectF) -> None:
+        """
+        Select a data in a specific region in the current editable item.
+
+        Args:
+            selection: selected region in scene coordintates
+        """
+        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+            if self.current_editable is not None:
+                self.current_editable.select(selection=selection)
+        else:
+            warnings.warn("Points can only be selected in an editable "
+                          "configuration.")
+
+    def send_currents_editable_state(self) -> bool:
+        """
+        Send the state of the current editable item back to the process it
+        received it from. If there was no state change, nothing is sent.
+
+        Returns:
+            True if something was sent back
+        """
+        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+            if self.current_editable is not None:
+                return self.current_editable.send_current_state()
+        else:
+            warnings.warn("The state of editable items can only be sent in "
+                          "and editable configuration.")
+        return False
+
+    def send_all_editables_state(self) -> List[bool]:
+        """
+        Send the states of all editable items to the processes they are
+        connected to.
+
+        Returns:
+            List of Trues, if the states of all items have been sent
+        """
+        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+            states_sent = []
+            for item in self.editable_items:
+                states_sent.append(item.send_current_state())
+            return states_sent
+        warnings.warn("The state of editable items can only be sent in "
+                      "and editable configuration.")
+        return []
+
     @property
     def data_model_items(self) -> List[DataModelBasedItem]:
         """All data model based items added to the PlotItem. Pure PyQtGraph
@@ -387,7 +454,7 @@ class ExPlotItem(pg.PlotItem):
 
     @property
     def live_curves(self) -> List[LivePlotCurve]:
-        """All live data curves added to the PlotItem."""
+        """All live data items added to the PlotItem."""
         return [curve for curve in self.items if isinstance(curve, LivePlotCurve)]
 
     @property
@@ -408,6 +475,55 @@ class ExPlotItem(pg.PlotItem):
     def live_timestamp_markers(self) -> List[LiveTimestampMarker]:
         """All live data infinite lines added to the PlotItem."""
         return [curve for curve in self.items if isinstance(curve, LiveTimestampMarker)]
+
+    @property
+    def editable_items(self) -> List[EditablePlotCurve]:
+        """All editable items added to the PlotItem. """
+        return [i for i in self.items if isinstance(i, EditablePlotCurve)]
+
+    @property
+    def current_editable(self) -> Optional[EditablePlotCurve]:
+        """The item which is currently edited. If no item has yet been
+        selected, the last added editable item will be returned."""
+        editables = self.editable_items
+        if not editables:
+            return None
+        if not self._current_editable:
+            return editables[-1]
+        else:
+            return self._current_editable
+
+    @current_editable.setter
+    def current_editable(self, editable: EditablePlotCurve):
+        """Select the item in which points should be selected and edited.
+        Per PlotItem only one item can be edited at a time.
+
+        Args:
+            editable: item which should be set as the current editable
+        """
+        if editable in self.editable_items:
+            self._current_editable = editable
+        else:
+            warnings.warn(f"{editable} seems to be not an editable chart "
+                          f"of this plot.")
+
+    @property
+    def selection_mode(self) -> bool:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        return self.getViewBox().selection_mode
+
+    @selection_mode.setter
+    def selection_mode(self, enable: bool) -> None:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        if not enable and self.current_editable is not None:
+            self.current_editable.unselect()
+        self.getViewBox().selection_mode = enable
 
     # ~~~~~~~~~~ Update handling ~~~~~~~~~
 
@@ -671,14 +787,14 @@ class ExPlotItem(pg.PlotItem):
         self._prepare_scrolling_plot_fixed_xrange()
         self._handle_scrolling_plot_fixed_xrange_update()
 
-    def setRange(  # pylint: disable=invalid-name
+    def setRange(
         self,
         rect: Optional[QRectF] = None,
-        xRange: Optional[Tuple[float, float]] = None,  # pylint: disable=invalid-name
-        yRange: Optional[Tuple[float, float]] = None,  # pylint: disable=invalid-name
+        xRange: Optional[Tuple[float, float]] = None,
+        yRange: Optional[Tuple[float, float]] = None,
         padding: Optional[float] = None,
         update: bool = True,
-        disableAutoRange: bool = True,  # pylint: disable=invalid-name
+        disableAutoRange: bool = True,
         **layer_y_ranges,
     ) -> None:
         """
@@ -720,10 +836,10 @@ class ExPlotItem(pg.PlotItem):
                 disableAutoRange=disableAutoRange,
             )
 
-    def setYRange(  # pylint: disable=invalid-name
+    def setYRange(
         self,
-        min: float,  # pylint: disable=redefined-builtin
-        max: float,  # pylint: disable=redefined-builtin
+        min: float,
+        max: float,
         padding: Optional[float] = None,
         update: bool = True,
         layer: Optional["LayerIdentification"] = None,
@@ -748,7 +864,7 @@ class ExPlotItem(pg.PlotItem):
             update=update,
         )
 
-    def invertY(  # pylint: disable=invalid-name
+    def invertY(
         self,
         b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
         layer: Optional["LayerIdentification"] = None,
@@ -764,7 +880,7 @@ class ExPlotItem(pg.PlotItem):
         """
         self.getViewBox(layer=layer).invertY(b)
 
-    def setYLink(  # pylint: disable=invalid-name
+    def setYLink(
         self,
         view: pg.ViewBox,
         layer: Optional["LayerIdentification"] = None,
@@ -783,12 +899,12 @@ class ExPlotItem(pg.PlotItem):
         """
         self.getViewBox(layer=layer).setYLink(view=view)
 
-    def enableAutoRange(  # pylint: disable=invalid-name
+    def enableAutoRange(
             self,
             axis: Union[int, str, None] = None,
             enable: Union[bool, float] = True,
-            x: Union[bool, float, None] = None,  # pylint: disable=invalid-name
-            y: Union[bool, float, None] = None,  # pylint: disable=invalid-name
+            x: Union[bool, float, None] = None,
+            y: Union[bool, float, None] = None,
             **layers_y,
     ) -> None:
         """
@@ -833,10 +949,10 @@ class ExPlotItem(pg.PlotItem):
                     enable=value,
                 )
 
-    def getViewBox(  # pylint: disable=arguments-differ
+    def getViewBox(
             self,
             layer: Optional["LayerIdentification"] = None,
-    ) -> pg.ViewBox:
+    ) -> "ExViewBox":
         """
         Extend the PlotItem's getViewBox method to also return viewboxes
         of layers if the layer or its identifier is provided.
@@ -1108,6 +1224,38 @@ class ExPlotItem(pg.PlotItem):
                 axis = self.getAxis(pos)
                 if isinstance(axis, RelativeTimeAxisItem):
                     axis.start = timestamp
+
+    def _connect_to_editable_item(self, item: EditablePlotCurve) -> None:
+        """
+        Try to connect to an editable item. If the item does not define the
+        fitting signals, it will be silently skipped.
+        """
+        try:
+            item.sig_selection_changed.connect(self._handle_curve_selection_change)
+        except AttributeError:
+            # Non editable items do not have this signal
+            pass
+
+    def _disconnect_from_editable_item(self, item: EditablePlotCurve) -> None:
+        """
+        Try to disconnect from an editable item. If the item does not define
+        the fitting signals, it will be silently skipped.
+        """
+        try:
+            item.sig_selection_changed.disconnect(self._handle_curve_selection_change)
+        except AttributeError:
+            pass
+
+    def _handle_curve_selection_change(self, curve: CurveData):
+        """
+        Handle the selection change in the current editable item. If this
+        slot is executed through sending a signal, the sender will be set as
+        the current editable (if it is not already).
+        """
+        item = self.sender()
+        if item and item is not self.current_editable:
+            self.current_editable = item
+        self.sig_selection_changed.emit(curve)
 
     def _prepare_layers(self) -> None:
         """Initialize everything needed for multiple layers"""
@@ -1621,6 +1769,15 @@ class PlotItemLayerCollection:
 
 class ExViewBox(pg.ViewBox):
 
+    sig_selection = Signal(QRectF)
+    """
+    If the view box is in selection mode, a mouse drag produces a selection
+    rectangle for selecting points. This signal will publish this rectangle
+    as soon as its completed (the mouse button from the drag is released).
+    The selection boundaries is represented in scene coordinates and not
+    device coordintates.
+    """
+
     def __init__(self, **viewbox_kwargs):
         """
         ViewBox with extra functionality for the multi-y-axis plotting.
@@ -1629,9 +1786,18 @@ class ExViewBox(pg.ViewBox):
             **viewbox_kwargs: Keyword arguments for the base class ViewBox
         """
         super().__init__(**viewbox_kwargs)
+        # point selection box
+        self._selection_box = QGraphicsRectItem(0, 0, 1, 1)
+        self._selection_box.setPen(pg.mkPen((255, 0, 0), width=1))
+        self._selection_box.setBrush(pg.mkBrush(255, 0, 0, 100))
+        self._selection_box.setZValue(1e9)
+        self._selection_box.hide()
+        self.addItem(self._selection_box, ignoreBounds=True)
+
+        self._selection_mode: bool = False
         self._layer_collection: Optional[PlotItemLayerCollection] = None
 
-    def autoRange(  # pylint: disable=arguments-differ
+    def autoRange(
         self,
         padding: Optional[float] = None,
         items: Optional[List[pg.GraphicsItem]] = None,
@@ -1718,9 +1884,35 @@ class ExViewBox(pg.ViewBox):
             ev: Mouse Drag event that was detected
             axis: integer representing an axis, 0 -> x, 1 -> y
         """
-        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
-        super().mouseDragEvent(ev=ev, axis=axis)
-        self.sigRangeChanged.emit(self, self.state["viewRange"])
+        if self._selection_mode:
+            self._selection_mouse_drag_event(ev=ev)
+        else:
+            self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
+            super().mouseDragEvent(ev=ev, axis=axis)
+            self.sigRangeChanged.emit(self, self.state["viewRange"])
+
+    def _selection_mouse_drag_event(self, ev: MouseDragEvent):
+        """
+        Mouse drag event handler for selecting a region in the view box
+        for selecting data. If the selection event is finished, a signal
+        is emitted, which contains the selection as a QRectF.
+
+        Args:
+            ev: mouse drag event
+        """
+        ev.accept()
+        if ev.button() & (Qt.LeftButton | Qt.MidButton):
+            if ev.isFinish():
+                self._selection_box.hide()
+                top_left = pg.Point(ev.buttonDownPos(ev.button()))
+                bottom_right = pg.Point(ev.pos())
+                selection = QRectF(top_left, bottom_right)
+                # Map the rectangle from the view range to the shown
+                # data range
+                selection = self.childGroup.mapRectFromParent(selection)
+                self.sig_selection.emit(selection)
+            else:
+                self._update_selection_box(ev.buttonDownPos(), ev.pos())
 
     def set_range_manually(self, **kwargs) -> None:
         """ Set range manually
@@ -1738,6 +1930,22 @@ class ExViewBox(pg.ViewBox):
             self._layer_collection._reset_range_change_forwarding()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         self.setRange(**kwargs)
+
+    @property
+    def selection_mode(self) -> bool:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        return self._selection_mode
+
+    @selection_mode.setter
+    def selection_mode(self, enable: bool) -> None:
+        """
+        If the selection mode is enabled, mouse drag events on the view
+        box create selection rectangles and do not move the view
+        """
+        self._selection_mode = enable
 
     @property
     def layers(self) -> Optional[PlotItemLayerCollection]:
@@ -1818,7 +2026,6 @@ class ExViewBox(pg.ViewBox):
         Returns:
             Y coordinate in the destinations ViewBox
         """
-        # pylint: disable=invalid-name
         source_y_range = (
             self.targetRect().top(),
             self.targetRect().bottom(),
@@ -1827,3 +2034,19 @@ class ExViewBox(pg.ViewBox):
                    (source_y_range[1] - source_y_range[0])
         c: float = another_yrange[0] - m * source_y_range[0]
         return m * y_val + c
+
+    def _update_selection_box(self,
+                              top_left: QPointF,
+                              bottom_right: QPointF) -> None:
+        """Update the view boxes slection rectangle
+
+        Args:
+            top_left: Top left coordinate of the selection rectangle
+            bottom_right: Bottom right coordintate of the selection rectangle
+        """
+        r = QRectF(top_left, bottom_right)
+        r = self.childGroup.mapRectFromParent(r)
+        self._selection_box.setPos(r.topLeft())
+        self._selection_box.resetTransform()
+        self._selection_box.scale(r.width(), r.height())
+        self._selection_box.show()

@@ -76,6 +76,14 @@ class UpdateSource(QObject):
         """
         pass
 
+    def new_data(self, data: PlottingItemData) -> None:
+        """Convenience function for sending data through sig_new_data
+
+        Args:
+            data: Data which should be sent through the signal
+        """
+        self.sig_new_data[type(data)].emit(data)
+
 
 class SignalBoundDataSource(UpdateSource):
 
