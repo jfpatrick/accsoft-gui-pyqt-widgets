@@ -71,14 +71,22 @@ def sim_selection_moved(marker: accgraph.DataSelectionMarker,
     marker.mouseDragEvent(ev=release)
 
 
+def assert_qcolor_equals(color_1: QtGui.QColor, color_2: QtGui.QColor) -> None:
+    """Compare two QColors by their r,g,b,a values"""
+    assert color_1.red() == color_2.red()
+    assert color_1.green() == color_2.green()
+    assert color_1.blue() == color_2.blue()
+    assert color_1.alpha() == color_2.alpha()
+
+
 def assert_qpen_equals(pen_1: QtGui.QPen, pen_2: QtGui.QPen) -> None:
     """Compare the styling of two qpens"""
-    assert pen_1.color() == pen_2.color()
+    assert_qcolor_equals(pen_1.color(), pen_2.color())
     assert pen_1.width() == pen_2.width()
     assert pen_1.style() == pen_2.style()
 
 
 def assert_qbrush_equals(brush_1: QtGui.QBrush, brush_2: QtGui.QBrush) -> None:
     """Compare the styling of two qbrushs"""
-    assert brush_1.color() == brush_2.color()
+    assert_qcolor_equals(brush_1.color(), brush_2.color())
     assert brush_1.style() == brush_2.style()
