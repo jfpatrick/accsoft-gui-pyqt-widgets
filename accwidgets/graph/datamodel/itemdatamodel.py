@@ -633,6 +633,17 @@ class EditableCurveDataModel(StaticCurveDataModel):
         StaticCurveDataModel.__init__(self, data_source=data_source, **kwargs)
         self._history = History[CurveData]()
 
+    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+        """
+        Extend the static data models update handler with appending the state
+        to the local history.
+
+        Args:
+            data: data coming from the update source
+        """
+        super()._handle_data_update_signal(data)
+        self._history.save_state(data)
+
     @Slot(CurveData)
     def handle_editing(self, data: CurveData) -> None:
         """
@@ -643,6 +654,28 @@ class EditableCurveDataModel(StaticCurveDataModel):
             self._history.save_state(data)
         self.sig_data_model_changed.emit()
 
+    def replace_selection(self, indices: np.ndarray, replacement: CurveData):
+        """
+        Replace the values at the passed indices with the replacement values.
+        The replacements will be sorted in by their x values. Count of
+        indices and replacement length can differ from each other.
+
+        Args:
+            indices: Which indices should be replaced
+            replacement: values that should be inserted
+        """
+        self._x_values = np.delete(self._x_values, indices)
+        self._y_values = np.delete(self._y_values, indices)
+        indices = np.searchsorted(self._x_values, replacement.x)
+        if not np.can_cast(replacement.x.dtype, self._x_values.dtype):
+            self._x_values = self._x_values.astype(replacement.x.dtype)
+        if not np.can_cast(replacement.y.dtype, self._y_values.dtype):
+            self._y_values = self._y_values.astype(replacement.y.dtype)
+        self._x_values = np.insert(self._x_values, indices, replacement.x)
+        self._y_values = np.insert(self._y_values, indices, replacement.y)
+        self.sig_data_model_changed.emit()
+        self._history.save_state(CurveData(self._x_values, self._y_values))
+
     def send_current_state(self) -> bool:
         """
         Send the state back through the update source.
@@ -650,12 +683,19 @@ class EditableCurveDataModel(StaticCurveDataModel):
         Returns:
             True if there was a state to send
         """
-        state = self._history.current_state
-        if state is not None:
-            self.sig_data_model_edited.emit(state)
-            self._history.clear()
-            return True
+        if self.sendable_state_exists:
+            sendable_state = self._history.current_state
+            if sendable_state is not None:
+                self.sig_data_model_edited.emit(sendable_state)
+                return True
         return False
+
+    @property
+    def sendable_state_exists(self) -> bool:
+        """
+        Does a edited state exist which can be sent back to the control system
+        """
+        return self._history.current_state is not None
 
     @property
     def undoable(self) -> bool:
@@ -667,20 +707,38 @@ class EditableCurveDataModel(StaticCurveDataModel):
         """Is there a newer state we can jump to?"""
         return self._history.redoable
 
-    def undo(self) -> None:
-        """Jump to the next older state."""
+    def undo(self) -> bool:
+        """
+        Jump to the next older state.
+
+        Returns:
+            True, if the undo was successful.
+        """
         if self.undoable:
             state = self._history.undo()
             if isinstance(state, (PointData, CurveData)):
-                self.set_data(data=state)
+                self._set_data(data=state)
+                self.sig_data_model_changed.emit()
+                return True
             else:
                 warnings.warn(f"State {state} can't be applied.")
+                return False
+        return False
 
-    def redo(self) -> None:
-        """Jump to the next newer state."""
+    def redo(self) -> bool:
+        """
+        Jump to the next newer state.
+
+        Returns:
+            True, if the redo was successful.
+        """
         if self.redoable:
             state = self._history.redo()
             if isinstance(state, (PointData, CurveData)):
-                self.set_data(data=state)
+                self._set_data(data=state)
+                self.sig_data_model_changed.emit()
+                return True
             else:
                 warnings.warn(f"State {state} can't be applied.")
+                return False
+        return False

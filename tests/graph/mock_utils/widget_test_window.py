@@ -4,7 +4,7 @@ Window with Extended PlotWidget for Testing purposes
 
 from typing import Optional, Type, Union, Dict
 
-from qtpy.QtWidgets import QMainWindow
+from qtpy.QtWidgets import QMainWindow, QWidget, QGridLayout
 
 from accwidgets.graph import (
     AbstractBasePlotCurve,
@@ -94,21 +94,28 @@ class MinimalTestWindow(QMainWindow):
             plot: A instantiated plot, a configuration or nothing
         """
         super().__init__()
-        self._plot: Optional[ExPlotWidget] = None
+        self._cw: Optional[ExPlotWidget] = None
         if plot:
             if isinstance(plot, ExPlotWidget):
-                self._plot = plot
+                self._cw = plot
             elif isinstance(plot, ExPlotWidgetConfig):
-                self._plot = ExPlotWidget(config=plot)
+                self._cw = ExPlotWidget(config=plot)
+        else:
+            self._cw = QWidget()
+            self._cw.setLayout(QGridLayout())
         self.resize(800, 600)
-        if self._plot:
-            self.setCentralWidget(self._plot)
+        self.setCentralWidget(self._cw)
+
+    @property
+    def cw_layout(self):
+        """Layout of the window's central widget"""
+        return self._cw.layout()
 
     @property
     def plot(self) -> ExPlotWidget:
         """Central plot of the window"""
-        if self._plot:
-            return self._plot
+        if isinstance(self._cw, ExPlotWidget):
+            return self._cw
         raise ValueError("There is not plot to access.")
 
     @property

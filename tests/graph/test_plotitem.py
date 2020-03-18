@@ -4,8 +4,7 @@ from enum import Enum
 import numpy as np
 import pyqtgraph as pg
 import pytest
-from qtpy import QtCore
-from qtpy.QtWidgets import QAction
+from qtpy import QtCore, QtWidgets, QtGui
 # qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
 from PyQt5 import QtTest
 
@@ -49,7 +48,7 @@ def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: Resum
     if reset_operation == ResumeRangeOperation.auto_button:
         plot_item.autoBtn.mouseClickEvent(ev=None)
     elif reset_operation == ResumeRangeOperation.view_all:
-        plot_item.vb.menu.viewAll.activate(QAction.Trigger)
+        plot_item.vb.menu.viewAll.activate(QtWidgets.QAction.Trigger)
     else:
         raise ValueError(f"{reset_operation} is not a known operation for resetting the view range in the plot.")
 
@@ -438,3 +437,23 @@ def test_send_all_editables_state(qtbot,
 
     assert all(plot.send_all_editables_state())
     assert all((len(s) == 1 for s in spies))
+
+
+def test_plot_item_selection(qtbot,
+                             editable_testing_window):
+    qtbot.addWidget(editable_testing_window)
+    plot: accgraph.EditablePlotWidget = editable_testing_window.plot
+    # Per default the plotselection is disabled (only activated when multiple
+    # plots are connected to a editing-toolbar)
+    plot.plotItem.make_selectable(True)
+    # Since QTest API seems buggy with mouse events we have to call the
+    # mouseDClick event handler by hand...
+    event = QtGui.QMouseEvent(QtCore.QEvent.MouseButtonDblClick,
+                              QtCore.QPointF(0, 0),
+                              QtCore.Qt.LeftButton,
+                              QtCore.Qt.LeftButton,
+                              QtCore.Qt.NoModifier)
+    plot.mouseDoubleClickEvent(event)
+    assert plot.plotItem._plot_selected
+    plot.mouseDoubleClickEvent(event)
+    assert not plot.plotItem._plot_selected

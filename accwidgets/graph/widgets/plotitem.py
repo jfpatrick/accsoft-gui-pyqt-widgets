@@ -10,8 +10,8 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal, Slot, QRectF, QPointF, Qt
-from qtpy.QtWidgets import QGraphicsSceneWheelEvent
-from qtpy.QtGui import QPen, QGraphicsRectItem
+from qtpy.QtWidgets import QGraphicsSceneWheelEvent, QGraphicsRectItem
+from qtpy.QtGui import QPen, QPainter
 
 from accwidgets.graph.datamodel.connection import UpdateSource
 from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
@@ -69,15 +69,19 @@ _STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[BasePlotTimeSpan]]] = {
 
 class ExPlotItem(pg.PlotItem):
 
-    sig_selection_changed = Signal(CurveData)
+    sig_selection_changed = Signal()
     """
     Signal informing about any changes to the current selection of the current
-    editable item. If the emitted data is empty, the current selection was
-    unselected. The signal will also be emitted, if the current selection has
-    been moved around by dragging.
+    editable item. The signal will also be emitted, if the current selection
+    has been moved around by dragging.
 
     In general this signal will only be emitted in an editable plot
     configuration.
+    """
+
+    sig_plot_selected = Signal(bool)
+    """
+    Signal informing about an entire plot being selected for editing.
     """
 
     def __init__(
@@ -137,6 +141,9 @@ class ExPlotItem(pg.PlotItem):
         self.single_value_slot_dataitem: Optional[DataModelBasedItem] = None
         # For editable mode
         self._current_editable: Optional[EditablePlotCurve] = None
+        self._plot_selectable: bool = False
+        self._plot_selected: bool = False
+        self._plot_selected_pen: QPen = pg.mkPen("r", width=6)
 
     # ~~~~~~~~~~~ Plotting Functions ~~~~~~~~~~~
 
@@ -322,7 +329,7 @@ class ExPlotItem(pg.PlotItem):
             except AttributeError:
                 pass
             self.getViewBox(layer=layer).addItem(item=item, ignoreBounds=ignoreBounds, **kwargs)
-        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+        if self.editable:
             self._connect_to_editable_item(item=cast(EditablePlotCurve, item))
 
     def clear(self, clear_decorators: bool = False) -> None:
@@ -393,7 +400,7 @@ class ExPlotItem(pg.PlotItem):
         Args:
             selection: selected region in scene coordintates
         """
-        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+        if self.editable:
             if self.current_editable is not None:
                 self.current_editable.select(selection=selection)
         else:
@@ -408,7 +415,7 @@ class ExPlotItem(pg.PlotItem):
         Returns:
             True if something was sent back
         """
-        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+        if self.editable:
             if self.current_editable is not None:
                 return self.current_editable.send_current_state()
         else:
@@ -424,7 +431,7 @@ class ExPlotItem(pg.PlotItem):
         Returns:
             List of Trues, if the states of all items have been sent
         """
-        if self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE:
+        if self.editable:
             states_sent = []
             for item in self.editable_items:
                 states_sent.append(item.send_current_state())
@@ -432,6 +439,66 @@ class ExPlotItem(pg.PlotItem):
         warnings.warn("The state of editable items can only be sent in "
                       "and editable configuration.")
         return []
+
+    def make_selectable(self, selectable: bool) -> None:
+        """Should the plot be selectable / deselectable?
+
+        Args:
+            selectable: True if the plot should be selectable
+        """
+        self._plot_selectable = selectable
+
+    def toggle_plot_selection(self, select: Optional[bool] = None) -> bool:
+        """
+        Toggle the drawing of a border around the plot or set it to the passed
+        value
+
+        Args:
+            select: True if the plot should be selected, if None, selection is
+                    toggled
+        """
+        if select is None:
+            select = not self._plot_selected
+        if self._plot_selectable:
+            self._plot_selected = select
+            self.update()
+            self.sig_plot_selected.emit(select)
+        return select
+
+    def paint(self, painter: QPainter, *args):
+        """
+        Extend the PlotItem's paint function with the ability to
+        render a yellow border around it (for selecting a plot)
+
+        Args:
+            painter: QPainter for painting the Plot
+            args: positional arguments for PlotItem's paint function
+        """
+        pg.PlotItem.paint(self, painter, *args)
+        if self._plot_selected and self._plot_selectable and self.editable:
+            painter.setPen(self._plot_selected_pen)
+            painter.drawRect(self.boundingRect())
+
+    def replace_selection(self, replacement: CurveData) -> None:
+        """Function to call if the current data selection was changed.
+
+        Args:
+            replacement: The data to replace the indices with
+        """
+        if self.current_editable:
+            self.current_editable.replace_selection(replacement=replacement)
+
+    @property
+    def current_selection_data(self) -> Optional[CurveData]:
+        """Get the selected data as a curve data."""
+        if self.current_editable:
+            return self.current_editable.selection_data
+        return None
+
+    @property
+    def editable(self) -> bool:
+        """Is the plot item in editable plot widget style"""
+        return self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE
 
     @property
     def data_model_items(self) -> List[DataModelBasedItem]:
@@ -1246,7 +1313,7 @@ class ExPlotItem(pg.PlotItem):
         except AttributeError:
             pass
 
-    def _handle_curve_selection_change(self, curve: CurveData):
+    def _handle_curve_selection_change(self):
         """
         Handle the selection change in the current editable item. If this
         slot is executed through sending a signal, the sender will be set as
@@ -1255,7 +1322,7 @@ class ExPlotItem(pg.PlotItem):
         item = self.sender()
         if item and item is not self.current_editable:
             self.current_editable = item
-        self.sig_selection_changed.emit(curve)
+        self.sig_selection_changed.emit()
 
     def _prepare_layers(self) -> None:
         """Initialize everything needed for multiple layers"""

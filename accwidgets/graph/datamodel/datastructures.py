@@ -11,7 +11,8 @@ different length arrays into an .
 
 import warnings
 import abc
-from typing import List, Union, Optional, Any, NamedTuple, Sequence
+from typing import List, Union, Optional, Any, NamedTuple, Sequence, Dict
+from copy import deepcopy
 
 import numpy as np
 import pyqtgraph as pg
@@ -69,6 +70,19 @@ class PlottingItemData(QObject, metaclass=AbstractQObjectMeta):
             True, if the data structure is a collection
         """
         pass
+
+    def __deepcopy__(self, memo: Dict):
+        """Deep-copy data structure.
+
+        Args:
+            memo: Dictionary for correspondence between id's and objects
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
 
 # use this instead of defining default colors by hand

@@ -11,7 +11,7 @@ import numpy as np
 import pyqtgraph as pg
 from qtpy.QtCore import Signal, Slot, Property, Q_ENUM
 from qtpy.QtWidgets import QWidget
-from qtpy.QtGui import QPen
+from qtpy.QtGui import QPen, QMouseEvent
 
 from accwidgets.graph.datamodel.connection import UpdateSource, PlottingItemDataFactory
 from accwidgets.graph.widgets.plotconfiguration import (
@@ -48,7 +48,7 @@ from accwidgets import designer_check
 
 class ExPlotWidget(pg.PlotWidget):
 
-    sig_selection_changed = Signal(CurveData)
+    sig_selection_changed = Signal()
     """
     Signal informing about any changes to the current selection of the current
     editable item. If the emitted data is empty, the current selection was
@@ -56,6 +56,11 @@ class ExPlotWidget(pg.PlotWidget):
     been moved around by dragging.
 
     In general this signal will only be emitted in a editable configuration.
+    """
+
+    sig_plot_selected = Signal(bool)
+    """
+    Signal informing about an entire plot being selected for editing.
     """
 
     def __init__(
@@ -331,6 +336,31 @@ class ExPlotWidget(pg.PlotWidget):
 
     # ~~~~~~~~~~~~~~~~~~ Functionality for editble plots ~~~~~~~~~~~~~~~~~~~~~~
 
+    def mouseDoubleClickEvent(self, ev: QMouseEvent) -> None:
+        """
+        When double clicking a PlotItem, it can be selected as the plot item
+        which should be edited. To inform f.e. and editable button bar about
+        a selection, a fitting signal is emitted.
+
+        Args:
+            ev: Event
+        """
+        super().mouseDoubleClickEvent(ev)
+        self.plotItem.toggle_plot_selection()
+
+    def replace_selection(self, replacement: CurveData) -> None:
+        """Function to call if the current data selection was changed.
+
+        Args:
+            replacement: The data to replace the indices with
+        """
+        self.plotItem.replace_selection(replacement=replacement)
+
+    @property
+    def current_selection_data(self) -> Optional[CurveData]:
+        """Get the selected data as a curve data."""
+        return self.plotItem.current_selection_data
+
     @property
     def selection_mode(self) -> bool:
         """
@@ -522,6 +552,7 @@ class ExPlotWidget(pg.PlotWidget):
         self.setCentralItem(self.plotItem)
         self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
         self.plotItem.sig_selection_changed.connect(self.sig_selection_changed.emit)
+        self.plotItem.sig_plot_selected.connect(self.sig_plot_selected.emit)
         del old_plot_item
 
     def _wrap_plotitem_functions(self) -> None:
@@ -975,7 +1006,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                         cast(ExPlotWidget, self).addItem(item=item, layer=name)
                         items_to_move.remove(item)
                     except RuntimeError:
-                        warnings.warn(item.label)
+                        warnings.warn(f"Item could not be removed: {item.label}")
         if removed_layer_ids and added_layer_ids:
             # Rename
             for old_name, new_name in zip(removed_layer_ids, added_layer_ids):

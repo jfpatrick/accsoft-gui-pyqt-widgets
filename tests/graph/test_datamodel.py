@@ -318,27 +318,27 @@ def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataMod
 # ~~~~~~~~~~~~ Test data model when editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-@patch.object(accgraph.UpdateSource, accgraph.UpdateSource.handle_data_model_edit.__name__)
-def test_editable_curve_datamodel_notifying(MockedUpdateSource):
+@patch.object(accgraph.UpdateSource, "handle_data_model_edit")
+def test_editable_curve_datamodel_notifying(mock_handler):
     """Tests, that editing is properly propagated to the update source"""
-    data_source = MockedUpdateSource()
+    data_source = accgraph.UpdateSource()
     data_model = accgraph.EditableCurveDataModel(data_source=data_source)
     # Initial update from the update source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 3, 4])
-    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.new_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
     # Another update from the source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 1, 0])
-    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.new_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
     edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[4, 3, 2, 1, 0])
     data_model.handle_editing(edited_data)
-    data_source.handle_data_model_edit.assert_not_called()
+    mock_handler.assert_not_called()
     data_model.send_current_state()
-    data_source.handle_data_model_edit.assert_called_with(edited_data)
+    mock_handler.assert_called_with(edited_data)
 
 
 def test_editable_curve_datamodel():
@@ -361,3 +361,183 @@ def test_editable_curve_datamodel():
                                      y=[4, 3, 2, 1, 0])
     data_model.handle_editing(edited_data)
     assert to_curve_data(data_model.full_data_buffer) == edited_data
+
+
+@pytest.mark.parametrize("original, selected_indices, replacement, result", [
+    # All empty
+    ([[], []], [], [[], []], [[], []]),
+    # Change nothing
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [], [[], []], [[0, 1, 2, 3], [2, 1, 0, 3]]),
+    # Change with same data
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[1, 2], [1, 0]], [[0, 1, 2, 3], [2, 1, 0, 3]]),
+    # Change with data with different y with same amount
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[1, 2], [24, 25]], [[0, 1, 2, 3], [2, 24, 25, 3]]),
+    # Change with data with different x with same amount
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[-2, -1], [1, 0]], [[-2, -1, 0, 3], [1, 0, 2, 3]]),
+    # Change with data with different x & y with same amount
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[-2, -1], [24, 25]], [[-2, -1, 0, 3], [24, 25, 2, 3]]),
+    # Change with data with different x & y with smaller amount
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[-1], [25]], [[-1, 0, 3], [25, 2, 3]]),
+    # Change with data with different x & y with larger amount
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [1, 2], [[-1, 1.5, 4], [21, 22, 23]], [[-1, 0, 1.5, 3, 4], [21, 2, 22, 3, 23]]),
+    # Add points
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [], [[-1, 1.5, 5], [-2, 1.75, 6]], [[-1, 0, 1, 1.5, 2, 3, 5], [-2, 2, 1, 1.75, 0, 3, 6]]),
+    # Delete points
+    ([[0, 1, 2, 3], [2, 1, 0, 3]], [0, 2], [[], []], [[1, 3], [1, 3]]),
+])
+def test_replace_selection_in_editable_data_model(original,
+                                                  selected_indices,
+                                                  replacement,
+                                                  result):
+    """
+    When applying functions to a selection, the selection will be replaced
+    with the return value of the function.
+    """
+    def to_curve_data(array):
+        return accgraph.CurveData(array[0], array[1])
+    data_source = accgraph.UpdateSource()
+    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+
+    original_cd = to_curve_data(original)
+    replacement_cd = to_curve_data(replacement)
+    result_cd = to_curve_data(result)
+
+    data_source.new_data(original_cd)
+    assert to_curve_data(data_model.full_data_buffer) == original_cd
+    data_model.replace_selection(selected_indices, replacement_cd)
+    assert to_curve_data(data_model.full_data_buffer) == result_cd
+
+
+@pytest.mark.parametrize("ops, undoable, redoable", [
+    ([], False, False),  # Start
+
+    ([[0, 1],  # Select
+      accgraph.CurveData([0, 1], [4, 3])],  # Replace
+     True, False),
+
+    ([accgraph.CurveData([-2, -1], [4, 3])],  # Add Points
+     True, False),
+
+    ([[0, 1],  # Select
+      accgraph.CurveData([], [])],  # Delete
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      "UNDO"],
+     False, True),
+
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      accgraph.CurveData([0, 1], [2, 3]),
+      "UNDO"],
+     True, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      [1, 2],
+      accgraph.CurveData([1, 2], [2, 3])],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      [1, 2],
+      accgraph.CurveData([1, 2], [2, 3]),
+      "UNDO"],
+     True, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      [1, 2],
+      accgraph.CurveData([1, 2], [2, 3]),
+      "UNDO",
+      "UNDO"],
+     False, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      accgraph.CurveData([0, 1], [2, 3]),
+      "UNDO",
+      "UNDO"],
+     False, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      accgraph.CurveData([0, 1], [2, 3]),
+      "UNDO",
+      "UNDO",
+      "REDO"],
+     True, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      "UNDO",
+      "REDO"],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      "UNDO",
+      "REDO",
+      "UNDO"],
+     False, True),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      "UNDO",
+      accgraph.CurveData([0, 1], [3, 2])],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [2, 3]),
+      "SEND"],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [2, 3]),
+      "UNDO",
+      "REDO",
+      "SEND"],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [2, 3]),
+      accgraph.CurveData([0, 1], [4, 3]),
+      "SEND"],
+     True, False),
+
+    ([[0, 1],
+      accgraph.CurveData([0, 1], [4, 3]),
+      "UNDO",
+      accgraph.CurveData([0, 1], [3, 2]),
+      "SEND"],
+     True, False),
+])
+def test_data_model_undoable_redoable(ops, undoable, redoable):
+    """Test if undo /redo can be called on the data model after a sequence
+    of passed operations"""
+    source = accgraph.UpdateSource()
+    model = accgraph.EditableCurveDataModel(data_source=source)
+    source.new_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
+    current_selection = []
+    for op in ops:
+        if isinstance(op, list):
+            current_selection = op
+        elif isinstance(op, accgraph.CurveData):
+            model.replace_selection(current_selection, op)
+        elif isinstance(op, str):
+            if op == "UNDO":
+                model.undo()
+            elif op == "REDO":
+                model.redo()
+            elif op == "SEND":
+                model.send_current_state()
+            else:
+                raise ValueError(f'Unknown operation "{op}" in test')
+        else:
+            raise ValueError(f'Unknown operation "{op}" in test')
+    # The current state should always be sendable
+    assert model.sendable_state_exists
+    assert model.undoable == undoable
+    assert model.redoable == redoable

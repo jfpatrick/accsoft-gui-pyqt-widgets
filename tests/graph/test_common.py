@@ -7,6 +7,9 @@ def test_empty_his():
     assert not his.undoable
     assert not his.redoable
     his.save_state(state=0)
+    assert not his.undoable
+    assert not his.redoable
+    his.save_state(state=1)
     assert his.undoable
     assert not his.redoable
 
@@ -38,8 +41,22 @@ def test_exceed_max_rollbacks():
     for i in states:
         his.save_state(state=i)
     for _ in range(1, 50):
-        his.undo() is not None
-    his.undo() is None
+        assert his.undo() is not None
+    assert his.undo() is None
+
+
+def test_history_clear():
+    """Clear the history"""
+    his = History[int]()
+    states = list(range(1, 10))
+    for i in states:
+        his.save_state(state=i)
+    assert his._states == list(range(1, i + 1))
+    his.clear()
+    assert his._states == []
+    assert his.current_state is None
+    assert not his.undoable
+    assert not his.redoable
 
 
 def test_fork():
