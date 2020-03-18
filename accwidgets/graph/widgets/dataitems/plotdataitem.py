@@ -593,18 +593,21 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         visible.
         """
         sym = self.opts.get("symbol")
+        plot_bg_brush = self.scene().parent().backgroundBrush()
         if sym:
             self._selection.setBrush(None)
             self._selection.setSymbol(sym)
+            orig_pen = pg.mkPen(self.opts["symbolPen"])
         else:
-            self._selection.setBrush("w")
+            self._selection.setBrush(plot_bg_brush)
+            orig_pen = pg.mkPen(self.opts["pen"])
         # We need a minimum size so we can comfortably drag it with the mouse
         sym_size = max(self.opts["symbolSize"] + 2, 5)
         self._selection.setSize(sym_size)
-        pen_color = pg.mkPen(self.opts["symbolPen"]).color()
-        sym_pen = pg.mkPen(DataSelectionMarker.complementary(pen_color))
-        sym_pen.setWidth(3)
-        self._selection.setPen(sym_pen)
+        marker_pen = pg.mkPen(DataSelectionMarker.complementary(orig_pen.color(),
+                                                                plot_bg_brush.color()))
+        marker_pen.setWidth(3)
+        self._selection.setPen(marker_pen)
 
     def _selection_moved(self, data: np.ndarray) -> None:
         """React to a change from the DataSelectionMarker, which is
@@ -860,6 +863,15 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                                 anchor=(0.5, -0.5))
             label.setParentItem(self)
             label.setPos(data["x"], data["y"])
+            color = pg.getConfigOption("foreground")
+            if not isinstance(color, QColor):
+                try:
+                    color = pg.mkColor(color)
+                except Exception:
+                    # Exception -> mkColor does not get more precise
+                    color = None
+            if color:
+                label.setColor(color)
             self._point_labels.append(label)
 
     def _remove_labels(self) -> None:
@@ -884,19 +896,76 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         return ", ".join(label)
 
     @staticmethod
-    def complementary(color: QColor) -> QColor:
+    def complementary(color: QColor, plot_background: Optional[QColor] = None) -> QColor:
         """
-        Get the complementary QColor to a given color. For (nearly) white, grey
-        and black colors, red is returned as the complementary color and not
-        another greyish color
+        Get the complementary QColor to a given color. For white, grey and black
+        colors, red is returned as the complementary color. If the color does
+        not provide enough contrast compared to the plots background (if it is
+        passed), we will lighten / darken it accordingly.
+
+        Args:
+            color: color which complementary color should be calculated
+            plot_background: Background Color that is used to lighten / darken
+                             the complementary color to offer enough contrast
+                             to be visible
         """
         rgb = [color.red(), color.green(), color.blue()]
-        # Color is somewhat greyish
+        # Color is somewhat greyish -> we take red as the complementary
         if max(rgb) - min(rgb) < 10:
             return pg.mkColor("r")
-        return QColor(
+        compl = QColor(
             255 - color.red(),
             255 - color.green(),
             255 - color.blue(),
             color.alpha(),
         )
+        if plot_background:
+            if DataSelectionMarker._contrast_ratio(plot_background, compl) < 4.0:
+                if DataSelectionMarker._relative_luminance(plot_background) >= 0.5:
+                    # We have a light background
+                    lightness = compl.lightness() * 0.5
+                else:
+                    # We have a dark background
+                    lightness = min(compl.lightness() * 2, 230)
+                compl.setHsl(compl.hue(), compl.saturation(), int(round(lightness)))
+        return compl
+
+    @staticmethod
+    def _contrast_ratio(color_1: QColor, color_2: QColor) -> float:
+        """ Calculate the contrast ratio between both given colors.
+        The lighter / darker color do not have to be passed in a special order.
+        Source: https://www.w3.org/TR/WCAG20/#contrast-ratiodef
+
+        Args:
+            color_1: First color of the pair
+            color_2: Second color of the pair
+
+        Returns:
+            Values between 1 and 21, the higher the number, the higher the
+            contrast.
+        """
+        luminance_1 = DataSelectionMarker._relative_luminance(color_1)
+        luminance_2 = DataSelectionMarker._relative_luminance(color_2)
+        if luminance_1 > luminance_2:
+            return (luminance_1 + 0.05) / (luminance_2 + 0.05)
+        return (luminance_2 + 0.05) / (luminance_1 + 0.05)
+
+    @staticmethod
+    def _relative_luminance(color: QColor) -> float:
+        """Calculate the relative luminance for the given color.
+        Source: https://www.w3.org/TR/WCAG20/#relativeluminancedef
+
+        Args:
+            color: color whose relative luminance should be calculated.
+
+        Returns:
+            0 for the darkest black and 1 for the lightest white
+        """
+        rgb: List[float] = []
+        for component in [color.red(), color.green(), color.blue()]:
+            c = component / 255
+            if c <= 0.03928:
+                rgb.append(c / 12.92)
+            else:
+                rgb.append(((c + 0.055) / 1.055) ** 2.4)
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]

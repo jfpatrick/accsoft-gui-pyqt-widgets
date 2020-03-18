@@ -2,13 +2,14 @@ from unittest import mock
 
 # qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
 from PyQt5 import QtTest
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 import pytest
 import numpy as np
 import pyqtgraph as pg
 
 import accwidgets.graph as accgraph
 from .mock_utils.utils import (sim_selection_moved,
+                               assert_qcolor_equals,
                                assert_qpen_equals,
                                assert_qbrush_equals)
 
@@ -79,7 +80,7 @@ def test_point_selection(qtbot,
          None,
          None,
          pg.mkPen((255, 0, 0), width=3),
-         pg.mkBrush((255, 255, 255))),
+         pg.mkBrush((0, 0, 0))),  # background color of plot
         # White curve
         (pg.mkPen((255, 255, 255), width=1),
          pg.mkBrush((255, 255, 255)),
@@ -105,10 +106,10 @@ def test_point_selection(qtbot,
          pg.mkPen((5, 250, 135), width=3),
          pg.mkBrush(None)),
         # Colored curve
-        (pg.mkPen((250, 5, 120), width=1),
+        (pg.mkPen((15, 10, 25), width=1),
          pg.mkBrush((255, 0, 255)),
          "o",
-         pg.mkPen((5, 250, 135), width=3),
+         pg.mkPen((240, 245, 230), width=3),
          pg.mkBrush(None))],
 )
 def test_selection_style(qtbot,
@@ -137,6 +138,78 @@ def test_selection_style(qtbot,
     assert curve._selection.opts["symbol"] == curve.scatter.opts["symbol"]
     # Minimum size for symbols is 5 pixels
     assert curve._selection.opts["size"] == 5
+
+
+@pytest.mark.parametrize("color, expected", [
+    (QtGui.QColor(255, 255, 255), 1.0),
+    (QtGui.QColor(0, 0, 0), 0.0),
+    (QtGui.QColor(255, 0, 0), 0.2126),
+    (QtGui.QColor(0, 255, 0), 0.7152),
+    (QtGui.QColor(0, 0, 255), 0.0722),
+    (QtGui.QColor(171, 193, 35), 0.4692),
+    (QtGui.QColor(81, 38, 74), 0.0363),
+    (QtGui.QColor(81, 38, 74), 0.0363),
+    (QtGui.QColor(250, 177, 169), 0.5463),
+])
+def test_data_selection_marker_luminance(color, expected):
+    assert np.allclose(accgraph.DataSelectionMarker._relative_luminance(color),
+                       expected,
+                       atol=1e-04)
+
+
+@pytest.mark.parametrize("c1, c2, expected", [
+    (QtGui.QColor(255, 255, 255), QtGui.QColor(0, 0, 0), 21.0),
+    (QtGui.QColor(0, 0, 0), QtGui.QColor(255, 255, 255), 21.0),
+    (QtGui.QColor(255, 255, 255), QtGui.QColor(255, 255, 255), 1.0),
+    (QtGui.QColor(0, 0, 0), QtGui.QColor(0, 0, 0), 1.0),
+    (QtGui.QColor(255, 0, 0), QtGui.QColor(0, 0, 255), 2.15),
+    (QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0), 2.91),
+    (QtGui.QColor(250, 177, 169), QtGui.QColor(80, 185, 164), 1.35),
+])
+def test_data_selection_marker_contrast(c1, c2, expected):
+    assert np.allclose(accgraph.DataSelectionMarker._contrast_ratio(c1, c2),
+                       expected,
+                       atol=1e-02)
+
+
+@pytest.mark.parametrize(
+    [
+        "curve_color",
+        "plot_background",
+        "pure_expected",
+        "altered_expected",
+    ], [
+        # cyan on black -> enough contrast
+        (QtGui.QColor(255, 0, 0),
+         QtGui.QColor(0, 0, 0),
+         QtGui.QColor(0, 255, 255),
+         QtGui.QColor(0, 255, 255)),
+        # cyan on white -> not enough contrast
+        (QtGui.QColor(255, 0, 0),
+         QtGui.QColor(255, 255, 255),
+         QtGui.QColor(0, 255, 255),
+         QtGui.QColor(0, 128, 128)),  # 25% instead of 50% lightness
+        # blue on white -> enough contrast
+        (QtGui.QColor(255, 255, 0),
+         QtGui.QColor(255, 255, 255),
+         QtGui.QColor(0, 0, 255),
+         QtGui.QColor(0, 0, 255)),  # 25% instead of 50% lightness
+        # blue on black -> not enough contrast
+        (QtGui.QColor(255, 255, 0),
+         QtGui.QColor(0, 0, 0),
+         QtGui.QColor(0, 0, 255),
+         QtGui.QColor(205, 205, 255)),  # 90% instead of 50% lightness (100% would be white)
+    ],
+)
+def test_data_selection_marker_complementary(curve_color,
+                                             plot_background,
+                                             pure_expected,
+                                             altered_expected):
+    pure = accgraph.DataSelectionMarker.complementary(curve_color)
+    altered = accgraph.DataSelectionMarker.complementary(curve_color,
+                                                         plot_background)
+    assert_qcolor_equals(pure, pure_expected)
+    assert_qcolor_equals(altered, altered_expected)
 
 
 @pytest.mark.parametrize("direction, movement, expected_x, expected_y", [
