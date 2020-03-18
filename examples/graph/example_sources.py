@@ -282,13 +282,17 @@ class EditableSinusCurveDataSource(accgraph.UpdateSource):
             edit_callback: Callable[[np.ndarray], Any] = lambda x: print(x),
     ):
         """
-        Update Source which emits different scaled, complete sinus curves.
-        Compared to the SinusCurveSource, the curve is not emitted one value
-        at a time, but the entire curve, each time with a different scaling.
+        Update Source which emits a Sinus curve and allows editing.
 
-        X values will stay the same each time
+        **What is the QTimer doing?**
+        When we call this constructor, the curve is not yet connected to the
+        signal emitting our data. To make sure, that the curve exists at the
+        time of calling self.new_data(...), we will use a timer that postpones
+        this call until the event loop is running.
 
-        This source can be f.e. used in Waveform Plots.
+        If we want to avoid using QTimer, we can simply move the new_data call
+        to a separate function and call it right after we have instantiated our
+        curve and passed the update source instance to it.
 
         Args:
             edit_callback: Function which should be called as soon as the view
@@ -296,20 +300,16 @@ class EditableSinusCurveDataSource(accgraph.UpdateSource):
         """
         super().__init__()
         self.edit_callback = edit_callback
-        self.x_values = np.linspace(0, 2 * math.pi, 10)
-        self.y_values = np.sin(self.x_values)
+        x = np.linspace(0, 2 * math.pi, 10)
+        y = np.sin(x)
+        curve = accgraph.CurveData(x, y)
         self._timer = QTimer()
-        self._timer.singleShot(0, self._init_values)
+        self._timer.singleShot(0, lambda: self.new_data(curve))
 
-    def _init_values(self) -> None:
-        """Send the initial value."""
-        self.sig_new_data.emit(accgraph.CurveData(x=self.x_values,
-                                                  y=self.y_values))
-
-    def handle_data_model_edit(self, data: np.ndarray):
+    def handle_data_model_edit(self, data: accgraph.CurveData):
         """
         As soon as a value comes back from the view, we will call the edit
-        callback passed on initializaition with the new values. Normally this
+        callback passed on initialization with the new values. Normally this
         function would send the values back to the control system.
         """
         self.edit_callback(data)

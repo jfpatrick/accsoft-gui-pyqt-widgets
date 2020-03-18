@@ -432,7 +432,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
     supported_plotting_style = PlotWidgetStyle.EDITABLE
     data_model_type = EditableCurveDataModel
 
-    sig_selection_changed = Signal(CurveData)
+    sig_selection_changed = Signal()
     """
     Signal informing about any changes to the current selection. If the emitted
     data is empty, the current selection was unselected. The signal will also
@@ -478,39 +478,55 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             selection: rectangle for selecting new points
         """
         self._update_selected_indices(selection)
-        if self._selected_indices is not None and len(self._selected_indices) > 0:
+        if not self._selection_indices_empty:
             x, y = self.getData()
             x_selection = x[self._selected_indices]
             y_selection = y[self._selected_indices]
-            self._selection.setData(x_selection, y_selection)
             self._stylize_selection_marker()
-            self._selection.sig_selection_moved.connect(self._selection_edited)
-            # Inform about selection changes
-            self.sig_selection_changed.emit(CurveData(x_selection, y_selection))
+            self._reconnect_to_selection()
+            self._selection.setData(x_selection, y_selection)
+            self.sig_selection_changed.emit()
         else:
             self.unselect()
 
     def unselect(self) -> None:
         """Unselect prior done selections."""
         self._update_selected_indices(None)
-        self._selection.setData([], [])
         # Inform about point being unselected
-        self.sig_selection_changed.emit(CurveData([], []))
-        try:
-            self._selection.sig_selection_moved.disconnect(self._selection_edited)
-        except TypeError:
-            # If no selection has been made in selection mode no signal was
-            # connected
-            pass
+        self._disconnect_from_selection()
+        self._selection.setData([], [])
+        self.sig_selection_changed.emit()
 
     def update_item(self) -> None:
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
+        self.sig_selection_changed.emit()
 
     @property
     def selection(self) -> "DataSelectionMarker":
         """Marker item for the currently selected data."""
         return self._selection
+
+    @property
+    def selection_data(self) -> Optional[CurveData]:
+        """Currently selected data."""
+        if self._selection:
+            return self._selection.curve_data
+        return None
+
+    def replace_selection(self, replacement: CurveData) -> None:
+        """
+        Replace the current selection with the passed replacement.
+        To select data from the plot, use select(). After the replacement is
+        completed, the selection will be unselected.
+
+        Args:
+            replacement: Replacement data which should replace the current
+                         selection
+        """
+        indices = np.nonzero(self._selected_indices)
+        self._editable_model.replace_selection(indices, replacement)
+        self.unselect()
 
     # ~~~~~~~~~~~~~~~ Wrapped from data model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -521,6 +537,11 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             True if there was a state to send
         """
         return self._editable_model.send_current_state()
+
+    @property
+    def sendable_state_exists(self) -> bool:
+        """Check if there is a state to send."""
+        return self._editable_model.sendable_state_exists
 
     @property
     def undoable(self) -> bool:
@@ -534,11 +555,13 @@ class EditablePlotCurve(AbstractBasePlotCurve):
 
     def undo(self) -> None:
         """Jump to the next older state."""
-        self._editable_model.undo()
+        if self._editable_model.undo():
+            self.unselect()
 
     def redo(self) -> None:
         """Jump to the next newer state."""
-        self._editable_model.redo()
+        if self._editable_model.redo():
+            self.unselect()
 
     # ~~~~~~~~~~~~~~~~~~~~ Private ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -583,21 +606,66 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         sym_pen.setWidth(3)
         self._selection.setPen(sym_pen)
 
+    def _selection_moved(self, data: np.ndarray) -> None:
+        """React to a change from the DataSelectionMarker, which is
+        currently in progress. To fully accept the editing (with data model,
+        history etc.), _selection_edited has to be called.
+
+        Args:
+            data: current editing state of the data selection marker
+        """
+        x, y = self.getData()
+        x = np.copy(x)
+        y = np.copy(y)
+        for j, i in enumerate(np.flatnonzero(self._selected_indices)):
+            x[i] = data[0][j]
+            y[i] = data[1][j]
+        self.setData(x, y)
+
     def _selection_edited(self, data: np.ndarray) -> None:
         """Apply the editing of the DataSelectionMarker to the this curve
+
+        Compared to the _selection_moved function, this function will forward
+        the passed state to the data model, which will add as a state to the
+        curve's state history.
+
+        We do not want to set the view data directly but go the route through
+        the data model, the view will be updated automatically through the
+        connection between the view and the model
 
         Args:
             data: data to apply to this curve from the selection marker
         """
-        orig = np.array(self.getData())
-        orig[0][self._selected_indices] = data[0]
-        orig[1][self._selected_indices] = data[1]
-        # we do not want to set the view data directly but go the route through
-        # the data model, the view will be updated automatically through the
-        # connection between the view and the model
-        self._editable_model.handle_editing(CurveData(*orig))
-        # Inform about selection movement to the outside
-        self.sig_selection_changed.emit(CurveData(*data))
+        self._editable_model.handle_editing(CurveData(*self.getData()))
+
+    def _reconnect_to_selection(self):
+        """Disconnect and connect to selection marker."""
+        self._disconnect_from_selection()
+        self._connect_to_selection()
+
+    def _connect_to_selection(self):
+        """Connect to selection marker"""
+        self._selection.sig_selection_edited.connect(self._selection_edited)
+        self._selection.sig_selection_moved.connect(self._selection_moved)
+
+    def _disconnect_from_selection(self):
+        """Try to disconnect from selection marker"""
+        try:
+            self._selection.sig_selection_edited.disconnect(self._selection_edited)
+            self._selection.sig_selection_moved.disconnect(self._selection_moved)
+        except TypeError:
+            # If no selection has been made in selection mode no signal was
+            # connected
+            pass
+
+    @property
+    def _selection_indices_empty(self) -> bool:
+        """
+        Checks if the current selection is empty according to the saved
+        indices. This potentially requires updating them before checking.
+        """
+        return (self._selected_indices is None
+                or not any(self._selected_indices))
 
     @property
     def _editable_model(self) -> EditableCurveDataModel:
@@ -616,10 +684,16 @@ class DragDirection(Flag):
 
 class DataSelectionMarker(pg.ScatterPlotItem):
 
-    sig_selection_moved = Signal(np.ndarray)
+    sig_selection_edited = Signal(np.ndarray)
     """
     As soon as a move was done successfully, this signal will emit the new
     position of the data displayed by this marker.
+    """
+
+    sig_selection_moved = Signal(np.ndarray)
+    """
+    With every move this signal will be emitted. It is mainly for visualizing
+    a work in progress editing in the original curve.
     """
 
     def __init__(self,
@@ -667,12 +741,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             return
         elif ev.isFinish():
             self._drag_start = None
-            self.sig_selection_moved.emit(np.array(self.getData()))
-            return
-        # Event is currently running
-        if self._drag_point is None:
-            ev.ignore()
-            return
+            self.sig_selection_edited.emit(np.array(self.getData()))
         else:
             data = np.copy(self._original_data)
             apply_x = self._drag_direction & DragDirection.X
@@ -683,6 +752,8 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                 data[0] += x_offset if apply_x else 0.0
                 data[1] += y_offset if apply_y else 0.0
                 self.setData(data[0, :], data[1, :])
+                self.setData(data[0, :], data[1, :])
+                self.sig_selection_moved.emit(np.array(self.getData()))
 
     def setData(self,
                 *args,
@@ -749,6 +820,12 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             self._add_labels()
         else:
             self._remove_labels()
+
+    @property
+    def curve_data(self) -> CurveData:
+        """Data of the selection marker as curve data."""
+        x, y = self.getData()
+        return CurveData(x, y)
 
     @property
     def points_labeled(self) -> bool:

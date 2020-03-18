@@ -31,7 +31,7 @@ class History(Generic[_STATE]):
     @property
     def undoable(self) -> bool:
         """Is a undo currently possible?"""
-        return self._current >= 0
+        return self._current > 0
 
     @property
     def redoable(self) -> bool:
@@ -57,25 +57,23 @@ class History(Generic[_STATE]):
         """Go back to the last state in the history.
 
         Returns:
-            The current state before the undo operation
+            The current state after the undo
         """
         if not self.undoable:
             return None
-        undone = self._states[self._current]
         self._current -= 1
-        return undone
+        return self.current_state
 
     def redo(self) -> Optional[_STATE]:
         """Redo the last editing step if possible.
 
         Returns:
-            The current state before the redo operation
+            The current state after the redo
         """
         if not self.redoable:
             return None
-        redone = self._states[self._current]
         self._current += 1
-        return redone
+        return self.current_state
 
     def clear(self) -> None:
         """Clear all states and put the history in its original state."""
