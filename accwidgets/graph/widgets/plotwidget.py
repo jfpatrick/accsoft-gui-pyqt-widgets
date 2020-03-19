@@ -6,12 +6,13 @@ from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast
 from copy import deepcopy
 import json
 import warnings
+from dataclasses import dataclass
 
 import numpy as np
 import pyqtgraph as pg
-from qtpy.QtCore import Signal, Slot, Property, Q_ENUM
+from qtpy.QtCore import Signal, Slot, Property, Q_ENUM, Qt
 from qtpy.QtWidgets import QWidget
-from qtpy.QtGui import QPen, QMouseEvent
+from qtpy.QtGui import QPen, QMouseEvent, QColor
 
 from accwidgets.graph.datamodel.connection import UpdateSource, PlottingItemDataFactory
 from accwidgets.graph.widgets.plotconfiguration import (
@@ -46,7 +47,28 @@ from accwidgets.graph.datamodel.datastructures import (
 from accwidgets import designer_check
 
 
+class SymbolOptions:
+    NoSymbol = 0
+    Circle = 1
+    Square = 2
+    Triangle = 3
+    Diamond = 4
+    Plus = 5
+
+
+@dataclass
+class SlotItemStylingOpts:
+    """Styling Options for the Slot Items"""
+    pen_color: QColor = QColor(255, 255, 255)
+    pen_width: int = 1
+    pen_style: Qt.PenStyle = Qt.SolidLine
+    brush_color: QColor = QColor(255, 255, 255)
+    symbol: int = SymbolOptions.NoSymbol
+
+
 class ExPlotWidget(pg.PlotWidget):
+
+    Q_ENUM(SymbolOptions)
 
     sig_selection_changed = Signal()
     """
@@ -116,6 +138,7 @@ class ExPlotWidget(pg.PlotWidget):
             **plotitem_kwargs,
         )
         self._wrap_plotitem_functions()
+        self._slot_item_styling_opts = SlotItemStylingOpts()
 
     def addCurve(
             self,
@@ -527,7 +550,56 @@ class ExPlotWidget(pg.PlotWidget):
     )
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
+    # ~~~~~~~~~~~~~~~~~ Styling Opts for Slot Items ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    def _get_slot_item_pen_color(self) -> QColor:
+        return self._slot_item_styling_opts.pen_color
+
+    def _set_slot_item_pen_color(self, color: QColor) -> None:
+        self._slot_item_styling_opts.pen_color = color
+
+    def _get_slot_item_pen_width(self) -> int:
+        return self._slot_item_styling_opts.pen_width
+
+    def _set_slot_item_pen_width(self, width: int) -> None:
+        self._slot_item_styling_opts.pen_width = width
+
+    def _get_slot_item_pen_style(self) -> Qt.PenStyle:
+        return self._slot_item_styling_opts.pen_style
+
+    def _set_slot_item_pen_style(self, style: Qt.PenStyle) -> None:
+        self._slot_item_styling_opts.pen_style = style
+
+    def _get_slot_item_symbol(self) -> int:
+        return self._slot_item_styling_opts.symbol
+
+    def _get_slot_item_symbol_string(self) -> Optional[str]:
+        symbol_string = {
+            SymbolOptions.NoSymbol: None,
+            SymbolOptions.Circle: "o",
+            SymbolOptions.Square: "s",
+            SymbolOptions.Triangle: "t",
+            SymbolOptions.Diamond: "d",
+            SymbolOptions.Plus: "+",
+        }
+        return symbol_string[self._get_slot_item_symbol()]
+
+    def _set_slot_item_symbol(self, symbol: int) -> None:
+        self._slot_item_styling_opts.symbol = symbol
+
+    def _get_slot_item_brush_color(self) -> QColor:
+        return self._slot_item_styling_opts.brush_color
+
+    def _set_slot_item_brush_color(self, color: QColor) -> None:
+        self._slot_item_styling_opts.brush_color = color
+
     # ~~~~~~~~~~ Private ~~~~~~~~~
+
+    def _get_slot_item_pen(self) -> QPen:
+        color = self._get_slot_item_pen_color()
+        width = self._get_slot_item_pen_width()
+        style = self._get_slot_item_pen_style()
+        return pg.mkPen(color=color, width=width, style=style)
 
     def _init_ex_plot_item(
             self,
@@ -617,6 +689,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     Q_ENUM(GridOrientationOptions)
     Q_ENUM(LegendXAlignmentOptions)
     Q_ENUM(LegendYAlignmentOptions)
+
     XAxisSideOptions = XAxisSideOptions
     DefaultYAxisSideOptions = DefaultYAxisSideOptions
     GridOrientationOptions = GridOrientationOptions
@@ -1035,13 +1108,16 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         return list(set(list1).symmetric_difference(set(list2)))
 
 
-class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
 
+    Q_ENUM(SymbolOptions)
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
     Q_ENUM(GridOrientationOptions)
     Q_ENUM(LegendXAlignmentOptions)
     Q_ENUM(LegendYAlignmentOptions)
+
+    SymbolOptions = SymbolOptions
 
     def __init__(
             self,
@@ -1112,6 +1188,43 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
     )
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
+    # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    pushDataItemPenColor: QColor = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_pen_color,
+        ExPlotWidget._set_slot_item_pen_color,
+    )
+    """Pen color for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemPenWidth: int = Property(
+        int,
+        ExPlotWidget._get_slot_item_pen_width,
+        ExPlotWidget._set_slot_item_pen_width,
+    )
+    """Pen width for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemPenStyle: Qt.PenStyle = Property(
+        Qt.PenStyle,
+        ExPlotWidget._get_slot_item_pen_style,
+        ExPlotWidget._set_slot_item_pen_style,
+    )
+    """Pen line style for the item displaying data through 'pushData' the slot"""
+
+    pushDataItemBrushColor: str = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_brush_color,
+        ExPlotWidget._set_slot_item_brush_color,
+    )
+    """Brush color for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemSymbol: int = Property(
+        SymbolOptions,
+        ExPlotWidget._get_slot_item_symbol,
+        ExPlotWidget._set_slot_item_symbol,
+    )
+    """Symbol for the item displaying data through 'pushData' the slot"""
+
     @Slot(float)
     @Slot(int)
     @Slot(tuple)
@@ -1139,16 +1252,23 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore
             data=data,
             # ignore, bc mypy wants concrete class
             item_type=AbstractBasePlotCurve,  # type: ignore
+            pen=self._get_slot_item_pen(),
+            symbolPen=self._get_slot_item_pen(),
+            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+            symbol=self._get_slot_item_symbol_string(),
         )
 
 
-class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
 
+    Q_ENUM(SymbolOptions)
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
     Q_ENUM(GridOrientationOptions)
     Q_ENUM(LegendXAlignmentOptions)
     Q_ENUM(LegendYAlignmentOptions)
+
+    SymbolOptions = SymbolOptions
 
     def __init__(
             self,
@@ -1223,6 +1343,43 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
     )
     """DO NOT USE WITH A CYCLIC PLOT."""
 
+    # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    pushDataItemPenColor: QColor = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_pen_color,
+        ExPlotWidget._set_slot_item_pen_color,
+    )
+    """Pen color for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemPenWidth: int = Property(
+        int,
+        ExPlotWidget._get_slot_item_pen_width,
+        ExPlotWidget._set_slot_item_pen_width,
+    )
+    """Pen width for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemPenStyle: Qt.PenStyle = Property(
+        Qt.PenStyle,
+        ExPlotWidget._get_slot_item_pen_style,
+        ExPlotWidget._set_slot_item_pen_style,
+    )
+    """Pen line style for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemBrushColor: str = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_brush_color,
+        ExPlotWidget._set_slot_item_brush_color,
+    )
+    """Brush color for the item displaying data through the 'pushData' slot"""
+
+    pushDataItemSymbol: int = Property(
+        SymbolOptions,
+        ExPlotWidget._get_slot_item_symbol,
+        ExPlotWidget._set_slot_item_symbol,
+    )
+    """Symbol for the item displaying data through the 'pushData' slot"""
+
     @Slot(float)
     @Slot(int)
     @Slot(tuple)
@@ -1249,12 +1406,17 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
         self.plotItem.plot_data_on_single_data_item(
             data=data,
             # ignore, bc mypy wants concrete class
-            item_type=AbstractBasePlotCurve,  # type:ignore
+            item_type=AbstractBasePlotCurve,  # type: ignore
+            pen=self._get_slot_item_pen(),
+            symbolPen=self._get_slot_item_pen(),
+            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+            symbol=self._get_slot_item_symbol_string(),
         )
 
 
-class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
 
+    Q_ENUM(SymbolOptions)
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
     Q_ENUM(GridOrientationOptions)
@@ -1378,6 +1540,44 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
         designable=False,
     )
 
+    # ~~~~~~~~~~~~ replaceData ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    replaceDataItemPenColor: QColor = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_pen_color,
+        ExPlotWidget._set_slot_item_pen_color,
+    )
+    """Pen color for the item displaying data through the 'replaceData' slot"""
+
+    replaceDataItemPenWidth: int = Property(
+        int,
+        ExPlotWidget._get_slot_item_pen_width,
+        ExPlotWidget._set_slot_item_pen_width,
+    )
+    """Pen width for the item displaying data through the 'replaceData' slot"""
+
+    replaceDataItemPenStyle: Qt.PenStyle = Property(
+        Qt.PenStyle,
+        ExPlotWidget._get_slot_item_pen_style,
+        ExPlotWidget._set_slot_item_pen_style,
+    )
+    """Pen line style for the item displaying data through 'replaceData' the slot"""
+
+    replaceDataItemBrushColor: str = Property(
+        QColor,
+        ExPlotWidget._get_slot_item_brush_color,
+        ExPlotWidget._set_slot_item_brush_color,
+    )
+
+    """Brush color for the item displaying data through the 'replaceData' slot"""
+
+    replaceDataItemSymbol: int = Property(
+        SymbolOptions,
+        ExPlotWidget._get_slot_item_symbol,
+        ExPlotWidget._set_slot_item_symbol,
+    )
+    """Symbol for the item displaying data through 'replaceData' the slot"""
+
     @Slot(np.ndarray)
     @Slot(CurveData)
     def replaceDataAsCurve(self, data: Union[np.ndarray, CurveData]) -> None:
@@ -1395,6 +1595,10 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             data=data,
             # ignore, bc mypy wants concrete class
             item_type=AbstractBasePlotCurve,  # type: ignore
+            pen=self._get_slot_item_pen(),
+            symbolPen=self._get_slot_item_pen(),
+            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+            symbol=self._get_slot_item_symbol_string(),
         )
 
     @Slot(BarCollectionData)
@@ -1409,6 +1613,8 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             data=data,
             # ignore, bc mypy wants concrete class
             item_type=AbstractBaseBarGraphItem,  # type: ignore
+            pen=self._get_slot_item_pen(),
+            brush=pg.mkBrush(self._get_slot_item_brush_color()),
         )
 
     @Slot(InjectionBarCollectionData)
@@ -1424,11 +1630,13 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[mi
             data=data,
             # ignore, bc mypy wants concrete class
             item_type=AbstractBaseInjectionBarGraphItem,  # type: ignore
+            pen=self._get_slot_item_pen(),
         )
 
 
-class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget):  # type: ignore[misc]
+class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
 
+    Q_ENUM(SymbolOptions)
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
     Q_ENUM(GridOrientationOptions)

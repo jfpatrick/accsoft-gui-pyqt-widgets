@@ -618,7 +618,8 @@ class ExPlotItem(pg.PlotItem):
 
     def plot_data_on_single_data_item(self,
                                       data: PlottingItemData,
-                                      item_type: Type[DataModelBasedItem] = AbstractBasePlotCurve) -> None:
+                                      item_type: Type[DataModelBasedItem] = AbstractBasePlotCurve,
+                                      **styling_kwargs) -> None:
         """
         This slot exposes the possibility to draw data on a
         single data item in the plot. If this item does not yet exist,
@@ -630,6 +631,7 @@ class ExPlotItem(pg.PlotItem):
         Args:
             data: data to plot
             item_type: Item type which should represent the data
+            styling_kwargs: Keyword arguments passed for styling purposes
         """
         if self.single_data_item_slot_source is None:
             self.single_data_item_slot_source = UpdateSource()
@@ -638,7 +640,8 @@ class ExPlotItem(pg.PlotItem):
             self.single_value_slot_dataitem = None
         if self.single_value_slot_dataitem is None:
             item = item_type.from_plot_item(self,
-                                            self.single_data_item_slot_source)
+                                            self.single_data_item_slot_source,
+                                            **styling_kwargs)
             self.addItem(item)
             self.single_value_slot_dataitem = item
         self.single_data_item_slot_source.sig_new_data[type(data)].emit(data)
