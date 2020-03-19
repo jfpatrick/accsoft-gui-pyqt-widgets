@@ -3,16 +3,23 @@ Tests for widget properties used by the designer plugin.
 """
 # pylint: disable=protected-access
 
+from typing import Union
 import pytest
 import json
 import numpy as np
+from qtpy import QtGui, QtCore
 from accwidgets.graph import (
     XAxisSideOptions,
     DefaultYAxisSideOptions,
     GridOrientationOptions,
     StaticPlotWidget,
     ScrollingPlotWidget,
+    SymbolOptions,
     CyclicPlotWidget,
+    PointData,
+    CurveData,
+    BarCollectionData,
+    InjectionBarCollectionData,
 )
 from .mock_utils.widget_test_window import MinimalTestWindow
 
@@ -325,3 +332,107 @@ def test_layer_removal(qtbot, widget):
     }
     assert json.loads(window.plot._get_axis_labels()) == expected_labels
     assert len(window.plot.layerIDs) == 2
+
+
+# ~~~~~~~~~~~~~~ Tests for slot item styling properties ~~~~~~~~~~~~~~~~~~~~~
+
+
+@pytest.mark.parametrize("widget", [
+    ScrollingPlotWidget,
+    CyclicPlotWidget,
+])
+def test_push_data_styling_properties(qtbot,
+                                      empty_testing_window,
+                                      widget):
+    qtbot.addWidget(empty_testing_window)
+    plot: Union[ScrollingPlotWidget, CyclicPlotWidget] = widget()
+    empty_testing_window.setCentralWidget(plot)
+    plot.pushDataItemPenColor = QtGui.QColor(255, 0, 0)
+    plot.pushDataItemPenWidth = 3
+    plot.pushDataItemPenStyle = QtCore.Qt.DashLine
+    plot.pushDataItemBrushColor = QtGui.QColor(0, 0, 255)
+    plot.pushDataItemSymbol = SymbolOptions.Circle
+    plot.pushData(PointData(x=0, y=1))
+    opts = plot.plotItem.single_value_slot_dataitem.opts
+    assert opts["pen"].color().red() == 255
+    assert opts["pen"].color().green() == 0
+    assert opts["pen"].color().blue() == 0
+    assert opts["pen"].width() == 3
+    assert opts["pen"].style() == QtCore.Qt.DashLine
+    assert opts["symbolBrush"].color().red() == 0
+    assert opts["symbolBrush"].color().green() == 0
+    assert opts["symbolBrush"].color().blue() == 255
+    assert opts["symbol"] == "o"
+
+
+def test_replace_data_as_curve_styling_properties(qtbot,
+                                                  empty_testing_window):
+    qtbot.addWidget(empty_testing_window)
+    plot: StaticPlotWidget = StaticPlotWidget()
+    empty_testing_window.setCentralWidget(plot)
+    plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
+    plot.replaceDataItemPenWidth = 3
+    plot.replaceDataItemPenStyle = QtCore.Qt.DashLine
+    plot.replaceDataItemBrushColor = QtGui.QColor(0, 123, 255)
+    plot.replaceDataItemSymbol = SymbolOptions.Circle
+    plot.replaceDataAsCurve(CurveData(x=range(10), y=range(10)))
+    opts = plot.plotItem.single_value_slot_dataitem.opts
+    assert opts["pen"].color().red() == 255
+    assert opts["pen"].color().green() == 44
+    assert opts["pen"].color().blue() == 0
+    assert opts["pen"].width() == 3
+    assert opts["pen"].style() == QtCore.Qt.DashLine
+    assert opts["symbolBrush"].color().red() == 0
+    assert opts["symbolBrush"].color().green() == 123
+    assert opts["symbolBrush"].color().blue() == 255
+    assert opts["symbol"] == "o"
+
+
+def test_replace_data_as_bargraph_styling_properties(qtbot,
+                                                     empty_testing_window):
+    qtbot.addWidget(empty_testing_window)
+    plot: StaticPlotWidget = StaticPlotWidget()
+    empty_testing_window.setCentralWidget(plot)
+    plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
+    plot.replaceDataItemPenWidth = 3
+    plot.replaceDataItemPenStyle = QtCore.Qt.DashLine
+    plot.replaceDataItemBrushColor = QtGui.QColor(0, 123, 255)
+    # Not used but we configure it anyway so nothing breaks if we do
+    plot.replaceDataItemSymbol = SymbolOptions.Circle
+    plot.replaceDataAsBarGraph(BarCollectionData(x=range(10),
+                                                 y=range(10),
+                                                 heights=np.ones(10)))
+    opts = plot.plotItem.single_value_slot_dataitem.opts
+    assert opts["pen"].color().red() == 255
+    assert opts["pen"].color().green() == 44
+    assert opts["pen"].color().blue() == 0
+    assert opts["pen"].width() == 3
+    assert opts["pen"].style() == QtCore.Qt.DashLine
+    assert opts["brush"].color().red() == 0
+    assert opts["brush"].color().green() == 123
+    assert opts["brush"].color().blue() == 255
+
+
+def test_replace_data_as_injectionbargraph_styling_properties(qtbot,
+                                                              empty_testing_window):
+    qtbot.addWidget(empty_testing_window)
+    plot: StaticPlotWidget = StaticPlotWidget()
+    empty_testing_window.setCentralWidget(plot)
+    plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
+    plot.replaceDataItemPenWidth = 3
+    plot.replaceDataItemPenStyle = QtCore.Qt.DashLine
+    # Not used but we configure it anyway so nothing breaks if we do
+    plot.replaceDataItemBrushColor = QtGui.QColor(0, 123, 255)
+    # Not used but we configure it anyway so nothing breaks if we do
+    plot.replaceDataItemSymbol = SymbolOptions.Circle
+    plot.replaceDataAsInjectionBars(InjectionBarCollectionData(x=range(10),
+                                                               y=range(10),
+                                                               heights=np.ones(10),
+                                                               widths=np.ones(10),
+                                                               labels=["Label"] * 10))
+    opts = plot.plotItem.single_value_slot_dataitem.opts
+    assert opts["pen"].color().red() == 255
+    assert opts["pen"].color().green() == 44
+    assert opts["pen"].color().blue() == 0
+    assert opts["pen"].width() == 3
+    assert opts["pen"].style() == QtCore.Qt.DashLine

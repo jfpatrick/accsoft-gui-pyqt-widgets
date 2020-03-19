@@ -12,6 +12,7 @@ import random
 
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from qtpy.QtCore import QTimer, QObject, Signal
+from qtpy.QtGui import QColor
 
 from accwidgets import graph as accgraph
 
@@ -26,6 +27,10 @@ class MainWindow(QMainWindow):
         self.object_with_signal = ObjectWithSignal()
         # Connect the signal of the object to the value slot in the plot
         # Both float and integers are accepted by the slot
+        self.plot.pushDataItemPenColor = QColor(255, 0, 0)
+        self.plot.pushDataItemBrushColor = QColor(0, 255, 0)
+        self.plot.pushDataItemPenWidth = 2
+        self.plot.pushDataItemSymbol = accgraph.SymbolOptions.Circle
         self.object_with_signal.new_point_available[float].connect(self.plot.pushData)
         self.object_with_signal.new_point_available[int].connect(self.plot.pushData)
         self.show()
