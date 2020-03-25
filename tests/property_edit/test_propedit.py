@@ -5,7 +5,6 @@ from unittest import mock
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QFormLayout, QVBoxLayout, QHBoxLayout, QGroupBox, QFrame, QLabel, QDoubleSpinBox,
                             QSpinBox, QComboBox, QLineEdit, QCheckBox, QWidget)
-from PyQt5.QtTest import QSignalSpy  # TODO: qtpy does not seem to expose QSignalSpy: https://github.com/spyder-ide/qtpy/issues/197
 from accwidgets.property_edit.propedit import (PropertyEdit, PropertyEditField, PropertyEditWidgetDelegate,
                                                _unpack_designer_fields, _pack_designer_fields, PropertyEditFormLayoutDelegate,
                                                AbstractPropertyEditWidgetDelegate, AbstractPropertyEditLayoutDelegate,
@@ -735,21 +734,17 @@ def test_send_only_updated_set(qtbot: QtBot, send_only_updated, str_input_val, e
         "unconfigured": "unconfigured-value",  # Should not be sent. We don't want hidden values being sent.
     })
     widget.findChild(QLineEdit).setText(str_input_val)
-    spy = QSignalSpy(widget.valueUpdated)
-    widget._set_btn.click()
-    value_updated_spy = spy[0]
-    received_val = value_updated_spy[0]
-    assert received_val == expected_val
+    with qtbot.wait_signal(widget.valueUpdated) as blocker:
+        widget._set_btn.click()
+    assert blocker.args == [expected_val]
 
 
 def test_get_btn(qtbot: QtBot):
     widget = PropertyEdit()
     qtbot.add_widget(widget)
-    spy = QSignalSpy(widget.valueRequested)
-    assert len(spy) == 0
-    widget._get_btn.click()
-    assert len(spy) == 1
-    assert len(spy[0]) == 0
+    with qtbot.wait_signal(widget.valueRequested) as blocker:
+        widget._get_btn.click()
+    assert blocker.args == []
 
 
 def test_set_btn(qtbot: QtBot):
@@ -758,14 +753,9 @@ def test_set_btn(qtbot: QtBot):
     widget.fields = [
         PropertyEditField(field="test", type=PropertyEdit.ValueType.STRING, editable=True),
     ]
-    spy = QSignalSpy(widget.valueUpdated)
-    assert len(spy) == 0
-    widget._set_btn.click()
-    assert len(spy) == 1
-    value_updated_spy = spy[0]
-    assert len(value_updated_spy) == 1
-    received_val = value_updated_spy[0]
-    assert received_val == {"test": ""}
+    with qtbot.wait_signal(widget.valueUpdated) as blocker:
+        widget._set_btn.click()
+    assert blocker.args == [{"test": ""}]
 
 
 def test_widget_delegate():
