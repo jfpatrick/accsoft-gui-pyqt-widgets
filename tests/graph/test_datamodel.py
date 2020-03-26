@@ -5,7 +5,7 @@ different datamodels. The right values for each datamodel are created with
 the functions in datamodel_generalization_util.py
 """
 
-from typing import Type
+from typing import Type, Optional
 
 import numpy as np
 import pytest
@@ -22,6 +22,10 @@ DATAMODELS_TO_TEST = [
     accgraph.LiveInjectionBarDataModel,
     accgraph.LiveTimestampMarkerDataModel,
 ]
+
+# For matching warning messages we capture
+_INVALID_DATA_STRUCTURE_WARNING_MSG = r"is not valid and can't be drawn for " \
+                                      r"the following reasons:"
 
 # ~~~~~ Simple ordering for different datamodels ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -295,13 +299,23 @@ def test_smallest_distance_between_primary_values(model_type: Type[accgraph.Abst
     assert data_model.min_dx == 4.0 - 3.2
 
 
-@pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type, nan_warning", [
+    (accgraph.LiveCurveDataModel, None),
+    (accgraph.LiveBarGraphDataModel, accgraph.InvalidDataStructureWarning),
+    (accgraph.LiveInjectionBarDataModel, accgraph.InvalidDataStructureWarning),
+    (accgraph.LiveTimestampMarkerDataModel, accgraph.InvalidDataStructureWarning),
+])
+def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataModel],
+                                   nan_warning: Optional[Type[UserWarning]]):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source: MockDataSource = MockDataSource()
     data_model = model_type(data_source=data_source, buffer_size=5)
     assert data_model.max_primary_val is None
-    data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    if nan_warning is not None:
+        with pytest.warns(nan_warning, match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
+            data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    else:
+        data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
     assert data_model.max_primary_val is None
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 1.0))
     assert data_model.max_primary_val == 1.0
@@ -311,7 +325,11 @@ def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataMod
     assert data_model.max_primary_val == 3.2
     data_source.emit_new_object(dm_util.create_fitting_object(data_model, 4.0))
     assert data_model.max_primary_val == 4.0
-    data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    if nan_warning is not None:
+        with pytest.warns(nan_warning, match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
+            data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
+    else:
+        data_source.emit_new_object(dm_util.create_fitting_object(data_model, np.nan))
     assert data_model.max_primary_val == 4.0
 
 

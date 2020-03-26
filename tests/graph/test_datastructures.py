@@ -42,6 +42,11 @@ class TimestampMarkerNamedTuple(NamedTuple):
     l: Union[str, Sequence[Optional[str]], None]
 
 
+# For matching warning messages we capture
+_INVALID_DATA_STRUCTURE_WARNING_MSG = r"is not valid and can't be drawn for " \
+                                      r"the following reasons:"
+
+
 # ~~~~~~~~~~ Curve Data-Structures ~~~~~~~~~~
 
 @pytest.mark.parametrize("combinations", [
@@ -66,7 +71,8 @@ def test_valid_point_data(recwarn, combinations: PointNamedTuple):
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
 def test_invalid_point_data(combinations):
-    with pytest.warns(accgraph.InvalidDataStructureWarning):
+    with pytest.warns(accgraph.InvalidDataStructureWarning,
+                      match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
         _ = accgraph.PointData(
             x=cast(float, combinations.x),
             y=cast(float, combinations.y),
@@ -144,7 +150,8 @@ def test_valid_bar_data(recwarn, combinations: BarNamedTuple):
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
 def test_invalid_bar_data(combinations: BarNamedTuple):
-    with pytest.warns(accgraph.InvalidDataStructureWarning):
+    with pytest.warns(accgraph.InvalidDataStructureWarning,
+                      match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
         _ = accgraph.BarData(
             x=cast(float, combinations.x),
             y=cast(float, combinations.y),
@@ -269,7 +276,8 @@ def test_valid_injection_bar_data(recwarn, combinations: InjectionBarNamedTuple)
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
 def test_invalid_injection_bar_data(combinations: InjectionBarNamedTuple):
-    with pytest.warns(accgraph.InvalidDataStructureWarning):
+    with pytest.warns(accgraph.InvalidDataStructureWarning,
+                      match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
         _ = accgraph.InjectionBarData(
             x=cast(float, combinations.x),
             y=cast(float, combinations.y),
@@ -441,7 +449,8 @@ def test_invalid_timestamp_marker_collection_color(recwarn,
 ])
 @warn_always(accgraph.InvalidDataStructureWarning)
 def test_invalid_timestamp_marker_data(combinations: TimestampMarkerNamedTuple):
-    with pytest.warns(accgraph.InvalidDataStructureWarning):
+    with pytest.warns(accgraph.InvalidDataStructureWarning,
+                      match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
         _ = accgraph.TimestampMarkerData(
             x=cast(float, combinations.x),
             color=cast(str, combinations.c),
