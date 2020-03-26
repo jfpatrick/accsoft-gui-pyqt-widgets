@@ -16,6 +16,12 @@ HEADER_TIME = datetime(year=2019, day=1, month=1, tzinfo=TZ)
 ACQ_TS_FIELD = accgraph.PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD
 HEADER_INFO = {ACQ_TS_FIELD: HEADER_TIME}
 
+
+# For matching warning messages we capture
+_INVALID_DATA_STRUCTURE_WARNING_MSG = r"is not valid and can't be drawn for " \
+                                      r"the following reasons:"
+
+
 # ~~~~~~~~~~~~~~~~~~~~~ Signal Bound Update Source Tests ~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -68,20 +74,21 @@ def test_bar_data_from_value(input_val,
     "expected_y, "
     "expected_height, "
     "expected_width, "
-    "expected_label", [
-        ([1.0], STATIC_TIME.timestamp(), np.nan, 1.0, np.nan, ""),
-        ([1.0, 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, ""),
-        ([1.0, 2.0, "test_label"], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        ([1.0, "test_label", 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        (["test_label", 1.0, 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        ([1.0, 2.0, 3.0, "test_label", 4.0], 4.0, 2.0, 1.0, 3.0, "test_label"),
+    "expected_label, "
+    "raises_warning", [
+        ([1.0], STATIC_TIME.timestamp(), np.nan, 1.0, np.nan, "", True),
+        ([1.0, 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "", False),
+        ([1.0, 2.0, "test_label"], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        ([1.0, "test_label", 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        (["test_label", 1.0, 2.0], STATIC_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        ([1.0, 2.0, 3.0, "test_label", 4.0], 4.0, 2.0, 1.0, 3.0, "test_label", False),
         # With Header Info
-        ([1.0, HEADER_INFO], HEADER_TIME.timestamp(), np.nan, 1.0, np.nan, ""),
-        ([1.0, 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, ""),
-        ([1.0, 2.0, "test_label", HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        ([1.0, "test_label", 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        (["test_label", 1.0, 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label"),
-        ([1.0, 2.0, 3.0, "test_label", 4.0, HEADER_INFO], 4.0, 2.0, 1.0, 3.0, "test_label"),
+        ([1.0, HEADER_INFO], HEADER_TIME.timestamp(), np.nan, 1.0, np.nan, "", True),
+        ([1.0, 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "", False),
+        ([1.0, 2.0, "test_label", HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        ([1.0, "test_label", 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        (["test_label", 1.0, 2.0, HEADER_INFO], HEADER_TIME.timestamp(), 2.0, 1.0, np.nan, "test_label", False),
+        ([1.0, 2.0, 3.0, "test_label", 4.0, HEADER_INFO], 4.0, 2.0, 1.0, 3.0, "test_label", False),
     ])
 @freeze_time(STATIC_TIME)
 def test_injection_bar_data_from_value(input_values,
@@ -89,8 +96,14 @@ def test_injection_bar_data_from_value(input_values,
                                        expected_y,
                                        expected_height,
                                        expected_width,
-                                       expected_label):
-    actual = accgraph.PlottingItemDataFactory._to_injection_bar(*input_values)
+                                       expected_label,
+                                       raises_warning):
+    if raises_warning:
+        with pytest.warns(accgraph.InvalidDataStructureWarning,
+                          match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
+            actual = accgraph.PlottingItemDataFactory._to_injection_bar(*input_values)
+    else:
+        actual = accgraph.PlottingItemDataFactory._to_injection_bar(*input_values)
     assert actual.x == expected_x
     assert actual.y == expected_y or all(np.isnan([actual.y, expected_y]))
     assert actual.height == expected_height
@@ -178,31 +191,38 @@ def test_bar_collection_data_from_value(input_values,
     "expected_y,"
     "expected_height,"
     "expected_width,"
-    "expected_label", [
-        ([[1.0]], [0.0], [np.nan], [1.0], [0.0], [""]),
-        ([[1.0], [2.0]], [0.0], [2.0], [1.0], [0.0], [""]),
-        ([[1.0], [2.0], ["test_label"]], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([[1.0], ["test_label"], [2.0]], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([["test_label"], [1.0], [2.0]], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([[1.0], [2.0], [3.0], ["test_label"]], [0.0], [2.0], [1.0], [3.0], ["test_label"]),
-        ([[1.0], [2.0], [3.0], ["test_label"], [4.0]], [4.0], [2.0], [1.0], [3.0], ["test_label"]),
+    "expected_label, "
+    "raises_warning", [
+        ([[1.0]], [0.0], [np.nan], [1.0], [0.0], [""], True),
+        ([[1.0], [2.0]], [0.0], [2.0], [1.0], [0.0], [""], False),
+        ([[1.0], [2.0], ["test_label"]], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([[1.0], ["test_label"], [2.0]], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([["test_label"], [1.0], [2.0]], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([[1.0], [2.0], [3.0], ["test_label"]], [0.0], [2.0], [1.0], [3.0], ["test_label"], False),
+        ([[1.0], [2.0], [3.0], ["test_label"], [4.0]], [4.0], [2.0], [1.0], [3.0], ["test_label"], False),
         # With Header Information
-        ([[1.0], HEADER_INFO], [0.0], [np.nan], [1.0], [0.0], [""]),
-        ([[1.0], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], [""]),
-        ([[1.0], [2.0], ["test_label"], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([[1.0], ["test_label"], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([["test_label"], [1.0], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"]),
-        ([[1.0], [2.0], [3.0], ["test_label"], HEADER_INFO], [0.0], [2.0], [1.0], [3.0], ["test_label"]),
-        ([[1.0], [2.0], [3.0], ["test_label"], [4.0], HEADER_INFO], [4.0], [2.0], [1.0], [3.0], ["test_label"]),
+        ([[1.0], HEADER_INFO], [0.0], [np.nan], [1.0], [0.0], [""], True),
+        ([[1.0], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], [""], False),
+        ([[1.0], [2.0], ["test_label"], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([[1.0], ["test_label"], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([["test_label"], [1.0], [2.0], HEADER_INFO], [0.0], [2.0], [1.0], [0.0], ["test_label"], False),
+        ([[1.0], [2.0], [3.0], ["test_label"], HEADER_INFO], [0.0], [2.0], [1.0], [3.0], ["test_label"], False),
+        ([[1.0], [2.0], [3.0], ["test_label"], [4.0], HEADER_INFO], [4.0], [2.0], [1.0], [3.0], ["test_label"], False),
     ])
 def test_injection_bar_collection_data_from_value(input_values,
                                                   expected_x,
                                                   expected_y,
                                                   expected_height,
                                                   expected_width,
-                                                  expected_label):
+                                                  expected_label,
+                                                  raises_warning):
     # Wrap values into array since we it is a collection
-    actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*input_values)
+    if raises_warning:
+        with pytest.warns(accgraph.InvalidDataStructureWarning,
+                          match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
+            actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*input_values)
+    else:
+        actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*input_values)
     assert np.array_equal(actual.x, expected_x)
     assert (
         np.array_equal(actual.y, expected_y)
@@ -243,18 +263,18 @@ def test_timestampmarker_collection_data_from_value(input_values,
     assert np.array_equal(actual.labels, expected_labels)
 
 
-@pytest.mark.parametrize("expected", [
-    accgraph.PointData,
-    accgraph.BarData,
-    accgraph.InjectionBarData,
-    accgraph.TimestampMarkerData,
-    accgraph.CurveData,
-    accgraph.BarCollectionData,
-    accgraph.InjectionBarCollectionData,
-    accgraph.TimestampMarkerCollectionData,
+@pytest.mark.parametrize("expected, args", [
+    (accgraph.PointData, [0.0]),
+    (accgraph.BarData, [0.0]),
+    (accgraph.InjectionBarData, [0.0, 1.0, 2.0, 3.0]),
+    (accgraph.TimestampMarkerData, [0.0]),
+    (accgraph.CurveData, [[0.0]]),
+    (accgraph.BarCollectionData, [[0.0]]),
+    (accgraph.InjectionBarCollectionData, [[0.0], [1.0], [2.0], [3.0]]),
+    (accgraph.TimestampMarkerCollectionData, [[0.0]]),
 ])
-def test_default_transform_function_lookup(expected):
-    actual = accgraph.PlottingItemDataFactory.get_transformation(data_type=expected)([0.0])
+def test_default_transform_function_lookup(expected, args):
+    actual = accgraph.PlottingItemDataFactory.get_transformation(data_type=expected)(*args)
     assert isinstance(actual, expected)
 
 

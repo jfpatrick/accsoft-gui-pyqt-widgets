@@ -179,112 +179,48 @@ def test_binary_search_line_on_last_point_odd_float_range():
     assert result["after"] == 4
 
 
-def test_calc_intersection_intersect_in_the_middle_with_zero():
-    point_1 = _point(0, 0)
-    point_2 = _point(2, 2)
-    line = 1
+@pytest.mark.parametrize(
+    ["point_1", "point_2", "line", "expected_x", "expected_y"],
+    [
+        (_point(0, 0), _point(2, 2), 1, 1, 1),
+        (_point(0, 0), _point(2, 1), 1, 1, 0.5),
+        (_point(100.0, 100.0), _point(200.0, 200.0), 150.0, 150.0, 150.0),
+        (_point(-100.0, -100.0), _point(100.0, 100.0), 0.0, 0.0, 0.0),
+        (_point(0, 0), _point(0, 0), 0.0, 0.0, 0.0),
+        (_point(-200.0, -200.0), _point(-100.0, -100.0), -150.0, -150.0, -150.0),
+        (_point(0, 0), _point(2, 2), -1, np.nan, np.nan),
+        (_point(0, 0), _point(2, 2), 3, np.nan, np.nan),
+    ],
+)
+def test_calc_intersection(point_1,
+                           point_2,
+                           line,
+                           expected_x,
+                           expected_y):
     result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 1
-    assert result.y == 1
+    assert result.x == expected_x or np.isnan(result.x) and np.isnan(expected_x)
+    assert result.y == expected_y or np.isnan(result.y) and np.isnan(expected_y)
 
 
-def test_calc_intersection_intersect_in_the_middle_with_zero_float_result():
-    point_1 = _point(0, 0)
-    point_2 = _point(2, 1)
-    line = 1
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 1
-    assert result.y == 0.5
-
-
-def test_calc_intersection_intersect_in_the_middle_without_zero():
-    point_1 = _point(100.0, 100.0)
-    point_2 = _point(200.0, 200.0)
-    line = 150.0
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 150.0
-    assert result.y == 150.0
-
-
-def test_calc_intersection_intersect_in_the_middle_with_negative():
-    point_1 = _point(-100.0, -100.0)
-    point_2 = _point(100.0, 100.0)
-    line = 0
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 0.0
-    assert result.y == 0.0
-
-
-def test_calc_intersection_intersect_in_the_middle_both_negative():
-    point_1 = _point(-200.0, -200.0)
-    point_2 = _point(-100.0, -100.0)
-    line = -150.0
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == -150.0
-    assert result.y == -150.0
-
-
-def test_calc_intersection_same_points_and_intersection_on_them():
-    point_1 = _point(0, 0)
-    point_2 = _point(0, 0)
-    line = 0
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 0
-    assert result.y == 0
-
-
-def test_calc_intersection_in_front_of_range_negative():
-    point_1 = _point(0, 0)
-    point_2 = _point(2, 2)
-    line = -1
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x is np.nan
-    assert result.y is np.nan
-
-
-def test_calc_intersection_after_range():
-    point_1 = _point(0, 0)
-    point_2 = _point(2, 2)
-    line = 3
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x is np.nan
-    assert result.y is np.nan
-
-
-def test_calc_intersection_wrong_order_in_front_of_range():
-    point_1 = _point(2, 2)
-    point_2 = _point(0, 0)
-    line = 1
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 1
-    assert result.y == 1
-
-
-def test_calc_intersection_wrong_order_on_end_of_range():
-    point_1 = _point(2, 2)
-    point_2 = _point(0, 0)
-    line = 2
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x == 2
-    assert result.y == 2
-
-
-def test_calc_intersection_wrong_order_after_range():
-    point_1 = _point(2, 2)
-    point_2 = _point(0, 0)
-    line = 3
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x is np.nan
-    assert result.y is np.nan
-
-
-def test_calc_intersection_wrong_order_in_front_of_range_negative():
-    point_1 = _point(2, 2)
-    point_2 = _point(0, 0)
-    line = -1
-    result = clipping.calc_intersection(point_1, point_2, line)
-    assert result.x is np.nan
-    assert result.y is np.nan
+@pytest.mark.parametrize(
+    ["point_1", "point_2", "line", "expected_x", "expected_y"],
+    [
+        (_point(2, 2), _point(0, 0), 1, 1, 1),
+        (_point(2, 2), _point(0, 0), 2, 2, 2),
+        (_point(2, 2), _point(0, 0), 3, np.nan, np.nan),
+        (_point(2, 2), _point(0, 0), -1, np.nan, np.nan),
+    ],
+)
+def test_calc_intersection_wrong_order(point_1,
+                                       point_2,
+                                       line,
+                                       expected_x,
+                                       expected_y):
+    with pytest.warns(UserWarning,
+                      match=r"Parameters are in wrong order"):
+        result = clipping.calc_intersection(point_1, point_2, line)
+    assert result.x == expected_x or np.isnan(result.x) and np.isnan(expected_x)
+    assert result.y == expected_y or np.isnan(result.y) and np.isnan(expected_y)
 
 
 def test_intersect_in_range():

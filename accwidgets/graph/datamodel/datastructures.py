@@ -137,9 +137,9 @@ class PointData(PlottingItemData):
         """
         if np.isnan(self.x) and not np.isnan(self.y):
             if warn:
-                msg = "A point with NaN as the x value and a value other than NaN as a y-value " \
-                      f"is not valid. If you emit {self} to an curve, " \
-                      f"it won't be represented as a point in the curve."
+                msg = f"{self} is not valid and can't be drawn for the following " \
+                      f"reasons: A point with NaN as the x value and a value " \
+                      f"other than NaN as a y-value is not valid."
                 warnings.warn(msg, InvalidDataStructureWarning)
             return False
         return True
@@ -218,10 +218,10 @@ class CurveData(PlottingItemData):
                 problems.append(f"Point {index}: (x={x_data}, y={y_data})")
                 valid_indices[index] = False
         if problems and warn:
-            msg = "Points in CurveData with NaN as the x value and a value other than NaN " \
-                  "as a y-value is not valid. This applies to the following points: " \
-                  "(" + ", ".join(problems) + ") " + \
-                  "If you emit these invalid points to a curve, they won't be drawn."
+            msg = f"{self} is not valid and can't be drawn for the following " \
+                  f"reasons: A point with NaN as the x value and a value " \
+                  f"other than NaN as a y-value is not valid. This applies to " \
+                  f"the following points: {', '.join(problems)}."
             warnings.warn(msg, InvalidDataStructureWarning)
         return valid_indices
 
@@ -294,10 +294,9 @@ class BarData(PlottingItemData):
             problems.append("NaN as the height is not valid")
         if problems:
             if warn:
-                warning_message = f"{self} is invalid for the following reasons: " \
-                                  "(" + ", ".join(problems) + ") " + \
-                                  "If you emit this bar to bar-graph, it won't be drawn."
-                warnings.warn(warning_message, InvalidDataStructureWarning)
+                msg = f"{self} is not valid and can't be drawn for the following " \
+                      f"reasons: {', '.join(problems)}"
+                warnings.warn(msg, InvalidDataStructureWarning)
             return False
         return True
 
@@ -381,10 +380,9 @@ class BarCollectionData(PlottingItemData):
                 problems.append(f"Bar {index}: (x={x_data}, y={y_data}, height={height})")
                 valid_indices[index] = False
         if problems and warn:
-            msg = "Bars with NaN as x value or height are invalid." \
-                  "This applies to the following bars: " \
-                  "(" + ", ".join(problems) + ") " + \
-                  "If you emit these invalid bars to a bargraph, they won't be drawn."
+            msg = f"{self} is not valid and can't be drawn for the following " \
+                  f"reasons: Bars with NaN as x value or height are invalid. " \
+                  f"This applies to {', '.join(problems)}"
             warnings.warn(msg, InvalidDataStructureWarning)
         return valid_indices
 
@@ -465,10 +463,9 @@ class InjectionBarData(PlottingItemData):
             problems.append("NaN as the y value is not valid")
         if problems:
             if warn:
-                warning_message = f"{self} is invalid for the following reasons: " \
-                                  "(" + ", ".join(problems) + ") " + \
-                                  "If you emit this injection bar to an graph, it won't be drawn."
-                warnings.warn(warning_message, InvalidDataStructureWarning)
+                msg = f"{self} is not valid and can't be drawn for the following " \
+                      f"reasons: {', '.join(problems)}"
+                warnings.warn(msg, InvalidDataStructureWarning)
             return False
         return True
 
@@ -567,10 +564,9 @@ class InjectionBarCollectionData(PlottingItemData):
                 problems.append(f"InjectionBarData {index}: (x={x_data}, y={y_data}, height={height}, width={width}, labels={label})")
                 valid_indices[index] = False
         if problems and warn:
-            msg = "InjectionBars in InjectionBarData with NaN as x or y value are invalid." \
-                  "This applies to the following bars: " \
-                  "(" + ", ".join(problems) + ") " + \
-                  "If you emit these invalid bars to a graph, they won't be drawn."
+            msg = f"{self} is not valid and can't be drawn for the following " \
+                  f"reasons: InjectionBarData with NaN as x or y value are " \
+                  f"invalid. This applies to {', '.join(problems)}"
             warnings.warn(msg, InvalidDataStructureWarning)
         return valid_indices
 
@@ -647,10 +643,10 @@ class TimestampMarkerData(PlottingItemData):
         """
         if np.isnan(self.x):
             if warn:
-                warning_message = "NaN is not a valid x value for the timestamp " \
-                                  "marker. If you emit this timeline to an graph, " \
-                                  "it won't be drawn."
-                warnings.warn(warning_message, InvalidDataStructureWarning)
+                msg = f"{self} is not valid and can't be drawn for the following " \
+                      f"reasons: NaN is not a valid x value for the timestamp " \
+                      f"marker."
+                warnings.warn(msg, InvalidDataStructureWarning)
             return False
         return True
 
@@ -749,10 +745,9 @@ class TimestampMarkerCollectionData(PlottingItemData):
                 problems.append(f"TimestampMarker {index}: (x={x_data}, color={color}, labels={label})")
                 valid_indices[index] = False
         if problems and warn:
-            msg = "Timestamp markers with NaN as x are invalid." \
-                  "This applies to the following markers: " \
-                  "(" + ", ".join(problems) + ") " + \
-                  "If you emit these invalid markers to a graph, they won't be drawn."
+            msg = f"{self} is not valid and can't be drawn for the following " \
+                  f"reasons: Timestamp markers with NaN as x are invalid. " \
+                  f"This applies to {', '.join(problems)}."
             warnings.warn(msg, InvalidDataStructureWarning)
         return valid_indices
 
