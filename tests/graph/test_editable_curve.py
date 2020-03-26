@@ -127,6 +127,7 @@ def test_selection_style(qtbot,
     # only the dots' pen color does matter
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source,
                                                       symbolSize=1,
+                                                      pen=pen,
                                                       symbolPen=pen,
                                                       symbolBrush=brush,
                                                       symbol=symbol)

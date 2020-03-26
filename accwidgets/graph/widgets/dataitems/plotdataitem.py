@@ -597,10 +597,21 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         if sym:
             self._selection.setBrush(None)
             self._selection.setSymbol(sym)
-            orig_pen = pg.mkPen(self.opts["symbolPen"])
         else:
             self._selection.setBrush(plot_bg_brush)
+
+        if self.opts["pen"] is not None:
             orig_pen = pg.mkPen(self.opts["pen"])
+        elif self.opts["symbolBrush"] is not None:
+            brush = self.opts["symbolBrush"]
+            if isinstance(brush, QBrush):
+                brush = brush.color()
+            orig_pen = pg.mkPen(brush)
+        elif self.opts["symbolPen"] is not None:
+            orig_pen = pg.mkPen(self.opts["symbolPen"])
+        else:
+            orig_pen = pg.mkPen("w")
+
         # We need a minimum size so we can comfortably drag it with the mouse
         sym_size = max(self.opts["symbolSize"] + 2, 5)
         self._selection.setSize(sym_size)
