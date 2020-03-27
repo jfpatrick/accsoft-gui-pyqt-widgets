@@ -36,10 +36,11 @@ def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
     config = configparser.ConfigParser()
     config.read(PROJECT_ROOT / DEPENDENCY_FILE)
     requirements: DefaultDict[str, List[str]] = defaultdict(list)
+    parsed_reqs = lambda section: [r.strip(", ") for r in section.splitlines()]
     # Shared project dependencies
     for option in SHARED_OPTIONS:
         package_reqs = config.get(PACKAGE_NAME, option, fallback="")
-        requirements[option] = [r.strip() for r in package_reqs.split(",")]
+        requirements[option] = parsed_reqs(package_reqs)
     config.remove_section(PACKAGE_NAME)
     # Widget dependencies
     sections = config.sections()
@@ -56,7 +57,7 @@ def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
             requirement_string = config.get(section,
                                             option,
                                             fallback="")
-            widget_reqs = [e.strip() for e in requirement_string.split(",")]
+            widget_reqs = parsed_reqs(requirement_string)
             requirements[option].extend(widget_reqs)
     return {
         "core": requirements["core"],
