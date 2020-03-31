@@ -4,12 +4,12 @@ Module contains different curves that can be added to a PlotItem based on PyQtGr
 
 from typing import Tuple, Dict, cast, Type, Union, Optional, List
 from copy import copy
-from enum import Flag, auto
+from enum import IntEnum, Flag, auto
 
 import numpy as np
 import pyqtgraph as pg
 from qtpy.QtCore import QRectF, Signal, Qt, QPointF
-from qtpy.QtWidgets import QGraphicsSceneMouseEvent
+from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 from qtpy.QtGui import QColor, QPen, QBrush
 
 from accwidgets.graph.datamodel.connection import UpdateSource
@@ -696,6 +696,15 @@ class DragDirection(Flag):
     Y = auto()
 
 
+class PointLabelOptions(IntEnum):
+    """
+    Options for labelling the points.
+    """
+    NEVER = auto()
+    HOVER = auto()
+    ALWAYS = auto()
+
+
 class DataSelectionMarker(pg.ScatterPlotItem):
 
     sig_selection_edited = Signal(np.ndarray)
@@ -712,7 +721,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
 
     def __init__(self,
                  direction: DragDirection = DragDirection.Y,
-                 label_points: bool = False,
+                 label_points: Union[PointLabelOptions, bool] = PointLabelOptions.HOVER,
                  *args,
                  **kwargs):
         """
@@ -720,18 +729,56 @@ class DataSelectionMarker(pg.ScatterPlotItem):
 
         Args:
             direction: In which direction should the points be draggable
-            label_points: Label each points position individually
+            label_points: Labelling options for the plot
             args: Positional arguments for the ScatterPlotItem
             kwargs: Keyword arguments for the ScatterPlotItem
         """
         self._point_labels: List[pg.TestItem] = []
-        self._points_labeled = label_points
+        if isinstance(label_points, bool):
+            label_points = PointLabelOptions.ALWAYS if label_points else PointLabelOptions.NEVER
+        self._points_labeled: PointLabelOptions = label_points
         super().__init__(*args, **kwargs)
         self._drag_direction = direction
         # State of the current drag event
         self._drag_start: Optional[QPointF] = None
         self._drag_point: Optional[pg.SpotItem] = None
         self._original_data: Optional[np.ndarray] = None
+        self._current_hover: Optional[pg.Point] = None
+        self._drag_orig_hover: Optional[pg.Point] = None
+        self.setAcceptHoverEvents(True)
+
+    def hoverMoveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
+        """Update the labels shown on the selected points based on the
+        passed over event, if the curve is configured to label points
+        that are hovered over.
+
+        Args:
+            ev: Hover Event for the Selection Marker
+        """
+        super().hoverMoveEvent(ev)
+        if self._points_labeled != PointLabelOptions.HOVER:
+            return
+        points = self.pointsAt(ev.pos())
+        if points:
+            self._current_hover = points[0].pos()
+            self._add_labels()
+        else:
+            self._current_hover = None
+            self._remove_labels()
+        ev.accept()
+
+    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
+        """Remove all labels based for points, that were shown because a
+        mouse hovered over them.
+
+        Args:
+            ev: Hover Event for the Selection Marker
+        """
+        super().hoverMoveEvent(ev)
+        if self._points_labeled == PointLabelOptions.HOVER:
+            self._current_hover = None
+            self._remove_labels()
+            ev.accept()
 
     def mouseDragEvent(self, ev: QGraphicsSceneMouseEvent):
         """Custom mouse drag event for moving the selection around.
@@ -746,8 +793,10 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             return
         if ev.isStart():
             self._original_data = np.array(self.getData())
+            if self._current_hover is not None:
+                self._drag_orig_hover = self._current_hover.copy()
             try:
-                self._drag_point = self.pointsAt(ev.buttonDownPos())[0]
+                self._drag_point = self.pointsAt(ev.buttonDownPos())[0].pos()
                 self._drag_start = -1 * ev.buttonDownPos()
                 ev.accept()
             except IndexError:
@@ -755,6 +804,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             return
         elif ev.isFinish():
             self._drag_start = None
+            self._drag_orig_hover = None
             self.sig_selection_edited.emit(np.array(self.getData()))
         else:
             data = np.copy(self._original_data)
@@ -763,8 +813,14 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             x_offset = ev.pos().x() + cast(QPointF, self._drag_start).x() if apply_x else 0.0
             y_offset = ev.pos().y() + cast(QPointF, self._drag_start).y() if apply_y else 0.0
             if x_offset or y_offset:
-                data[0] += x_offset if apply_x else 0.0
-                data[1] += y_offset if apply_y else 0.0
+                if apply_x:
+                    data[0] += x_offset
+                    if self._current_hover is not None and self._drag_orig_hover is not None:
+                        self._current_hover.setX(self._drag_orig_hover.x() + x_offset)
+                if apply_y:
+                    data[1] += y_offset
+                    if self._current_hover is not None and self._drag_orig_hover is not None:
+                        self._current_hover.setY(self._drag_orig_hover.y() + y_offset)
                 self.setData(data[0, :], data[1, :])
                 self.setData(data[0, :], data[1, :])
                 self.sig_selection_moved.emit(np.array(self.getData()))
@@ -830,7 +886,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         # We want pyqtgraph's default behavior so we do not pass unset args
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
         super().setData(*args, **kwargs)
-        if self._points_labeled:
+        if self._points_labeled != PointLabelOptions.NEVER:
             self._add_labels()
         else:
             self._remove_labels()
@@ -842,12 +898,12 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         return CurveData(x, y)
 
     @property
-    def points_labeled(self) -> bool:
-        """Is each selected points position decorated with and label"""
+    def points_labeled(self) -> PointLabelOptions:
+        """How will the selected points be labelled"""
         return self._points_labeled
 
     @points_labeled.setter
-    def points_labeled(self, label_points: bool) -> None:
+    def points_labeled(self, label_points: PointLabelOptions) -> None:
         """Is each selected points position decorated with and label"""
         self._points_labeled = label_points
 
@@ -865,13 +921,22 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         """
         For each point, add a label showing the position of the point in the
         direction it can be dragged in.
+
+        Args:
+            points: points which should be labeled. All points will be labeled
+                    if no points are passed
         """
         self._remove_labels()
         for data in self.data:
+            if (self._points_labeled == PointLabelOptions.HOVER
+                    and (self._current_hover is None
+                         or self._current_hover.x() != data["x"]
+                         and self._current_hover.y() != data["y"])):
+                continue
             text = self._point_label(x=data["x"],
                                      y=data["y"])
             label = pg.TextItem(text,
-                                anchor=(0.5, -0.5))
+                                anchor=(0.5, self._get_label_y_anchor(data)))
             label.setParentItem(self)
             label.setPos(data["x"], data["y"])
             color = pg.getConfigOption("foreground")
@@ -884,6 +949,22 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             if color:
                 label.setColor(color)
             self._point_labels.append(label)
+
+    def _get_label_y_anchor(self, data: Dict):
+        """Get a fitting anchor for the text label in y direction, so it is
+        above / below the spot depending on its position"""
+        plot = self.parentItem().scene().parent()
+        vb_y_range: Optional[Tuple[float, float]] = None
+        y_anker = -0.5
+        for vb in plot.plotItem.view_boxes:
+            if self.parentItem() in vb.addedItems:
+                vb_y_range = vb.targetRange()[1]
+        if vb_y_range is not None:
+            y_min = vb_y_range[0]
+            y_max = vb_y_range[1]
+            if data["y"] < y_min + (y_max - y_min) / 2:
+                y_anker += 2
+        return y_anker
 
     def _remove_labels(self) -> None:
         """Remove all point labels"""
@@ -900,11 +981,11 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             location of the passed point as string
         """
         label = []
-        if self._drag_direction & DragDirection.X:
+        if self._drag_direction & DragDirection.X or self._points_labeled == PointLabelOptions.HOVER:
             label.append("x: {:.3}".format(x))
-        if self._drag_direction & DragDirection.Y:
+        if self._drag_direction & DragDirection.Y or self._points_labeled == PointLabelOptions.HOVER:
             label.append("y: {:.3}".format(y))
-        return ", ".join(label)
+        return "\n".join(label)
 
     @staticmethod
     def complementary(color: QColor, plot_background: Optional[QColor] = None) -> QColor:

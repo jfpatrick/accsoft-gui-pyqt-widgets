@@ -38,13 +38,10 @@ class MainWindow(QMainWindow):
         self.local_2 = accgraph.EditablePlotWidget()
         self.control_system = accgraph.StaticPlotWidget()
         # Local and Control System Curves
-        curve = self.local.addCurve(data_source=self._edit_ds,
-                                    pen=pg.mkPen(color=QColor("yellow"), width=2))
+        self.local.addCurve(data_source=self._edit_ds,
+                            pen=pg.mkPen(color=QColor("yellow"), width=2))
         self.local_2.addCurve(data_source=self._edit_ds_2,
                               pen=pg.mkPen(color=QColor("yellow"), width=2))
-        # Per default the selected points are unlabeled, with this property we
-        # can activate it
-        curve.selection.points_labeled = True
         self.control_system.addCurve(data_source=self._cs_source)
         # Bar with buttons for editing the local plot
         self.bar = accgraph.EditingToolBar()
