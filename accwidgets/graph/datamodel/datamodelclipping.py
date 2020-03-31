@@ -38,7 +38,7 @@ def intersect(
     result: Dict[str, Union[int, PointData]] = {
         "last_before_index": -1,
         "first_after_index": -1,
-        "intersection": PointData(np.nan, np.nan),
+        "intersection": PointData(np.nan, np.nan, check_validity=False),
     }
     x_positions = graph_points.x
     y_positions = graph_points.y
@@ -54,10 +54,12 @@ def intersect(
         last_before_obj = PointData(
             x=x_positions[surrounding_points["before"]],
             y=y_positions[surrounding_points["before"]],
+            check_validity=False,
         )
         first_after_obj = PointData(
             x=x_positions[surrounding_points["after"]],
             y=y_positions[surrounding_points["after"]],
+            check_validity=False,
         )
         # Intersection between Old Curve
         result["intersection"] = calc_intersection(last_before_obj, first_after_obj, vertical_line_x_position)
@@ -88,16 +90,16 @@ def calc_intersection(point_1: PointData, point_2: PointData, new_point_x_positi
         new_point_x_position > point_2.x
         or new_point_x_position < point_1.x
     ):
-        return PointData()
+        return PointData(check_validity=False)
     if point_2.x == point_1.x:
-        return PointData(x=point_1.x, y=point_1.y)
+        return PointData(x=point_1.x, y=point_1.y, check_validity=False)
     # Calculate intersection with boundary
     delta_p1_p2_x = point_2.x - point_1.x
     delta_p1_p2_y = point_2.y - point_1.y
     delta_p1_line_x = new_point_x_position - point_1.x
     temp_x = point_1.x + delta_p1_p2_x * (delta_p1_line_x / delta_p1_p2_x)
     temp_y = point_1.y + delta_p1_p2_y * (delta_p1_line_x / delta_p1_p2_x)
-    return PointData(x=temp_x, y=temp_y)
+    return PointData(x=temp_x, y=temp_y, check_validity=False)
 
 
 def bin_search_surrounding_points(

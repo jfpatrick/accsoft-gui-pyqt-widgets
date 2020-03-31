@@ -24,7 +24,7 @@ def _curve(x_val, y_val) -> CurveData:
         x_val: X Value
         y_val: Y Value
     """
-    return CurveData(x=x_val, y=y_val)
+    return CurveData(x=x_val, y=y_val, check_validity=False)
 
 
 def test_binary_search_line_between_and_even_number_of_points():

@@ -196,7 +196,7 @@ class StandardTransformations:
         Returns:
             empty curve
         """
-        return CurveData([], [])
+        return CurveData([], [], check_validity=False)
 
     @staticmethod
     def moved(curve: CurveData,
@@ -496,7 +496,8 @@ class EditingToolBar(QToolBar):
             data = self.selected_plot.current_selection_data
             if data and len(data.x) > 0 and len(data.y) > 0:
                 return CurveData(x=np.array(data.x),
-                                 y=np.array(data.y))
+                                 y=np.array(data.y),
+                                 check_validity=False)
             return None
         return None
 

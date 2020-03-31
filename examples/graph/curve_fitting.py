@@ -34,6 +34,7 @@ class RoughSinusSource(accgraph.UpdateSource):
         new_data = accgraph.PointData(
             x=datetime.now().timestamp(),
             y=math.sin(datetime.now().timestamp()) + random.uniform(-0.5, 0.5),
+            check_validity=False,
         )
         self.send_data(new_data)
 

@@ -23,7 +23,7 @@ PACKAGE_NAME = "accwidgets"
 # File defining reuqirements
 DEPENDENCY_FILE = "dependencies.ini"
 # Dependency Options for widget depdendencies
-DEPENDENCY_OPTIONS = {"core", "test", "doc"}
+DEPENDENCY_OPTIONS = {"core", "test", "bench", "doc"}
 # Section for commonly defined
 SHARED_OPTIONS = {"lint", "release"}
 

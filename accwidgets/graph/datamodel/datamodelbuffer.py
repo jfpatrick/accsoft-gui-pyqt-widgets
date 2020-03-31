@@ -59,6 +59,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         self._min_primary_value_delta: float
         self._next_free_slot: int
         self._is_empty: bool
+        self._contains_nan: bool
         # This is needed for initialization
         self.reset()
 
@@ -136,6 +137,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         self._min_primary_value_delta = np.inf
         self._next_free_slot = 0
         self._is_empty = True
+        self._contains_nan = False
 
     def as_np_array(self) -> Tuple[np.ndarray, ...]:
         """ Return Buffer as Tuple of Numpy arrays
@@ -258,6 +260,10 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """
         next_free_index = self.occupied_size
         last_non_free_and_not_none_index = self.index_of_last_valid
+        # Improve search_sorted
+        if not self._contains_nan:
+            values = secondary_values + [primary_value]
+            self._contains_nan = any((isinstance(i, (float, int)) and np.isnan(i) for i in values))
         if self._is_new_value_greater_than_all_others(primary_value, last_non_free_and_not_none_index):
             self._primary_values[next_free_index] = primary_value
             for index, entry in enumerate(self._secondary_values_lists):
@@ -273,6 +279,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 array=self._primary_values[:i],
                 value=primary_value,
                 side="right",
+                contains_nan=self._contains_nan,
             )
             self._primary_values = np.insert(self._primary_values, write_index, primary_value)
             # inserting lengthens the array -> cut last value
@@ -479,8 +486,11 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         return any(secondary_values.size for secondary_values in secondary_values_list)
 
     @staticmethod
-    def _searchsorted_with_nans(array: np.ndarray, value: float, side: str) -> int:
-        """np.searchsorted with nan support"""
+    def _searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_nan: bool = True) -> int:
+        """np.searchsorted with nan support. This function can be sped up by quite a lot, if the user knows,
+        the array does not contain nan values"""
+        if not contains_nan:
+            return np.searchsorted(array, value, side=side)
         sorting_indices = np.argsort(array)
         index = np.searchsorted(array, value, side=side, sorter=sorting_indices)
         if index <= 0:
@@ -543,6 +553,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             start: float,
             end: float,
             interpolated: bool = False,
+            interpolation_max: int = 100,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get Subset of the data
 
@@ -558,6 +569,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             end: end boundary for primary values of elements that should be included in the subset
             interpolated: If true the curve will be interpolated at the edges and the two
                           new points at the edge will be contained in the subset
+            interpolation_max: If more points are included than the given amount, skip the interpolation
+                               since it does not make a visual difference
 
         Returns:
             X and Y Values of the subset in a tuple of the form (x, y)
@@ -565,9 +578,10 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]
         y: np.ndarray = self._secondary_values_lists[0][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left")
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right")
-        if interpolated:
+        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
+        # Clipping for a lot of points does not make much sense
+        if interpolated and (end_index - start_index) < interpolation_max:
             return self._clip_at_boundaries_if_possible(
                 x=x,
                 y=y,
@@ -618,10 +632,12 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             point_after_boundary = PointData(
                 x=x[start_index],
                 y=y[start_index],
+                check_validity=False,
             )
             point_in_front_of_boundary = PointData(
                 x=x[start_index - 1],
                 y=y[start_index - 1],
+                check_validity=False,
             )
             if (
                 not point_in_front_of_boundary.is_nan
@@ -641,10 +657,12 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             point_after_boundary = PointData(
                 x=x[end_index],
                 y=y[end_index],
+                check_validity=False,
             )
             point_in_front_of_boundary = PointData(
                 x=x[end_index - 1],
                 y=y[end_index - 1],
+                check_validity=False,
             )
             if (
                 not point_in_front_of_boundary.is_nan
@@ -733,8 +751,8 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         x: np.ndarray = self._primary_values[:i]
         y: np.ndarray = self._secondary_values_lists[0][:i]
         height: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left")
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right")
+        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
             start_index=start_index,
@@ -851,8 +869,8 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         heights: np.ndarray = self._secondary_values_lists[1][:i]
         widths: np.ndarray = self._secondary_values_lists[2][:i]
         labels: np.ndarray = self._secondary_values_lists[3][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left")
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right")
+        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
             start_index=start_index,
@@ -932,8 +950,8 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         x: np.ndarray = self._primary_values[:i]
         color: np.ndarray = self._secondary_values_lists[0][:i]
         label: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left")
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right")
+        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         # indices for removing leading/trailing entries that have NaN as their primary value
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
