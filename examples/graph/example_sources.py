@@ -71,12 +71,14 @@ class SinusCurveSource(accgraph.UpdateSource):
             new_data = accgraph.PointData(
                 x=datetime.now().timestamp() + self.x_offset,
                 y=math.sin(datetime.now().timestamp()) + self.y_offset,
+                check_validity=False,
             )
         elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
                 x=datetime.now().timestamp() + self.x_offset,
                 y=math.sin(datetime.now().timestamp()) + self.y_offset,
                 height=math.sin(datetime.now().timestamp()) + self.y_offset,
+                check_validity=False,
             )
         elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
@@ -85,6 +87,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 height=2.0,
                 width=0.0,
                 label=str(self.label_counter),
+                check_validity=False,
             )
             self.label_counter += 1
         elif emit_type == SinusCurveSourceEmitTypes.INFINITELINE:
@@ -101,6 +104,7 @@ class SinusCurveSource(accgraph.UpdateSource):
                 x=datetime.now().timestamp() + self.x_offset,
                 color=color,
                 label=label,
+                check_validity=False,
             )
             self.label_counter += 1
         else:
@@ -183,17 +187,21 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         new_data = accgraph.PointData(
             x=self.x_values_live[self.current_index],
             y=self.y_values_live[self.current_index],
+            check_validity=False,
         )
         self.send_data(new_data)
 
     def _emit_separator(self) -> None:
-        separator = accgraph.PointData(x=np.nan, y=np.nan)
-        self.send_data(separator)
+        separator = accgraph.PointData(x=np.nan,
+                                       y=np.nan,
+                                       check_validity=False)
+        self.sig_new_data[accgraph.PointData].emit(separator)
 
     def _emit_data_from_logging_system(self) -> None:
         curve = accgraph.CurveData(
             x=np.array(self.x_values_logging),
             y=np.array(self.y_values_logging),
+            check_validity=False,
         )
         self.send_data(curve)
 
@@ -246,12 +254,14 @@ class WaveformSinusSource(accgraph.UpdateSource):
             return accgraph.CurveData(
                 x=self.x,
                 y=y + self.y_offset,
+                check_validity=False,
             )
         elif self.type == SinusCurveSourceEmitTypes.BAR:
             return accgraph.BarCollectionData(
                 x=self.x,
                 y=np.zeros(len(self.x)) + self.y_offset + 0.5 * y,
                 heights=y,
+                check_validity=False,
             )
         elif self.type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             y = abs(y)
@@ -260,7 +270,9 @@ class WaveformSinusSource(accgraph.UpdateSource):
                 y=np.zeros(len(self.x)) + self.y_offset,
                 heights=y,
                 widths=0.5 * y,
-                labels=np.array(["{:.2f}".format(_y) for _y in y]))
+                labels=np.array(["{:.2f}".format(_y) for _y in y]),
+                check_validity=False,
+            )
         elif self.type == SinusCurveSourceEmitTypes.INFINITELINE:
             sin = np.sin(datetime.now().timestamp())
             r = (self.x[-1] - self.x[0]) / len(self.x)
@@ -268,7 +280,9 @@ class WaveformSinusSource(accgraph.UpdateSource):
             return accgraph.TimestampMarkerCollectionData(
                 x=x,
                 colors=np.array([["r", "g", "b"][i] for i, _ in enumerate(range(len(self.x)))]),
-                labels=np.array(["{:.2f}".format(_x) for _x in x]))
+                labels=np.array(["{:.2f}".format(_x) for _x in x]),
+                check_validity=False,
+            )
 
 
 class EditableSinusCurveDataSource(accgraph.UpdateSource):
@@ -298,7 +312,7 @@ class EditableSinusCurveDataSource(accgraph.UpdateSource):
         self.edit_callback = edit_callback
         x = np.linspace(0, 2 * math.pi, 10)
         y = np.sin(x)
-        curve = accgraph.CurveData(x, y)
+        curve = accgraph.CurveData(x, y, check_validity=False)
         self._timer = QTimer()
         self._timer.singleShot(0, lambda: self.send_data(curve))
 

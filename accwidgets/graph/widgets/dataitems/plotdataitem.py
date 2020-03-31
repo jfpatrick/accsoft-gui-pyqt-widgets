@@ -271,14 +271,12 @@ class CyclicPlotCurve(LivePlotCurve):
     supported_plotting_style = PlotWidgetStyle.CYCLIC_PLOT
 
     @deprecated_param_alias(data_source="data_model")
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: Union[UpdateSource, LiveCurveDataModel],
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            pen=DEFAULT_COLOR,
-            **plotdataitem_kwargs,
-    ):
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: Union[UpdateSource, LiveCurveDataModel],
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 pen=DEFAULT_COLOR,
+                 **plotdataitem_kwargs):
         """
         PlotDataItem extension for the Cyclic Plotting Style
 
@@ -312,8 +310,12 @@ class CyclicPlotCurve(LivePlotCurve):
             **plotdataitem_kwargs,
         )
         # Curves after clipping (data actually drawn)
-        self._clipped_curve_old: CurveData = CurveData(np.array([]), np.array([]))
-        self._clipped_curve_new: CurveData = CurveData(np.array([]), np.array([]))
+        self._clipped_curve_old: CurveData = CurveData(np.array([]),
+                                                       np.array([]),
+                                                       check_validity=False)
+        self._clipped_curve_new: CurveData = CurveData(np.array([]),
+                                                       np.array([]),
+                                                       check_validity=False)
 
     def update_item(self) -> None:
         """Update item based on the plot items time span information"""
@@ -364,6 +366,7 @@ class CyclicPlotCurve(LivePlotCurve):
         self._clipped_curve_new = CurveData(
             x=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).curr_offset,
             y=y_values,
+            check_validity=False,
         )
 
     def _update_old_curve_data_item(self) -> None:
@@ -379,6 +382,7 @@ class CyclicPlotCurve(LivePlotCurve):
         self._clipped_curve_old = CurveData(
             x=x_values - cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_offset,
             y=y_values,
+            check_validity=False,
         )
 
 
@@ -405,7 +409,9 @@ class ScrollingPlotCurve(LivePlotCurve):
             curve_x, curve_y = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
                                                                   end=self._parent_plot_item.time_span.end)
         self._set_data(x=curve_x, y=curve_y)
-        self._data_item_data = CurveData(x=curve_x, y=curve_y)
+        self._data_item_data = CurveData(x=curve_x,
+                                         y=curve_y,
+                                         check_validity=False)
 
 
 class StaticPlotCurve(AbstractBasePlotCurve):
@@ -650,7 +656,8 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         Args:
             data: data to apply to this curve from the selection marker
         """
-        self._editable_model.handle_editing(CurveData(*self.getData()))
+        self._editable_model.handle_editing(CurveData(*self.getData(),
+                                                      check_validity=False))
 
     def _reconnect_to_selection(self):
         """Disconnect and connect to selection marker."""
@@ -839,7 +846,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
     def curve_data(self) -> CurveData:
         """Data of the selection marker as curve data."""
         x, y = self.getData()
-        return CurveData(x, y)
+        return CurveData(x, y, check_validity=False)
 
     @property
     def points_labeled(self) -> bool:

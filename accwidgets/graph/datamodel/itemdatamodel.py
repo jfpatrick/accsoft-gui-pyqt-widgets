@@ -674,7 +674,9 @@ class EditableCurveDataModel(StaticCurveDataModel):
         self._x_values = np.insert(self._x_values, indices, replacement.x)
         self._y_values = np.insert(self._y_values, indices, replacement.y)
         self.sig_data_model_changed.emit()
-        self._history.save_state(CurveData(self._x_values, self._y_values))
+        self._history.save_state(CurveData(self._x_values,
+                                           self._y_values,
+                                           check_validity=False))
 
     def send_current_state(self) -> bool:
         """
