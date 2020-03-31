@@ -253,9 +253,10 @@ def test_selection_moved(qtbot,
 
 
 @pytest.mark.parametrize("selection, labels, activate_labels", [
-    (QtCore.QRectF(0, 2.5, 4, 1), [(0, 3), (4, 3)], True),
-    (QtCore.QRectF(0, 2.5, 4, 1), [], False),
-    (QtCore.QRectF(0, 5, 1, 1), [], True),
+    (QtCore.QRectF(0, 2.5, 4, 1), [(0, 3), (4, 3)], accgraph.PointLabelOptions.ALWAYS),
+    (QtCore.QRectF(0, 2.5, 4, 1), [], accgraph.PointLabelOptions.NEVER),
+    (QtCore.QRectF(0, 5, 1, 1), [], accgraph.PointLabelOptions.ALWAYS),
+    (QtCore.QRectF(0, 5, 1, 1), [], accgraph.PointLabelOptions.HOVER),
 ])
 def test_selection_labels(qtbot,
                           editable_testing_window,
