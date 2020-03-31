@@ -1,7 +1,6 @@
 """
 Tests for widget properties used by the designer plugin.
 """
-# pylint: disable=protected-access
 
 from typing import Union
 import pytest
@@ -206,12 +205,16 @@ def test_axis_ranges_property(qtbot, widget):
         "0": [-100.0, 100.0],
         "layer that does not exist": [-1000.0, 1000.0],
     }
-    window.plot._set_axis_ranges(new_val=json.dumps(ranges))
+    warning = r"View Range of axis / layer .* could not be set, since it does not seem to exist."
+    with pytest.warns(UserWarning, match=warning):
+        window.plot._set_axis_ranges(new_val=json.dumps(ranges))
+    # Other stuff is as it is before
     actual = window.plot.plotItem.vb.targetRange()
     assert np.allclose(np.array(actual[0]), np.array([-1.0, 1.0]), atol=0.1)
     assert np.allclose(np.array(actual[1]), np.array([-10.0, 10.0]), atol=1.0)
     actual = window.plot.plotItem.getViewBox(layer="0").targetRange()
     assert np.allclose(np.array(actual[1]), np.array([-100.0, 100.0]), atol=10.0)
+
 
 # ~~~~~~~~~~~~~~ Tests for layer property synchronization ~~~~~~~~~~~~~~~~~~~~~
 
@@ -235,103 +238,6 @@ def test_layer_ids_property(qtbot, widget):
     window.plot._set_layer_ids(layers=[])
     assert len(window.plot.layerIDs) == 0
     assert window.plot._get_layer_ids() == []
-
-
-@pytest.mark.parametrize("widget", [
-    ScrollingPlotWidget,
-    CyclicPlotWidget,
-    StaticPlotWidget,
-])
-def test_layer_rename(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
-    window.plot._set_layer_ids(layers=["0", "1"])
-    labels = {
-        "bottom": "x",
-        "0": "y",
-    }
-    window.plot._set_axis_labels(new_val=json.dumps(labels))
-    ranges = {
-        "x": [-5.0, 5.0],
-        "y": [0.0, 10.0],
-        "0": [-10.0, 10.0],
-    }
-    window.plot._set_axis_ranges(new_val=json.dumps(ranges))
-    assert len(window.plot.layerIDs) == 2
-    # rename layer '0' to 'renamed'
-    window.plot._set_layer_ids(layers=["renamed", "1"])
-    expected_labels = {
-        "right": "",
-        "left": "",
-        "top": "",
-        "bottom": "x",
-        "renamed": "y",
-        "1": "",
-    }
-    assert json.loads(window.plot._get_axis_labels()) == expected_labels
-    expected_ranges = {
-        "x": [-5.0, 5.0],
-        "y": [0.0, 10.0],
-        "renamed": [-10.0, 10.0],
-        "1": [0, 1],
-    }
-    assert json.loads(window.plot._get_axis_ranges()) == expected_ranges
-
-
-@pytest.mark.parametrize("widget", [
-    ScrollingPlotWidget,
-    CyclicPlotWidget,
-    StaticPlotWidget,
-])
-def test_layer_removal(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
-    window.plot._set_layer_ids(layers=["0", "1"])
-    labels = {
-        "bottom": "x",
-        "0": "y",
-    }
-    window.plot._set_axis_labels(new_val=json.dumps(labels))
-    ranges = {
-        "x": [-5.0, 5.0],
-        "y": [0.0, 10.0],
-        "0": [-10.0, 10.0],
-    }
-    window.plot._set_axis_ranges(new_val=json.dumps(ranges))
-    assert len(window.plot.layerIDs) == 2
-    # remove layer '0'
-    window.plot._set_layer_ids(layers=["1"])
-    expected_labels = {
-        "right": "",
-        "top": "",
-        "bottom": "x",
-        "left": "",
-        "1": "",
-    }
-    assert json.loads(window.plot._get_axis_labels()) == expected_labels
-    expected_ranges = {
-        "1": [0, 1],
-        "x": [-5.0, 5.0],
-        "y": [0.0, 10.0],
-    }
-    assert json.loads(window.plot._get_axis_ranges()) == expected_ranges
-    # add layer with same name
-    window.plot._set_layer_ids(layers=["0", "1"])
-    expected_ranges = {
-        "0": [0, 1],
-        "1": [0, 1],
-        "x": [-5.0, 5.0],
-        "y": [0.0, 10.0],
-    }
-    assert json.loads(window.plot._get_axis_ranges()) == expected_ranges
-    expected_labels = {
-        "right": "",
-        "top": "",
-        "bottom": "x",
-        "left": "",
-        "1": "",
-        "0": "",
-    }
-    assert json.loads(window.plot._get_axis_labels()) == expected_labels
-    assert len(window.plot.layerIDs) == 2
 
 
 # ~~~~~~~~~~~~~~ Tests for slot item styling properties ~~~~~~~~~~~~~~~~~~~~~

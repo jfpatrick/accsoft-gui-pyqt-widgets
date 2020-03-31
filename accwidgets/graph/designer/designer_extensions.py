@@ -1,8 +1,7 @@
 import enum
-from typing import Union, Optional, Tuple, List, cast
+from typing import Union, Optional, Tuple, List, cast, Dict
 import json
 
-import numpy as np
 from qtpy.QtCore import QAbstractTableModel, Qt, QVariant, Slot, QItemSelection, QModelIndex, QObject
 from qtpy.QtGui import QResizeEvent
 from qtpy.QtDesigner import QDesignerFormWindowInterface
@@ -34,9 +33,63 @@ class AxisEditorTableModelColumnNames(enum.Enum):
     view_range_max = "View Range Max"
 
 
+class LayerEditorTmpValues:
+
+    def __init__(self, plot: accgraph.ExPlotWidget):
+        """
+        We want to wait until the user clicks the 'DONE' button in the layer
+        editing dialog, before we apply the values back to the actual plot
+        we are editing. This way we can cancel our changes.
+
+        For this, this class offers a way to store the potential values passed
+        to the plots properties, which are involved when editing layers.
+        """
+        # we take the class that has the properties for auto-completion purposes
+        self._plot: accgraph.ExPlotWidgetProperties = cast(accgraph.ExPlotWidgetProperties, plot)
+        self.layer_ids: List[str] = []
+        self.axis_labels: Dict[str, str] = {}
+        self.axis_ranges: Dict[str, Union[str, Tuple[float, float]]] = {}
+        self._setup()
+
+    def apply(self):
+        """Apply the current values to the plot"""
+        self._plot.layerIDs = self.layer_ids
+        self._plot.axisLabels = json.dumps(self.axis_labels)
+        self._plot.axisRanges = json.dumps(self.axis_ranges)
+
+    @property
+    def plot(self) -> Union[accgraph.ExPlotWidgetProperties, accgraph.ExPlotWidget]:
+        """The Plot the Table model is based on."""
+        return self._plot
+
+    def remove_layer(self, layer: Union[int, str]) -> None:
+        """
+        Removing a layer requires also removing potential entries in the other
+        values which reference the removed layer. This function bundles this
+        so the user does not have to delete those obsolete reference by hand.
+
+        Args:
+            layer: Identifier or index of the layer which should be removed
+        """
+        if isinstance(layer, int):
+            layer = self.layer_ids[layer]
+        self.layer_ids.remove(layer)
+        for dct in [self.axis_labels, self.axis_ranges]:
+            if cast(Dict, dct).get(layer) is not None:
+                del cast(Dict, dct)[layer]
+
+    def _setup(self):
+        """Get all initial values from the plot, on which we operate on."""
+        self.layer_ids = self._plot.layerIDs
+        self.axis_labels = json.loads(self._plot.axisLabels)
+        self.axis_ranges = json.loads(self._plot.axisRanges)
+
+
 class LayerEditorTableModel(QAbstractTableModel):
 
     default_axes: Tuple[str, str] = ("x", "y")
+    axis_auto_range_key: str = "auto"
+    default_view_range: Tuple[int, int] = (0, 1)
 
     def __init__(self, plot: accgraph.ExPlotWidget, parent: QObject = None):
         """
@@ -47,7 +100,7 @@ class LayerEditorTableModel(QAbstractTableModel):
             parent: Parent Widget
         """
         super(QAbstractTableModel, self).__init__(parent=parent)
-        self._plot: accgraph.ExPlotWidget = plot
+        self._tmp = LayerEditorTmpValues(plot)
         self.columns: Tuple[AxisEditorTableModelColumnNames, ...] = (
             AxisEditorTableModelColumnNames.axis_identifier,
             AxisEditorTableModelColumnNames.axis_label,
@@ -56,10 +109,17 @@ class LayerEditorTableModel(QAbstractTableModel):
             AxisEditorTableModelColumnNames.view_range_max,
         )
 
+    def apply_to_plot(self) -> None:
+        """
+        Apply the current values of the temporary value storage to
+        the plot it is based on.
+        """
+        self._tmp.apply()
+
     @property
     def plot(self) -> Union[accgraph.ExPlotWidgetProperties, accgraph.ExPlotWidget]:
         """The Plot the Table model is based on."""
-        return self._plot
+        return self._tmp.plot
 
     @plot.setter
     def plot(self, new_plot: accgraph.ExPlotWidget) -> None:
@@ -70,13 +130,13 @@ class LayerEditorTableModel(QAbstractTableModel):
             new_plot: Plot which will replace the old plot in the table model
         """
         self.beginResetModel()
-        self._plot = new_plot
+        self._tmp = LayerEditorTmpValues(new_plot)
         self.endResetModel()
 
     @property
     def all_axes(self) -> List[str]:
         """All axes of the plot, including default and additional ones"""
-        return list(self.default_axes) + self.plot.layerIDs
+        return list(self.default_axes) + self._tmp.layer_ids
 
     # Implementation of Interfaces etc.
 
@@ -133,15 +193,12 @@ class LayerEditorTableModel(QAbstractTableModel):
     def append(self):
         """Append a new layer to the plot."""
         self.beginInsertRows(QModelIndex(), len(self.all_axes), len(self.all_axes))
-        new_layers = self.plot.layerIDs[:]
-        new_layers.append(self._next_layer_id())
-        self.plot.layerIDs = new_layers
+        self._tmp.layer_ids.append(self._next_layer_id())
         self.endInsertRows()
 
     def _next_layer_id(self) -> str:
-        existing_layers = self.plot.layerIDs[:]
         i = 0
-        while f"y_{i}" in existing_layers:
+        while f"y_{i}" in self._tmp.layer_ids:
             i += 1
         return f"y_{i}"
 
@@ -155,9 +212,7 @@ class LayerEditorTableModel(QAbstractTableModel):
         layer_index = index.row() - len(self.default_axes)
         if layer_index >= 0:
             self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-            new_layers = self.plot.layerIDs[:]
-            del new_layers[layer_index]
-            self.plot.layerIDs = new_layers
+            self._tmp.remove_layer(layer_index)
             self.endRemoveRows()
 
     def data(
@@ -253,13 +308,21 @@ class LayerEditorTableModel(QAbstractTableModel):
     def _set_axis_identifier(self, axis: str, identifier: str) -> None:
         # Make sure the identifier is not yet taken by another layer
         id_reserved = identifier in self.default_axes
-        id_taken = self.plot.axisLabels.count(identifier) != 0
+        id_taken = self._tmp.layer_ids.count(identifier) != 0
         if not (id_reserved or id_taken):
-            self.plot.layerIDs = [identifier if x == axis else x for x in self.plot.layerIDs]
+            old_label = self._tmp.axis_labels.get(axis)
+            old_range = self._tmp.axis_ranges.get(axis)
+            if old_label is not None:
+                self._tmp.axis_labels[identifier] = old_label
+                del self._tmp.axis_labels[axis]
+            if old_range is not None:
+                self._tmp.axis_ranges[identifier] = old_range
+                del self._tmp.axis_ranges[axis]
+            self._tmp.layer_ids = [identifier if x == axis else x for x in self._tmp.layer_ids]
 
     def _get_axis_label(self, axis: str) -> str:
-        axes_labels = json.loads(self.plot.axisLabels)
-        if axis in self.plot.layerIDs:
+        axes_labels = self._tmp.axis_labels
+        if axis in self._tmp.layer_ids:
             label = axes_labels.get(axis, "")
         elif axis == self.default_axes[0]:
             label = axes_labels.get("bottom", axes_labels.get("top", ""))
@@ -268,29 +331,30 @@ class LayerEditorTableModel(QAbstractTableModel):
         return label
 
     def _set_axis_label(self, axis: str, label: str) -> None:
-        axes_labels = json.loads(self.plot.axisLabels)
         label = label.strip()
-        if axis in self.plot.layerIDs:
-            axes_labels.update({axis: label})
+        if axis in self._tmp.layer_ids:
+            self._tmp.axis_labels.update({axis: label})
         elif axis == self.default_axes[0]:
-            axes_labels.update({"bottom": label})
-            axes_labels.update({"top": label})
+            self._tmp.axis_labels.update({"bottom": label})
+            self._tmp.axis_labels.update({"top": label})
         elif axis == self.default_axes[1]:
-            axes_labels.update({"left": label})
-            axes_labels.update({"right": label})
-        self.plot.axisLabels = json.dumps(axes_labels)
+            self._tmp.axis_labels.update({"left": label})
+            self._tmp.axis_labels.update({"right": label})
 
     def _get_axis_auto_range(self, axis: str) -> bool:
-        return bool(json.loads(self.plot.axisAutoRange).get(axis))
+        return self._tmp.axis_ranges.get(axis) == self.axis_auto_range_key
 
     def _set_axis_auto_range(self, axis: str, auto_range: bool) -> None:
-        ar_dict = json.loads(self.plot.axisAutoRange)
-        ar_dict.update({axis: bool(auto_range)})
-        self.plot.axisAutoRange = json.dumps(ar_dict)
+        if auto_range:
+            self._tmp.axis_ranges.update({axis: self.axis_auto_range_key})
+        elif auto_range != self._tmp.axis_ranges.get(axis):
+            self._tmp.axis_ranges.update({axis: self.default_view_range})
 
     def _get_view_range(self, axis: str) -> Tuple[float, float]:
-        axes_ranges = json.loads(self.plot.axisRanges)
-        return axes_ranges.get(axis, (np.nan, np.nan))
+        view_range = self._tmp.axis_ranges.get(axis, self.default_view_range)
+        if view_range == self.axis_auto_range_key:
+            return self.default_view_range
+        return cast(Tuple[float, float], view_range)
 
     def _set_view_range(
             self,
@@ -298,14 +362,12 @@ class LayerEditorTableModel(QAbstractTableModel):
             vr_min: Optional[float] = None,
             vr_max: Optional[float] = None,
     ) -> None:
-        axes_ranges = json.loads(self.plot.axisRanges)
-        current_range = list(axes_ranges.get(axis, (0.0, 1.0)))
+        current_range = list(self._tmp.axis_ranges.get(axis, self.default_view_range))
         if vr_min is not None:
             current_range[0] = vr_min
         if vr_max is not None:
             current_range[1] = vr_max
-        axes_ranges[axis] = current_range
-        self.plot.axisRanges = json.dumps(axes_ranges)
+        self._tmp.axis_ranges[axis] = cast(Tuple[float, float], tuple(current_range))
 
 
 class PlotLayerEditingDialog(QDialog):
@@ -360,9 +422,11 @@ class PlotLayerEditingDialog(QDialog):
         self.vertical_layout.addLayout(self.add_remove_layout)
         self.button_box = QDialogButtonBox(self)
         self.button_box.setOrientation(Qt.Horizontal)
-        self.button_box.addButton("Done", QDialogButtonBox.AcceptRole)
+        self.button_box.addButton(QDialogButtonBox.Cancel)
+        self.button_box.addButton(QDialogButtonBox.Apply)
+        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.saveChanges)
+        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.reject)
         self.vertical_layout.addWidget(self.button_box)
-        self.button_box.accepted.connect(self.saveChanges)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         """
@@ -392,11 +456,13 @@ class PlotLayerEditingDialog(QDialog):
         """
         When hitting the Done button we have to set these properties
         explicitly in order for them to be correctly saved in UI Files.
+        Before we do that, we have to tell the table data model as well, that
+        we have to apply our temporary values to the actual plot.
         """
+        self.layer_table_model.apply_to_plot()
         formWindow = QDesignerFormWindowInterface.findFormWindow(self.plot)
         if formWindow:
             formWindow.cursor().setProperty("layerIDs", self.plot.layerIDs)
-            formWindow.cursor().setProperty("axisAutoRange", self.plot.axisAutoRange)
             formWindow.cursor().setProperty("axisRanges", self.plot.axisRanges)
             formWindow.cursor().setProperty("axisLabels", self.plot.axisLabels)
         self.accept()
