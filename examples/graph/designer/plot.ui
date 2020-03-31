@@ -63,10 +63,7 @@
            <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;, &quot;y_0&quot;: &quot;&quot;}</string>
           </property>
           <property name="axisRanges" stdset="0">
-           <string>{&quot;x&quot;: [0, 1], &quot;y&quot;: [0, 1], &quot;y_0&quot;: [0, 1]}</string>
-          </property>
-          <property name="axisAutoRange" stdset="0">
-           <string>{&quot;x&quot;: true, &quot;y&quot;: true, &quot;y_0&quot;: true}</string>
+           <string>{&quot;x&quot;: &quot;auto&quot;, &quot;y&quot;: &quot;auto&quot;, &quot;y_0&quot;: &quot;auto&quot;}</string>
           </property>
          </widget>
         </item>
@@ -91,10 +88,7 @@
            <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;}</string>
           </property>
           <property name="axisRanges" stdset="0">
-           <string>{&quot;x&quot;: [-0.5263157894736842, 10.526315789473685], &quot;y&quot;: [0, 1]}</string>
-          </property>
-          <property name="axisAutoRange" stdset="0">
-           <string>{&quot;x&quot;: true, &quot;y&quot;: true}</string>
+           <string>{&quot;x&quot;: &quot;auto&quot;, &quot;y&quot;: &quot;auto&quot;}</string>
           </property>
          </widget>
         </item>
@@ -117,10 +111,7 @@
          <string>{&quot;right&quot;: &quot;&quot;, &quot;top&quot;: &quot;&quot;, &quot;bottom&quot;: &quot;&quot;, &quot;left&quot;: &quot;&quot;, &quot;y_0&quot;: &quot;&quot;}</string>
         </property>
         <property name="axisRanges" stdset="0">
-         <string>{&quot;x&quot;: [0, 1], &quot;y&quot;: [0.0, 20.0], &quot;y_0&quot;: [-10.0, 10.0]}</string>
-        </property>
-        <property name="axisAutoRange" stdset="0">
-         <string>{&quot;x&quot;: true, &quot;y&quot;: false, &quot;y_0&quot;: false}</string>
+         <string>{&quot;x&quot;: &quot;auto&quot;, &quot;y&quot;: [0.0, 20.0], &quot;y_0&quot;: [-10.0, 10.0]}</string>
         </property>
         <property name="rightTimeBoundary" stdset="0">
          <double>0.000000000000000</double>

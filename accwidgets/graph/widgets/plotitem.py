@@ -46,8 +46,11 @@ from accwidgets.graph.widgets.plotconfiguration import (
     PlotWidgetStyle,
 )
 from accwidgets.graph.datamodel.datastructures import CurveData, PlottingItemData
-from accwidgets.graph.widgets.plottimespan import ScrollingPlotTimeSpan, CyclicPlotTimeSpan, BasePlotTimeSpan
-
+from accwidgets.graph.widgets.plottimespan import (
+    ScrollingPlotTimeSpan,
+    CyclicPlotTimeSpan,
+    BasePlotTimeSpan,
+)
 
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {

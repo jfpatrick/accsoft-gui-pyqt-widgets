@@ -954,9 +954,9 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """QtDesigner getter function for the PlotItems axis labels"""
         labels = {}
         for axis in self._reserved_axis_labels_identifiers:
-            labels.update({axis: cast(ExPlotWidget, self).getAxis(axis).labelText})
+            labels[axis] = cast(ExPlotWidget, self).getAxis(axis).labelText
         for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
-            labels.update({layer.id: layer.axis_item.labelText})
+            labels[layer.id] = layer.axis_item.labelText
         return json.dumps(labels)
 
     def _set_axis_labels(self, new_val: str) -> None:
@@ -965,14 +965,20 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             axis_labels: Dict[str, str] = json.loads(new_val)
             for axis, label in axis_labels.items():
                 label = axis_labels.get(axis, "").strip()
-                if cast(ExPlotWidget, self).plotItem.getAxis(axis).isVisible():
+                try:
+                    axis_item = cast(ExPlotWidget, self).plotItem.getAxis(axis)
+                except KeyError:
+                    warnings.warn(f"Label of axis / layer {axis} could not "
+                                  f"be set, since it does not seem to exist.")
+                    continue
+                if axis_item.isVisible():
                     if label:
-                        cast(ExPlotWidget, self).plotItem.setLabel(axis=axis, text=label)
+                        axis_item.setLabel(label)
                     else:
-                        cast(ExPlotWidget, self).plotItem.getAxis(axis).labelText = label
-                        cast(ExPlotWidget, self).plotItem.getAxis(axis).showLabel(False)
+                        axis_item.labelText = label
+                        axis_item.showLabel(False)
                 else:
-                    cast(ExPlotWidget, self).plotItem.getAxis(axis).labelText = label
+                    axis_item.labelText = label
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
             # TypeError for len() operation on entries that do not support it
@@ -983,34 +989,39 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     def _get_axis_ranges(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
-        auto_ranges_dict = {}
-        auto_ranges_dict.update({"x": cast(ExPlotWidget, self).getViewBox().targetRange()[0]})
-        auto_ranges_dict.update({"y": cast(ExPlotWidget, self).getViewBox().targetRange()[1]})
+        vb = cast(ExPlotWidget, self).getViewBox()
+        auto_ranges_dict = {
+            "x": "auto" if vb.autoRangeEnabled()[0] else vb.targetRange()[0],
+            "y": "auto" if vb.autoRangeEnabled()[1] else vb.targetRange()[1],
+        }
         for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
-            auto_ranges_dict.update({layer.id: layer.view_box.targetRange()[1]})
+            vb = layer.view_box
+            auto_ranges_dict[layer.id] = "auto" if vb.autoRangeEnabled()[1] else vb.targetRange()[1]
         return json.dumps(auto_ranges_dict)
 
     def _set_axis_ranges(self, new_val: str) -> None:
         """QtDesigner setter function for the PlotItems axis ranges"""
         try:
             axis_ranges: Dict[str, Tuple[float, float]] = json.loads(new_val)
-            disable_ar = cast(ExPlotWidget, self).plotItem.getViewBox().autoRangeEnabled()[1]
-            cast(ExPlotWidget, self).setRange(
-                xRange=axis_ranges.pop("x", None),
-                yRange=axis_ranges.pop("y", None),
-                padding=0.0,
-                disableAutoRange=disable_ar,
-            )
-            for layer, range_tuple in axis_ranges.items():
-                # Check if range was given in the right form
-                if layer in self._get_layer_ids():
-                    disable_ar = cast(ExPlotWidget, self).plotItem.getViewBox(
-                        layer=layer).autoRangeEnabled()[1]
-                    cast(ExPlotWidget, self).plotItem.getViewBox(layer=layer).setRange(
-                        yRange=range_tuple,
-                        padding=0.0,
-                        disableAutoRange=disable_ar,
-                    )
+            for axis, axis_range in axis_ranges.items():
+                # Get fitting viewbox
+                if axis in ("x", "y"):
+                    vb = cast(ExPlotWidget, self).getPlotItem().getViewBox()
+                else:
+                    try:
+                        vb = cast(ExPlotWidget, self).getPlotItem().getViewBox(layer=axis)
+                    except KeyError:
+                        warnings.warn(f"View Range of axis / layer {axis} could "
+                                      f"not be set, since it does not seem to exist.")
+                        continue
+                # Set auto range / fixed range
+                vb.enableAutoRange(axis="x" if axis == "x" else "y",
+                                   enable=axis_range == "auto")
+                if axis_range != "auto":
+                    if axis == "x":
+                        vb.setXRange(*axis_range, padding=0.0)
+                    else:
+                        vb.setYRange(*axis_range, padding=0.0)
         except (json.decoder.JSONDecodeError, AttributeError, TypeError):
             # JSONDecodeError and Attribute Errors for JSON decoding
             # TypeError for len() operation on entries that do not support it
@@ -1019,46 +1030,23 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     axisRanges: str = Property(str, _get_axis_ranges, _set_axis_ranges, designable=False)
     """JSON string with mappings of x, y and layers to a view range"""
 
-    def _get_axis_auto_range(self) -> str:
-        """QtDesigner getter function for the PlotItems axis ranges"""
-        ar_enabled = cast(ExPlotWidget, self).getViewBox().autoRangeEnabled()
-        auto_ranges_dict = {
-            "x": bool(ar_enabled[0]),
-            "y": bool(ar_enabled[1]),
-        }
-        for layer in cast(ExPlotWidget, self).plotItem.non_default_layers:
-            auto_ranges_dict[layer.id] = bool(layer.view_box.autoRangeEnabled()[1])
-        return json.dumps(auto_ranges_dict)
-
-    def _set_axis_auto_range(self, new_val: str) -> None:
-        """QtDesigner setter function for the PlotItems axis ranges"""
-        try:
-            axis_auto_range: Dict[str, bool] = json.loads(new_val)
-            cast(ExPlotWidget, self).plotItem.enableAutoRange(
-                x=axis_auto_range.pop("x", None),
-                y=axis_auto_range.pop("y", None),
-            )
-            for layer, auto_range in axis_auto_range.items():
-                # Check if range was given in the right form
-                cast(ExPlotWidget, self).plotItem.getViewBox(layer=layer).enableAutoRange(y=auto_range)
-        except (json.decoder.JSONDecodeError, AttributeError, TypeError):
-            # JSONDecodeError and Attribute Errors for JSON decoding
-            # TypeError for len() operation on entries that do not support it
-            pass
-
-    axisAutoRange: str = Property(str, _get_axis_auto_range, _set_axis_auto_range, designable=False)
-    """JSON string with mappings of x, y and layers to a view range"""
-
     def _update_layers(self, new: List[str]) -> None:
         """
-        Attention: This function can only handle one operation at a time.
-        Combinations of adding, removing and renaming layers can't be
-        detected clearly.
+        This function removes old layers and adds new ones according to the list
+        of passed layers. To make sure items are not dangling in the air without
+        an existing parent item, we have to remove them first from the deleted
+        layers and then add them to the new ones. We try to make sure items land
+        in the correct layer, if the layer f.e. has been renamed, but this
+        comes with some caveats, since it is not clear how the new list was
+        created from the old one (f.e. has a layer been renamed or was it
+        replaced by a entirely new one?). If a layer id exist in both the current
+        and the new layer set, it is seen as the same one, even if its position
+        has changed.
+
+        Args:
+            new: list of new layer identifiers, which will be added to the plot
         """
         old = self._get_layer_ids()
-        axis_labels: Dict = json.loads(self.axisLabels)
-        axis_auto_range: Dict = json.loads(self.axisAutoRange)
-        axis_range: Dict = json.loads(self.axisRanges)
         removed_layer_ids = [l for l in self._get_layer_ids() if l not in new]
         added_layer_ids = [l for l in new if l not in self._get_layer_ids()]
         items_to_move: List[DataModelBasedItem] = []
@@ -1069,6 +1057,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                 items_to_move += cast(ExPlotWidget, self).plotItem.layer(name).view_box.addedItems
                 for item in cast(ExPlotWidget, self).plotItem.layer(name).view_box.addedItems:
                     item.setParentItem(cast(ExPlotWidget, self).plotItem.getViewBox())
+                # Now we can safely remove the layer's view-box
                 cast(ExPlotWidget, self).plotItem.remove_layer(name)
             for name in new:
                 cast(ExPlotWidget, self).plotItem.add_layer(name)
@@ -1081,27 +1070,15 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                     except RuntimeError:
                         warnings.warn(f"Item could not be removed: {item.label}")
         if removed_layer_ids and added_layer_ids:
-            # Rename
             for old_name, new_name in zip(removed_layer_ids, added_layer_ids):
-                # replace id in dicts
-                axis_labels.update({new_name: axis_labels.pop(old_name)})
-                axis_auto_range.update({new_name: axis_auto_range.pop(old_name)})
-                axis_range.update({new_name: axis_range.pop(old_name)})
                 # If layer was renamed -> move item to new layer
                 item_from_this_layer = [item for item in items_to_move if item.layer_id == old_name]
                 for item in item_from_this_layer:
                     cast(ExPlotWidget, self).addItem(item=item, layer=new_name)
                     items_to_move.remove(item)
-        elif removed_layer_ids:
-            # Layer(s) removed
-            for name in removed_layer_ids:
-                # remove old ids from dict
-                axis_labels.pop(name)
-                axis_auto_range.pop(name)
-                axis_range.pop(name)
-        self.axisLabels = json.dumps(axis_labels)
-        self.axisAutoRange = json.dumps(axis_auto_range)
-        self.axisRanges = json.dumps(axis_range)
+        # Catch all items that could not be assigned and add them to the default layer
+        for item in items_to_move:
+            cast(ExPlotWidget, self).plotItem.getViewBox().addItem(item)
 
     @staticmethod
     def diff(list1, list2):
