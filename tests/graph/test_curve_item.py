@@ -658,11 +658,11 @@ def test_plotdataitem_components_visible(qtbot, params):
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     item: LivePlotCurve = window.plot.addCurve(data_source=source, **params)
-    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
-    source.sig_new_data[PointData].emit(PointData(1.0, 1.0))
-    source.sig_new_data[PointData].emit(PointData(np.nan, np.nan))
-    source.sig_new_data[PointData].emit(PointData(2.0, 2.0))
-    source.sig_new_data[PointData].emit(PointData(3.0, 3.0))
+    source.send_data(PointData(0.0, 0.0))
+    source.send_data(PointData(1.0, 1.0))
+    source.send_data(PointData(np.nan, np.nan))
+    source.send_data(PointData(2.0, 2.0))
+    source.send_data(PointData(3.0, 3.0))
     # Condition as in PlotDataItem.updateItems()
     if params.get("pen") is not None or (params.get("brush") and params.get("fillLevel") is not None):
         assert item.curve.isVisible()
@@ -710,7 +710,7 @@ def test_nan_values_in_scatter_plot(
     # symbol -> pass data to symbol as well
     window.plot.addCurve(data_source=source, symbol="o")
     for point in data_sequence:
-        source.sig_new_data.emit(PointData(point[0], point[1]))
+        source.send_data(PointData(point[0], point[1]))
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
         qtbot.wait(1)
     for expected in expected_warnings:

@@ -1,5 +1,6 @@
 """Module for signal based updates for the graph and implementation"""
 
+import warnings
 from typing import (
     Optional,
     Callable,
@@ -53,16 +54,7 @@ class UpdateSource(QObject):
     #       Change dict to fitting type when integrated.
     # sig_new_time_span = Signal(dict)
     sig_new_timestamp = Signal(float)
-    sig_new_data = Signal(
-        [PointData],
-        [CurveData],
-        [BarData],
-        [BarCollectionData],
-        [InjectionBarData],
-        [InjectionBarCollectionData],
-        [TimestampMarkerData],
-        [TimestampMarkerCollectionData],
-    )
+    sig_new_data = Signal("PyQt_PyObject")
 
     @Slot(CurveData)
     def handle_data_model_edit(data: CurveData):
@@ -77,12 +69,19 @@ class UpdateSource(QObject):
         pass
 
     def new_data(self, data: PlottingItemData) -> None:
+        """Deprecated, use UpdateSource.send_data instead."""
+        warnings.warn("UpdateSource.new_data is deprecated. "
+                      "Use UpdateSource.send_data instead.",
+                      DeprecationWarning)
+        self.send_data(data)
+
+    def send_data(self, data: PlottingItemData) -> None:
         """Convenience function for sending data through sig_new_data
 
         Args:
             data: Data which should be sent through the signal
         """
-        self.sig_new_data[type(data)].emit(data)
+        self.sig_new_data.emit(data)
 
 
 class SignalBoundDataSource(UpdateSource):
@@ -134,7 +133,7 @@ class SignalBoundDataSource(UpdateSource):
             transformed_data = self.transform(*args[0])  # type: ignore
         else:
             transformed_data = self.transform(*args)
-        self.sig_new_data[type(transformed_data)].emit(transformed_data)
+        self.send_data(transformed_data)
 
 
 class PlottingItemDataFactory:
@@ -149,7 +148,7 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def transform(
-        dtype: PlottingItemData,
+        dtype: Type[PlottingItemData],
         *values: Union[float, str, Sequence[float], Sequence[str]],
     ) -> PlottingItemData:
         """Transform the given values to the given data type."""
@@ -163,7 +162,7 @@ class PlottingItemDataFactory:
             return transform_func(*values)
 
     @staticmethod
-    def should_unwrap(value: Any, dtype: PlottingItemData) -> bool:
+    def should_unwrap(value: Any, dtype: Type[PlottingItemData]) -> bool:
         """
         Check if the value should be unwrapped for the transformation function.
         This is the case if the value is a list of multiple value which each

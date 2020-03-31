@@ -72,14 +72,12 @@ class SinusCurveSource(accgraph.UpdateSource):
                 x=datetime.now().timestamp() + self.x_offset,
                 y=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
-            self.sig_new_data[accgraph.PointData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.BAR:
             new_data = accgraph.BarData(
                 x=datetime.now().timestamp() + self.x_offset,
                 y=math.sin(datetime.now().timestamp()) + self.y_offset,
                 height=math.sin(datetime.now().timestamp()) + self.y_offset,
             )
-            self.sig_new_data[accgraph.BarData].emit(new_data)
         elif emit_type == SinusCurveSourceEmitTypes.INJECTIONBAR:
             new_data = accgraph.InjectionBarData(
                 x=datetime.now().timestamp() + self.x_offset,
@@ -88,7 +86,6 @@ class SinusCurveSource(accgraph.UpdateSource):
                 width=0.0,
                 label=str(self.label_counter),
             )
-            self.sig_new_data[accgraph.InjectionBarData].emit(new_data)
             self.label_counter += 1
         elif emit_type == SinusCurveSourceEmitTypes.INFINITELINE:
             if self.label_counter % 3 == 0:
@@ -105,10 +102,10 @@ class SinusCurveSource(accgraph.UpdateSource):
                 color=color,
                 label=label,
             )
-            self.sig_new_data[accgraph.TimestampMarkerData].emit(new_data)
             self.label_counter += 1
         else:
             raise ValueError(f"Unknown signal emit_type: {self.types_to_emit}")
+        self.send_data(new_data)
 
 
 class LoggingCurveDataSource(accgraph.UpdateSource):
@@ -187,18 +184,18 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
             x=self.x_values_live[self.current_index],
             y=self.y_values_live[self.current_index],
         )
-        self.sig_new_data[accgraph.PointData].emit(new_data)
+        self.send_data(new_data)
 
     def _emit_separator(self) -> None:
         separator = accgraph.PointData(x=np.nan, y=np.nan)
-        self.sig_new_data[accgraph.PointData].emit(separator)
+        self.send_data(separator)
 
     def _emit_data_from_logging_system(self) -> None:
         curve = accgraph.CurveData(
             x=np.array(self.x_values_logging),
             y=np.array(self.y_values_logging),
         )
-        self.sig_new_data[accgraph.CurveData].emit(curve)
+        self.send_data(curve)
 
 
 class WaveformSinusSource(accgraph.UpdateSource):
@@ -241,8 +238,7 @@ class WaveformSinusSource(accgraph.UpdateSource):
     def _create_new_values(self):
         """Create a new value representing a sinus curve in some way."""
         sin = self.y_base * np.sin(datetime.now().timestamp())
-        data = self._create_value(y=sin)
-        self.sig_new_data[type(data)].emit(data)
+        self.send_data(self._create_value(y=sin))
 
     def _create_value(self, y: np.ndarray):
         """Create a data wrapper based on the requested type."""
@@ -304,7 +300,7 @@ class EditableSinusCurveDataSource(accgraph.UpdateSource):
         y = np.sin(x)
         curve = accgraph.CurveData(x, y)
         self._timer = QTimer()
-        self._timer.singleShot(0, lambda: self.new_data(curve))
+        self._timer.singleShot(0, lambda: self.send_data(curve))
 
     def handle_data_model_edit(self, data: accgraph.CurveData):
         """

@@ -51,7 +51,7 @@ def test_point_selection(qtbot,
     source: accgraph.UpdateSource = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
     data = accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3])
-    source.new_data(data)
+    source.send_data(data)
 
     spy = QtTest.QSignalSpy(curve.sig_selection_changed)
     assert len(spy) == 0
@@ -131,7 +131,7 @@ def test_selection_style(qtbot,
                                                       symbolPen=pen,
                                                       symbolBrush=brush,
                                                       symbol=symbol)
-    source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
     curve.select(selection=QtCore.QRectF(0, 1.2, 4, 0.9))
     assert_qpen_equals(curve._selection.opts["pen"], selection_pen)
@@ -238,7 +238,7 @@ def test_selection_moved(qtbot,
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
     spy = QtTest.QSignalSpy(curve.sig_selection_changed)
     assert len(spy) == 0
@@ -267,7 +267,7 @@ def test_selection_labels(qtbot,
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
     curve.selection.points_labeled = activate_labels
     curve.select(selection=selection)
@@ -286,7 +286,7 @@ def test_send_curves_state(qtbot,
     edit_handler_slot = "accwidgets.graph.UpdateSource.handle_data_model_edit"
     with mock.patch(edit_handler_slot) as mock_handler:
         curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-        source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+        source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
         curve.select(selection=QtCore.QRectF(0, 2.5, 4, 1))
         curve.send_current_state()
@@ -317,7 +317,7 @@ def test_undo_redo(qtbot, editable_testing_window):
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
     # From the first time receiving data
     assert len(spy) == 1

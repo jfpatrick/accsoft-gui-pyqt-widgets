@@ -427,7 +427,7 @@ def test_send_all_editables_state(qtbot,
         curves.append(curve)
         spies.append(QtTest.QSignalSpy(curve.model().sig_data_model_edited))
         initial_data = accgraph.CurveData([0, 1, 2], [1 + i, 0 + i, 1 + i])
-        source.new_data(initial_data)
+        source.send_data(initial_data)
 
     for i, c in list(enumerate(curves)):
         c.select(selection=QtCore.QRectF(0, 0.5 + i, 2, 1))

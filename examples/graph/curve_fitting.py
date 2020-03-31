@@ -35,7 +35,7 @@ class RoughSinusSource(accgraph.UpdateSource):
             x=datetime.now().timestamp(),
             y=math.sin(datetime.now().timestamp()) + random.uniform(-0.5, 0.5),
         )
-        self.sig_new_data[accgraph.PointData].emit(new_data)
+        self.send_data(new_data)
 
 
 class MainWindow(QMainWindow):

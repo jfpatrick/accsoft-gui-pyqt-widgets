@@ -79,8 +79,8 @@ def test_bar_send(qtbot,
         with patch.object(source_2, "handle_data_model_edit") as handler_2:
             curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
             curve_2: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-            source_1.new_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-            source_2.new_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+            source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+            source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
 
             plots[selected_plot].plotItem.toggle_plot_selection(True)
             assert bar.selected_plot == plots[selected_plot]
@@ -130,8 +130,8 @@ def test_send_action_plot_switch(qtbot,
     source_2 = accgraph.UpdateSource()
     curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
     _: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-    source_1.new_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-    source_2.new_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
 
     plots[0].plotItem.toggle_plot_selection(True)
     curve_1.select(QtCore.QRectF(0, 1.5, 2, 1))
@@ -156,7 +156,7 @@ def test_send_enabled_after_data_unselect(qtbot,
 
     source_1 = accgraph.UpdateSource()
     curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
-    source_1.new_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
 
     plot_1.plotItem.toggle_plot_selection(True)
     curve_1.select(QtCore.QRectF(0, 1.5, 2, 1))
@@ -196,8 +196,8 @@ def test_function_buttons_enabled(qtbot,
     source_2 = accgraph.UpdateSource()
     curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
     curve_2: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-    source_1.new_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-    source_2.new_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
 
     for plot, sp in zip([plot_1, plot_2], selected_plots):
         plot.plotItem.toggle_plot_selection(sp)
@@ -230,7 +230,7 @@ def test_function_buttons_with_multiple_point_min_selection(
     empty_testing_window.cw_layout.addWidget(plot_1)
     source = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
     # Only two points will be selected
     curve.select(selection)
 
@@ -436,11 +436,11 @@ def test_selection_of_current_plotitem(qtbot,
 
     s1: accgraph.UpdateSource = accgraph.UpdateSource()
     c1: accgraph.EditablePlotCurve = pl1.addCurve(data_source=s1)
-    s1.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    s1.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
     s2: accgraph.UpdateSource = accgraph.UpdateSource()
     c2: accgraph.EditablePlotCurve = pl2.addCurve(data_source=s2)
-    s2.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[1, 2, 3, 2, 1]))
+    s2.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[1, 2, 3, 2, 1]))
 
     if pl1_sel:
         c1.select(selection=pl1_sel)
@@ -470,7 +470,7 @@ def test_add_action_to_toolbar(qtbot,
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
     curve.select(selection=QtCore.QRectF(0, 1.5, 4, 2))
 
     action = QtWidgets.QAction(qta.icon("fa5b.reddit-alien"), "My Transformation")
@@ -535,7 +535,7 @@ def test_redo_undo_button_enabled(qtbot, empty_testing_window):
 
     source = accgraph.UpdateSource()
     curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.new_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
     curve.select(QtCore.QRectF(-0.25, 1.75, 1.5, 1.5))
     curve.replace_selection(accgraph.CurveData([0, 1], [6, 4]))
 

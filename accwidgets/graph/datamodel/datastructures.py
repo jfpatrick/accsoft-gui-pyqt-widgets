@@ -11,15 +11,13 @@ different length arrays into an .
 
 import warnings
 import abc
-from typing import List, Union, Optional, Any, NamedTuple, Sequence, Dict
+from typing import List, Union, Any, NamedTuple, Sequence, Dict
 from copy import deepcopy
 
 import numpy as np
 import pyqtgraph as pg
-from qtpy.QtCore import QObject
 
 from ..util import deprecated_param_alias
-from accwidgets.common import AbstractQObjectMeta
 
 
 class InvalidDataStructureWarning(Warning):
@@ -38,7 +36,7 @@ class WrongValueWarning(Warning):
     pass
 
 
-class PlottingItemData(QObject, metaclass=AbstractQObjectMeta):
+class PlottingItemData(metaclass=abc.ABCMeta):
 
     """Base class for the plotting item entry/entries, f.e. a point/points in a curve
 
@@ -94,7 +92,7 @@ class PointData(PlottingItemData):
     is_collection = False
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def __init__(self, x: float = np.nan, y: float = np.nan, parent=None):
+    def __init__(self, x: float = np.nan, y: float = np.nan):
         """
         Data for a 2D point with x and y value
 
@@ -105,9 +103,8 @@ class PointData(PlottingItemData):
         Args:
             x: x-value of the point.
             y: y-value of the point.
-            parent: Parent object for the base class
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.x: float = x if x is not None else np.nan
         self.y: float = y if y is not None else np.nan
         # Check validity on creation to warn user in case the point is invalid
@@ -155,12 +152,9 @@ class CurveData(PlottingItemData):
     is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
-    def __init__(
-            self,
-            x: Sequence[float],
-            y: Sequence[float],
-            parent=None,
-    ):
+    def __init__(self,
+                 x: Sequence[float],
+                 y: Sequence[float]):
         """Collection of data for points representing a curve.
 
         Emitting invalid points to a curve will result in the invalid points **being
@@ -170,9 +164,8 @@ class CurveData(PlottingItemData):
         Args:
             x: list of x values of the points
             y: list of y values of the points
-            parent: Parent object for the base class
         """
-        super().__init__(parent)
+        super().__init__()
         if not isinstance(x, np.ndarray):
             x = np.array(x)
         if not isinstance(y, np.ndarray):
@@ -231,13 +224,10 @@ class BarData(PlottingItemData):
     is_collection = False
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def __init__(
-            self,
-            height: float,
-            x: float = np.nan,
-            y: float = np.nan,
-            parent=None,
-    ):
+    def __init__(self,
+                 height: float,
+                 x: float = np.nan,
+                 y: float = np.nan):
         """Data of a bar for a bar graph
 
         Emitting and invalid bar to a bar graph will result in the bar **being
@@ -248,9 +238,8 @@ class BarData(PlottingItemData):
             height: height of the bar
             x: x position that represents the center of the bar
             y: y position that represents the center of the bar
-            parent: Parent object for the base class
         """
-        super().__init__(parent)
+        super().__init__()
         self.height: float = height if height is not None else np.nan
         self.x: float = x if x is not None else np.nan
         # y -> nan has to be replaced with 0, otherwise bar won't be drawn
@@ -306,13 +295,10 @@ class BarCollectionData(PlottingItemData):
     is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
-    def __init__(
-            self,
-            x: Sequence[float],
-            y: Sequence[float],
-            heights: Sequence[float],
-            parent=None,
-    ):
+    def __init__(self,
+                 x: Sequence[float],
+                 y: Sequence[float],
+                 heights: Sequence[float]):
         """Collection of data for multiple bars
 
         Emitting invalid bars to a bar graph will result in the invalid bars **being
@@ -323,9 +309,8 @@ class BarCollectionData(PlottingItemData):
             x: list of x positions that represent the center of the bar
             y: list of y positions that represent the center of the bar
             heights: list of bar heights
-            parent: Parent object for the base class
         """
-        super().__init__(parent)
+        super().__init__()
         if not isinstance(x, np.ndarray):
             x = np.array(x)
         if not isinstance(y, np.ndarray):
@@ -392,15 +377,12 @@ class InjectionBarData(PlottingItemData):
     is_collection = False
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def __init__(
-        self,
-        x: float,
-        y: float,
-        height: float = np.nan,
-        width: float = np.nan,
-        label: str = "",
-        parent: Optional[QObject] = None,
-    ):
+    def __init__(self,
+                 x: float,
+                 y: float,
+                 height: float = np.nan,
+                 width: float = np.nan,
+                 label: str = ""):
         """Data for an injection bar for a injection bar graph.
 
         Emitting invalid injection bars to a graph will result in the invalid bars **being
@@ -413,9 +395,8 @@ class InjectionBarData(PlottingItemData):
             height: length of the vertical line of the bar
             width: length of the vertical line of the bar
             label: text displayed at the top of the bar
-            parent: parent item of the base class
         """
-        super().__init__(parent)
+        super().__init__()
         self.x: float = x if x is not None else np.nan
         self.y: float = y if y is not None else np.nan
         self.height: float = height if height is not None else np.nan
@@ -475,15 +456,12 @@ class InjectionBarCollectionData(PlottingItemData):
     is_collection = True
 
     @deprecated_param_alias(x_values="x", y_values="y")
-    def __init__(
-        self,
-        x: Sequence[float],
-        y: Sequence[float],
-        heights: Sequence[float],
-        widths: Sequence[float],
-        labels: Sequence[str],
-        parent: Optional[QObject] = None,
-    ):
+    def __init__(self,
+                 x: Sequence[float],
+                 y: Sequence[float],
+                 heights: Sequence[float],
+                 widths: Sequence[float],
+                 labels: Sequence[str]):
         """Collection of data for multiple injection bars.
 
         Emitting invalid injection bars to a graph will result in the invalid bars **being
@@ -496,9 +474,8 @@ class InjectionBarCollectionData(PlottingItemData):
             heights: list of lengths of the vertical lines of a bar
             widths: list of lengths of the horizontal lines of a bar
             labels: list of texts displayed at the top of each bar
-            parent: parent item of the base class
         """
-        super().__init__(parent)
+        super().__init__()
         if not isinstance(x, np.ndarray):
             x = np.array(x)
         if not isinstance(y, np.ndarray):
@@ -576,13 +553,10 @@ class TimestampMarkerData(PlottingItemData):
     is_collection = False
 
     @deprecated_param_alias(x_value="x")
-    def __init__(
-            self,
-            x: float,
-            color: str = DEFAULT_COLOR,
-            label: str = "",
-            parent=None,
-    ):
+    def __init__(self,
+                 x: float,
+                 color: str = DEFAULT_COLOR,
+                 label: str = ""):
         """Data for a timestamp marker
 
         Emitting invalid timestamp markers to a graph will result in the invalid markers **being
@@ -593,9 +567,8 @@ class TimestampMarkerData(PlottingItemData):
             x: x position of the timestamp marker's vertical line
             color: of the vertical line, accepts the same arguments as pyqtgraph's mkColor
             label: text that is shown on the top of the line
-            parent: parent item for the base class
         """
-        super().__init__(parent)
+        super().__init__()
         self.x: float = x if x is not None else np.nan
         # Catch invalid colors and replace with the default color to prevent exceptions
         try:
@@ -656,13 +629,10 @@ class TimestampMarkerCollectionData(PlottingItemData):
     is_collection = True
 
     @deprecated_param_alias(x_values="x")
-    def __init__(
-            self,
-            x: Sequence[float],
-            colors: Sequence[str],
-            labels: Sequence[str],
-            parent=None,
-    ):
+    def __init__(self,
+                 x: Sequence[float],
+                 colors: Sequence[str],
+                 labels: Sequence[str]):
         """Collection of data for timestamp markers
 
         Emitting invalid timestamp markers to a graph will result in
@@ -677,9 +647,8 @@ class TimestampMarkerCollectionData(PlottingItemData):
                     lines
             labels: list of labels that are displayed on top of multiple
                     timestamp markers' vertical lines
-            parent: parent item for the base class
         """
-        super().__init__(parent=parent)
+        super().__init__()
         if not isinstance(x, np.ndarray):
             x = np.array(x)
         if not isinstance(colors, np.ndarray):

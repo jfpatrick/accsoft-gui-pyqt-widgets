@@ -30,9 +30,9 @@ class MainWindow(QMainWindow):
         self._cs_source = accgraph.UpdateSource()
         # Display data directly on the GUI
         self._edit_ds = example_sources.EditableSinusCurveDataSource(
-            self._cs_source.new_data)
+            self._cs_source.send_data)
         self._edit_ds_2 = example_sources.EditableSinusCurveDataSource(
-            self._cs_source.new_data)
+            self._cs_source.send_data)
         # Plot widgets, one for the local data and one for the control system
         self.local = accgraph.EditablePlotWidget()
         self.local_2 = accgraph.EditablePlotWidget()

@@ -23,13 +23,13 @@ class MockDataSource(accgraph.UpdateSource):
         """
         if type_to_emit == accgraph.PointData and isinstance(value, float):
             new_data = accgraph.PointData(x=timestamp, y=value)
-            self.sig_new_data[accgraph.PointData].emit(new_data)
+            self.send_data(new_data)
         elif type_to_emit == accgraph.BarData and isinstance(value, list):
             new_data = accgraph.BarData(x=timestamp, y=value[0], height=value[1])
-            self.sig_new_data[accgraph.BarData].emit(new_data)
+            self.send_data(new_data)
 
     def emit_new_object(
             self,
             object_to_emit: Any):
         """Emit already created object with the """
-        self.sig_new_data[type(object_to_emit)].emit(object_to_emit)
+        self.send_data(object_to_emit)

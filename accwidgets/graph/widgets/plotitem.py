@@ -647,7 +647,7 @@ class ExPlotItem(pg.PlotItem):
                                             **styling_kwargs)
             self.addItem(item)
             self.single_value_slot_dataitem = item
-        self.single_data_item_slot_source.sig_new_data[type(data)].emit(data)
+        self.single_data_item_slot_source.send_data(data)
 
     # ~~~~~~~~~~ Layers ~~~~~~~~~
 
