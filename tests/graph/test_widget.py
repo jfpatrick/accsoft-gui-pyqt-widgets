@@ -283,31 +283,31 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     plot_item = plot_widget.plotItem
     source = UpdateSource()
     plot_item.addCurve(data_source=source)
-    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
+    source.send_data(PointData(0.0, 0.0))
     # Set Range on PlotWidget
     expected = ((-2.5, 2.5), (-1.5, 1.5))
     plot_widget.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_widget.setYRange(expected[1][0], expected[1][1], padding=0.0)
-    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
+    source.send_data(PointData(0.0, 0.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
     expected = ((-4.5, 4.5), (-3.5, 3.5))
     plot_item.setXRange(expected[0][0], expected[0][1], padding=0.0)
     plot_item.setYRange(expected[1][0], expected[1][1], padding=0.0)
-    source.sig_new_data[PointData].emit(PointData(1.0, 1.0))
+    source.send_data(PointData(1.0, 1.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotItem
     expected = ((-2.5, 2.5), (-1.5, 1.5))
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
-    source.sig_new_data[PointData].emit(PointData(2.0, 2.0))
+    source.send_data(PointData(2.0, 2.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Set Range on PlotWidget
     expected = ((-4.5, 4.5), (-3.5, 3.5))
     plot_item.setRange(xRange=expected[0], yRange=expected[1], padding=0.0)
-    source.sig_new_data[PointData].emit(PointData(3.0, 3.0))
+    source.send_data(PointData(3.0, 3.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected))
     # Auto Range (to see if still possible after setting range by hand)
@@ -321,7 +321,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
             (start_boundary.pos()[0], end_boundary.pos()[0]),
             (0.0, 3.0),
         )
-    source.sig_new_data[PointData].emit(PointData(4.0, 4.0))
+    source.send_data(PointData(4.0, 4.0))
     actual = plot_item.vb.targetRange()
     assert np.allclose(np.array(actual), np.array(expected), atol=0.1)
 
@@ -351,7 +351,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     ]
     for item in items:
         plot_item.addItem(item)
-    source.sig_new_data[PointData].emit(PointData(0.0, 0.0))
+    source.send_data(PointData(0.0, 0.0))
     for item in items:
         assert item in plot_item.vb.addedItems
     config = ExPlotWidgetConfig(

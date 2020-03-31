@@ -454,7 +454,7 @@ class StaticCurveDataModel(AbstractBaseDataModel):
             cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
         return False
 
-    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+    def _handle_data_update_signal(self, data: CurveData) -> None:
         if self._set_data(data=data):
             self.sig_data_model_changed.emit()
 
@@ -633,7 +633,7 @@ class EditableCurveDataModel(StaticCurveDataModel):
         StaticCurveDataModel.__init__(self, data_source=data_source, **kwargs)
         self._history = History[CurveData]()
 
-    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+    def _handle_data_update_signal(self, data: CurveData) -> None:
         """
         Extend the static data models update handler with appending the state
         to the local history.

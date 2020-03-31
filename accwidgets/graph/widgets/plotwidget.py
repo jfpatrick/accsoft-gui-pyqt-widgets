@@ -2,7 +2,7 @@
 Extended Widget for custom plotting with simple configuration wrappers
 """
 
-from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast
+from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
 from copy import deepcopy
 import json
 import warnings
@@ -1232,7 +1232,7 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
     @Slot(np.ndarray)
     @Slot(PointData)
     def pushData(self,
-                 data: Union[int, float, Tuple, List, np.ndarray, PointData]) -> None:
+                 data: Union[int, float, Sequence[float], PointData]) -> None:
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot. If this curve does not yet exist,
@@ -1247,7 +1247,8 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
         array: [y, x]
         """
         if not isinstance(data, PointData):
-            data = PlottingItemDataFactory.transform(PointData, data)
+            data = cast(PointData,
+                        PlottingItemDataFactory.transform(PointData, data))  # type: ignore
         self.plotItem.plot_data_on_single_data_item(
             data=data,
             # ignore, bc mypy wants concrete class
@@ -1402,7 +1403,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
         array: [y, x]
         """
         if not isinstance(data, PointData):
-            data = PlottingItemDataFactory.transform(PointData, data)
+            data = PlottingItemDataFactory.transform(PointData, data)  # type: ignore
         self.plotItem.plot_data_on_single_data_item(
             data=data,
             # ignore, bc mypy wants concrete class
@@ -1580,7 +1581,8 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     @Slot(np.ndarray)
     @Slot(CurveData)
-    def replaceDataAsCurve(self, data: Union[np.ndarray, CurveData]) -> None:
+    def replaceDataAsCurve(self,
+                           data: Union[Sequence[float], CurveData]) -> None:
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot. If this curve does not yet exist,
@@ -1590,7 +1592,8 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
         object. The curve will replace all data shown prior to its arrival.
         """
         if not isinstance(data, CurveData):
-            data = PlottingItemDataFactory.transform(CurveData, data)
+            data = cast(CurveData,
+                        PlottingItemDataFactory.transform(CurveData, data))  # type: ignore
         self.plotItem.plot_data_on_single_data_item(
             data=data,
             # ignore, bc mypy wants concrete class

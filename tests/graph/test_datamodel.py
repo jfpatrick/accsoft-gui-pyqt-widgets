@@ -344,12 +344,12 @@ def test_editable_curve_datamodel_notifying(mock_handler):
     # Initial update from the update source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 3, 4])
-    data_source.new_data(source_data)
+    data_source.send_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
     # Another update from the source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 1, 0])
-    data_source.new_data(source_data)
+    data_source.send_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
     edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[4, 3, 2, 1, 0])
@@ -368,12 +368,12 @@ def test_editable_curve_datamodel():
     # Initial update from the update source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 3, 4])
-    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.send_data(source_data)
     assert to_curve_data(data_model.full_data_buffer) == source_data
     # Another update from the source
     source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[0, 1, 2, 1, 0])
-    data_source.sig_new_data[accgraph.CurveData].emit(source_data)
+    data_source.send_data(source_data)
     assert to_curve_data(data_model.full_data_buffer) == source_data
     edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
                                      y=[4, 3, 2, 1, 0])
@@ -420,7 +420,7 @@ def test_replace_selection_in_editable_data_model(original,
     replacement_cd = to_curve_data(replacement)
     result_cd = to_curve_data(result)
 
-    data_source.new_data(original_cd)
+    data_source.send_data(original_cd)
     assert to_curve_data(data_model.full_data_buffer) == original_cd
     data_model.replace_selection(selected_indices, replacement_cd)
     assert to_curve_data(data_model.full_data_buffer) == result_cd
@@ -537,7 +537,7 @@ def test_data_model_undoable_redoable(ops, undoable, redoable):
     of passed operations"""
     source = accgraph.UpdateSource()
     model = accgraph.EditableCurveDataModel(data_source=source)
-    source.new_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
+    source.send_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
     current_selection = []
     for op in ops:
         if isinstance(op, list):
