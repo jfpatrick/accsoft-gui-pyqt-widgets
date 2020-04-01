@@ -139,6 +139,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
                  widget_class: Type[QWidget],
                  group_name: str,
                  extensions: Optional[List[Type[_E]]] = None,
+                 is_container: bool = False,
                  tooltip: Optional[str] = None,
                  whats_this: Optional[str] = None,
                  icon_base_path: Optional[Path] = None):
@@ -152,6 +153,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         Args:
             widget_class: widget class this plugin is based on
             extensions: list of extensions applied to the widget in Designer
+            is_container: whether the widget can accommodate other widgets inside
             group_name: name of the group to put the widget to
             tootip: contents of the tooltip for the widget
             whats_this: contents of the whatsThis for the widget
@@ -165,6 +167,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         self._whats_this = whats_this
         self._icon_base_path = icon_base_path
         self._tooltip = tooltip
+        self._is_container = is_container
         self.extensions: List[Type] = extensions or []
         # Will be set in initialize
         self.manager: Optional[QExtensionManager] = None
@@ -234,7 +237,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         """
         Return True if this widget can contain other widgets.
         """
-        return False
+        return self._is_container
 
     def icon(self) -> QIcon:
         """
@@ -268,6 +271,7 @@ def create_plugin(widget_class: Type[QWidget],
                   group: str,
                   cls: Type[_T] = WidgetDesignerPlugin,
                   extensions: Optional[List[Type[_E]]] = None,
+                  is_container: bool = False,
                   tooltip: Optional[str] = None,
                   whats_this: Optional[str] = None,
                   icon_base_path: Optional[Path] = None) -> Type:
@@ -277,6 +281,7 @@ def create_plugin(widget_class: Type[QWidget],
     Args:
         widget_class: Widget class that the plugin should be constructed from
         extensions: List of Extensions that the widget should have
+        is_container: whether the widget can accommodate other widgets inside
         group: Name of the group to put widget to
         cls: Subclass of :class:`WidgetDesignerPlugin` if you want to customize the behavior of the plugin
         tootip: contents of the tooltip for the widget
@@ -297,6 +302,7 @@ def create_plugin(widget_class: Type[QWidget],
             super().__init__(widget_class=widget_class,
                              extensions=extensions,
                              group_name=group,
+                             is_container=is_container,
                              icon_base_path=icon_base_path,
                              tooltip=tooltip,
                              whats_this=whats_this)
