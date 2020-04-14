@@ -1,8 +1,9 @@
 import pytest
 from pytestqt.qtbot import QtBot
 from unittest import mock
-from qtpy.QtCore import QVariant, Qt, QLocale
-from qtpy.QtWidgets import QStyleOptionViewItem, QWidget, QPushButton, QAction
+from qtpy.QtCore import QVariant, Qt, QLocale, QEvent
+from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QStyle, QStyleOptionButton
+from qtpy.QtGui import QPainter
 from PyQt5.QtTest import QAbstractItemModelTester
 from accwidgets.property_edit.propedit import PropertyEdit, PropertyEditField, _pack_designer_fields
 from accwidgets.property_edit.designer.designer_extensions import (
@@ -14,7 +15,6 @@ from accwidgets.property_edit.designer.designer_extensions import (
     FieldEditorTableModel,
     PropertyFieldExtension,
     AbstractTableModel,
-    UserDataColumnDelegate,
     FieldTypeColumnDelegate,
 )
 
@@ -175,14 +175,25 @@ def test_edit_contents_opens_dialog(show_mock, exec_mock, qtbot: QtBot):
         exec_mock.assert_called_once()
 
 
-@pytest.mark.parametrize("row, expected_type, check_slot", [
-    (0, QWidget, False),
-    (1, QPushButton, False),
+@pytest.mark.parametrize("row, calls_parent, draws_control, expected_title", [
+    (0, True, False, None),
+    (1, False, True, "Configure"),
+    (2, False, True, "Configure"),
+    (3, False, True, "Configure"),
+    (4, False, True, "Configure (1 option)"),
+    (5, False, True, "Configure (2 options)"),
 ])
-def test_setup_enums(qtbot: QtBot, expected_type, row, check_slot):
+@mock.patch("qtpy.QtWidgets.QApplication.style")
+@mock.patch("qtpy.QtWidgets.QStyledItemDelegate.paint")
+def test_render_enum_configure_btn(parent_paint, app_style, qtbot: QtBot, calls_parent, draws_control, expected_title, row):
+    drawControl = app_style.return_value.drawControl
     config = [
         PropertyEditField(field="f1", type=PropertyEdit.ValueType.STRING, editable=True),
         PropertyEditField(field="f2", type=PropertyEdit.ValueType.ENUM, editable=True),
+        PropertyEditField(field="f3", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={}),
+        PropertyEditField(field="f4", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": []}),
+        PropertyEditField(field="f5", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1")]}),
+        PropertyEditField(field="f6", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1"), (2, "test2")]}),
     ]
 
     with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
@@ -197,14 +208,74 @@ def test_setup_enums(qtbot: QtBot, expected_type, row, check_slot):
         dialog.table.selectRow(row)
         user_data_column = 4
         delegate = dialog.table.itemDelegateForColumn(user_data_column)
-        # dialog.table.selectionModel().select(dialog.table.model().createIndex(0, 4), QItemSelectionModel.Select)
         index = dialog.table.model().createIndex(row, user_data_column)
-        with mock.patch.object(delegate, "_open_editor") as mocked_slot:
-            widget = delegate.createEditor(parent=property_edit, option=QStyleOptionViewItem(), index=index)
-            assert isinstance(widget, expected_type)
-            if check_slot:
-                widget.click()
-                mocked_slot.assert_called_with(row)
+        painter = QPainter()
+        delegate.paint(painter, QStyleOptionViewItem(), index)
+        if calls_parent:
+            parent_paint.assert_called_once()
+        else:
+            parent_paint.assert_not_called()
+        if draws_control:
+            drawControl.assert_called_once()
+            positional_args = drawControl.call_args[0]
+            assert len(positional_args) == 3
+            arg_el, arg_opt, arg_painter = tuple(positional_args)
+            assert arg_el == QStyle.CE_PushButton
+            assert arg_painter == painter
+            assert isinstance(arg_opt, QStyleOptionButton)
+            assert arg_opt.text == expected_title
+        else:
+            drawControl.assert_not_called()
+
+
+@pytest.mark.parametrize("event_type", [QEvent.MouseButtonDblClick, QEvent.MouseButtonPress, QEvent.HoverEnter])
+@pytest.mark.parametrize("row, handles_single_click, handles_dbl_click, opens_editor, editor_options", [
+    (0, False, True, False, None),
+    (1, True, True, True, []),
+    (2, True, True, True, []),
+    (3, True, True, True, []),
+    (4, True, True, True, [[1, "test1"]]),
+    (5, True, True, True, [[1, "test1"], [2, "test2"]]),
+])
+@mock.patch("qtpy.QtWidgets.QStyledItemDelegate.editorEvent")
+@mock.patch("accwidgets.property_edit.designer.designer_extensions.EnumOptionsDialog")
+def test_user_data_event(opt_dialog, editorEvent, qtbot: QtBot, row, handles_dbl_click, handles_single_click, opens_editor, editor_options, event_type):
+    config = [
+        PropertyEditField(field="f1", type=PropertyEdit.ValueType.STRING, editable=True),
+        PropertyEditField(field="f2", type=PropertyEdit.ValueType.ENUM, editable=True),
+        PropertyEditField(field="f3", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={}),
+        PropertyEditField(field="f4", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": []}),
+        PropertyEditField(field="f5", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1")]}),
+        PropertyEditField(field="f6", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1"), (2, "test2")]}),
+    ]
+
+    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
+        # Because designer always expects JSON, we need to "pack" it.
+        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
+        mock_prop.return_value = _pack_designer_fields(config)
+        property_edit = PropertyEdit()
+        qtbot.addWidget(property_edit)
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.addWidget(dialog)
+        dialog.show()
+        user_data_column = 4
+        delegate = dialog.table.itemDelegateForColumn(user_data_column)
+        index = dialog.table.model().createIndex(row, user_data_column)
+        event = QEvent(event_type)
+        res = delegate.editorEvent(event, dialog.table.model(), QStyleOptionViewItem(), index)
+        if (event_type == QEvent.MouseButtonDblClick and handles_dbl_click
+                or event_type == QEvent.MouseButtonPress and handles_single_click):
+            assert event.isAccepted()
+            assert res is True
+            editorEvent.assert_not_called()
+        else:
+            editorEvent.assert_called_once()
+
+        if opens_editor and event_type == QEvent.MouseButtonPress:
+            opt_dialog.assert_called_once_with(options=editor_options, on_save=mock.ANY)
+            opt_dialog.return_value.exec_.assert_called_once()
+        else:
+            opt_dialog.assert_not_called()
 
 
 @pytest.mark.parametrize("initial_fields, initial_enabled", [
@@ -659,22 +730,6 @@ def test_enum_incorrect_item_values(row, column, role, some_enum_config):
     model = EnumEditorTableModel(some_enum_config)
     result = model.data(index=model.createIndex(row, column), role=role)
     assert result == QVariant()
-
-
-@pytest.mark.parametrize("value, expected_text", [
-    (None, ""),
-    ("", ""),
-    ("sdf", ""),
-    ({}, ""),
-    ({"options": []}, ""),
-    ({"options": [("one", 1)]}, "1 option"),
-    ({"options": [("one", 1), ("two", 2)]}, "2 options"),
-    ({"options": [("one", 1), ("two", 2), ("three", 3)]}, "3 options"),
-])
-def test_user_data_column_display_text(value, expected_text):
-    delegate = UserDataColumnDelegate()
-    actual_text = delegate.displayText(value, QLocale())
-    assert actual_text == expected_text
 
 
 @pytest.mark.parametrize("row, column, expected_index", [
