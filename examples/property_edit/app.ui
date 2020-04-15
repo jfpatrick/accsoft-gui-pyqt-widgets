@@ -17,13 +17,22 @@
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="topMargin">
+       <number>9</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
       <item>
        <widget class="PropertyEdit" name="set_propedit">
         <property name="toolTip">
          <string/>
         </property>
         <property name="buttons" stdset="0">
-         <enum>PropertyEdit::Set</enum>
+         <set>PropertyEdit::SetButton</set>
         </property>
         <property name="title" stdset="0">
          <string>Editable</string>
@@ -47,7 +56,7 @@
            <string/>
           </property>
           <property name="buttons" stdset="0">
-           <enum>PropertyEdit::Get</enum>
+           <set>PropertyEdit::GetButton</set>
           </property>
           <property name="decoration" stdset="0">
            <enum>PropertyEdit::Frame</enum>
