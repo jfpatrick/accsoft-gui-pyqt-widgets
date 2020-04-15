@@ -923,7 +923,7 @@ def _unpack_designer_fields(input: str) -> List[PropertyEditField]:
         return []
 
     if not isinstance(contents, list):
-        warnings.warn(f"Decoded fields is not a list")
+        warnings.warn("Decoded fields is not a list")
         return []
 
     def map_field(val: Dict[str, Any]) -> PropertyEditField:

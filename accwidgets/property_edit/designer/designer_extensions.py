@@ -462,7 +462,7 @@ class FieldTypeColumnDelegate(QStyledItemDelegate):
         if editor_idx != -1:
             combo.setCurrentIndex(editor_idx)
         else:
-            warnings.warn(f"Can't find the option for the combobox to set")
+            warnings.warn("Can't find the option for the combobox to set")
 
     def setModelData(self, editor: QWidget, model: QAbstractTableModel, index: QModelIndex):
         """
@@ -567,7 +567,7 @@ class EnumOptionsDialog(AbstractPropertyEditDialog):
         super().__init__(ui_file="enum_editor.ui", table_model=table_model, parent=parent)
         self._on_save = on_save
 
-        self.setWindowTitle(f"Configure enum options")
+        self.setWindowTitle("Configure enum options")
 
         self.buttons.rejected.connect(self.close)
 
@@ -594,7 +594,7 @@ class FieldsDialog(AbstractPropertyEditDialog):
         self._widget = widget
 
         # self.setWindowTitle(f"Edit Fields for {widget.propertyName}")  # Use this when propertyName made available
-        self.setWindowTitle(f"Define PropertyEdit fields")
+        self.setWindowTitle("Define PropertyEdit fields")
 
         self.all_rw.clicked.connect(functools.partial(self._table_model.set_fields_editable, True))
         self.all_ro.clicked.connect(functools.partial(self._table_model.set_fields_editable, False))

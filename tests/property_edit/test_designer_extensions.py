@@ -22,9 +22,9 @@ from accwidgets.property_edit.designer.designer_extensions import (
 @pytest.fixture
 def some_fields():
     return [
-        PropertyEditField(field=f"f1", type=PropertyEdit.ValueType.STRING, editable=True),
-        PropertyEditField(field=f"f2", type=PropertyEdit.ValueType.STRING, editable=True),
-        PropertyEditField(field=f"f3", type=PropertyEdit.ValueType.STRING, editable=True),
+        PropertyEditField(field="f1", type=PropertyEdit.ValueType.STRING, editable=True),
+        PropertyEditField(field="f2", type=PropertyEdit.ValueType.STRING, editable=True),
+        PropertyEditField(field="f3", type=PropertyEdit.ValueType.STRING, editable=True),
     ]
 
 

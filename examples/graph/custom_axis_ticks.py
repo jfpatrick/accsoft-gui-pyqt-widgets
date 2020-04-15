@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         Returns:
             New value labels for the axis
         """
-        return [f"negative" if v < 0 else "positive" for v in values]
+        return ["negative" if v < 0 else "positive" for v in values]
 
 
 def run():
