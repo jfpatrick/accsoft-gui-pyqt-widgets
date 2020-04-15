@@ -2,6 +2,7 @@ import pytest
 from typing import cast
 from pytestqt.qtbot import QtBot
 from unittest import mock
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QFormLayout, QVBoxLayout, QHBoxLayout, QGroupBox, QFrame, QLabel, QDoubleSpinBox,
                             QSpinBox, QComboBox, QLineEdit, QCheckBox, QWidget)
 from PyQt5.QtTest import QSignalSpy  # TODO: qtpy does not seem to expose QSignalSpy: https://github.com/spyder-ide/qtpy/issues/197
@@ -10,6 +11,26 @@ from accwidgets.property_edit.propedit import (PropertyEdit, PropertyEditField, 
                                                AbstractPropertyEditWidgetDelegate, AbstractPropertyEditLayoutDelegate,
                                                _QtDesignerButtons, _QtDesignerDecoration, _QtDesignerButtonPosition)
 from accwidgets.led import Led
+
+
+def get_prop_edit_margins(widget: PropertyEdit):
+    margins = widget._layout.contentsMargins()
+    return [getattr(margins, mar)() for mar in ["top", "left", "bottom", "right"]]
+
+
+@pytest.fixture
+def custom_layout_delegate():
+
+    class MyCustomDelegate(AbstractPropertyEditLayoutDelegate[QVBoxLayout]):
+        """Testing subclassing"""
+
+        def create_layout(self) -> QVBoxLayout:
+            return QVBoxLayout()
+
+        def layout_widgets(self, *args, **kwargs):
+            pass
+
+    return MyCustomDelegate
 
 
 @pytest.mark.parametrize("field", ["f1", "", None])
@@ -27,15 +48,15 @@ def test_property_edit_field_init(field, value_type, editable, label, user_data)
 
 
 @pytest.mark.parametrize("api_flags, designer_enum", [
-    (PropertyEdit.Buttons.GET, _QtDesignerButtons.Get),
-    (PropertyEdit.Buttons.SET, _QtDesignerButtons.Set),
-    (PropertyEdit.Buttons.GET & PropertyEdit.Buttons.SET, _QtDesignerButtons.Neither),
-    (PropertyEdit.Buttons.GET | PropertyEdit.Buttons.SET, _QtDesignerButtons.Both),
+    (PropertyEdit.Buttons.GET, _QtDesignerButtons.SetButton),
+    (PropertyEdit.Buttons.SET, _QtDesignerButtons.GetButton),
+    (PropertyEdit.Buttons.GET & PropertyEdit.Buttons.SET, _QtDesignerButtons.SetButton & _QtDesignerButtons.GetButton),
+    (PropertyEdit.Buttons.GET | PropertyEdit.Buttons.SET, _QtDesignerButtons.SetButton | _QtDesignerButtons.GetButton),
     (PropertyEdit.ButtonPosition.RIGHT, _QtDesignerButtonPosition.Right),
     (PropertyEdit.ButtonPosition.BOTTOM, _QtDesignerButtonPosition.Bottom),
     (PropertyEdit.Decoration.FRAME, _QtDesignerDecoration.Frame),
     (PropertyEdit.Decoration.GROUP_BOX, _QtDesignerDecoration.GroupBox),
-    (PropertyEdit.Decoration.NONE, _QtDesignerDecoration.Empty),
+    (PropertyEdit.Decoration.NONE, _QtDesignerDecoration.NoDecoration),
 ])
 def test_designer_enums(api_flags, designer_enum):
     assert api_flags == designer_enum
@@ -206,6 +227,362 @@ def test_decoration_warns(qtbot: QtBot, setting, expected_msg):
     assert widget.decoration == setting
     assert widget._decoration is None
     assert widget._layout == widget.layout()
+
+
+@pytest.mark.parametrize("decoration,should_zero_out", [
+    (PropertyEdit.Decoration.NONE, True),
+    (PropertyEdit.Decoration.FRAME, False),
+    (PropertyEdit.Decoration.GROUP_BOX, False),
+])
+@pytest.mark.parametrize("prop_name,margin_index", [
+    ("topInset", 0),
+    ("leftInset", 1),
+    ("bottomInset", 2),
+    ("rightInset", 3),
+])
+def test_layout_insets(qtbot: QtBot, prop_name, margin_index, decoration, should_zero_out):
+    values = [(0, 0), (20, 20), (40, 40), (-20, None)]
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+
+    orig_values = get_prop_edit_margins(widget)
+    if should_zero_out:
+        assert orig_values == [0, 0, 0, 0]
+
+    for set_val, expected_val in values:
+        setattr(widget, prop_name, set_val)
+        observed_values = get_prop_edit_margins(widget)
+        expected_values = orig_values.copy()
+        if not should_zero_out and expected_val is not None:
+            expected_values[margin_index] = expected_val
+        assert observed_values == expected_values
+
+
+@pytest.mark.parametrize("orig_deco,orig_insets,new_deco,new_insets", [
+    (PropertyEdit.Decoration.NONE, [0, 0, 0, 0], PropertyEdit.Decoration.NONE, [0, 0, 0, 0]),
+    (PropertyEdit.Decoration.NONE, [0, 0, 0, 0], PropertyEdit.Decoration.FRAME, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.NONE, [0, 0, 0, 0], PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40], PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40], PropertyEdit.Decoration.FRAME, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40], PropertyEdit.Decoration.NONE, [0, 0, 0, 0]),
+    (PropertyEdit.Decoration.FRAME, [10, 20, 30, 40], PropertyEdit.Decoration.FRAME, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.FRAME, [10, 20, 30, 40], PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.FRAME, [10, 20, 30, 40], PropertyEdit.Decoration.NONE, [0, 0, 0, 0]),
+])
+def test_layout_insets_remain_with_new_decoration(qtbot: QtBot, orig_deco, orig_insets, new_deco, new_insets):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = orig_deco
+
+    widget.topInset = 10
+    widget.leftInset = 20
+    widget.bottomInset = 30
+    widget.rightInset = 40
+
+    assert get_prop_edit_margins(widget) == orig_insets
+    widget.decoration = new_deco
+    assert get_prop_edit_margins(widget) == new_insets
+
+
+@pytest.mark.parametrize("deco,expected_insets", [
+    (PropertyEdit.Decoration.NONE, [0, 0, 0, 0]),
+    (PropertyEdit.Decoration.GROUP_BOX, [10, 20, 30, 40]),
+    (PropertyEdit.Decoration.FRAME, [10, 20, 30, 40]),
+])
+@pytest.mark.parametrize("orig_direction,new_direction", [
+    (PropertyEdit.ButtonPosition.BOTTOM, PropertyEdit.ButtonPosition.BOTTOM),
+    (PropertyEdit.ButtonPosition.BOTTOM, PropertyEdit.ButtonPosition.RIGHT),
+    (PropertyEdit.ButtonPosition.RIGHT, PropertyEdit.ButtonPosition.RIGHT),
+    (PropertyEdit.ButtonPosition.RIGHT, PropertyEdit.ButtonPosition.BOTTOM),
+])
+def test_layout_insets_remain_with_new_button_box_direction(qtbot: QtBot, orig_direction, new_direction, deco, expected_insets):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = deco
+    widget.buttonPosition = orig_direction
+
+    widget.topInset = 10
+    widget.leftInset = 20
+    widget.bottomInset = 30
+    widget.rightInset = 40
+
+    assert get_prop_edit_margins(widget) == expected_insets
+    widget.buttonPosition = new_direction
+    assert get_prop_edit_margins(widget) == expected_insets
+
+
+@pytest.mark.parametrize("decoration", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.FRAME,
+    PropertyEdit.Decoration.GROUP_BOX,
+])
+@pytest.mark.parametrize("position", [
+    PropertyEdit.ButtonPosition.BOTTOM,
+    PropertyEdit.ButtonPosition.RIGHT,
+])
+def test_layout_button_box_offset(qtbot: QtBot, decoration, position):
+    values = [(0, 0), (20, 20), (40, 40), (-20, None)]
+    widget = PropertyEdit()
+    orig_val = widget.buttonBoxOffset
+    orig_widget_spacing = widget._widget_layout.spacing()
+    orig_button_box_spacing = widget._button_box.spacing()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+    widget.buttonPosition = position
+    assert widget._layout.spacing() == orig_val
+    assert widget._widget_layout.spacing() == orig_widget_spacing
+    assert widget._button_box.spacing() == orig_button_box_spacing
+
+    for set_val, expected_val in values:
+        widget.buttonBoxOffset = set_val
+        if expected_val is None:
+            assert widget._layout.spacing() == orig_val
+        else:
+            assert widget._layout.spacing() == expected_val
+        assert widget._widget_layout.spacing() == orig_widget_spacing
+        assert widget._button_box.spacing() == orig_button_box_spacing
+
+
+@pytest.mark.parametrize("orig_deco,new_deco", [
+    (PropertyEdit.Decoration.NONE, PropertyEdit.Decoration.NONE),
+    (PropertyEdit.Decoration.NONE, PropertyEdit.Decoration.FRAME),
+    (PropertyEdit.Decoration.NONE, PropertyEdit.Decoration.GROUP_BOX),
+    (PropertyEdit.Decoration.GROUP_BOX, PropertyEdit.Decoration.GROUP_BOX),
+    (PropertyEdit.Decoration.GROUP_BOX, PropertyEdit.Decoration.FRAME),
+    (PropertyEdit.Decoration.GROUP_BOX, PropertyEdit.Decoration.NONE),
+    (PropertyEdit.Decoration.FRAME, PropertyEdit.Decoration.FRAME),
+    (PropertyEdit.Decoration.FRAME, PropertyEdit.Decoration.GROUP_BOX),
+    (PropertyEdit.Decoration.FRAME, PropertyEdit.Decoration.NONE),
+])
+def test_layout_button_box_offset_remains_with_new_decoration(qtbot: QtBot, orig_deco, new_deco):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = orig_deco
+    orig_widget_spacing = widget._widget_layout.spacing()
+    orig_button_box_spacing = widget._button_box.spacing()
+    widget.buttonBoxOffset = 79
+
+    assert widget._layout.spacing() == 79
+    assert widget._widget_layout.spacing() == orig_widget_spacing
+    assert widget._button_box.spacing() == orig_button_box_spacing
+    widget.decoration = new_deco
+    assert widget._layout.spacing() == 79
+    assert widget._widget_layout.spacing() == orig_widget_spacing
+    assert widget._button_box.spacing() == orig_button_box_spacing
+
+
+@pytest.mark.parametrize("deco", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.GROUP_BOX,
+    PropertyEdit.Decoration.FRAME,
+])
+@pytest.mark.parametrize("orig_direction,new_direction", [
+    (PropertyEdit.ButtonPosition.BOTTOM, PropertyEdit.ButtonPosition.BOTTOM),
+    (PropertyEdit.ButtonPosition.BOTTOM, PropertyEdit.ButtonPosition.RIGHT),
+    (PropertyEdit.ButtonPosition.RIGHT, PropertyEdit.ButtonPosition.RIGHT),
+    (PropertyEdit.ButtonPosition.RIGHT, PropertyEdit.ButtonPosition.BOTTOM),
+])
+def test_layout_button_box_offset_remains_with_new_button_box_direction(qtbot: QtBot, deco, orig_direction, new_direction):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = deco
+    widget.buttonPosition = orig_direction
+    orig_widget_spacing = widget._widget_layout.spacing()
+    orig_button_box_spacing = widget._button_box.spacing()
+    widget.buttonBoxOffset = 79
+
+    assert widget._layout.spacing() == 79
+    assert widget._widget_layout.spacing() == orig_widget_spacing
+    assert widget._button_box.spacing() == orig_button_box_spacing
+    widget.buttonPosition = new_direction
+    assert widget._layout.spacing() == 79
+    assert widget._widget_layout.spacing() == orig_widget_spacing
+    assert widget._button_box.spacing() == orig_button_box_spacing
+
+
+@pytest.mark.parametrize("decoration", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.FRAME,
+    PropertyEdit.Decoration.GROUP_BOX,
+])
+@pytest.mark.parametrize("position", [
+    PropertyEdit.ButtonPosition.BOTTOM,
+    PropertyEdit.ButtonPosition.RIGHT,
+])
+def test_layout_vertical_spacing(qtbot: QtBot, decoration, position):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+    widget.buttonPosition = position
+    widget.formLayoutVerticalSpacing = 97
+    assert widget._widget_layout.verticalSpacing() == 97
+
+
+@pytest.mark.parametrize("decoration", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.FRAME,
+    PropertyEdit.Decoration.GROUP_BOX,
+])
+@pytest.mark.parametrize("position", [
+    PropertyEdit.ButtonPosition.BOTTOM,
+    PropertyEdit.ButtonPosition.RIGHT,
+])
+def test_layout_vertical_spacing_non_compatible_delegate(qtbot: QtBot, decoration, position, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+    widget.buttonPosition = position
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formLayoutVerticalSpacing == -1
+    with pytest.warns(UserWarning, match=r'"formLayoutVerticalSpacing" is supported only on form layouts.'):
+        widget.formLayoutVerticalSpacing = 97
+    assert widget.formLayoutVerticalSpacing == -1
+
+
+@pytest.mark.parametrize("decoration", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.FRAME,
+    PropertyEdit.Decoration.GROUP_BOX,
+])
+@pytest.mark.parametrize("position", [
+    PropertyEdit.ButtonPosition.BOTTOM,
+    PropertyEdit.ButtonPosition.RIGHT,
+])
+def test_layout_horizontal_spacing(qtbot: QtBot, decoration, position):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+    widget.buttonPosition = position
+    widget.formLayoutHorizontalSpacing = 97
+    assert widget._widget_layout.horizontalSpacing() == 97
+
+
+@pytest.mark.parametrize("decoration", [
+    PropertyEdit.Decoration.NONE,
+    PropertyEdit.Decoration.FRAME,
+    PropertyEdit.Decoration.GROUP_BOX,
+])
+@pytest.mark.parametrize("position", [
+    PropertyEdit.ButtonPosition.BOTTOM,
+    PropertyEdit.ButtonPosition.RIGHT,
+])
+def test_layout_horizontal_spacing_non_compatible_delegate(qtbot: QtBot, decoration, position, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.decoration = decoration
+    widget.buttonPosition = position
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formLayoutHorizontalSpacing == -1
+    with pytest.warns(UserWarning, match=r'"formLayoutHorizontalSpacing" is supported only on form layouts.'):
+        widget.formLayoutHorizontalSpacing = 97
+    assert widget.formLayoutHorizontalSpacing == -1
+
+
+@pytest.mark.parametrize("new_setting", [Qt.AlignVCenter | Qt.AlignRight])
+def test_layout_label_alignment(qtbot: QtBot, new_setting):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    assert widget.formLabelAlignment != new_setting
+    assert widget.formLabelAlignment == Qt.AlignLeft
+    assert widget._widget_layout.labelAlignment() == Qt.AlignLeft
+    widget.formLabelAlignment = new_setting
+    assert widget.formLabelAlignment == new_setting
+    assert widget._widget_layout.labelAlignment() == new_setting
+
+
+def test_layout_label_alignment_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formLabelAlignment == Qt.AlignLeft | Qt.AlignVCenter
+    with pytest.warns(UserWarning, match=r'"formLabelAlignment" is supported only on form layouts.'):
+        widget.formLabelAlignment = Qt.AlignTop
+    assert widget.formLabelAlignment == Qt.AlignLeft | Qt.AlignVCenter
+
+
+@pytest.mark.parametrize("new_setting", [Qt.AlignTop | Qt.AlignRight])
+def test_layout_form_alignment(qtbot: QtBot, new_setting):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    assert widget.formAlignment != new_setting
+    assert widget.formAlignment == Qt.AlignVCenter
+    assert widget._widget_layout.formAlignment() == Qt.AlignVCenter
+    widget.formAlignment = new_setting
+    assert widget.formAlignment == new_setting
+    assert widget._widget_layout.formAlignment() == new_setting
+
+
+def test_layout_form_alignment_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formAlignment == Qt.AlignLeft | Qt.AlignTop
+    with pytest.warns(UserWarning, match=r'"formAlignment" is supported only on form layouts.'):
+        widget.formAlignment = Qt.AlignBottom
+    assert widget.formAlignment == Qt.AlignLeft | Qt.AlignTop
+
+
+@pytest.mark.parametrize("new_setting", [PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT])
+def test_layout_field_growth(qtbot: QtBot, new_setting):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    assert widget.formFieldGrowthPolicy != new_setting
+    assert widget.formFieldGrowthPolicy == PropertyEdit.FormLayoutFieldGrowthPolicy.ALL_NON_FIXED_GROW
+    assert widget._widget_layout.fieldGrowthPolicy() == PropertyEdit.FormLayoutFieldGrowthPolicy.ALL_NON_FIXED_GROW
+    widget.formFieldGrowthPolicy = new_setting
+    assert widget.formFieldGrowthPolicy == new_setting
+    assert widget._widget_layout.fieldGrowthPolicy() == new_setting
+
+
+def test_layout_field_growth_with_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formFieldGrowthPolicy == PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT
+    with pytest.warns(UserWarning, match=r'"formFieldGrowthPolicy" is supported only on form layouts.'):
+        widget.formFieldGrowthPolicy = PropertyEdit.FormLayoutFieldGrowthPolicy.ALL_NON_FIXED_GROW
+    assert widget.formFieldGrowthPolicy == PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT
+
+
+@pytest.mark.parametrize("new_setting", [PropertyEdit.FormLayoutRowWrapPolicy.ALL_ROWS])
+def test_layout_row_wrap(qtbot: QtBot, new_setting):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    assert widget.formRowWrapPolicy != new_setting
+    assert widget.formRowWrapPolicy == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
+    assert widget._widget_layout.rowWrapPolicy() == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
+    widget.formRowWrapPolicy = new_setting
+    assert widget.formRowWrapPolicy == new_setting
+    assert widget._widget_layout.rowWrapPolicy() == new_setting
+
+
+def test_layout_row_wrap_with_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
+    widget = PropertyEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+    widget.layout_delegate = custom_layout_delegate()
+    assert widget.formRowWrapPolicy == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
+    with pytest.warns(UserWarning, match=r'"formRowWrapPolicy" is supported only on form layouts.'):
+        widget.formRowWrapPolicy = PropertyEdit.FormLayoutRowWrapPolicy.LONG_ROWS
+    assert widget.formRowWrapPolicy == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
 
 
 def test_title(qtbot: QtBot):
@@ -409,16 +786,9 @@ def test_widget_delegate():
     assert delegate.read_value(True) == {}
 
 
-def test_layout_delegate():
-
-    class MyCustomDelegate(AbstractPropertyEditLayoutDelegate[QVBoxLayout]):
-        """Testing subclassing"""
-
-        def create_layout(self) -> QVBoxLayout:
-            return QVBoxLayout()
-
-        def layout_widgets(self, *args, **kwargs):
-            pass
+def test_layout_delegate(custom_layout_delegate):
+    delegate = custom_layout_delegate()
+    assert isinstance(delegate.create_layout(), QVBoxLayout)
 
 
 def test_abstract_delegate_widget_for_item_recreates_expired_weakref(qtbot: QtBot):

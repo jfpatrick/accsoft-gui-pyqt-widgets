@@ -2,13 +2,14 @@ import json
 import sys
 import warnings
 import weakref
+import functools
 import numpy as np
 from typing import Optional, List, Dict, Tuple, cast, Any, Union, TypeVar, Generic, Callable
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum, IntFlag, auto
 from qtpy.QtWidgets import (QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QSpinBox, QFormLayout, QLabel,
                             QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QLayout, QSizePolicy, QSpacerItem)
-from qtpy.QtCore import Property, Q_ENUMS, QObjectCleanupHandler, Qt, Signal, Slot
+from qtpy.QtCore import Property, Q_ENUMS, QObjectCleanupHandler, Qt, Signal, Slot, QMargins, Q_FLAGS
 from dataclasses import dataclass
 from accwidgets.generics import GenericMeta
 from accwidgets.designer_check import is_designer
@@ -39,10 +40,8 @@ class PropertyEditField:
 
 # For Qt Designer purposes
 class _QtDesignerButtons:
-    Neither = 0
-    Set = 1
-    Get = 2
-    Both = 3
+    GetButton = 1
+    SetButton = 2
 
 
 class _QtDesignerButtonPosition:
@@ -51,7 +50,7 @@ class _QtDesignerButtonPosition:
 
 
 class _QtDesignerDecoration:
-    Empty = 0
+    NoDecoration = 0
     Frame = 1
     GroupBox = 2
 
@@ -63,13 +62,40 @@ EnumItemConfig = Tuple[str, int]
 _ENUM_OPTIONS_KEY = "options"
 
 
+def form_property(prop_name: str) -> Callable:
+    """Common guard to issue a warning when a property is used with the wrong layout.
+
+    Args:
+        prop_name: User-facing property name that is associated with the decorated setter.
+
+    Returns:
+        Decorate function.
+    """
+    def decorator(fn: Callable[["PropertyEdit", Any], None]):
+
+        @functools.wraps(fn)
+        def _wrapper(self, new_val):
+            if not isinstance(self._widget_layout, QFormLayout):
+                warnings.warn(f'"{prop_name}" is supported only on form layouts. If you\'ve defined a custom'
+                              "layout delegate, assign layout parameters directly there.")
+                return
+            fn(self, new_val)
+
+        return _wrapper
+
+    return decorator
+
+
 class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDesignerDecoration):
 
+    # This could be done with Q_ENUM supporting Python enums directly, but we separate,
+    # to have titled names in Qt Designer, while keeping all caps in Python code
     Q_ENUMS(
-        _QtDesignerButtons,
         _QtDesignerButtonPosition,
         _QtDesignerDecoration,
     )
+
+    Q_FLAGS(_QtDesignerButtons)
 
     class ValueType(IntEnum):
         """Possible types of the property fields."""
@@ -95,8 +121,8 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     class Buttons(IntFlag):
         """Bit mask for Get & Set buttons that have to be displayed in the widget."""
-        GET = _QtDesignerButtons.Get
-        SET = _QtDesignerButtons.Set
+        GET = _QtDesignerButtons.SetButton
+        SET = _QtDesignerButtons.GetButton
 
     class ButtonPosition(IntEnum):
         """Position where Get/Set buttons are placed, relative to the fields form."""
@@ -105,9 +131,21 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     class Decoration(IntEnum):
         """Decoration of the widget to visually group fields together."""
-        NONE = _QtDesignerDecoration.Empty
+        NONE = _QtDesignerDecoration.NoDecoration
         FRAME = _QtDesignerDecoration.Frame
         GROUP_BOX = _QtDesignerDecoration.GroupBox
+
+    class FormLayoutFieldGrowthPolicy(IntEnum):
+        """Copy of QFormLayout.FieldGrowthPolicy enum, that is not exposed as enum by PyQt."""
+        ALL_NON_FIXED_GROW = QFormLayout.AllNonFixedFieldsGrow
+        EXPANDING_GROW = QFormLayout.ExpandingFieldsGrow
+        STAY_AT_SIZE_HINT = QFormLayout.FieldsStayAtSizeHint
+
+    class FormLayoutRowWrapPolicy(IntEnum):
+        """Copy of QFormLayout.RowWrapPolicy enum, that is not exposed as enum by PyQt."""
+        DONT_WRAP = QFormLayout.DontWrapRows
+        ALL_ROWS = QFormLayout.WrapAllRows
+        LONG_ROWS = QFormLayout.WrapLongRows
 
     valueUpdated = Signal(dict)
     """Signal issued when the user updates field values and presses 'Set' button."""
@@ -134,7 +172,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         # self._property_name: Optional[str] = property_name
         self._title: Optional[str] = title
         self._send_only_updated: bool = True
-        self._buttons: PropertyEdit.Buttons = PropertyEdit.Buttons(_QtDesignerButtons.Neither)
+        self._buttons: PropertyEdit.Buttons = PropertyEdit.Buttons.GET & PropertyEdit.Buttons.SET
         self._button_position = PropertyEdit.ButtonPosition.BOTTOM
         self._widget_config: List[PropertyEditField] = []
         self._widget_delegate: AbstractPropertyEditWidgetDelegate = PropertyEditWidgetDelegate()
@@ -145,9 +183,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._widget_layout = self._layout_delegate.create_layout()
         self._widget_layout.setObjectName("widget_layout")
         self._decoration: Union[QFrame, QGroupBox, None] = None
-        self._layout = QVBoxLayout(self)
+        self._insets = QMargins(9, 9, 9, 9)
+        self._layout: Union[QVBoxLayout, QHBoxLayout] = QVBoxLayout(self)
         self._layout.setObjectName("main_layout")
+        self._button_box_offset = self._layout.spacing()
         self._button_box = QHBoxLayout()
+        self._button_box.setSpacing(6)  # Needs to be here to avoid inheriting from buttonBoxOffset
         self._button_box.setObjectName("button_box_layout")
         self._get_btn = QPushButton("Get")
         self._get_btn.setObjectName("get_btn")
@@ -167,7 +208,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._add_button_stretch()  # This goes along with the default position = bottom
 
         self._recalculate_button_box()
-        self._recalculate_layout()
+        self._recalculate_main_layout()
         self._recalculate_container()
 
     @Slot(dict)
@@ -204,7 +245,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     def _set_button_position(self, new_val: "PropertyEdit.ButtonPosition"):
         self._button_position = new_val
-        self._recalculate_layout()
+        self._recalculate_main_layout()
 
     buttonPosition: "PropertyEdit.ButtonPosition" = Property(_QtDesignerButtonPosition, _get_button_position, _set_button_position)
     """Position where Get/Set buttons are placed, relative to the fields form."""
@@ -239,6 +280,132 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     sendOnlyUpdatedValues: bool = Property(bool, _get_send_only_updated_values, _set_send_only_updated_values)
     """If ``True``, only values from editable fields will be sent on pressing 'Set' button. Otherwise, all values will be sent."""
+
+    def _get_layout_left_margin(self) -> int:
+        return self._insets.left()
+
+    def _set_layout_left_margin(self, new_val: int):
+        self._insets.setLeft(new_val)
+        self._recalculate_main_layout()
+
+    leftInset: int = Property(int, _get_layout_left_margin, _set_layout_left_margin)
+    """Bottom margin for the contents inside the decoration."""
+
+    def _get_layout_top_margin(self) -> int:
+        return self._insets.top()
+
+    def _set_layout_top_margin(self, new_val: int):
+        self._insets.setTop(new_val)
+        self._recalculate_main_layout()
+
+    topInset: int = Property(int, _get_layout_top_margin, _set_layout_top_margin)
+    """Top margin for the contents inside the decoration."""
+
+    def _get_layout_right_margin(self) -> int:
+        return self._insets.right()
+
+    def _set_layout_right_margin(self, new_val: int):
+        self._insets.setRight(new_val)
+        self._recalculate_main_layout()
+
+    rightInset: int = Property(int, _get_layout_right_margin, _set_layout_right_margin)
+    """Right margin for the contents inside the decoration."""
+
+    def _get_layout_bottom_margin(self) -> int:
+        return self._insets.bottom()
+
+    def _set_layout_bottom_margin(self, new_val: int):
+        self._insets.setBottom(new_val)
+        self._recalculate_main_layout()
+
+    bottomInset: int = Property(int, _get_layout_bottom_margin, _set_layout_bottom_margin)
+    """Bottom margin for the contents inside the decoration."""
+
+    def _get_layout_h_spacing(self) -> int:
+        if isinstance(self._widget_layout, QFormLayout):
+            return cast(QFormLayout, self._widget_layout).horizontalSpacing()
+        return -1
+
+    @form_property("formLayoutHorizontalSpacing")
+    def _set_layout_h_spacing(self, new_val: int):
+        cast(QFormLayout, self._widget_layout).setHorizontalSpacing(new_val)
+
+    formLayoutHorizontalSpacing: int = Property(int, _get_layout_h_spacing, _set_layout_h_spacing)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_layout_v_spacing(self) -> int:
+        if isinstance(self._widget_layout, QFormLayout):
+            return cast(QFormLayout, self._widget_layout).verticalSpacing()
+        return -1
+
+    @form_property("formLayoutVerticalSpacing")
+    def _set_layout_v_spacing(self, new_val: int):
+        cast(QFormLayout, self._widget_layout).setVerticalSpacing(new_val)
+
+    formLayoutVerticalSpacing: int = Property(int, _get_layout_v_spacing, _set_layout_v_spacing)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_layout_field_growth(self) -> "PropertyEdit.FormLayoutFieldGrowthPolicy":
+        if isinstance(self._widget_layout, QFormLayout):
+            return PropertyEdit.FormLayoutFieldGrowthPolicy(cast(QFormLayout, self._widget_layout).fieldGrowthPolicy())
+        return PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT
+
+    @form_property("formFieldGrowthPolicy")
+    def _set_layout_field_growth(self, new_val: "PropertyEdit.FormLayoutFieldGrowthPolicy"):
+        cast(QFormLayout, self._widget_layout).setFieldGrowthPolicy(new_val)
+
+    formFieldGrowthPolicy: "PropertyEdit.FormLayoutFieldGrowthPolicy" = Property("QFormLayout::FieldGrowthPolicy", _get_layout_field_growth, _set_layout_field_growth)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_layout_row_wrap(self) -> "PropertyEdit.FormLayoutRowWrapPolicy":
+        if isinstance(self._widget_layout, QFormLayout):
+            return PropertyEdit.FormLayoutRowWrapPolicy(cast(QFormLayout, self._widget_layout).rowWrapPolicy())
+        return PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
+
+    @form_property("formRowWrapPolicy")
+    def _set_layout_row_wrap(self, new_val: "PropertyEdit.FormLayoutRowWrapPolicy"):
+        cast(QFormLayout, self._widget_layout).setRowWrapPolicy(new_val)
+
+    formRowWrapPolicy: "PropertyEdit.FormLayoutRowWrapPolicy" = Property("QFormLayout::RowWrapPolicy", _get_layout_row_wrap, _set_layout_row_wrap)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_layout_label_align(self) -> Qt.Alignment:
+        if isinstance(self._widget_layout, QFormLayout):
+            return cast(QFormLayout, self._widget_layout).labelAlignment()
+        return Qt.AlignLeft | Qt.AlignVCenter
+
+    @form_property("formLabelAlignment")
+    def _set_layout_label_align(self, new_val: Qt.Alignment):
+        cast(QFormLayout, self._widget_layout).setLabelAlignment(Qt.AlignmentFlag(new_val))
+
+    # Even though Qt.Alignment is very verbose, we keep it original to avoid duplicating data structure into PropertyEdit,
+    # so that in *.ui file it starts referring to PropertyEdit::AlignLeft, and stays Qt::AlignLeft
+    formLabelAlignment: Qt.Alignment = Property(Qt.Alignment, _get_layout_label_align, _set_layout_label_align)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_layout_form_align(self) -> Qt.Alignment:
+        if isinstance(self._widget_layout, QFormLayout):
+            return cast(QFormLayout, self._widget_layout).formAlignment()
+        return Qt.AlignLeft | Qt.AlignTop
+
+    @form_property("formAlignment")
+    def _set_layout_form_align(self, new_val: Qt.Alignment):
+        cast(QFormLayout, self._widget_layout).setFormAlignment(Qt.AlignmentFlag(new_val))
+
+    # Even though Qt.Alignment is very verbose, we keep it original to avoid duplicating data structure into PropertyEdit,
+    # so that in *.ui file it starts referring to PropertyEdit::AlignLeft, and stays Qt::AlignLeft
+    formAlignment: Qt.Alignment = Property(Qt.Alignment, _get_layout_form_align, _set_layout_form_align)
+    """Layout parameter applied to the form layout produced by the default layout delegate."""
+
+    def _get_button_box_offset(self) -> int:
+        return self._layout.spacing()
+
+    def _set_button_box_offset(self, new_val: int):
+        self._button_box_offset = new_val
+        self._layout.setSpacing(new_val)
+
+    buttonBoxOffset: int = Property(int, _get_button_box_offset, _set_button_box_offset)
+    """Spacing between main form and button box."""
 
     def _get_fields(self) -> List[PropertyEditField]:
         if is_designer():
@@ -299,7 +466,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
                                              create_widget=self._widget_delegate.widget_for_item,
                                              parent=self)
 
-    def _recalculate_layout(self):
+    def _recalculate_main_layout(self):
         if self._button_position == PropertyEdit.ButtonPosition.BOTTOM:
             desired_type = QVBoxLayout
         elif self._button_position == PropertyEdit.ButtonPosition.RIGHT:
@@ -309,7 +476,9 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
             return
 
         if isinstance(self._layout, desired_type):
+            self._recalculate_insets()  # Just in case they changed
             return
+
         new_layout = desired_type()
         for child in self._layout.children():  # children of a layout are always layouts
             self._layout.removeItem(child)
@@ -330,6 +499,14 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         layout_container.setLayout(new_layout)
         new_layout.setObjectName("main_layout")
         self._layout = new_layout
+        self._recalculate_insets()
+
+    def _recalculate_insets(self):
+        self._layout.setSpacing(self._button_box_offset)
+        if self._layout == self.layout():
+            self._layout.setContentsMargins(0, 0, 0, 0)
+        else:
+            self._layout.setContentsMargins(self._insets)
 
     def _add_button_stretch(self):
         self._button_box.insertStretch(0)
@@ -361,6 +538,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
         if desired_container is None:
             self._update_layout(self._layout)  # Assign main layout directly to the widget
+            self._recalculate_insets()
             return
 
         new_container = desired_container()
@@ -381,6 +559,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         layout = QHBoxLayout()
         layout.addWidget(new_container)
         self._update_layout(layout)
+        self._recalculate_insets()
 
     def _recalculate_button_box(self):
         self._get_btn.setVisible(self.buttons & PropertyEdit.Buttons.GET)
@@ -399,6 +578,7 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         # Found here: https://stackoverflow.com/a/10439207
         QObjectCleanupHandler().add(self.layout())
 
+        new_layout.setContentsMargins(0, 0, 0, 0)  # Avoid decorations being placed inside margins
         self.setLayout(new_layout)
 
 
@@ -446,6 +626,7 @@ class PropertyEditFormLayoutDelegate(AbstractPropertyEditLayoutDelegate[QFormLay
         layout = QFormLayout()
         layout.setLabelAlignment(Qt.AlignLeft)
         layout.setFormAlignment(Qt.AlignVCenter)
+        layout.setSpacing(6)  # Needs to be here to avoid inheriting from buttonBoxOffset
         return layout
 
     def layout_widgets(self, layout: QFormLayout, widget_config: List[PropertyEditField], create_widget: Callable[[PropertyEditField, Optional[QWidget]], QWidget], parent: Optional[QWidget] = None):
@@ -742,7 +923,7 @@ def _unpack_designer_fields(input: str) -> List[PropertyEditField]:
         return []
 
     if not isinstance(contents, list):
-        warnings.warn(f"Decoded fields is not a list")
+        warnings.warn("Decoded fields is not a list")
         return []
 
     def map_field(val: Dict[str, Any]) -> PropertyEditField:
