@@ -121,8 +121,8 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     class Buttons(IntFlag):
         """Bit mask for Get & Set buttons that have to be displayed in the widget."""
-        GET = _QtDesignerButtons.SetButton
-        SET = _QtDesignerButtons.GetButton
+        GET = _QtDesignerButtons.GetButton
+        SET = _QtDesignerButtons.SetButton
 
     class ButtonPosition(IntEnum):
         """Position where Get/Set buttons are placed, relative to the fields form."""

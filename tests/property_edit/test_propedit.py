@@ -48,8 +48,8 @@ def test_property_edit_field_init(field, value_type, editable, label, user_data)
 
 
 @pytest.mark.parametrize("api_flags, designer_enum", [
-    (PropertyEdit.Buttons.GET, _QtDesignerButtons.SetButton),
-    (PropertyEdit.Buttons.SET, _QtDesignerButtons.GetButton),
+    (PropertyEdit.Buttons.GET, _QtDesignerButtons.GetButton),
+    (PropertyEdit.Buttons.SET, _QtDesignerButtons.SetButton),
     (PropertyEdit.Buttons.GET & PropertyEdit.Buttons.SET, _QtDesignerButtons.SetButton & _QtDesignerButtons.GetButton),
     (PropertyEdit.Buttons.GET | PropertyEdit.Buttons.SET, _QtDesignerButtons.SetButton | _QtDesignerButtons.GetButton),
     (PropertyEdit.ButtonPosition.RIGHT, _QtDesignerButtonPosition.Right),
