@@ -2,7 +2,7 @@
 Setup file for Pip.
 """
 import itertools
-from typing import Dict, List, Union, DefaultDict
+from typing import Dict, List, DefaultDict, Tuple
 from collections import defaultdict
 from pathlib import Path
 import versioneer
@@ -20,15 +20,15 @@ find_packages = PEP420PackageFinder.find
 PROJECT_ROOT: Path = Path(__file__).parent.absolute()
 
 PACKAGE_NAME = "accwidgets"
-# File defining reuqirements
+# File defining requirements
 DEPENDENCY_FILE = "dependencies.ini"
-# Dependency Options for widget depdendencies
+# Dependency Options for widget dependencies
 DEPENDENCY_OPTIONS = {"core", "test", "bench", "doc"}
 # Section for commonly defined
-SHARED_OPTIONS = {"lint", "release"}
+SHARED_OPTIONS = {"lint", "release", "test", "doc"}
 
 
-def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
+def parse_requirements() -> Tuple[List[str], Dict[str, List[str]]]:
     """
     Parse the requirements from the requirement ini file and combine them
     for setuptools.
@@ -36,7 +36,7 @@ def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
     config = configparser.ConfigParser()
     config.read(PROJECT_ROOT / DEPENDENCY_FILE)
     requirements: DefaultDict[str, List[str]] = defaultdict(list)
-    parsed_reqs = lambda section: [r.strip(", ") for r in section.splitlines()]
+    parsed_reqs = lambda section: list({r.strip(", ") for r in section.splitlines()})
     # Shared project dependencies
     for option in SHARED_OPTIONS:
         package_reqs = config.get(PACKAGE_NAME, option, fallback="")
@@ -59,14 +59,14 @@ def parse_requirements() -> Dict[str, Union[List[str], Dict[str, List[str]]]]:
                                             fallback="")
             widget_reqs = parsed_reqs(requirement_string)
             requirements[option].extend(widget_reqs)
-    return {
-        "core": requirements["core"],
-        "extra": {
-            **requirements,
-            "dev": requirements["test"] + requirements["lint"],
-            "all": list(itertools.chain(*requirements.values())),
-        },
-    }
+
+    core = requirements["core"]
+    del requirements["core"]
+    return (core, {
+        **requirements,
+        "dev": list(set(requirements["test"] + requirements["lint"])),
+        "all": list(set(itertools.chain(*requirements.values()))),
+    })
 
 
 REQUIREMENTS = parse_requirements()
@@ -94,8 +94,8 @@ setup(
                  "dist*",
                  "*.egg-info")),
     url="https://wikis.cern.ch/display/ACCPY/Widgets",
-    install_requires=REQUIREMENTS["core"],
-    extras_require=REQUIREMENTS["extra"],
+    install_requires=REQUIREMENTS[0],
+    extras_require=REQUIREMENTS[1],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: X11 Applications :: Qt",
