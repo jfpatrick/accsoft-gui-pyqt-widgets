@@ -8,7 +8,7 @@ from typing import List, Iterable
 from pyqtgraph import AxisItem
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal
-from qtpy.QtGui import QWheelEvent
+from qtpy.QtWidgets import QGraphicsSceneWheelEvent
 
 
 class ExAxisItem(AxisItem):
@@ -27,7 +27,7 @@ class ExAxisItem(AxisItem):
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().mouseDragEvent(event)
 
-    def wheelEvent(self, ev: QWheelEvent) -> None:
+    def wheelEvent(self, ev: QGraphicsSceneWheelEvent) -> None:
         """Make the mouse click event on the axis distinguishable from the ViewBox one
 
         Args:

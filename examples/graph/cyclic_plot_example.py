@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         # source for timing updates
         self.plot = accgraph.CyclicPlotWidget(
             timing_source=timing_source,
-            time_span=accgraph.TimeSpan(left=10, right=0),
+            time_span=accgraph.TimeSpan(left=10.0, right=0.0),
             time_progress_line=True,
         )
         # Add 2 curves attached to our sources for data updates, each displayed

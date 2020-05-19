@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         sinus_source = SinusCurveSource(0, 0)
         self.plot = accgraph.ScrollingPlotWidget(
             parent=self,
-            time_span=accgraph.TimeSpan(10.0),
+            time_span=accgraph.TimeSpan(right=10.0),
         )
         self.live_curve = self.plot.addCurve(data_source=sinus_source)
         # To change the way the axis displays values, we can replace its

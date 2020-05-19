@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # We want to create a scrolling plot widget showing 30 seconds of data
-        self.plot = accgraph.ScrollingPlotWidget(time_span=accgraph.TimeSpan(30.0))
+        self.plot = accgraph.ScrollingPlotWidget(time_span=accgraph.TimeSpan(left=30.0))
         # 5 different sources for data for different types of data visualization
         data_source_1 = example_sources.SinusCurveSource(x_offset=0.0, y_offset=0, updates_per_second=20)
         data_source_2 = example_sources.SinusCurveSource(x_offset=0.0, y_offset=4, updates_per_second=1)
