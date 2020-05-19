@@ -120,8 +120,10 @@ class ExPlotItem(pg.PlotItem):
         config = config or ExPlotWidgetConfig()
         if axis_items is None:
             axis_items = {}
+        # TODO: Why do we force create these? What if user passed it from the outside? Why if we don't need right one?
         axis_items["left"] = ExAxisItem(orientation="left")
         axis_items["right"] = ExAxisItem(orientation="right")
+        # FIXME: Create_firrint_axis_items called even when it's not needed
         axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item(
             config_style=config.plotting_style,
             orientation="bottom",
@@ -501,7 +503,7 @@ class ExPlotItem(pg.PlotItem):
             painter: QPainter for painting the Plot
             args: positional arguments for PlotItem's paint function
         """
-        pg.PlotItem.paint(self, painter, *args)
+        super().paint(painter, *args)
         if self._plot_selected and self._plot_selectable and self.editable:
             painter.setPen(self._plot_selected_pen)
             painter.drawRect(self.boundingRect())
@@ -1402,7 +1404,7 @@ class ExPlotItem(pg.PlotItem):
         scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap("auto"), 14, self)
         scrolling_range_reset_button.mode = "auto"
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
-        self.vb.sigRangeChangedManually.connect(self._handle_zoom_with_scrolling_plot_fixed_xrange)
+        self.vb.sig_xrange_changed.connect(self._stop_scrolling_plot_auto_xrange)
         self._orig_auto_btn = self.autoBtn
         self.autoBtn = scrolling_range_reset_button
         try:
@@ -1424,7 +1426,7 @@ class ExPlotItem(pg.PlotItem):
         if self._orig_auto_btn:
             self.autoBtn = self._orig_auto_btn
         try:
-            self.vb.sigRangeChangedManually.disconnect(self._handle_zoom_with_scrolling_plot_fixed_xrange)
+            self.vb.sig_xrange_changed.disconnect(self._stop_scrolling_plot_auto_xrange)
         except TypeError:
             # TypeError -> failed disconnect
             pass
@@ -1445,7 +1447,7 @@ class ExPlotItem(pg.PlotItem):
         self._scrolling_fixed_xrange_activated = True
         self._handle_scrolling_plot_fixed_xrange_update()
 
-    def _handle_zoom_with_scrolling_plot_fixed_xrange(self):
+    def _stop_scrolling_plot_auto_xrange(self):
         """
         If the range changes on a scrolling plot with a fixed x range, the scrolling
         should be stopped. This function sets a flag, that prevents the plot from
@@ -1694,7 +1696,7 @@ class PlotItemLayerCollection:
             # Remove connections again
             layer.axis_item.sig_vb_mouse_event_triggered_by_axis.disconnect(self._handle_axis_triggered_mouse_event)
             layer.view_box.sigYRangeChanged.disconnect(self._handle_layer_y_range_change)
-            # FIXME: What about sigRangeChangedManually signal?
+            layer.view_box.sigRangeChangedManually.disconnect(self._handle_layer_manual_range_change)
 
     @property
     def all(self) -> List[PlotItemLayer]:
@@ -1843,6 +1845,9 @@ class ExViewBox(pg.ViewBox):
     device coordinates.
     """
 
+    sig_xrange_changed = Signal()
+    """This is a replacement for sigRangeChangedManually to disable auto-scrolling only when dragging and zooming in a particular way"""
+
     def __init__(self, **viewbox_kwargs):
         """
         ViewBox with extra functionality for the multi-y-axis plotting.
@@ -1926,8 +1931,10 @@ class ExViewBox(pg.ViewBox):
 
         Args:
             ev: Wheel event that was detected
-            axis: integer representing an axis, 0 -> x, 1 -> y
+            axis: integer representing an axis, 0 -> x, 1 -> y, None -> both
         """
+        if axis != 1:
+            self.sig_xrange_changed.emit()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().wheelEvent(ev=ev, axis=axis)
         self.sigRangeChanged.emit(self, self.state["viewRange"])
@@ -1945,6 +1952,8 @@ class ExViewBox(pg.ViewBox):
         if self.selection_mode:
             self._selection_mouse_drag_event(ev=ev)
         else:
+            if axis != 1:
+                self.sig_xrange_changed.emit()
             self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
             super().mouseDragEvent(ev=ev, axis=axis)
             self.sigRangeChanged.emit(self, self.state["viewRange"])
