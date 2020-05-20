@@ -1904,13 +1904,15 @@ class ExViewBox(pg.ViewBox):
             for vb in other_viewboxes:
                 bounds = vb._bounding_rect_from(another_vb=primary_vb, items=items)
                 target_bounds = target_bounds.united(bounds)
+
+            primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
+
             # Setting the range with the manual signal will move all other layers accordingly
             if auto_range_x_axis:
-                primary_vb.set_range_manually(rect=target_bounds, padding=padding)
+                primary_vb.set_range_manually(rect=target_bounds, padding=padding, disableAutoRange=False)
             else:
                 y_range = target_bounds.bottom(), target_bounds.top()
-                primary_vb.set_range_manually(yRange=y_range, padding=padding)
-            # FIXME: Perhaps the fact that it's set range manually everywhere, auto scaling gets busted
+                primary_vb.set_range_manually(yRange=y_range, padding=padding, disableAutoRange=False)
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
