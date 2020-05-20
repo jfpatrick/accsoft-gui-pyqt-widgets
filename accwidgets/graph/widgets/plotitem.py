@@ -3,13 +3,14 @@ Base class for modified PlotItems that handle data displaying in the ExtendedPlo
 """
 
 import warnings
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union, Type, cast
 
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
-from qtpy.QtCore import Signal, Slot, QRectF, QPointF, Qt
+from qtpy.QtCore import Signal, QRectF, QPointF, Qt
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent, QGraphicsRectItem
 from qtpy.QtGui import QPen, QPainter
 
@@ -70,6 +71,20 @@ _STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[BasePlotTimeSpan]]] = {
 }
 
 
+@dataclass
+class Range:
+    min: float
+    max: float
+
+    @classmethod
+    def from_pg_range(cls, orig: Union[Tuple[float, float], List[float]]):
+        return cls(min=orig[0], max=orig[1])
+
+    @property
+    def span(self) -> float:
+        return self.max - self.min
+
+
 class ExPlotItem(pg.PlotItem):
 
     sig_selection_changed = Signal()
@@ -105,8 +120,10 @@ class ExPlotItem(pg.PlotItem):
         config = config or ExPlotWidgetConfig()
         if axis_items is None:
             axis_items = {}
+        # TODO: Why do we force create these? What if user passed it from the outside? Why if we don't need right one?
         axis_items["left"] = ExAxisItem(orientation="left")
         axis_items["right"] = ExAxisItem(orientation="right")
+        # FIXME: Create_firrint_axis_items called even when it's not needed
         axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item(
             config_style=config.plotting_style,
             orientation="bottom",
@@ -245,8 +262,8 @@ class ExPlotItem(pg.PlotItem):
         Args:
             data_source (UpdateSource): Source for data related updates
             layer (Optional[str]): Layer Identifier the curve should be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
-            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
+            buffer_size: maximum count of values the data model buffer should hold
+            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the InjectionBars
 
         Returns:
             LiveInjectionBarGraphItem that was added to the plot.
@@ -296,7 +313,7 @@ class ExPlotItem(pg.PlotItem):
         layer: Optional["LayerIdentification"] = None,
         ignoreBounds: bool = False,
         **kwargs,
-    ) -> None:
+    ):
         """
         Add an item to the plot. If no layer is provided, the item
         will be added to the default ViewBox of the PlotItem, if a layer
@@ -344,7 +361,7 @@ class ExPlotItem(pg.PlotItem):
         if self.editable:
             self._connect_to_editable_item(item=cast(EditablePlotCurve, item))
 
-    def clear(self, clear_decorators: bool = False) -> None:
+    def clear(self, clear_decorators: bool = False):
         """
         Clear the PlotItem but reinitialize items that are part of the plot.
         These items contain f.e. the time line decorator.
@@ -358,7 +375,7 @@ class ExPlotItem(pg.PlotItem):
         if not clear_decorators and self._time_span is not None:
             self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 
-    def removeItem(self, item: pg.GraphicsObject) -> None:
+    def removeItem(self, item: pg.GraphicsObject):
         """
         Extend the remove item operation to search for
         the right viewbox in the PlotItem when removing
@@ -405,7 +422,7 @@ class ExPlotItem(pg.PlotItem):
                       "or ExPlotItem.addCurve for this purpose.")
         return pg.PlotItem.plot(*args, clear=clear, params=params)
 
-    def select(self, selection: QRectF) -> None:
+    def select(self, selection: QRectF):
         """
         Select a data in a specific region in the current editable item.
 
@@ -452,7 +469,7 @@ class ExPlotItem(pg.PlotItem):
                       "and editable configuration.")
         return []
 
-    def make_selectable(self, selectable: bool) -> None:
+    def make_selectable(self, selectable: bool):
         """Should the plot be selectable / deselectable?
 
         Args:
@@ -486,12 +503,12 @@ class ExPlotItem(pg.PlotItem):
             painter: QPainter for painting the Plot
             args: positional arguments for PlotItem's paint function
         """
-        pg.PlotItem.paint(self, painter, *args)
+        super().paint(painter, *args)
         if self._plot_selected and self._plot_selectable and self.editable:
             painter.setPen(self._plot_selected_pen)
             painter.drawRect(self.boundingRect())
 
-    def replace_selection(self, replacement: CurveData) -> None:
+    def replace_selection(self, replacement: CurveData):
         """Function to call if the current data selection was changed.
 
         Args:
@@ -595,7 +612,7 @@ class ExPlotItem(pg.PlotItem):
         return self.getViewBox().selection_mode
 
     @selection_mode.setter
-    def selection_mode(self, enable: bool) -> None:
+    def selection_mode(self, enable: bool):
         """
         If the selection mode is enabled, mouse drag events on the view
         box create selection rectangles and do not move the view
@@ -606,7 +623,7 @@ class ExPlotItem(pg.PlotItem):
 
     # ~~~~~~~~~~ Update handling ~~~~~~~~~
 
-    def update_timestamp(self, timestamp: float) -> None:
+    def update_timestamp(self, timestamp: float):
         """Handle an update provided by the timing source.
 
         Handle initial drawing of decorators, redrawing of actual curves have
@@ -631,7 +648,7 @@ class ExPlotItem(pg.PlotItem):
     def plot_data_on_single_data_item(self,
                                       data: PlottingItemData,
                                       item_type: Type[DataModelBasedItem] = AbstractBasePlotCurve,
-                                      **styling_kwargs) -> None:
+                                      **styling_kwargs):
         """
         This slot exposes the possibility to draw data on a
         single data item in the plot. If this item does not yet exist,
@@ -831,7 +848,7 @@ class ExPlotItem(pg.PlotItem):
 
     # ~~~~~~~~~~ Plot Configuration ~~~~~~~~~
 
-    def update_config(self, config: ExPlotWidgetConfig) -> None:
+    def update_config(self, config: ExPlotWidgetConfig):
         """Update the plot widgets configuration
 
         Items that are affected from the configuration change are recreated with
@@ -878,7 +895,7 @@ class ExPlotItem(pg.PlotItem):
         update: bool = True,
         disableAutoRange: bool = True,
         **layer_y_ranges,
-    ) -> None:
+    ):
         """
         Set the visible range of the view. Additionally to setting the x and y
         range, the y range of additional layers of the plot can be set by passing
@@ -925,7 +942,7 @@ class ExPlotItem(pg.PlotItem):
         padding: Optional[float] = None,
         update: bool = True,
         layer: Optional["LayerIdentification"] = None,
-    ) -> None:
+    ):
         """
         Set the visible Y range of the view. If no layer is passed,
         the range of the default y axis will be moved (normally the
@@ -950,7 +967,7 @@ class ExPlotItem(pg.PlotItem):
         self,
         b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
         layer: Optional["LayerIdentification"] = None,
-    ) -> None:
+    ):
         """
         Allows inverting a y-axis. If no layer is passed, the default y axis
         will be inverted (normally the one on the left side of the plot). By
@@ -966,7 +983,7 @@ class ExPlotItem(pg.PlotItem):
         self,
         view: pg.ViewBox,
         layer: Optional["LayerIdentification"] = None,
-    ) -> None:
+    ):
         """
         Link the movement of a y axis to another ViewBox. If no layer is passed,
         the default y axis' movement will be linked (normally the one on the left
@@ -988,7 +1005,7 @@ class ExPlotItem(pg.PlotItem):
             x: Union[bool, float, None] = None,
             y: Union[bool, float, None] = None,
             **layers_y,
-    ) -> None:
+    ):
         """
         Extend the PlotItem's standard enableAutoRange for the y axes of
         all layers. This function can be called in two different ways.The
@@ -1052,7 +1069,7 @@ class ExPlotItem(pg.PlotItem):
             layer = self.layer(layer_id=layer)
         return layer.view_box
 
-    def updateButtons(self) -> None:
+    def updateButtons(self):
         """
         Update the visibility of the auto button. This now also takes
         the autoRange state of ViewBox into consideration, that were
@@ -1128,15 +1145,15 @@ class ExPlotItem(pg.PlotItem):
 
     # ~~~~~~~~~ Private ~~~~~~~~~~
 
-    def _couple_layers_yrange(self, link: bool = True) -> None:
+    def _couple_layers_yrange(self, link: bool = True):
         """Link y ranges of all layers's y axis"""
         self._layers.couple_layers(link)
 
-    def _update_layers(self) -> None:
+    def _update_layers(self):
         """Update the other layer's viewbox geometry to fit the PlotItem ones"""
         self._layers._update_view_box_geometries(self)
 
-    def _init_time_line_decorator(self, timestamp: float, force: bool = False) -> None:
+    def _init_time_line_decorator(self, timestamp: float, force: bool = False):
         """Create a vertical line representing the latest timestamp
 
         Args:
@@ -1160,7 +1177,7 @@ class ExPlotItem(pg.PlotItem):
             self,
             timestamp: float,
             position: Optional[float] = None,
-    ) -> None:
+    ):
         """Move the vertical line representing the current time to a new position
 
         Redraw the timing line according to a passed timestamp. Alternatively
@@ -1187,7 +1204,7 @@ class ExPlotItem(pg.PlotItem):
             and self._plot_config.time_span.finite
         )
 
-    def _handle_scrolling_plot_fixed_xrange_update(self) -> None:
+    def _handle_scrolling_plot_fixed_xrange_update(self):
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
         if self._config_contains_scrolling_style_with_fixed_xrange() and not np.isnan(self.last_timestamp):
             x_range_min: float = self.last_timestamp - self._plot_config.time_span.left_boundary_offset
@@ -1273,7 +1290,7 @@ class ExPlotItem(pg.PlotItem):
             pass
         return ts
 
-    def _draw_style_specific_objects(self) -> None:
+    def _draw_style_specific_objects(self):
         """Draw objects f.e. lines that are part of a specific plotting style
 
         - **CyclicPlotWidget**: Line at the time span start and end
@@ -1289,7 +1306,7 @@ class ExPlotItem(pg.PlotItem):
             self._time_span_end_boundary = self.addLine(x=end, pen=pg.mkPen(128, 128, 128))
             self._style_specific_objects_already_drawn = True
 
-    def _update_children_items_timing(self) -> None:
+    def _update_children_items_timing(self):
         """Update timestamp in all items added to the plot item."""
         for item in self.items:
             if isinstance(item, DataModelBasedItem):
@@ -1307,7 +1324,7 @@ class ExPlotItem(pg.PlotItem):
                 if isinstance(axis, RelativeTimeAxisItem):
                     axis.start = timestamp
 
-    def _connect_to_editable_item(self, item: EditablePlotCurve) -> None:
+    def _connect_to_editable_item(self, item: EditablePlotCurve):
         """
         Try to connect to an editable item. If the item does not define the
         fitting signals, it will be silently skipped.
@@ -1318,7 +1335,7 @@ class ExPlotItem(pg.PlotItem):
             # Non editable items do not have this signal
             pass
 
-    def _disconnect_from_editable_item(self, item: EditablePlotCurve) -> None:
+    def _disconnect_from_editable_item(self, item: EditablePlotCurve):
         """
         Try to disconnect from an editable item. If the item does not define
         the fitting signals, it will be silently skipped.
@@ -1339,7 +1356,7 @@ class ExPlotItem(pg.PlotItem):
             self.current_editable = item
         self.sig_selection_changed.emit()
 
-    def _prepare_layers(self) -> None:
+    def _prepare_layers(self):
         """Initialize everything needed for multiple layers"""
         self._layers = PlotItemLayerCollection(self)
         self._layers.add(PlotItemLayer(
@@ -1352,7 +1369,7 @@ class ExPlotItem(pg.PlotItem):
             self.vb.layers = self._layers
         self._couple_layers_yrange(link=True)
 
-    def _prepare_timing_source_attachment(self, timing_source: Optional[UpdateSource]) -> None:
+    def _prepare_timing_source_attachment(self, timing_source: Optional[UpdateSource]):
         """Initialized everything needed for connection to the timing-source"""
         if timing_source and self.timing_source_compatible:
             self._timing_source_attached = True
@@ -1360,7 +1377,7 @@ class ExPlotItem(pg.PlotItem):
         else:
             self._timing_source_attached = False
 
-    def _prepare_scrolling_plot_fixed_xrange(self) -> None:
+    def _prepare_scrolling_plot_fixed_xrange(self):
         """
         In the scrolling style the PlotItem offers the possibility to set the
         scrolling movement not by using PyQtGraph's auto ranging, but by setting
@@ -1374,7 +1391,7 @@ class ExPlotItem(pg.PlotItem):
         else:
             self._reset_scrolling_plot_fixed_xrange_modifications()
 
-    def _set_scrolling_plot_fixed_xrange_modifications(self) -> None:
+    def _set_scrolling_plot_fixed_xrange_modifications(self):
         """
         Activating the fixed x range on a plot item in the scrolling mode
         will result in behavior modifications related to auto ranging.
@@ -1387,7 +1404,7 @@ class ExPlotItem(pg.PlotItem):
         scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap("auto"), 14, self)
         scrolling_range_reset_button.mode = "auto"
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
-        self.vb.sigRangeChangedManually.connect(self._handle_zoom_with_scrolling_plot_fixed_xrange)
+        self.vb.sig_xrange_changed.connect(self._stop_scrolling_plot_auto_xrange)
         self._orig_auto_btn = self.autoBtn
         self.autoBtn = scrolling_range_reset_button
         try:
@@ -1396,7 +1413,7 @@ class ExPlotItem(pg.PlotItem):
             pass
         self.vb.menu.viewAll.triggered.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
 
-    def _reset_scrolling_plot_fixed_xrange_modifications(self) -> None:
+    def _reset_scrolling_plot_fixed_xrange_modifications(self):
         """
         Activating the fixed x range on an plot item in the scrolling mode
         will result in modifications related to auto ranging. This function
@@ -1409,7 +1426,7 @@ class ExPlotItem(pg.PlotItem):
         if self._orig_auto_btn:
             self.autoBtn = self._orig_auto_btn
         try:
-            self.vb.sigRangeChangedManually.disconnect(self._handle_zoom_with_scrolling_plot_fixed_xrange)
+            self.vb.sig_xrange_changed.disconnect(self._stop_scrolling_plot_auto_xrange)
         except TypeError:
             # TypeError -> failed disconnect
             pass
@@ -1420,7 +1437,7 @@ class ExPlotItem(pg.PlotItem):
             # TypeError -> failed disconnect
             pass
 
-    def _auto_range_with_scrolling_plot_fixed_xrange(self) -> None:
+    def _auto_range_with_scrolling_plot_fixed_xrange(self):
         """
         autoRange does not know about the x range that has been set manually.
         This function will automatically set the y range and will set the x range
@@ -1430,7 +1447,7 @@ class ExPlotItem(pg.PlotItem):
         self._scrolling_fixed_xrange_activated = True
         self._handle_scrolling_plot_fixed_xrange_update()
 
-    def _handle_zoom_with_scrolling_plot_fixed_xrange(self) -> None:
+    def _stop_scrolling_plot_auto_xrange(self):
         """
         If the range changes on a scrolling plot with a fixed x range, the scrolling
         should be stopped. This function sets a flag, that prevents the plot from
@@ -1438,7 +1455,7 @@ class ExPlotItem(pg.PlotItem):
         """
         self._scrolling_fixed_xrange_activated = False
 
-    def _remove_child_items_affected_from_style_change(self) -> None:
+    def _remove_child_items_affected_from_style_change(self):
         """ Remove all items that are affected by a new configuration
 
         Remove all items attached to live data that depend on the plot item's PlottingStyle.
@@ -1459,7 +1476,7 @@ class ExPlotItem(pg.PlotItem):
         self._time_span_start_boundary = None
         self._time_span_end_boundary = None
 
-    def _recreate_child_items_with_new_config(self, items_to_recreate: List[DataModelBasedItem]) -> None:
+    def _recreate_child_items_with_new_config(self, items_to_recreate: List[DataModelBasedItem]):
         """
         Replace all items with ones that fit the given config.
         Datamodels are preserved.
@@ -1479,7 +1496,7 @@ class ExPlotItem(pg.PlotItem):
             except AttributeError:
                 pass
 
-    def _update_decorators(self) -> None:
+    def _update_decorators(self):
         """Update the decorators f.e. line representing current timestamp, time span boundaries"""
         if not np.isnan(self.last_timestamp):
             self._style_specific_objects_already_drawn = False
@@ -1564,15 +1581,12 @@ class PlotItemLayerCollection:
         Args:
             plot_item: PlotItem in which the layers in these collection are located
         """
-        self._plot_item: pg.PlotItem = plot_item
-        self._pot_item_viewbox_reference_range: Dict[str, List[float]] = {}
+        self._plot_item = plot_item
+        self._vb_ref_ranges: Dict[str, Range] = {}
+        """Layer Id to range mapping"""
         # Flag if the plot item viewboxes range change should be applied to other layers
         self._forward_range_change_to_other_layers: Tuple[bool, bool] = (False, True)
         self._layers: Dict[str, PlotItemLayer] = {}
-        # For disconnecting movement again
-        self._y_range_slots: Dict[Slot, Signal] = {}
-        self._link_y_range_of_all_layers: bool = True
-        self._current: int
 
     def __iter__(self):
         return iter(self._layers.values())
@@ -1580,35 +1594,34 @@ class PlotItemLayerCollection:
     def __len__(self):
         return len(self._layers)
 
-    def get(self, identifier: Optional[str] = PlotItemLayer.default_layer_id) -> PlotItemLayer:
-        """ Get layer by its identifier
-
-        None or an empty string as an identifier will return the PlotItem
-        layer containing the standard y-axis and viewbox of the PlotItem.
+    def get(self, identifier: Optional[str] = None) -> PlotItemLayer:
+        """
+        Get layer by its identifier.
 
         Args:
-            identifier: identifier of the layer that should be searched
+            identifier: Identifier of the layer that should be searched. ``None`` or an empty string will
+                        result in the layer containing the standard y-axis and viewbox of the
+                        :class:`pyqtgraph.PlotItem`.
 
         Returns:
-            Layer object that is associated with the passed identifier
+            Layer object that is associated with the identifier or the default layer.
 
         Raises:
-            KeyError: No layer with the passed identifier could be found
+            KeyError: Layer with given identifier does not exist.
         """
-        if identifier is None or identifier == "":
-            identifier = PlotItemLayer.default_layer_id
-        layer = self._layers.get(identifier, None)
-        if layer is not None:
-            return layer
-        raise KeyError(f"No layer with the identifier '{identifier}'")
+        identifier = identifier or PlotItemLayer.default_layer_id
+        try:
+            return self._layers[identifier]
+        except KeyError:
+            raise KeyError(f"No layer with the identifier '{identifier}'")
 
-    def add(self, layer: PlotItemLayer) -> None:
+    def add(self, layer: PlotItemLayer):
         """
-        Add an already created layer object to this collection to keep track
-        of it. This does not automatically add the layer to the view box.
+        Add layer object to this collection to keep track of it. This does not automatically add the
+        layer to the view box.
 
         Args:
-            layer: Layer object that
+            layer: Layer to be added.
 
         Raises:
             KeyError: A layer with the passed identifier does already exist
@@ -1617,21 +1630,25 @@ class PlotItemLayerCollection:
                         valid layer
         """
         if layer is None or not layer.id:
+            # TODO: Assume layer is never None (as per api)?
+            # TODO: Separate errors into 2
+            # TODO: All should be ValueError, event Key. (API breaking change). Change docstring as well.
             raise ValueError("Layer can not be added because it or its identifier is not defined.")
-        if self._layers.get(layer.id, None) is not None:
+        if layer.id in self._layers:
             raise KeyError(f"Layer with the identifier '{layer.id}' has already been added."
                            f"Either rename the layer or remove the already existing one before adding.")
         self._layers[layer.id] = layer
-        self._pot_item_viewbox_reference_range[layer.id] = layer.axis_item.range
+        self._vb_ref_ranges[layer.id] = Range.from_pg_range(layer.axis_item.range)
 
     def remove(self, layer: Optional[LayerIdentification] = None) -> bool:
-        """ Remove a layer from this collection
+        """
+        Remove a layer from the collection.
 
         Args:
-            layer: Layer instance or identifier to delete
+            layer: Layer instance or identifier to delete.
 
         Returns:
-            True if layer was in collection, False if it did not exist
+            ``True`` if the layer was in collection.
 
         Raises:
             KeyError: No layer with the passed identifier could be found
@@ -1639,52 +1656,47 @@ class PlotItemLayerCollection:
         if isinstance(layer, str):
             layer = self.get(layer)
         for lyr in self:
-            if layer == lyr:
-                del self._layers[lyr.id]
-                if self._pot_item_viewbox_reference_range.get(lyr.id, None):
-                    del self._pot_item_viewbox_reference_range[lyr.id]
-                del lyr
-                return True
+            if layer != lyr:
+                continue
+            del self._layers[lyr.id]
+            if lyr.id in self._vb_ref_ranges:
+                del self._vb_ref_ranges[lyr.id]
+            # TODO: Feels complicated
+            del lyr
+            return True
         return False
 
-    def couple_layers(self, link: bool) -> None:
-        """ Link movements in all layers in y ranges
+    def couple_layers(self, link: bool):
+        """
+        Link movements in all layers in Y-ranges.
 
         Scale and translate all layers as if they were one, when transformed
         by interaction with the mouse (except if performed on a specific axis)
         When moving the layers each will keep its range relative to the made
         transformation. For example:
 
-        layer 1 with the y-range (0, 1)
+        * Layer *L1* with the Y-range (0, 1)
+        * Layer *L2* with the Y-range (-2, 2)
 
-        layer 2 with the y-range (-2, 2)
-
-        Moving layer 1 to (1, 2) will translate layer 2's range to (0, 4)
+        Moving *L1* to (1, 2) will translate *L2*'s range to (0, 4).
 
         Args:
-            link (bool): True if the layer's should be moved together
+            link: ``True`` if layers should be moved together.
         """
-        plot_item_layer = self.get()
+        layer = self.get()
         if link:
             # filter by range changes that are executed on the
-            plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.connect(
-                self._handle_axis_triggered_mouse_event,
-            )
-            plot_item_layer.view_box.sigRangeChangedManually.connect(
-                self._handle_layer_manual_range_change,
-            )
-            # when plot item gets moved, check if move other layers should be moved
-            plot_item_layer.view_box.sigYRangeChanged.connect(
-                self._handle_layer_y_range_change,
-            )
+            layer.axis_item.sig_vb_mouse_event_triggered_by_axis.connect(self._handle_axis_triggered_mouse_event)
+            layer.view_box.sigRangeChangedManually.connect(self._handle_layer_manual_range_change)
+            # when plot item gets moved, check if other layers should be moved
+            layer.view_box.sigYRangeChanged.connect(self._handle_layer_y_range_change)
             for layer in self:
-                self._pot_item_viewbox_reference_range[layer.id] = layer.axis_item.range
+                self._vb_ref_ranges[layer.id] = Range.from_pg_range(layer.axis_item.range)
         else:
             # Remove connections again
-            plot_item_layer.axis_item.sig_vb_mouse_event_triggered_by_axis.disconnect(
-                self._handle_axis_triggered_mouse_event,
-            )
-            plot_item_layer.view_box.sigYRangeChanged.disconnect(self._handle_layer_y_range_change)
+            layer.axis_item.sig_vb_mouse_event_triggered_by_axis.disconnect(self._handle_axis_triggered_mouse_event)
+            layer.view_box.sigYRangeChanged.disconnect(self._handle_layer_y_range_change)
+            layer.view_box.sigRangeChangedManually.disconnect(self._handle_layer_manual_range_change)
 
     @property
     def all(self) -> List[PlotItemLayer]:
@@ -1694,17 +1706,19 @@ class PlotItemLayerCollection:
     @property
     def all_except_default(self) -> List[PlotItemLayer]:
         """List of all layers except the default one."""
-        layers = self.all
-        layers.remove(self.get(identifier=PlotItemLayer.default_layer_id))
-        return layers
+        layers = {**self._layers}
+        try:
+            del layers[PlotItemLayer.default_layer_id]
+        except KeyError:
+            pass
+        return list(layers.values())
 
     @property
     def view_boxes(self) -> List["ExViewBox"]:
-        """All ViewBoxes contained in layers in this PlotItem."""
+        """All viewboxes contained in this collection's layers."""
         return [layer.view_box for layer in self]
 
     def _update_view_box_geometries(self, plot_item: pg.PlotItem):
-        """Update the viewboxes geometry"""
         for layer in self:
             # plot item view box has to be excluded to keep autoRange settings
             if not self._plot_item.is_standard_layer(layer=layer):
@@ -1715,13 +1729,13 @@ class PlotItemLayerCollection:
             self,
             change_is_manual: Optional[bool] = None,
             mouse_event_valid: Optional[bool] = None,
-    ) -> None:
+    ):
         """
         With passing True, a manual range change of the ViewBox of a layer will be applied
         accordingly to all other layers. When passing false, we can prevent manual range
         changes to be applied to other layers.
 
-        This function can f.e. be used to make sure that the flag is not set from a Mouse
+        This function can e.g. be used to make sure that the flag is not set from a Mouse
         Event on an axis, that set the flag to false which is still activated even though
         we do not care about it anymore.
 
@@ -1731,22 +1745,16 @@ class PlotItemLayerCollection:
                 not performed on a single axis)
         """
         if change_is_manual is not None:
-            modified = list(self._forward_range_change_to_other_layers)
-            modified[0] = change_is_manual
-            self._forward_range_change_to_other_layers = tuple(modified)  # type: ignore
+            self._forward_range_change_to_other_layers = change_is_manual, self._forward_range_change_to_other_layers[1]
         if mouse_event_valid is not None:
-            modified = list(self._forward_range_change_to_other_layers)
-            modified[1] = mouse_event_valid
-            self._forward_range_change_to_other_layers = tuple(modified)  # type: ignore
+            self._forward_range_change_to_other_layers = self._forward_range_change_to_other_layers[0], mouse_event_valid
 
-    def _reset_range_change_forwarding(self) -> None:
+    def _reset_range_change_forwarding(self):
         """Set the flag that forwards range changes to true"""
-        self._set_range_change_forwarding(
-            change_is_manual=False,
-            mouse_event_valid=True,
-        )
+        self._set_range_change_forwarding(change_is_manual=False,
+                                          mouse_event_valid=True)
 
-    def _handle_axis_triggered_mouse_event(self, mouse_event_on_axis: bool) -> None:
+    def _handle_axis_triggered_mouse_event(self, mouse_event_on_axis: bool):
         """ Handle the results of mouse drag event on the axis
 
         Mouse Events on the Viewbox and Axis are not distinguishable in pyqtgraph. Because of this,
@@ -1759,7 +1767,7 @@ class PlotItemLayerCollection:
         """
         self._set_range_change_forwarding(mouse_event_valid=(not mouse_event_on_axis))
 
-    def _handle_layer_manual_range_change(self, mouse_enabled: List[bool]) -> None:
+    def _handle_layer_manual_range_change(self, mouse_enabled: List[bool]):
         """ Make Range update slot available, if range change was done by an Mouse Drag Event
 
         Args:
@@ -1767,13 +1775,9 @@ class PlotItemLayerCollection:
         """
         self._set_range_change_forwarding(change_is_manual=mouse_enabled[1])
 
-    def _handle_layer_y_range_change(
-            self,
-            moved_viewbox: pg.ViewBox,
-            new_range: Tuple[float, float],
-            *args,
-    ) -> None:
-        """Handle a view-range change in the PlotItems Viewbox
+    def _handle_layer_y_range_change(self, moved_viewbox: pg.ViewBox, new_range: Tuple[float, float], *args):
+        """
+        Handle a view-range change in the PlotItems Viewbox
 
         If a mouse drag-event has been executed on the PlotItem's Viewbox and not on
         the axis-item we want to move all other layer's viewboxes accordingly and
@@ -1792,20 +1796,19 @@ class PlotItemLayerCollection:
         if all(self._forward_range_change_to_other_layers):
             self._apply_range_change_to_other_layers(
                 moved_viewbox=moved_viewbox,
-                new_range=new_range,
+                new_range=Range.from_pg_range(new_range),
                 moved_layer=layer,
             )
         self._reset_range_change_forwarding()
         # Update saved range even if not caused by manual update (f.e. by "View All")
-        self._pot_item_viewbox_reference_range[layer.id][0] = layer.axis_item.range[0]
-        self._pot_item_viewbox_reference_range[layer.id][1] = layer.axis_item.range[1]
+        self._vb_ref_ranges[layer.id] = Range.from_pg_range(layer.axis_item.range)
 
     def _apply_range_change_to_other_layers(
             self,
             moved_viewbox: pg.ViewBox,
-            new_range: Tuple[float, float],
+            new_range: Range,
             moved_layer: PlotItemLayer,
-    ) -> None:
+    ):
         """Update the y ranges of all layers
 
         If a fitting manual movement has been detected, we move the viewboxes of all
@@ -1819,34 +1822,16 @@ class PlotItemLayerCollection:
             new_range: new range the ViewBox now shows
             moved_layer: Layer the moved viewbox belongs to
         """
-        moved_viewbox_old_min: float = self._pot_item_viewbox_reference_range[moved_layer.id][0]
-        moved_viewbox_old_max: float = self._pot_item_viewbox_reference_range[moved_layer.id][1]
-        moved_viewbox_old_y_length: float = moved_viewbox_old_max - moved_viewbox_old_min
-        moved_viewbox_new_min: float = new_range[0]
-        moved_viewbox_new_max: float = new_range[1]
-        moved_distance_min: float = moved_viewbox_new_min - moved_viewbox_old_min
-        moved_distance_max: float = moved_viewbox_new_max - moved_viewbox_old_max
-        self._pot_item_viewbox_reference_range[moved_layer.id][0] = moved_viewbox_new_min
-        self._pot_item_viewbox_reference_range[moved_layer.id][1] = moved_viewbox_new_max
+        prev_range = self._vb_ref_ranges[moved_layer.id]
+        self._vb_ref_ranges[moved_layer.id] = new_range
         for layer in self:
             if layer.view_box is not moved_viewbox:
-                layer_viewbox_old_min: float = layer.axis_item.range[0]
-                layer_viewbox_old_max: float = layer.axis_item.range[1]
-                layer_viewbox_old_y_length: float = layer_viewbox_old_max - layer_viewbox_old_min
-                relation_to_moved_viewbox = (
-                    layer_viewbox_old_y_length / moved_viewbox_old_y_length
-                )
-                layer_viewbox_new_min = (
-                    layer_viewbox_old_min
-                    + moved_distance_min * relation_to_moved_viewbox
-                )
-                layer_viewbox_new_max = (
-                    layer_viewbox_old_max
-                    + moved_distance_max * relation_to_moved_viewbox
-                )
-                layer.view_box.setRange(yRange=(layer_viewbox_new_min, layer_viewbox_new_max), padding=0.0)
-                self._pot_item_viewbox_reference_range[layer.id][0] = layer_viewbox_new_min
-                self._pot_item_viewbox_reference_range[layer.id][1] = layer_viewbox_new_max
+                layer_range = Range.from_pg_range(layer.axis_item.range)
+                scale = layer_range.span / prev_range.span
+                new_layer_range = Range(min=layer_range.min + (new_range.min - prev_range.min) * scale,
+                                        max=layer_range.max + (new_range.max - prev_range.max) * scale)
+                layer.view_box.setRange(yRange=(new_layer_range.min, new_layer_range.max), padding=0.0)
+                self._vb_ref_ranges[layer.id] = new_layer_range
 
 
 class ExViewBox(pg.ViewBox):
@@ -1857,8 +1842,11 @@ class ExViewBox(pg.ViewBox):
     rectangle for selecting points. This signal will publish this rectangle
     as soon as its completed (the mouse button from the drag is released).
     The selection boundaries is represented in scene coordinates and not
-    device coordintates.
+    device coordinates.
     """
+
+    sig_xrange_changed = Signal()
+    """This is a replacement for sigRangeChangedManually to disable auto-scrolling only when dragging and zooming in a particular way"""
 
     def __init__(self, **viewbox_kwargs):
         """
@@ -1876,8 +1864,11 @@ class ExViewBox(pg.ViewBox):
         self._selection_box.hide()
         self.addItem(self._selection_box, ignoreBounds=True)
 
-        self._selection_mode: bool = False
-        self._layer_collection: Optional[PlotItemLayerCollection] = None
+        self.selection_mode: bool = False
+        """When ``True``, mouse drag events on the view box create selection rectangles and do not move the view"""
+
+        self.layers: Optional[PlotItemLayerCollection] = None
+        """Collection of layers that are included in this viewbox."""
 
     def autoRange(
         self,
@@ -1885,7 +1876,7 @@ class ExViewBox(pg.ViewBox):
         items: Optional[List[pg.GraphicsItem]] = None,
         auto_range_x_axis: bool = True,
         **kwargs,
-    ) -> None:
+    ):
         """ Overwritten auto range
 
         Overwrite standard ViewBox auto-range to automatically set the
@@ -1904,15 +1895,13 @@ class ExViewBox(pg.ViewBox):
         item = kwargs.get("item")
         if item and not items:
             items = [item]
-        if self._layer_collection is not None:
+        if self.layers is not None:
             if padding is None:
                 padding = 0.05
-            plot_item_view_box: ExViewBox = self._layer_collection.get(
-                identifier=PlotItemLayer.default_layer_id,
-            ).view_box
+            plot_item_view_box: ExViewBox = self.layers.get(identifier=PlotItemLayer.default_layer_id).view_box
             other_viewboxes: List[ExViewBox] = list(filter(
                 lambda element: element is not plot_item_view_box and element.addedItems,
-                self._layer_collection.view_boxes,
+                self.layers.view_boxes,
             ))
             goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
             bounds_list: List[QRectF] = []
@@ -1934,11 +1923,7 @@ class ExViewBox(pg.ViewBox):
                 )
                 plot_item_view_box.set_range_manually(yRange=y_range, padding=padding)
 
-    def wheelEvent(
-        self,
-        ev: QGraphicsSceneWheelEvent,
-        axis: Optional[int] = None,
-    ) -> None:
+    def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
         Overwritten because we want to make sure the manual range
         change signal comes first. To make sure no flags are set anymore
@@ -1946,17 +1931,15 @@ class ExViewBox(pg.ViewBox):
 
         Args:
             ev: Wheel event that was detected
-            axis: integer representing an axis, 0 -> x, 1 -> y
+            axis: integer representing an axis, 0 -> x, 1 -> y, None -> both
         """
+        if axis != 1:
+            self.sig_xrange_changed.emit()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().wheelEvent(ev=ev, axis=axis)
         self.sigRangeChanged.emit(self, self.state["viewRange"])
 
-    def mouseDragEvent(
-        self,
-        ev: MouseDragEvent,
-        axis: Optional[int] = None,
-    ) -> None:
+    def mouseDragEvent(self, ev: MouseDragEvent, axis: Optional[int] = None):
         """
         Overwritten because we want to make sure the manual range
         change signal comes first. To make sure no flags are set anymore
@@ -1966,9 +1949,11 @@ class ExViewBox(pg.ViewBox):
             ev: Mouse Drag event that was detected
             axis: integer representing an axis, 0 -> x, 1 -> y
         """
-        if self._selection_mode:
+        if self.selection_mode:
             self._selection_mouse_drag_event(ev=ev)
         else:
+            if axis != 1:
+                self.sig_xrange_changed.emit()
             self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
             super().mouseDragEvent(ev=ev, axis=axis)
             self.sigRangeChanged.emit(self, self.state["viewRange"])
@@ -1996,7 +1981,7 @@ class ExViewBox(pg.ViewBox):
             else:
                 self._update_selection_box(ev.buttonDownPos(), ev.pos())
 
-    def set_range_manually(self, **kwargs) -> None:
+    def set_range_manually(self, **kwargs):
         """ Set range manually
 
         Set range, but emit a signal for manual range change to
@@ -2007,37 +1992,11 @@ class ExViewBox(pg.ViewBox):
         """
         if not kwargs.get("padding"):
             kwargs["padding"] = 0.0
-        if self._layer_collection is not None:
+        if self.layers is not None:
             # If we call this explicitly we do not care about prior set flags for range changes
-            self._layer_collection._reset_range_change_forwarding()
+            self.layers._reset_range_change_forwarding()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         self.setRange(**kwargs)
-
-    @property
-    def selection_mode(self) -> bool:
-        """
-        If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
-        """
-        return self._selection_mode
-
-    @selection_mode.setter
-    def selection_mode(self, enable: bool) -> None:
-        """
-        If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
-        """
-        self._selection_mode = enable
-
-    @property
-    def layers(self) -> Optional[PlotItemLayerCollection]:
-        """Collection of layers that are included in this PlotItem."""
-        return self._layer_collection
-
-    @layers.setter
-    def layers(self, layer_collection: PlotItemLayerCollection):
-        """Set a collection of layers that contains this ViewBox"""
-        self._layer_collection = layer_collection
 
     def _bounding_rect_from(
             self,
@@ -2059,28 +2018,16 @@ class ExViewBox(pg.ViewBox):
             items from all layers.
         """
         bounds: QRectF = self.childrenBoundingRect(items=items)
-        y_range_vb_destination = (
-            another_vb.targetRect().top(),
-            another_vb.targetRect().bottom(),
-        )
-        y_min_in_destination_vb = self._map_y_value_to(
-            another_yrange=y_range_vb_destination,
-            y_val=bounds.bottom(),
-        )
-        y_max_in_destination_vb = self._map_y_value_to(
-            another_yrange=y_range_vb_destination,
-            y_val=bounds.top(),
-        )
+        target_range = Range(min=another_vb.targetRect().top(),
+                             max=another_vb.targetRect().bottom())
+        min_target_y = self._map_y_value_to(value=bounds.bottom(), target_range=target_range)
+        max_target_y = self._map_y_value_to(value=bounds.top(), target_range=target_range)
         return QRectF(
-            bounds.x(), y_min_in_destination_vb,
-            bounds.width(), y_max_in_destination_vb - y_min_in_destination_vb,
+            bounds.x(), min_target_y,
+            bounds.width(), max_target_y - min_target_y,
         )
 
-    def _map_y_value_to(
-        self,
-        another_yrange: Tuple[float, float],
-        y_val: float,
-    ) -> float:
+    def _map_y_value_to(self, value: float, target_range: Range) -> float:
         """
         Map a y coordinate to the other layer by setting up the transformation
         between both layers (x coordinate we can skip, since these are always
@@ -2101,30 +2048,26 @@ class ExViewBox(pg.ViewBox):
         destination vb.
 
         Args:
-            another_yrange: shown view-range from the layer the coordinates
+            value: Y value to map
+            target_range: shown view-range from the layer the coordinates
                                  should be mapped to
-            y_val: Y value to map
 
         Returns:
             Y coordinate in the destinations ViewBox
         """
-        source_y_range = (
-            self.targetRect().top(),
-            self.targetRect().bottom(),
-        )
-        m: float = (another_yrange[1] - another_yrange[0]) / \
-                   (source_y_range[1] - source_y_range[0])
-        c: float = another_yrange[0] - m * source_y_range[0]
-        return m * y_val + c
+        src_range = Range(min=self.targetRect().top(),
+                          max=self.targetRect().bottom())
+        m: float = target_range.span / src_range.span
+        c: float = target_range.min - m * src_range.min
+        return m * value + c
 
-    def _update_selection_box(self,
-                              top_left: QPointF,
-                              bottom_right: QPointF) -> None:
-        """Update the view boxes slection rectangle
+    def _update_selection_box(self, top_left: QPointF, bottom_right: QPointF):
+        """
+        Update the viewboxes selection rectangle.
 
         Args:
-            top_left: Top left coordinate of the selection rectangle
-            bottom_right: Bottom right coordintate of the selection rectangle
+            top_left: Top left coordinate of the selection rectangle.
+            bottom_right: Bottom right coordinate of the selection rectangle.
         """
         r = QRectF(top_left, bottom_right)
         r = self.childGroup.mapRectFromParent(r)

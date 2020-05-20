@@ -21,6 +21,7 @@ from accwidgets import graph as accgraph
 import example_sources
 
 
+# FIXME: This example spins up CPU usage to 100% (maybe others do too?) Is it localtimingsource problem?
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -36,7 +37,7 @@ class MainWindow(QMainWindow):
         # for timing updates attached
         self.plot = accgraph.ScrollingPlotWidget(
             timing_source=timing_source,
-            time_span=accgraph.TimeSpan(10.0, 0.0),
+            time_span=accgraph.TimeSpan(left=10.0, right=0.0),
             time_progress_line=True,
         )
         # Now we can add 2 curves in different colors that are displaying the

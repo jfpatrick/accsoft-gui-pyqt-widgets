@@ -1,6 +1,7 @@
 """Configuration classes for the ExPlotWidget"""
-from typing import Optional, Union, Any, cast
+from typing import Union, cast
 from enum import IntEnum
+from dataclasses import dataclass
 import numpy as np
 
 
@@ -34,13 +35,16 @@ class PlotWidgetStyle(IntEnum):
     """
 
 
+@dataclass(init=False, repr=False)
 class TimeSpan:
 
-    def __init__(
-            self,
-            left: Optional[float] = None,
-            right: float = 0.0,
-    ):
+    left_boundary_offset: float
+    """Offset from the current time stamp for the lower boundary of the plot."""
+
+    right_boundary_offset: float
+    """Offset from the current time stamp for the upper boundary of the plot."""
+
+    def __init__(self, left: float = np.inf, right: float = 0.0):
         """
         Object representing a TimeSpan of the form [now - left, now - right].
         The left boundary is optional, if None is passed, all accumulated data
@@ -58,15 +62,20 @@ class TimeSpan:
         Raises:
             ValueError: The left boundary points to a more recent time stamp than the right boundary.
         """
-        if left is None or np.isnan(left):
+        if np.isnan(left):
             left = np.inf
-        if right is None or np.isnan(right) or np.isinf(right):
+        if np.isnan(right) or np.isinf(right):
             right = 0.0
-        TimeSpan._validate(left, right)
-        self.left_boundary_offset: float = cast(float, left)
-        self.right_boundary_offset: float = cast(float, right)
 
-    def __str__(self) -> str:
+        if left is not None and left < right:
+            raise ValueError(f"The passed left boundary with offset (now - {left}) "
+                             f"points to a more recent time stamp than the right "
+                             f"boundary with offset (now - {right}).")
+
+        self.left_boundary_offset = cast(float, left)
+        self.right_boundary_offset = right
+
+    def __repr__(self):
         """Readable string representation of a ExPlotWidget TimeSpan"""
         left, right = " ", ""
         if self.right_boundary_offset is not None:
@@ -74,11 +83,6 @@ class TimeSpan:
         if self.left_boundary_offset is not None:
             left = f"now - {self.left_boundary_offset}"
         return f"[{left}, {right}]"
-
-    def __eq__(self, other: Any) -> bool:
-        """Check, if both time spans contain the same boundaries"""
-        return self.right_boundary_offset == other.right_boundary_offset \
-            and self.left_boundary_offset == other.left_boundary_offset
 
     @property
     def size(self) -> float:
@@ -92,18 +96,6 @@ class TimeSpan:
     def finite(self) -> bool:
         """Does the time span has a defined left boundary?"""
         return not(np.isinf(self.left_boundary_offset) or self.left_boundary_offset is None)
-
-    @staticmethod
-    def _validate(left: Optional[float], right: float) -> None:
-        """Check if the two passed boundaries are valid.
-
-        Raises:
-            ValueError: The left boundary is smaller than the right one.
-        """
-        if left is not None and left < right:
-            raise ValueError(f"The passed left boundary with offset (now - {left}) "
-                             f"points to a more recent time stamp than the right "
-                             f"boundary with offset (now - {right}).")
 
 
 class ExPlotWidgetConfig:
@@ -173,9 +165,9 @@ class ExPlotWidgetConfig:
     def _to_time_span(time_span: Union[TimeSpan, float, int, None]) -> TimeSpan:
         if time_span is None:
             # Time span without left boundary
-            return TimeSpan(left=None, right=0.0)
+            return TimeSpan(right=0.0)
         elif isinstance(time_span, (float, int)):
-            return TimeSpan(left=time_span, right=0.0)
+            return TimeSpan(left=float(time_span), right=0.0)
         else:
             return time_span
 

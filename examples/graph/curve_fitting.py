@@ -56,7 +56,7 @@ class MainWindow(QMainWindow):
         # Now we create a scrolling live data plot showing 10s of data
         self.plot = accgraph.ScrollingPlotWidget(
             parent=self,
-            time_span=accgraph.TimeSpan(10.0),
+            time_span=accgraph.TimeSpan(left=10.0),
         )
         # This scatter plot will display our raw sinus data
         self.live_curve = self.plot.addCurve(data_source=rough_sinus,

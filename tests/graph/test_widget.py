@@ -183,10 +183,7 @@ def test_change_plot_config_on_running_plot(
     left = time_span_change[0] - x_offset_change[0]
     right = -x_offset_change[0]
     plot_config_before_change = ExPlotWidgetConfig(
-        time_span=TimeSpan(
-            left=left,
-            right=right,
-        ),
+        time_span=TimeSpan(left=left, right=right),
         plotting_style=plotting_style_change[0],
         time_progress_line=time_line_change[0],
     )
@@ -247,10 +244,7 @@ def test_change_plot_config_on_running_plot(
     left = time_span_change[1] - x_offset_change[1]
     right = -x_offset_change[1]
     plot_config_after_change = ExPlotWidgetConfig(
-        time_span=TimeSpan(
-            left=left,
-            right=right,
-        ),
+        time_span=TimeSpan(left=left, right=right),
         plotting_style=plotting_style_change[1],
         time_progress_line=time_line_change[1],
     )
@@ -273,7 +267,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     as well as from the PlotItem
     """
     config = ExPlotWidgetConfig(
-        time_span=TimeSpan(60),
+        time_span=TimeSpan(left=60.0),
         plotting_style=plotting_style,
     )
     window = MinimalTestWindow(plot=config)

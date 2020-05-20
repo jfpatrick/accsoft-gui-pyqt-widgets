@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         # be represented as a vertical line with time stamp
         self.plot = accgraph.CyclicPlotWidget(
             timing_source=timing_source,
-            time_span=accgraph.TimeSpan(10.0),
+            time_span=accgraph.TimeSpan(left=10.0),
             time_progress_line=True,
         )
         # Add a layer with y-axis on which our second curve should be plotted

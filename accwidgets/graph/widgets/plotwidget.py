@@ -641,6 +641,7 @@ class ExPlotWidget(pg.PlotWidget):
             "setLimits", "register", "unregister", "viewRect",
         ]
         for method in wrap_from_base_class:
+            # TODO: Questionable... This are bound methods, right?
             setattr(self, method, getattr(self.plotItem, method))
         self.plotItem.sigRangeChanged.connect(self.viewRangeChanged)
 

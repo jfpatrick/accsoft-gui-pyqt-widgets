@@ -124,9 +124,9 @@ class MainWindow(QMainWindow):
         ts_left_ignored = self.time_span_left_checkbox.isChecked()
         style = accgraph.PlotWidgetStyle.CYCLIC_PLOT if self.style_combobox.currentText() == "Cyclic" else accgraph.PlotWidgetStyle.SCROLLING_PLOT
         if ts_left_ignored and style == accgraph.PlotWidgetStyle.SCROLLING_PLOT:
-            ts = accgraph.TimeSpan(None, ts_right)
+            ts = accgraph.TimeSpan(right=ts_right)
         else:
-            ts = accgraph.TimeSpan(ts_left, ts_right)
+            ts = accgraph.TimeSpan(left=ts_left, right=ts_right)
         # Create new configuration object according to the values
         plot_config = accgraph.ExPlotWidgetConfig(
             plotting_style=style,
