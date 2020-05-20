@@ -332,6 +332,15 @@ class ExPlotItem(pg.PlotItem):
             except AttributeError:
                 pass
             self.getViewBox(layer=layer).addItem(item=item, ignoreBounds=ignoreBounds, **kwargs)
+
+            # We need to repeat pyqtgraph logic of adding legend items by default here, because it will
+            # do so only for native viewBox, but not for additional layers.
+            name: Optional[str] = None
+            if hasattr(item, "implements") and item.implements("plotData"):  # type: ignore
+                name = item.name()  # type: ignore
+            if name is not None and hasattr(self, "legend") and self.legend is not None:
+                self.legend.addItem(item, name=name)
+
         if self.editable:
             self._connect_to_editable_item(item=cast(EditablePlotCurve, item))
 
