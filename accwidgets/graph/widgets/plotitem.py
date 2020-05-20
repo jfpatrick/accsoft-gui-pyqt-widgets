@@ -1891,37 +1891,28 @@ class ExViewBox(pg.ViewBox):
             **kwargs: Additional Keyword arguments. These won't be used and are only for
                       swallowing f.e. deprecated parameters.
         """
-        # item = deprecated param from superclass
-        item = kwargs.get("item")
+        item = kwargs.get("item")  # deprecated param from superclass
         if item and not items:
             items = [item]
         if self.layers is not None:
             if padding is None:
                 padding = 0.05
-            plot_item_view_box: ExViewBox = self.layers.get(identifier=PlotItemLayer.default_layer_id).view_box
-            other_viewboxes: List[ExViewBox] = list(filter(
-                lambda element: element is not plot_item_view_box and element.addedItems,
-                self.layers.view_boxes,
-            ))
-            goal_range: QRectF = plot_item_view_box.childrenBoundingRect(items=items)
-            bounds_list: List[QRectF] = []
-            for view_box in other_viewboxes:
-                bounds_list.append(view_box._bounding_rect_from(
-                    another_vb=plot_item_view_box,
-                    items=items,
-                ))
-            for bound in bounds_list:
-                # Get common bounding rectangle for all items in all layers
-                goal_range = goal_range.united(bound)
+            primary_vb = self.layers.get(identifier=PlotItemLayer.default_layer_id).view_box
+            other_viewboxes = [vb for vb in self.layers.view_boxes if vb is not primary_vb and vb.addedItems]
+            target_bounds = primary_vb.childrenBoundingRect(items=items)
+            # Get common bounding rectangle for all items in all layers
+            for vb in other_viewboxes:
+                bounds = vb._bounding_rect_from(another_vb=primary_vb, items=items)
+                target_bounds = target_bounds.united(bounds)
+
+            primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
+
             # Setting the range with the manual signal will move all other layers accordingly
             if auto_range_x_axis:
-                plot_item_view_box.set_range_manually(rect=goal_range, padding=padding)
+                primary_vb.set_range_manually(rect=target_bounds, padding=padding, disableAutoRange=False)
             else:
-                y_range: Tuple[float, float] = (
-                    goal_range.bottom(),
-                    goal_range.top(),
-                )
-                plot_item_view_box.set_range_manually(yRange=y_range, padding=padding)
+                y_range = target_bounds.bottom(), target_bounds.top()
+                primary_vb.set_range_manually(yRange=y_range, padding=padding, disableAutoRange=False)
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
