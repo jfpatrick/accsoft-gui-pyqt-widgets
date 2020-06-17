@@ -4,7 +4,7 @@ import sys
 from PyQt5.sip import wrappertype
 
 if sys.version_info[1] <= 6:
-    # GenericMeta is based on ABCMeta, therefore we need only tthis
+    # GenericMeta is based on ABCMeta, therefore we need only this
     from typing import GenericMeta
 else:
     # Since Python 3.7, GenericMeta has been removed
