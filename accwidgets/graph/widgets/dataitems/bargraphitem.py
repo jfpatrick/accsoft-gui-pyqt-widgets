@@ -1,6 +1,6 @@
 """Scrolling Bar Chart for live data plotting"""
 
-from typing import Type, Dict, Union, cast
+from typing import Type, Dict, Union, cast, List, Tuple, Optional
 from copy import copy
 
 import numpy as np
@@ -26,6 +26,12 @@ if TYPE_CHECKING:
     from accwidgets.graph.widgets.plotitem import ExPlotItem
 
 
+OrthoRange = Union[List[float], Tuple[float, float], None]
+FracValue = float
+BoundsValue = Tuple[float, float]
+BoundsAxisEntry = Tuple[Tuple[FracValue, OrthoRange], BoundsValue]
+
+
 class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
 
     def __init__(
@@ -42,6 +48,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
             **bargraphitem_kwargs: Keyword arguments for the BarGraphItem's constructor
         """
         self._fixed_bar_width = bargraphitem_kwargs.get("width", np.nan)
+        self._boundsCache: List[Optional[BoundsAxisEntry]] = [None, None]
         bargraphitem_kwargs = LiveBarGraphItem._prepare_bar_graph_item_params(**bargraphitem_kwargs)
         pg.BarGraphItem.__init__(self, **bargraphitem_kwargs)
         DataModelBasedItem.__init__(
@@ -83,6 +90,166 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
             data_model=data_model,
             **bargraphitem_kwargs,
         )
+
+    def dataBounds(
+            self,
+            ax: int,
+            frac: FracValue = 1.0,
+            orthoRange: OrthoRange = None,
+    ) -> Optional[BoundsValue]:
+        """
+        Declares a method dynamically probed to have proper auto-scaling on bar graphs.
+        This method is called by :class:`~pyqtgraph.ViewBox` when auto-scaling.
+        NOTE! orthoRange and frac are ignored in this implementation (simply no need for it now).
+
+        Args:
+            ax: index of the axis (0 or 1) for which to return this item's data range.
+            frac: Specifies what fraction (0.0-1.0) of the total data range to return.
+                  By default, the entire range is returned. This allows the :class:`~pyqtgraph.ViewBox`
+                  to ignore large spikes in the data when auto-scaling.
+            orthoRange: Specifies that only the data within the given range (orthogonal to *ax*)
+                        should me measured when returning the data range. (For example, a
+                        :class:`~pyqtgrah.ViewBox` might ask what is the y-range of all data
+                        with x-values between min and max).
+
+        Returns:
+            The range occupied by the data (along a specific axis) in this item.
+        """
+        if ax not in [0, 1]:
+            raise Exception(f"Value for parameter 'ax' must be either 0 or 1. (got {ax})")
+
+        cache = self._boundsCache[ax]
+        if cache is not None and cache[0] == (frac, orthoRange):
+            return cache[1]
+
+        # Partially taken from pyqtgraph.BarGraphItem.drawPicture
+        def asarray(x):
+            if x is None or np.isscalar(x) or isinstance(x, np.ndarray):
+                return x
+            return np.array(x)
+
+        out_min_x, out_max_x, out_min_y, out_max_y = None, None, None, None
+
+        x = asarray(self.opts.get("x"))
+        x0 = asarray(self.opts.get("x0"))
+        x1 = asarray(self.opts.get("x1"))
+        width = asarray(self.opts.get("width"))
+
+        if x0 is None:
+            if width is None:
+                raise Exception("must specify either x0 or width")
+            if x1 is not None:
+                x0 = x1 - width
+            elif x is not None:
+                x0 = x - width / 2.
+            else:
+                raise Exception("must specify at least one of x, x0, or x1")
+        if width is None:
+            if x1 is None:
+                raise Exception("must specify either x1 or width")
+            width = x1 - x0
+
+        y = asarray(self.opts.get("y"))
+        y0 = asarray(self.opts.get("y0"))
+        y1 = asarray(self.opts.get("y1"))
+        height = asarray(self.opts.get("height"))
+
+        if y0 is None:
+            if height is None:
+                y0 = 0
+            elif y1 is not None:
+                y0 = y1 - height
+            elif y is not None:
+                y0 = y - height / 2.
+            else:
+                y0 = 0
+        if height is None:
+            if y1 is None:
+                raise Exception("must specify either y1 or height")
+            height = y1 - y0
+
+        for i in range(len(x0)):
+
+            if np.isscalar(x0):
+                x = x0
+            else:
+                x = x0[i]
+            if np.isscalar(y0):
+                y = y0
+            else:
+                y = y0[i]
+            if np.isscalar(width):
+                w = width
+            else:
+                w = width[i]
+            if np.isscalar(height):
+                h = height
+            else:
+                h = height[i]
+
+            bottom = y
+            top = y + h
+            miny = min(top, bottom)
+            maxy = max(top, bottom)
+
+            left = x
+            right = x + w
+            minx = min(left, right)
+            maxx = max(left, right)
+
+            out_min_x = minx if out_min_x is None else min(out_min_x, minx)
+            out_min_y = miny if out_min_y is None else min(out_min_y, miny)
+            out_max_x = maxx if out_max_x is None else max(out_max_x, maxx)
+            out_max_y = maxy if out_max_y is None else max(out_max_y, maxy)
+
+        b: BoundsValue
+        if ax == 0:
+            if out_min_x is None or out_max_x is None:
+                return None
+            b = out_min_x, out_max_x
+        else:
+            if out_min_y is None or out_max_y is None:
+                return None
+            b = out_min_y, out_max_y
+
+        self._boundsCache[ax] = cast(BoundsAxisEntry, ((frac, orthoRange), b))
+        return b
+
+    def pixelPadding(self) -> float:
+        """
+        Declares a method dynamically probed to have proper auto-scaling on bar graphs.
+        This method is called by :class:`~pyqtgraph.ViewBox` when auto-scaling.
+
+        Returns:
+            The size in pixels that this item may draw beyond the values returned by
+            :meth:`~AbstractBaseBarGraphItem.dataBounds`.
+        """
+
+        # Combination of retrieving pens, as in pyqtgraph.BarGraphItem.drawPicture
+        # And calculating padding, as in pyqtgraph.PlotCurveItem.pixelPadding
+        pen = self.opts["pen"]
+        pens = self.opts["pens"]
+
+        if pen is None and pens is None:
+            pen = pg.getConfigOption("foreground")
+        pen_obj = pg.mkPen(pen)
+
+        w = 0
+        if pen_obj.isCosmetic():
+            w += pen_obj.widthF() * 0.7072
+        return w
+
+    def setOpts(self, **opts):
+        self.invalidateBounds()
+        super().setOpts(**opts)
+
+    def viewTransformChanged(self):
+        """Declares a method dynamically probed to have invalidate bound caches used for auto-scaling."""
+        self.invalidateBounds()
+        self.prepareGeometryChange()
+
+    def invalidateBounds(self):
+        self._boundsCache = [None, None]
 
 
 class LiveBarGraphItem(AbstractBaseBarGraphItem):

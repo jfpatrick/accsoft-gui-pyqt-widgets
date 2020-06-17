@@ -5,7 +5,8 @@ from typing import Optional, Type, Callable, Tuple
 import warnings
 from unittest.mock import MagicMock
 
-from qtpy import QtGui, QtCore
+from qtpy.QtGui import QPen, QBrush, QColor
+from qtpy.QtCore import Qt, QPointF
 import accwidgets.graph as accgraph
 
 
@@ -33,7 +34,7 @@ def warn_always(warning_type: Optional[Type[Warning]] = None) -> Callable:
 
 def sim_selection_moved(marker: accgraph.DataSelectionMarker,
                         start: Tuple[float, float],
-                        end: Tuple[float, float]) -> None:
+                        end: Tuple[float, float]):
     """
     This is a workaround for qttest api for movemouse being buggy:
     https://bugreports.qt.io/browse/QTBUG-5232
@@ -47,31 +48,31 @@ def sim_selection_moved(marker: accgraph.DataSelectionMarker,
     """
     # Button down press
     press = MagicMock()
-    press.button.return_value = QtCore.Qt.LeftButton
+    press.button.return_value = Qt.LeftButton
     press.isStart.return_value = True
     press.isFinish.return_valaue = False
-    press.buttonDownPos.return_value = QtCore.QPointF(*start)
-    press.pos.return_value = QtCore.QPointF(*start)
+    press.buttonDownPos.return_value = QPointF(*start)
+    press.pos.return_value = QPointF(*start)
     marker.mouseDragEvent(ev=press)
     # Move
     move = MagicMock()
-    move.button.return_value = QtCore.Qt.LeftButton
+    move.button.return_value = Qt.LeftButton
     move.isStart.return_value = False
     move.isFinish.return_value = False
-    move.buttonDownPos.return_value = QtCore.QPointF(*end)
-    move.pos.return_value = QtCore.QPointF(*end)
+    move.buttonDownPos.return_value = QPointF(*end)
+    move.pos.return_value = QPointF(*end)
     marker.mouseDragEvent(ev=move)
     # Button release
     release = MagicMock()
-    release.button.return_value = QtCore.Qt.LeftButton
+    release.button.return_value = Qt.LeftButton
     release.isStart.return_value = False
     release.isFinish.return_valaue = True
-    release.buttonDownPos.return_value = QtCore.QPointF(*end)
-    release.pos.return_value = QtCore.QPointF(*end)
+    release.buttonDownPos.return_value = QPointF(*end)
+    release.pos.return_value = QPointF(*end)
     marker.mouseDragEvent(ev=release)
 
 
-def assert_qcolor_equals(color_1: QtGui.QColor, color_2: QtGui.QColor) -> None:
+def assert_qcolor_equals(color_1: QColor, color_2: QColor):
     """Compare two QColors by their r,g,b,a values"""
     assert color_1.red() == color_2.red()
     assert color_1.green() == color_2.green()
@@ -79,14 +80,14 @@ def assert_qcolor_equals(color_1: QtGui.QColor, color_2: QtGui.QColor) -> None:
     assert color_1.alpha() == color_2.alpha()
 
 
-def assert_qpen_equals(pen_1: QtGui.QPen, pen_2: QtGui.QPen) -> None:
+def assert_qpen_equals(pen_1: QPen, pen_2: QPen):
     """Compare the styling of two qpens"""
     assert_qcolor_equals(pen_1.color(), pen_2.color())
     assert pen_1.width() == pen_2.width()
     assert pen_1.style() == pen_2.style()
 
 
-def assert_qbrush_equals(brush_1: QtGui.QBrush, brush_2: QtGui.QBrush) -> None:
+def assert_qbrush_equals(brush_1: QBrush, brush_2: QBrush):
     """Compare the styling of two qbrushs"""
     assert_qcolor_equals(brush_1.color(), brush_2.color())
     assert brush_1.style() == brush_2.style()

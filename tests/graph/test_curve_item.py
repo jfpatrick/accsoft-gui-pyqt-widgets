@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Tuple, Type, cast
+from typing import List, Union, Optional, cast
 
 import pytest
 import numpy as np
@@ -677,20 +677,20 @@ def test_plotdataitem_components_visible(qtbot, params):
 # ~~~~~~~~~~~~~~ Test numpy RuntimeWarning when passing NaN to ScatterPlotItem ~~~~~~~~~~~~~~~
 
 
-@pytest.mark.parametrize("data_and_exp_warnings", [
+@pytest.mark.parametrize("data_sequence,expected_warnings", [
     ([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)], []),
     ([(0.0, 0.0), (1.0, 1.0), (np.nan, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
     ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
     ([(0.0, 0.0), (1.0, 1.0), (0.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
     ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (1.2, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
     ([(0.0, 0.0), (1.0, 1.0), (1.1, np.nan), (2.1, np.nan), (2.0, 2.0), (3.0, 3.0)], []),
-    ([(0.0, 0.0), (1.0, 1.0), (np.nan, 4.0), (2.0, 2.0), (3.0, 3.0)], [InvalidDataStructureWarning]),
+    ([(0.0, 0.0), (1.0, 1.0), (np.nan, 4.0), (2.0, 2.0), (3.0, 3.0)], [
+        (InvalidDataStructureWarning, f"{PointData(x=np.nan, y=4.0)} is not valid and can't be drawn for"
+                                      " the following reasons: A point with NaN as the x value and a value "
+                                      "other than NaN as a y-value is not valid."),
+    ]),
 ])
-def test_nan_values_in_scatter_plot(
-        qtbot,
-        recwarn,
-        data_and_exp_warnings: Tuple[List[Tuple[float, float]], List[Type]],
-):
+def test_nan_values_in_scatter_plot(qtbot, recwarn, data_sequence, expected_warnings):
     """ Test if passing nan to a curve and especially scatter plot
     raises an error.
 
@@ -703,8 +703,6 @@ def test_nan_values_in_scatter_plot(
     Args:
         qtbot: pytest-qt fixture for interaction with qt-application
     """
-    data_sequence: List[Tuple[float, float]] = data_and_exp_warnings[0]
-    expected_warnings: List[Type] = data_and_exp_warnings[1]
     window = _prepare_minimal_test_window(qtbot)
     source = UpdateSource()
     # symbol -> pass data to symbol as well
@@ -713,10 +711,12 @@ def test_nan_values_in_scatter_plot(
         source.send_data(PointData(point[0], point[1]))
         # Wait a bit, so the ScatterPlotItems paint function get's called properly
         qtbot.wait(1)
-    for expected in expected_warnings:
-        warning = recwarn.pop(expected)
-        assert issubclass(warning.category, expected)
-    assert len(recwarn) == len(expected_warnings)
+
+    for expected_type, expected_message in expected_warnings:
+        warns = [w for w in recwarn if w.message.args[0] == expected_message and w.category is expected_type]
+        assert len(warns) == 1, f"Expected single warning of type {expected_type.__name__} and message " \
+                                f"'{expected_message}'. Got {len(warns)}. All " \
+                                f"warnings: {[w.category for w in recwarn]}"
 
 
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~

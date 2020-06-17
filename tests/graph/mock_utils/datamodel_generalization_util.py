@@ -19,12 +19,16 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
-from accwidgets import graph as accgraph
+from accwidgets.graph import (AbstractLiveDataModel, LiveCurveDataModel, LiveBarGraphDataModel,
+                              LiveInjectionBarDataModel, LiveTimestampMarkerDataModel, BarCollectionData,
+                              PointData, BarData, InjectionBarData, TimestampMarkerData, CurveData,
+                              InjectionBarCollectionData, TimestampMarkerCollectionData)
+
 
 # ~~~~~ Creation of values the datamodel can emit ~~~~~~~~~~~~~~~~~~~~~~
 
 
-def check_datamodel(data_model: accgraph.AbstractLiveDataModel, buffer_size: int, primary_values: List[float]) -> bool:
+def check_datamodel(data_model: AbstractLiveDataModel, buffer_size: int, primary_values: List[float]) -> bool:
     """
     Check the content of the datamodels buffer with expected secondary values created
     with the same logic as the for the datasource created objects.
@@ -35,7 +39,7 @@ def check_datamodel(data_model: accgraph.AbstractLiveDataModel, buffer_size: int
     return _check_data_model(data_model, buffer_size, actual, primary_values)
 
 
-def check_datamodel_subset(data_model: accgraph.AbstractLiveDataModel, buffer_size: int, expected: List[float], start: float, end: float) -> bool:
+def check_datamodel_subset(data_model: AbstractLiveDataModel, buffer_size: int, expected: List[float], start: float, end: float) -> bool:
     """
     Check a specific subset of the datamodels buffer with expected secondary values created
     with the same logic as the for the datasource created objects.
@@ -47,7 +51,7 @@ def check_datamodel_subset(data_model: accgraph.AbstractLiveDataModel, buffer_si
 
 
 def _check_data_model(
-        data_model: accgraph.AbstractLiveDataModel,
+        data_model: AbstractLiveDataModel,
         buffer_size: int,
         actual: Tuple[np.ndarray, ...],
         primary_values: List[float],
@@ -56,13 +60,13 @@ def _check_data_model(
     if data_model.buffer_size != buffer_size:
         return False
     expected: Tuple[np.ndarray, ...]
-    if isinstance(data_model, accgraph.LiveCurveDataModel):
+    if isinstance(data_model, LiveCurveDataModel):
         expected = _create_curve_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
+    elif isinstance(data_model, LiveBarGraphDataModel):
         expected = _create_bar_graph_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
+    elif isinstance(data_model, LiveInjectionBarDataModel):
         expected = _create_injection_bar_data_model_expected_content(x_values=primary_values)
-    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
+    elif isinstance(data_model, LiveTimestampMarkerDataModel):
         expected = _create_infinite_line_data_model_expected_content(x_values=primary_values)
     else:
         raise ValueError("Can not handle DataModel of type", data_model.__class__)
@@ -102,17 +106,17 @@ def get_fitting_color(x_value: float) -> str:
 
 
 def create_fitting_object(
-        data_model: accgraph.AbstractLiveDataModel,
+        data_model: AbstractLiveDataModel,
         x_value: float,
-) -> Union[accgraph.PointData, accgraph.BarData, accgraph.InjectionBarData, accgraph.TimestampMarkerData, None]:
+) -> Union[PointData, BarData, InjectionBarData, TimestampMarkerData, None]:
     """Create an object fitting to the specified data model"""
-    if isinstance(data_model, accgraph.LiveCurveDataModel):
+    if isinstance(data_model, LiveCurveDataModel):
         return _create_point_data(value=x_value)
-    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
+    elif isinstance(data_model, LiveBarGraphDataModel):
         return _create_bar_data(value=x_value)
-    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
+    elif isinstance(data_model, LiveInjectionBarDataModel):
         return _create_injection_bar_data(value=x_value)
-    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
+    elif isinstance(data_model, LiveTimestampMarkerDataModel):
         return _create_infinite_line(
             value=x_value,
             color=get_fitting_color(x_value),
@@ -120,37 +124,33 @@ def create_fitting_object(
     return None
 
 
-def create_fitting_object_collection(data_model: accgraph.AbstractLiveDataModel, x_values: Union[List[float], np.ndarray]):
+def create_fitting_object_collection(data_model: AbstractLiveDataModel, x_values: Union[List[float], np.ndarray]):
     """Create an object fitting to the specified data model"""
     if not isinstance(x_values, np.ndarray):
         x_values = np.array(x_values)
-    if isinstance(data_model, accgraph.LiveCurveDataModel):
+    if isinstance(data_model, LiveCurveDataModel):
         return _create_curve_data(values=x_values)
-    elif isinstance(data_model, accgraph.LiveBarGraphDataModel):
+    elif isinstance(data_model, LiveBarGraphDataModel):
         return _create_bar_data_collection(values=x_values)
-    elif isinstance(data_model, accgraph.LiveInjectionBarDataModel):
+    elif isinstance(data_model, LiveInjectionBarDataModel):
         return _create_injection_bar_data_collection(values=x_values)
-    elif isinstance(data_model, accgraph.LiveTimestampMarkerDataModel):
+    elif isinstance(data_model, LiveTimestampMarkerDataModel):
         return _create_infinite_line_collection(
             values=x_values,
             colors=np.array([get_fitting_color(x_value) for x_value in x_values]),
         )
 
 
-def _create_point_data(value: float) -> accgraph.PointData:
+def _create_point_data(value: float) -> PointData:
     """Create PointData"""
-    return accgraph.PointData(
-        x=value,
-        y=value + 0.1,
-    )
+    return PointData(x=value,
+                     y=value + 0.1)
 
 
-def _create_curve_data(values: np.ndarray) -> accgraph.CurveData:
+def _create_curve_data(values: np.ndarray) -> CurveData:
     """Create PointData"""
-    return accgraph.CurveData(
-        x=values,
-        y=values + 0.1,
-    )
+    return CurveData(x=values,
+                     y=values + 0.1)
 
 
 def _create_curve_data_model_expected_content(x_values: List[float]) -> Tuple[np.ndarray, ...]:
@@ -160,22 +160,18 @@ def _create_curve_data_model_expected_content(x_values: List[float]) -> Tuple[np
     )
 
 
-def _create_bar_data(value: float) -> accgraph.BarData:
+def _create_bar_data(value: float) -> BarData:
     """Create BarData, To save some lines of code"""
-    return accgraph.BarData(
-        x=value,
-        y=value + 0.1,
-        height=value + 0.2,
-    )
+    return BarData(x=value,
+                   y=value + 0.1,
+                   height=value + 0.2)
 
 
-def _create_bar_data_collection(values: np.ndarray) -> accgraph.BarCollectionData:
+def _create_bar_data_collection(values: np.ndarray) -> BarCollectionData:
     """Create BarData, To save some lines of code"""
-    return accgraph.BarCollectionData(
-        x=values,
-        y=values + 0.1,
-        heights=values + 0.2,
-    )
+    return BarCollectionData(x=values,
+                             y=values + 0.1,
+                             heights=values + 0.2)
 
 
 def _create_bar_graph_data_model_expected_content(x_values: List[float]) -> Tuple[np.ndarray, ...]:
@@ -186,26 +182,22 @@ def _create_bar_graph_data_model_expected_content(x_values: List[float]) -> Tupl
     )
 
 
-def _create_injection_bar_data(value: float) -> accgraph.InjectionBarData:
+def _create_injection_bar_data(value: float) -> InjectionBarData:
     """Create InjectionBarData, To save some lines of code"""
-    return accgraph.InjectionBarData(
-        x=value,
-        y=value + 0.1,
-        height=value + 0.2,
-        width=value + 0.3,
-        label=str(value + 0.4),
-    )
+    return InjectionBarData(x=value,
+                            y=value + 0.1,
+                            height=value + 0.2,
+                            width=value + 0.3,
+                            label=str(value + 0.4))
 
 
-def _create_injection_bar_data_collection(values: np.ndarray) -> accgraph.InjectionBarCollectionData:
+def _create_injection_bar_data_collection(values: np.ndarray) -> InjectionBarCollectionData:
     """Create InjectionBarData, To save some lines of code"""
-    return accgraph.InjectionBarCollectionData(
-        x=values,
-        y=values + 0.1,
-        heights=values + 0.2,
-        widths=values + 0.3,
-        labels=np.array([str(value + 0.4) for value in values]),
-    )
+    return InjectionBarCollectionData(x=values,
+                                      y=values + 0.1,
+                                      heights=values + 0.2,
+                                      widths=values + 0.3,
+                                      labels=np.array([str(value + 0.4) for value in values]))
 
 
 def _create_injection_bar_data_model_expected_content(x_values: List[float]) -> Tuple[np.ndarray, ...]:
@@ -218,22 +210,18 @@ def _create_injection_bar_data_model_expected_content(x_values: List[float]) -> 
     )
 
 
-def _create_infinite_line(value: float, color: str) -> accgraph.TimestampMarkerData:
+def _create_infinite_line(value: float, color: str) -> TimestampMarkerData:
     """Create Timestamp Marker Data, To save some lines of code"""
-    return accgraph.TimestampMarkerData(
-        x=value,
-        color=color,
-        label=str(value + 0.1),
-    )
+    return TimestampMarkerData(x=value,
+                               color=color,
+                               label=str(value + 0.1))
 
 
-def _create_infinite_line_collection(values: np.ndarray, colors: np.ndarray) -> accgraph.TimestampMarkerCollectionData:
+def _create_infinite_line_collection(values: np.ndarray, colors: np.ndarray) -> TimestampMarkerCollectionData:
     """Create Timestamp Marker Data, To save some lines of code"""
-    return accgraph.TimestampMarkerCollectionData(
-        x=values,
-        colors=colors,
-        labels=np.array([str(value + 0.1) for value in values]),
-    )
+    return TimestampMarkerCollectionData(x=values,
+                                         colors=colors,
+                                         labels=np.array([str(value + 0.1) for value in values]))
 
 
 def _create_infinite_line_data_model_expected_content(x_values: List[float]) -> Tuple[np.ndarray, ...]:
