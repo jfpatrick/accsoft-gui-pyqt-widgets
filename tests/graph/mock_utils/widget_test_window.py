@@ -76,16 +76,14 @@ class PlotWidgetTestWindow(QMainWindow):
 
 
 class MinimalTestWindow(QMainWindow):
-    """Helper class for creating a Window containing an ExtendedPlotWidget with
-    timing and data sources that allow convenient testing by giving the option
-    to manually triggering updates with given values.
-    """
 
-    def __init__(
-        self,
-        plot: Union[ExPlotWidgetConfig, ExPlotWidget, None] = None,
-    ):
-        """Minmal qt window setup for testing purposes
+    def __init__(self, plot: Union[ExPlotWidgetConfig, ExPlotWidget, None] = None):
+        """
+        Helper class for creating a Window containing an ExtendedPlotWidget with
+        timing and data sources that allow convenient testing by giving the option
+        to manually triggering updates with given values.
+
+        Minimal Qt window setup for testing purposes
 
         The window can be either instantiated with a plotwidget,
         a plot configuration or nothing (if none is passed)

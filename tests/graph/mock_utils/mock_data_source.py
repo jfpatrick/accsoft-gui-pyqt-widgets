@@ -2,10 +2,10 @@
 
 from typing import List, Union, Type, Any
 
-from accwidgets import graph as accgraph
+from accwidgets.graph import UpdateSource, PointData, BarData
 
 
-class MockDataSource(accgraph.UpdateSource):
+class MockDataSource(UpdateSource):
     """Data Source for Testing purposes
 
     Class for sending the right signals to the ExtendedPlotWidget. This
@@ -13,7 +13,7 @@ class MockDataSource(accgraph.UpdateSource):
     timer based solutions.
     """
 
-    def create_new_value(self, timestamp: float, value: Union[float, List[float]], type_to_emit: Type = accgraph.PointData) -> None:
+    def create_new_value(self, timestamp: float, value: Union[float, List[float]], type_to_emit: Type = PointData):
         """Manually emit a signal with a given new value.
 
         Args:
@@ -21,20 +21,18 @@ class MockDataSource(accgraph.UpdateSource):
             value: value to emit
             type_to_emit: Type of the data that is supposed to be emitted
         """
-        if type_to_emit == accgraph.PointData and isinstance(value, float):
-            new_data = accgraph.PointData(x=timestamp,
-                                          y=value,
-                                          check_validity=False)
+        if type_to_emit == PointData and isinstance(value, float):
+            new_data = PointData(x=timestamp,
+                                 y=value,
+                                 check_validity=False)
             self.send_data(new_data)
-        elif type_to_emit == accgraph.BarData and isinstance(value, list):
-            new_data = accgraph.BarData(x=timestamp,
-                                        y=value[0],
-                                        height=value[1],
-                                        check_validity=False)
+        elif type_to_emit == BarData and isinstance(value, list):
+            new_data = BarData(x=timestamp,
+                               y=value[0],
+                               height=value[1],
+                               check_validity=False)
             self.send_data(new_data)
 
-    def emit_new_object(
-            self,
-            object_to_emit: Any):
+    def emit_new_object(self, object_to_emit: Any):
         """Emit already created object with the """
         self.send_data(object_to_emit)
