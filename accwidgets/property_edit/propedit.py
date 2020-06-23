@@ -11,7 +11,7 @@ from qtpy.QtWidgets import (QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComb
                             QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QLayout, QSizePolicy, QSpacerItem)
 from qtpy.QtCore import Property, Q_ENUMS, QObjectCleanupHandler, Qt, Signal, Slot, QMargins, Q_FLAGS
 from dataclasses import dataclass
-from accwidgets.generics import GenericMeta
+from accwidgets._generics import GenericMeta
 from accwidgets.designer_check import is_designer
 from accwidgets.led import Led
 
