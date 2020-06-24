@@ -372,6 +372,10 @@ class ExPlotItem(pg.PlotItem):
                               will be completely empty after clearing.
         """
         super().clear()
+        if hasattr(self, "legend") and self.legend is not None:
+            items = [*self.legend.items]  # Copy to prevent mutation inside the loop
+            for item in items:
+                self.legend.remove_item_from_legend(item)
         if not clear_decorators and self._time_span is not None:
             self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 

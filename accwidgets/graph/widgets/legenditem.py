@@ -90,6 +90,24 @@ class ExLegendItem(pg.LegendItem):
             width = max(width, sample.boundingRect().width() + label.width())
         self.setGeometry(0, 0, width + 25, height)
 
+    def remove_item_from_legend(self, item: Tuple[ItemSample, pg.LabelItem]):
+        """
+        In contrast to :meth:`~pyqtgraph.LegendItem.removeItem`, this method takes the tuple,
+        that can be taken from ``self.items``, without trying to figure out its label.
+        Removes one item from the legend.
+
+        Args:
+            item: Tuple, as directly can be extracted from ``self.items``.
+        """
+        sample, label = item
+        # This code pretty much matches :meth:`~pyqtgraph.LegendItem.removeItem`.
+        self.items.remove(item)    # remove from itemlist
+        self.layout.removeItem(sample)          # remove from layout
+        sample.close()                          # remove from drawing
+        self.layout.removeItem(label)
+        label.close()
+        self.updateSize()                       # redraq box
+
     def paint(self, p: QPainter, *args) -> None:
         """Paint function for the Legend Item.
 
