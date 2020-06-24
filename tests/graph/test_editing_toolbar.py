@@ -17,7 +17,7 @@ def test_bar_toggle_editable_mode(qtbot, empty_testing_window):
     """
     Test if the right signals are emitted on an edit button press
     """
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     bar = accgraph.EditingToolBar()
     empty_testing_window.cw_layout.addWidget(bar)
 
@@ -63,7 +63,7 @@ def test_bar_send(qtbot,
                   curve_1_edit,
                   curve_2_edit):
     """Test if send button is enabled /disabled properly"""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     plot_2 = accgraph.EditablePlotWidget()
     plots = [plot_1, plot_2]
@@ -116,7 +116,7 @@ def test_send_action_plot_switch(qtbot,
                                  empty_testing_window):
     """Send Button disabled when switching to plot without changes and enabled
     again when switching back"""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     plot_2 = accgraph.EditablePlotWidget()
     plots = [plot_1, plot_2]
@@ -147,7 +147,7 @@ def test_send_action_plot_switch(qtbot,
 def test_send_enabled_after_data_unselect(qtbot,
                                           empty_testing_window):
     """Send button should still be enabled even when deselected the edited data"""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
     bar.connect(plot_1)
@@ -183,7 +183,7 @@ def test_function_buttons_enabled(qtbot,
                                   selected_plots,
                                   data_selections,
                                   enabled):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     plot_2 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
@@ -222,7 +222,7 @@ def test_function_buttons_with_multiple_point_min_selection(
     selection,
     disabled_count,
 ):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
     bar.connect(plot_1)
@@ -254,7 +254,7 @@ def test_plot_connection(qtbot,
     to the connected plots.
     """
     with patch.object(accgraph.ExPlotWidget, "set_selection_mode") as selection_mock:
-        qtbot.addWidget(empty_testing_window)
+        qtbot.add_widget(empty_testing_window)
         bar = accgraph.EditingToolBar()
         plots: List[accgraph.ExPlotWidget] = []
         for _ in range(plot_count):
@@ -284,7 +284,7 @@ def test_disconnect(qtbot, empty_testing_window):
     with patch.object(accgraph.ExPlotWidget, "set_selection_mode") as selection_mock:
         plots = [accgraph.EditablePlotWidget(),
                  accgraph.EditablePlotWidget()]
-        qtbot.addWidget(empty_testing_window)
+        qtbot.add_widget(empty_testing_window)
         bar = accgraph.EditingToolBar()
         empty_testing_window.addToolBar(bar)
         empty_testing_window.cw_layout.addWidget(plots[0])
@@ -318,7 +318,7 @@ def test_plot_item_selection(qtbot,
                              pl1_sel,
                              pl2_sel,
                              selected):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot_1 = accgraph.EditablePlotWidget()
     plot_2 = accgraph.EditablePlotWidget()
     plots = [plot_1, plot_2]
@@ -358,7 +358,7 @@ def test_change_plot_item_selection_sequence(qtbot,
                                              empty_testing_window,
                                              selections,
                                              selected):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     pl1 = accgraph.EditablePlotWidget()
     pl2 = accgraph.EditablePlotWidget()
     plots = [pl1, pl2]
@@ -376,7 +376,7 @@ def test_change_plot_item_selection_sequence(qtbot,
 
 def test_single_connected_plot_not_selectable(qtbot, empty_testing_window):
     """Plot selecting should be disabled if only a single plot is connected."""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     pl1 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
     bar.connect(pl1)
@@ -393,7 +393,7 @@ def test_single_connected_plot_not_selectable(qtbot, empty_testing_window):
 
 def test_disconnect_selected_plot(qtbot, empty_testing_window):
     """Disconnect a selected plot"""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plots = []
     for _ in range(3):
         plots.append(accgraph.EditablePlotWidget())
@@ -424,7 +424,7 @@ def test_selection_of_current_plotitem(qtbot,
                                        pl2_sel,
                                        active_plot,
                                        selection):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     pl1 = accgraph.EditablePlotWidget()
     pl2 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
@@ -461,7 +461,7 @@ def test_selection_of_current_plotitem(qtbot,
 
 def test_add_action_to_toolbar(qtbot,
                                empty_testing_window):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
     bar.connect(plot)
@@ -497,7 +497,7 @@ def test_add_action_to_toolbar(qtbot,
 
 def test_remove_action_from_toolbar(qtbot,
                                     empty_testing_window):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()
     bar.connect(plot)
@@ -519,7 +519,7 @@ def test_remove_action_from_toolbar(qtbot,
 
 def test_redo_undo_button_enabled(qtbot, empty_testing_window):
     """Check if the undo button gets properly enabled / disabled"""
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot = accgraph.EditablePlotWidget()
     plot_2 = accgraph.EditablePlotWidget()
     bar = accgraph.EditingToolBar()

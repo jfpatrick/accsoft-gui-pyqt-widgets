@@ -22,7 +22,7 @@ from .mock_utils.widget_test_window import PlotWidgetTestWindow
 def test_bargraph_auto_scales_alone(qtbot: QtBot, widget_type, auto_scaling_enabled, data, is_collection, expected_range):
     plot_config = ExPlotWidgetConfig(plotting_style=widget_type)
     window = PlotWidgetTestWindow(plot_config, should_create_timing_source=False)
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
 
     if not auto_scaling_enabled:
         window.plot.disableAutoRange()
@@ -178,7 +178,7 @@ def test_bargraph_auto_scales_alone(qtbot: QtBot, widget_type, auto_scaling_enab
 def test_bargraph_auto_scales_with_other_items(qtbot: QtBot, widget_type, items, auto_scaling_enabled, datas, expected_range):
     plot_config = ExPlotWidgetConfig(plotting_style=widget_type)
     window = PlotWidgetTestWindow(plot_config, should_create_timing_source=False)
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
 
     if not auto_scaling_enabled:
         window.plot.disableAutoRange()
@@ -217,7 +217,7 @@ def test_bargraph_caches_auto_scale_calculation(isscalar, qtbot: QtBot, widget_t
     # detect by usage of np.isscalar inside the dataBounds method.
     plot_config = ExPlotWidgetConfig(plotting_style=widget_type)
     window = PlotWidgetTestWindow(plot_config, should_create_timing_source=False)
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     source = UpdateSource()
     bar_graph = window.plot.addBarGraph(data_source=source, width=0.5)
     bar_graph.invalidateBounds()
@@ -245,7 +245,7 @@ def test_bargraph_cache_reset(qtbot: QtBot, widget_type, axis, call_fn, args):
     # detect by usage of np.isscalar inside the dataBounds method.
     plot_config = ExPlotWidgetConfig(plotting_style=widget_type)
     window = PlotWidgetTestWindow(plot_config, should_create_timing_source=False)
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     source = UpdateSource()
     bar_graph = window.plot.addBarGraph(data_source=source, width=0.5)
     bar_graph.invalidateBounds()

@@ -45,7 +45,7 @@ def test_point_selection(qtbot,
                          selection,
                          expected_indices,
                          signal_count):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
@@ -119,7 +119,7 @@ def test_selection_style(qtbot,
                          symbol,
                          selection_pen,
                          selection_brush):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
@@ -233,7 +233,7 @@ def test_selection_moved(qtbot,
                          movement,
                          expected_x,
                          expected_y):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
@@ -263,7 +263,7 @@ def test_selection_labels(qtbot,
                           selection,
                           labels,
                           activate_labels):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
@@ -280,7 +280,7 @@ def test_selection_labels(qtbot,
 
 def test_send_curves_state(qtbot,
                            editable_testing_window):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     source: accgraph.UpdateSource = accgraph.UpdateSource()
@@ -311,7 +311,7 @@ def test_undo_redo(qtbot, editable_testing_window):
     Are the undo / redo properly executed and propagated through the fitting
     signals
     """
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     spy = QtTest.QSignalSpy(plot.sig_selection_changed)

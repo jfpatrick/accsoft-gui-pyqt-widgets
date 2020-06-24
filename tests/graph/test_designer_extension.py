@@ -20,7 +20,7 @@ _PLOT_TYPES = [ScrollingPlotWidget,
 def table_model():
     def model_builder(qtbot: QtBot, plot: ExPlotWidget) -> Tuple[PlotLayerTableModel, PlotLayerEditingDialog]:
         dialog = PlotLayerEditingDialog(plot=plot)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         _ = QAbstractItemModelTester(dialog.table.model())  # Test for common model mistakes
         return dialog.table.model(), dialog
     return model_builder
@@ -43,7 +43,7 @@ def test_layer_dialog_data_standard_plot(qtbot,
                                          plot_type: Type[ExPlotWidget]):
     plot = plot_type()
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, 0.0, 1.0],
@@ -60,7 +60,7 @@ def test_layer_dialog_data_plot_with_custom_view_ranges_and_labels(qtbot,
     plot.setRange(xRange=(-5, 5), yRange=(-2, 8), padding=0.0)
     plot.setLabels(bottom="x", top="x", left="y", right="y")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
         ["x", "x", False, -5.0, 5.0],
@@ -76,7 +76,7 @@ def test_layer_dialog_data_plot_with_additional_standard_layer(qtbot,
     plot = plot_type()
     plot.add_layer("my new layer")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, 0.0, 1.0],
@@ -95,7 +95,7 @@ def test_layer_dialog_data_plot_with_additional_altered_layer(qtbot,
     plot.setLabel(axis="l1", text="some label text")
     plot.setRange(l1=(-100, 100), padding=0.0)
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, 0.0, 1.0],
@@ -121,7 +121,7 @@ def test_layer_dialog_set_view_ranges(qtbot,
                                       plot_type: Type[ExPlotWidget]):
     plot = plot_type()
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, dialog = table_model(qtbot=qtbot, plot=plot)
     model.setData(model.index(0, _COLUMN_LABEL_TEXT), "New X Label")
     model.setData(model.index(0, _COLUMN_AUTO_RANGE), False)
@@ -149,7 +149,7 @@ def test_layer_dialog_add_layer(qtbot,
                                 plot_type: Type[ExPlotWidget]):
     plot = plot_type()
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, dialog = table_model(qtbot=qtbot, plot=plot)
     # Add a layer through the dialog and change it
     dialog.add_btn.click()
@@ -177,7 +177,7 @@ def test_layer_dialog_remove_layer(qtbot,
     plot.add_layer("remove_me")
     assert len(plot.plotItem.layers) == 2
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, dialog = table_model(qtbot=qtbot, plot=plot)
     # Remove layer by selecting it and pressing the deleted button
     dialog.table.selectRow(2)
@@ -199,7 +199,7 @@ def test_layer_dialog_rename_layer(qtbot,
     plot.setRange(rename_me=(-12.0, 34.0), padding=0)
     plot.setLabels(rename_me="my label")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, dialog = table_model(qtbot=qtbot, plot=plot)
     model.setData(model.index(2, 0), "renamed")
     # Pretend we are inside designer and cursor is found
@@ -232,7 +232,7 @@ def test_layer_dialog_press_cancel_button(qtbot,
     assert np.allclose(plot.getViewBox("l1").targetRange()[1], [-10.0, 100.0])
     # Lets change some stuff in the dialog
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     model, dialog = table_model(qtbot=qtbot, plot=plot)
     model.setData(model.index(0, _COLUMN_LABEL_TEXT), "New X Label")
     model.setData(model.index(0, _COLUMN_AUTO_RANGE), True)
@@ -276,7 +276,7 @@ def test_modify_non_empty_layer(qtbot,
     default_item = plot.plotItem.addCurve(data_source=UpdateSource())
     layer_item = plot.plotItem.addCurve(data_source=UpdateSource(), layer="l1")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     # Check current situation
     assert len(plot.plotItem.layers) == 2
     assert len(plot.getViewBox().addedItems) == 1
@@ -310,7 +310,7 @@ def test_remove_non_empty_layer(qtbot,
     default_item = plot.plotItem.addCurve(data_source=UpdateSource())
     layer_item = plot.plotItem.addCurve(data_source=UpdateSource(), layer="l1")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     # Check current situation
     assert len(plot.plotItem.layers) == 2
     assert len(plot.getViewBox().addedItems) == 1

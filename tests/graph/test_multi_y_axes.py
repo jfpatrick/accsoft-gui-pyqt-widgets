@@ -726,7 +726,7 @@ def test_auto_button_functionality(qtbot, item_to_test):
     check_range(layer_1.view_box.targetRange(), [[0.0, 200.0], [-20.0, 20.0]])
     # Press the small [A] button in the plot
     plot.autoBtnClicked()
-    qtbot.waitForWindowShown(window)
+    qtbot.wait_for_window_shown(window)
     check_range(layer_0.view_box.targetRange(), [[-10, 150], [0, 1]], tolerance_factor=0.05)
     check_range(layer_1.view_box.targetRange(), [[-10, 150], [1.0, 3.0]], tolerance_factor=0.05)
 
@@ -801,7 +801,7 @@ def _prepare_cyclic_plot_test_window(qtbot, time_span: int):
     )
     window = PlotWidgetTestWindow(plot_config)
     window.show()
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     return window
 
 

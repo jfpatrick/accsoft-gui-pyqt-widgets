@@ -83,7 +83,7 @@ def test_static_plot_widget_creation(
         ),
         item_to_add=item_to_add)
     window.show()
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     assert len(window.plot.plotItem.data_model_items) == 1
     assert isinstance(window.plot.plotItem.data_model_items[0], item_to_add)
 
@@ -130,7 +130,7 @@ def test_live_plot_widget_creation(
     if window.time_source_mock is None:
         raise ValueError("Timing Source for the test window was not created as expected.")
     window.show()
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     time_1, time_2 = 0.0, 1.0
     data_x, data_y = 0.75, 5.25
     window.time_source_mock.create_new_value(time_1)
@@ -190,7 +190,7 @@ def test_change_plot_config_on_running_plot(
     window = MinimalTestWindow(
         plot=plot_config_before_change,
     )
-    qtbot.waitForWindowShown(window)
+    qtbot.wait_for_window_shown(window)
     plotwidget: ExPlotWidget = window.plot
     ds_curve = MockDataSource()
     ds_bar = MockDataSource()
@@ -272,7 +272,7 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     )
     window = MinimalTestWindow(plot=config)
     window.show()
-    qtbot.waitForWindowShown(window)
+    qtbot.wait_for_window_shown(window)
     plot_widget = window.plot
     plot_item = plot_widget.plotItem
     source = UpdateSource()
@@ -334,7 +334,7 @@ def test_static_items_config_change(qtbot, config_style_change):
     )
     window = MinimalTestWindow(plot=config)
     window.show()
-    qtbot.waitForWindowShown(window)
+    qtbot.wait_for_window_shown(window)
     plot_widget = window.plot
     plot_item = plot_widget.plotItem
     source = UpdateSource()

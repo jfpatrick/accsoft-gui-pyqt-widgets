@@ -250,7 +250,7 @@ def test_layer_ids_property(qtbot, widget):
 def test_push_data_styling_properties(qtbot,
                                       empty_testing_window,
                                       widget):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot: Union[ScrollingPlotWidget, CyclicPlotWidget] = widget()
     empty_testing_window.setCentralWidget(plot)
     plot.pushDataItemPenColor = QtGui.QColor(255, 0, 0)
@@ -273,7 +273,7 @@ def test_push_data_styling_properties(qtbot,
 
 def test_replace_data_as_curve_styling_properties(qtbot,
                                                   empty_testing_window):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
@@ -296,7 +296,7 @@ def test_replace_data_as_curve_styling_properties(qtbot,
 
 def test_replace_data_as_bargraph_styling_properties(qtbot,
                                                      empty_testing_window):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
@@ -321,7 +321,7 @@ def test_replace_data_as_bargraph_styling_properties(qtbot,
 
 def test_replace_data_as_injectionbargraph_styling_properties(qtbot,
                                                               empty_testing_window):
-    qtbot.addWidget(empty_testing_window)
+    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)

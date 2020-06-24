@@ -73,7 +73,7 @@ def _prepare_scrolling_plot_test_window(qtbot, time_span: accgraph.TimeSpan, sho
         should_create_timing_source=should_create_timing_source,
     )
     window.show()
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     return window
 
 
@@ -156,7 +156,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
     data.create_new_value(timestamp=15.0, value=-15.0)
     data.create_new_value(timestamp=20.0, value=0.0)
     data.create_new_value(timestamp=25.0, value=15.0)
-    qtbot.waitForWindowShown(window)
+    qtbot.wait_for_window_shown(window)
     # Auto range y axis and scrolling fixed range
     assert check_range(actual_range=plot_item.vb.targetRange(),
                        expected_range=[[10.0, 30.0], [np.nan, np.nan]])
@@ -295,7 +295,7 @@ def test_curve_plotting_slot(qtbot,
                              data,
                              expected):
     plot: accgraph.ExPlotWidget = plot_type()
-    qtbot.addWidget(plot)
+    qtbot.add_widget(plot)
     plot.show()
     slot = getattr(plot, slot)
     assert plot.plotItem.single_value_slot_dataitem is None
@@ -327,7 +327,7 @@ def test_bar_plotting_slots(qtbot,
                             data,
                             expected):
     plot: accgraph.StaticPlotWidget = plot_type()
-    qtbot.addWidget(plot)
+    qtbot.add_widget(plot)
     plot.show()
     assert plot.plotItem.single_value_slot_dataitem is None
     for d in data:
@@ -367,7 +367,7 @@ def test_inj_bar_plotting_slots(qtbot,
                                 data,
                                 expected):
     plot: accgraph.StaticPlotWidget = plot_type()
-    qtbot.addWidget(plot)
+    qtbot.add_widget(plot)
     plot.show()
     assert plot.plotItem.single_value_slot_dataitem is None
     for d in data:
@@ -389,7 +389,7 @@ def test_inj_bar_plotting_slots(qtbot,
 def test_send_all_editables_state(qtbot,
                                   editable_testing_window):
     curve_count = 5
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
 
     sources: List[accgraph.UpdateSource] = []
@@ -416,7 +416,7 @@ def test_send_all_editables_state(qtbot,
 
 def test_plot_item_selection(qtbot,
                              editable_testing_window):
-    qtbot.addWidget(editable_testing_window)
+    qtbot.add_widget(editable_testing_window)
     plot: accgraph.EditablePlotWidget = editable_testing_window.plot
     # Per default the plotselection is disabled (only activated when multiple
     # plots are connected to a editing-toolbar)

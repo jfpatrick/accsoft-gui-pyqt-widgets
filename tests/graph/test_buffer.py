@@ -233,7 +233,7 @@ def test_buffer_size_configurability(
         minimal_test_window,
 ):
     """Test if the datamodels buffer size is properly configurable."""
-    qtbot.addWidget(minimal_test_window)
+    qtbot.add_widget(minimal_test_window)
     plot_item = minimal_test_window.plot.plotItem
     data_source = accgraph.UpdateSource()
     if use_convenience_functions:

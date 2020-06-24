@@ -97,7 +97,7 @@ def test_enum_user_data(options, result):
 def test_set_value(qtbot: QtBot, value, expected_values, fields):
     config, getters = tuple(zip(*fields))  # Split list of tuple into tuple of lists
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.fields = config
     widget.setValue(value)
     assert widget._widget_layout.rowCount() == len(config)
@@ -124,7 +124,7 @@ def test_set_value(qtbot: QtBot, value, expected_values, fields):
 ])
 def test_buttons(qtbot: QtBot, setting, get_enabled, set_enabled):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()  # Needed for visibility of the child widgets to be correct
 
     # Buttons should be invisible by default
@@ -145,7 +145,7 @@ def test_buttons(qtbot: QtBot, setting, get_enabled, set_enabled):
 ]])
 def test_button_position(qtbot: QtBot, settings):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
 
     assert widget.buttonPosition == PropertyEdit.ButtonPosition.BOTTOM
@@ -166,7 +166,7 @@ def test_button_position(qtbot: QtBot, settings):
 ])
 def test_button_position_warns(qtbot: QtBot, setting, expected_msg):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
 
     with pytest.warns(UserWarning, match=expected_msg):
@@ -180,7 +180,7 @@ def test_button_position_warns(qtbot: QtBot, setting, expected_msg):
 ])
 def test_decoration(qtbot: QtBot, setting, container_type):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
 
     assert widget.decoration == PropertyEdit.Decoration.NONE
@@ -198,7 +198,7 @@ def test_decoration(qtbot: QtBot, setting, container_type):
 
 def test_decoration_replace_existing(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = PropertyEdit.Decoration.GROUP_BOX
     assert widget._decoration is not None
@@ -216,7 +216,7 @@ def test_decoration_replace_existing(qtbot: QtBot):
 ])
 def test_decoration_warns(qtbot: QtBot, setting, expected_msg):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
 
     assert widget.decoration == PropertyEdit.Decoration.NONE
@@ -243,7 +243,7 @@ def test_decoration_warns(qtbot: QtBot, setting, expected_msg):
 def test_layout_insets(qtbot: QtBot, prop_name, margin_index, decoration, should_zero_out):
     values = [(0, 0), (20, 20), (40, 40), (-20, None)]
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
 
@@ -273,7 +273,7 @@ def test_layout_insets(qtbot: QtBot, prop_name, margin_index, decoration, should
 ])
 def test_layout_insets_remain_with_new_decoration(qtbot: QtBot, orig_deco, orig_insets, new_deco, new_insets):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = orig_deco
 
@@ -300,7 +300,7 @@ def test_layout_insets_remain_with_new_decoration(qtbot: QtBot, orig_deco, orig_
 ])
 def test_layout_insets_remain_with_new_button_box_direction(qtbot: QtBot, orig_direction, new_direction, deco, expected_insets):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = deco
     widget.buttonPosition = orig_direction
@@ -330,7 +330,7 @@ def test_layout_button_box_offset(qtbot: QtBot, decoration, position):
     orig_val = widget.buttonBoxOffset
     orig_widget_spacing = widget._widget_layout.spacing()
     orig_button_box_spacing = widget._button_box.spacing()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
     widget.buttonPosition = position
@@ -361,7 +361,7 @@ def test_layout_button_box_offset(qtbot: QtBot, decoration, position):
 ])
 def test_layout_button_box_offset_remains_with_new_decoration(qtbot: QtBot, orig_deco, new_deco):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = orig_deco
     orig_widget_spacing = widget._widget_layout.spacing()
@@ -390,7 +390,7 @@ def test_layout_button_box_offset_remains_with_new_decoration(qtbot: QtBot, orig
 ])
 def test_layout_button_box_offset_remains_with_new_button_box_direction(qtbot: QtBot, deco, orig_direction, new_direction):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = deco
     widget.buttonPosition = orig_direction
@@ -418,7 +418,7 @@ def test_layout_button_box_offset_remains_with_new_button_box_direction(qtbot: Q
 ])
 def test_layout_vertical_spacing(qtbot: QtBot, decoration, position):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
     widget.buttonPosition = position
@@ -437,7 +437,7 @@ def test_layout_vertical_spacing(qtbot: QtBot, decoration, position):
 ])
 def test_layout_vertical_spacing_non_compatible_delegate(qtbot: QtBot, decoration, position, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
     widget.buttonPosition = position
@@ -459,7 +459,7 @@ def test_layout_vertical_spacing_non_compatible_delegate(qtbot: QtBot, decoratio
 ])
 def test_layout_horizontal_spacing(qtbot: QtBot, decoration, position):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
     widget.buttonPosition = position
@@ -478,7 +478,7 @@ def test_layout_horizontal_spacing(qtbot: QtBot, decoration, position):
 ])
 def test_layout_horizontal_spacing_non_compatible_delegate(qtbot: QtBot, decoration, position, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = decoration
     widget.buttonPosition = position
@@ -492,7 +492,7 @@ def test_layout_horizontal_spacing_non_compatible_delegate(qtbot: QtBot, decorat
 @pytest.mark.parametrize("new_setting", [Qt.AlignVCenter | Qt.AlignRight])
 def test_layout_label_alignment(qtbot: QtBot, new_setting):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     assert widget.formLabelAlignment != new_setting
     assert widget.formLabelAlignment == Qt.AlignLeft
@@ -504,7 +504,7 @@ def test_layout_label_alignment(qtbot: QtBot, new_setting):
 
 def test_layout_label_alignment_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.layout_delegate = custom_layout_delegate()
     assert widget.formLabelAlignment == Qt.AlignLeft | Qt.AlignVCenter
@@ -516,7 +516,7 @@ def test_layout_label_alignment_non_compatible_delegate(qtbot: QtBot, custom_lay
 @pytest.mark.parametrize("new_setting", [Qt.AlignTop | Qt.AlignRight])
 def test_layout_form_alignment(qtbot: QtBot, new_setting):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     assert widget.formAlignment != new_setting
     assert widget.formAlignment == Qt.AlignVCenter
@@ -528,7 +528,7 @@ def test_layout_form_alignment(qtbot: QtBot, new_setting):
 
 def test_layout_form_alignment_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.layout_delegate = custom_layout_delegate()
     assert widget.formAlignment == Qt.AlignLeft | Qt.AlignTop
@@ -540,7 +540,7 @@ def test_layout_form_alignment_non_compatible_delegate(qtbot: QtBot, custom_layo
 @pytest.mark.parametrize("new_setting", [PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT])
 def test_layout_field_growth(qtbot: QtBot, new_setting):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     assert widget.formFieldGrowthPolicy != new_setting
     assert widget.formFieldGrowthPolicy == PropertyEdit.FormLayoutFieldGrowthPolicy.ALL_NON_FIXED_GROW
@@ -552,7 +552,7 @@ def test_layout_field_growth(qtbot: QtBot, new_setting):
 
 def test_layout_field_growth_with_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.layout_delegate = custom_layout_delegate()
     assert widget.formFieldGrowthPolicy == PropertyEdit.FormLayoutFieldGrowthPolicy.STAY_AT_SIZE_HINT
@@ -564,7 +564,7 @@ def test_layout_field_growth_with_non_compatible_delegate(qtbot: QtBot, custom_l
 @pytest.mark.parametrize("new_setting", [PropertyEdit.FormLayoutRowWrapPolicy.ALL_ROWS])
 def test_layout_row_wrap(qtbot: QtBot, new_setting):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     assert widget.formRowWrapPolicy != new_setting
     assert widget.formRowWrapPolicy == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
@@ -576,7 +576,7 @@ def test_layout_row_wrap(qtbot: QtBot, new_setting):
 
 def test_layout_row_wrap_with_non_compatible_delegate(qtbot: QtBot, custom_layout_delegate):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.layout_delegate = custom_layout_delegate()
     assert widget.formRowWrapPolicy == PropertyEdit.FormLayoutRowWrapPolicy.DONT_WRAP
@@ -587,7 +587,7 @@ def test_layout_row_wrap_with_non_compatible_delegate(qtbot: QtBot, custom_layou
 
 def test_title(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.decoration = PropertyEdit.Decoration.GROUP_BOX
     assert not widget.title
@@ -685,7 +685,7 @@ def test_title(qtbot: QtBot):
 )])
 def test_fields(qtbot: QtBot, config, expected_widgets):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.show()
     widget.fields = config
     assert widget._widget_layout.rowCount() == len(expected_widgets)
@@ -719,7 +719,7 @@ def test_fields(qtbot: QtBot, config, expected_widgets):
 ])
 def test_send_only_updated_set(qtbot: QtBot, send_only_updated, str_input_val, expected_val):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.sendOnlyUpdatedValues = send_only_updated
     widget.fields = [
         (PropertyEditField(field="str", type=PropertyEdit.ValueType.STRING, editable=True)),
@@ -744,7 +744,7 @@ def test_send_only_updated_set(qtbot: QtBot, send_only_updated, str_input_val, e
 
 def test_get_btn(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     spy = QSignalSpy(widget.valueRequested)
     assert len(spy) == 0
     widget._get_btn.click()
@@ -754,7 +754,7 @@ def test_get_btn(qtbot: QtBot):
 
 def test_set_btn(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.fields = [
         PropertyEditField(field="test", type=PropertyEdit.ValueType.STRING, editable=True),
     ]
@@ -794,7 +794,7 @@ def test_layout_delegate(custom_layout_delegate):
 def test_abstract_delegate_widget_for_item_recreates_expired_weakref(qtbot: QtBot):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     dangling_widget = delegate.widget_for_item(parent=None,  # By setting parent to None, we leave it dangling
                                                config=PropertyEditField(field="test",
@@ -821,7 +821,7 @@ def test_abstract_delegate_widget_for_item_recreates_expired_weakref(qtbot: QtBo
 def test_abstract_delegate_widget_for_item(qtbot: QtBot):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     with mock.patch.object(delegate, "create_widget", return_value=QLabel()) as mocked_method:
         _ = delegate.widget_for_item(parent=widget,
@@ -841,7 +841,7 @@ def test_abstract_delegate_widget_for_item(qtbot: QtBot):
 def test_abstract_delegate_value_updated_not_called_for_expired_weakref(qtbot: QtBot):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     delegate.widget_map["test"] = (lambda: None), None  # type: ignore # Pretend we have deleted weakref (lambda returning None)
 
@@ -860,7 +860,7 @@ def test_abstract_delegate_value_updated_not_called_for_expired_weakref(qtbot: Q
 def test_abstract_delegate_value_updated(qtbot: QtBot, configured_field_id, updated_field_id, should_be_called):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     _ = delegate.widget_for_item(parent=widget,
                                  config=PropertyEditField(field=configured_field_id,
@@ -879,7 +879,7 @@ def test_abstract_delegate_value_updated(qtbot: QtBot, configured_field_id, upda
 def test_abstract_delegate_read_value_not_called_for_expired_weakref(qtbot: QtBot):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     delegate.widget_map["test"] = (lambda: None), None  # type: ignore # Pretend we have deleted weakref (lambda returning None)
 
@@ -898,7 +898,7 @@ def test_abstract_delegate_read_value_not_called_for_expired_weakref(qtbot: QtBo
 def test_abstract_delegate_read_value(qtbot: QtBot, send_only_updated, editable, should_be_called):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     _ = delegate.widget_for_item(parent=widget,
                                  config=PropertyEditField(field="test",
@@ -928,7 +928,7 @@ def test_abstract_delegate_read_value(qtbot: QtBot, send_only_updated, editable,
 def test_delegate_create_widget(qtbot: QtBot, editable, value_type, expected_widget_type):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     new_widget = delegate.widget_for_item(parent=widget,
                                           config=PropertyEditField(field="test",
@@ -954,7 +954,7 @@ def test_delegate_create_widget(qtbot: QtBot, editable, value_type, expected_wid
 def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, expected_method_call, expected_method_arg, property_mock):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     ud = PropertyEdit.ValueType.enum_user_data([("none", 0), ("one", 4), ("two", 5)])  # user_data is ignored by all except enums
     new_widget = delegate.widget_for_item(parent=widget,
@@ -965,7 +965,7 @@ def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, e
     assert hasattr(new_widget, expected_method_call)
     with mock.patch(f"{new_widget.__class__.__module__}.{new_widget.__class__.__qualname__}.{expected_method_call}",
                     new_callable=mock.PropertyMock if property_mock else mock.MagicMock) as mocked_method:
-        qtbot.addWidget(new_widget)
+        qtbot.add_widget(new_widget)
         delegate.display_data(field_id="test", value=sent_value, item_type=value_type, user_data=ud, widget=new_widget)
         mocked_method.assert_called_once_with(expected_method_arg)
 
@@ -986,7 +986,7 @@ def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, e
 def test_delegate_display_data_warns(qtbot: QtBot, editable, value_type, sent_value, expected_msg):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     ud = PropertyEdit.ValueType.enum_user_data([("none", 0), ("one", 4), ("two", 5)])  # user_data is ignored by all except enums
     new_widget = delegate.widget_for_item(parent=widget,
@@ -1013,7 +1013,7 @@ def test_delegate_display_data_warns(qtbot: QtBot, editable, value_type, sent_va
 def test_delegate_send_data(qtbot: QtBot, editable, value_type, sent_value, expected_method_call, expected_method_return_val):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.widget_delegate = delegate
     ud = PropertyEdit.ValueType.enum_user_data([("none", 0), ("one", 4), ("two", 5)])  # user_data is ignored by all except enums
     new_widget = delegate.widget_for_item(parent=widget,
@@ -1141,7 +1141,7 @@ def test_pack_fields(value_type,
 ])
 def test_default_layout_delegate_calls_widget_delegate_create_method(qtbot: QtBot, config, expected_call_cnt):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.fields = config
     widget_delegate = widget.widget_delegate
     layout_delegate = widget.layout_delegate
@@ -1155,7 +1155,7 @@ def test_default_layout_delegate_calls_widget_delegate_create_method(qtbot: QtBo
 
 def test_layout_delegate_setter_updates_layout_on_new_delegate(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
 
     assert widget._layout.children()[1] == widget._button_box
     assert widget._layout.children()[0] == widget._widget_layout
@@ -1170,7 +1170,7 @@ def test_layout_delegate_setter_updates_layout_on_new_delegate(qtbot: QtBot):
 
 def test_layout_delegate_setter_does_not_updates_layout_on_same_delegate(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
 
     assert widget._layout.children()[1] == widget._button_box
     assert widget._layout.children()[0] == widget._widget_layout
@@ -1185,5 +1185,5 @@ def test_layout_delegate_setter_does_not_updates_layout_on_same_delegate(qtbot: 
 
 def test_initial_layout_is_form(qtbot: QtBot):
     widget = PropertyEdit()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     assert isinstance(widget._widget_layout, QFormLayout)

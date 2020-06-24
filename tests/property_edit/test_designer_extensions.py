@@ -109,10 +109,10 @@ def test_dialog_updates_fields_as_JSON(find_form_mock, qtbot: QtBot, fields, exp
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields(fields)
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         property_edit.show()
         dialog = FieldsDialog(widget=property_edit)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         dialog.show()
         dialog._save()
         find_form_mock().cursor().setProperty.assert_called_with("fields", expected_string)
@@ -126,7 +126,7 @@ def test_edit_contents_opens_dialog(show_mock, exec_mock, qtbot: QtBot):
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields([])
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         ext = PropertyFieldExtension(property_edit)
         assert len(ext.actions()) == 1
         act = ext.actions()[0]
@@ -156,9 +156,9 @@ def test_render_enum_configure_btn(qtbot: QtBot, calls_parent, draws_control, ex
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields(config)
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         dialog = FieldsDialog(widget=property_edit)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         dialog.show()
         dialog.table.selectRow(row)
         user_data_column = 4
@@ -192,9 +192,9 @@ def test_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, handl
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields(config)
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         dialog = FieldsDialog(widget=property_edit)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         dialog.show()
         user_data_column = 4
         delegate = dialog.table.itemDelegateForColumn(user_data_column)
@@ -219,9 +219,9 @@ def test_field_dialog_disabled_buttons(qtbot: QtBot, initial_fields, initial_ena
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields(initial_fields)
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         dialog = FieldsDialog(widget=property_edit)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         dialog.show()
         assert dialog.add_btn.isEnabled() is True
         assert dialog.remove_btn.isEnabled() is False
@@ -369,9 +369,9 @@ def test_mark_all_editable(qtbot: QtBot, editable, button_name):
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
         mock_prop.return_value = _pack_designer_fields(fields)
         property_edit = PropertyEdit()
-        qtbot.addWidget(property_edit)
+        qtbot.add_widget(property_edit)
         dialog = FieldsDialog(widget=property_edit)
-        qtbot.addWidget(dialog)
+        qtbot.add_widget(dialog)
         dialog.show()
         table_model = dialog.table.model()
         get_dialog_editables = lambda: [table_model.data(table_model.createIndex(row, 2))

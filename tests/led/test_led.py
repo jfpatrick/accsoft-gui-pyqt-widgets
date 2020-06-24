@@ -52,7 +52,7 @@ def test_color_for_status_fails(status, error_msg):
 def test_slots(qtbot: QtBot, slot_name, property_name, slot_arg):
     with mock.patch(f"accwidgets.led.led.Led.{property_name}", new_callable=mock.PropertyMock) as mocked_prop:
         widget = Led()
-        qtbot.addWidget(widget)
+        qtbot.add_widget(widget)
         mocked_prop.assert_not_called()
         getattr(widget, slot_name)(slot_arg)
         mocked_prop.assert_called_with(slot_arg)
@@ -61,14 +61,14 @@ def test_slots(qtbot: QtBot, slot_name, property_name, slot_arg):
 @pytest.mark.parametrize("color", [QColor(0, 0, 0), QColor(255, 255, 255), QColor(255, 0, 0)])
 def test_color_getter(qtbot: QtBot, color):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget._color = color
     assert widget.color == color
 
 
 def test_color_setter_resets_status(qtbot: QtBot):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.status = Led.Status.ERROR
     orig_color = widget.color
     widget.color = QColor(0, 0, 0)
@@ -86,14 +86,14 @@ def test_color_setter_resets_status(qtbot: QtBot):
 ])
 def test_status_getter(qtbot: QtBot, status):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget._status = status
     assert widget.status == status
 
 
 def test_status_setter(qtbot: QtBot):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     orig_color = QColor(0, 0, 0)
     widget.color = orig_color
     widget.status = Led.Status.ERROR
@@ -111,7 +111,7 @@ def test_status_setter(qtbot: QtBot):
 ])
 def test_alignment_getter(qtbot: QtBot, alignment):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget._alignment = alignment
     assert widget.alignment == alignment
 
@@ -130,7 +130,7 @@ def test_alignment_getter(qtbot: QtBot, alignment):
 ])
 def test_alignment_setter(qtbot: QtBot, alignment, width, height, edge, x_center, y_center):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.resize(width, height)
     old_x_center, old_y_center, old_edge = widget._bubble_center
     assert old_edge == edge
@@ -146,7 +146,7 @@ def test_alignment_setter(qtbot: QtBot, alignment, width, height, edge, x_center
 def test_resize_recalculates_both_gradients(qtbot: QtBot):
     widget = Led()
     with mock.patch("accwidgets.led.led.Led._accent_grad", new_callable=mock.PropertyMock, return_value=QColor(0, 0, 0)) as prop_mock:
-        qtbot.addWidget(widget)
+        qtbot.add_widget(widget)
         prop_mock.assert_not_called()
         with mock.patch.object(widget, "_grad_for_color", return_value=QColor(0, 0, 0)) as method_mock:
             widget.resizeEvent(mock.MagicMock())
@@ -157,7 +157,7 @@ def test_resize_recalculates_both_gradients(qtbot: QtBot):
 def test_alignment_setter_recalculates_both_gradients(qtbot: QtBot):
     widget = Led()
     with mock.patch("accwidgets.led.led.Led._accent_grad", new_callable=mock.PropertyMock, return_value=QColor(0, 0, 0)) as prop_mock:
-        qtbot.addWidget(widget)
+        qtbot.add_widget(widget)
         prop_mock.assert_not_called()
         with mock.patch.object(widget, "_grad_for_color", return_value=QColor(0, 0, 0)) as method_mock:
             widget.alignment = Led.Alignment.BOTTOM
@@ -167,14 +167,14 @@ def test_alignment_setter_recalculates_both_gradients(qtbot: QtBot):
 
 def test_size_hint(qtbot: QtBot):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     assert widget.minimumSizeHint() == QSize(20, 20)
 
 
 def test_color_setter_recalculates_main_gradient(qtbot: QtBot):
     widget = Led()
     with mock.patch("accwidgets.led.led.Led._accent_grad", new_callable=mock.PropertyMock, return_value=QColor(0, 0, 0)) as prop_mock:
-        qtbot.addWidget(widget)
+        qtbot.add_widget(widget)
         prop_mock.assert_not_called()
         with mock.patch.object(widget, "_grad_for_color", return_value=QColor(0, 0, 0)) as method_mock:
             widget.color = QColor(0, 0, 0)
@@ -188,7 +188,7 @@ def test_color_setter_recalculates_main_gradient(qtbot: QtBot):
 ])
 def test_grad_for_color(qtbot: QtBot, width, height, start, stop):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.resize(width, height)
     grad = widget._grad_for_color(QColor(127, 127, 127))
     assert isinstance(grad, QLinearGradient)
@@ -202,7 +202,7 @@ def test_grad_for_color(qtbot: QtBot, width, height, start, stop):
 ])
 def test_accent_grad(qtbot: QtBot, width, height, start, stop):
     widget = Led()
-    qtbot.addWidget(widget)
+    qtbot.add_widget(widget)
     widget.resize(width, height)
     grad = widget._accent_grad
     assert isinstance(grad, QLinearGradient)

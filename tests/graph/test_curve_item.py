@@ -742,7 +742,7 @@ def _prepare_cyclic_plot_test_window(
     )
     window = PlotWidgetTestWindow(plot_config, item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
     window.show()
-    qtbot.addWidget(window)
+    qtbot.add_widget(window)
     return window
 
 
@@ -767,8 +767,8 @@ def _prepare_minimal_test_window(
     )
     window = MinimalTestWindow(plot_config)
     window.show()
-    qtbot.addWidget(window)
-    qtbot.waitForWindowShown(window)
+    qtbot.add_widget(window)
+    qtbot.wait_for_window_shown(window)
     return window
 
 
