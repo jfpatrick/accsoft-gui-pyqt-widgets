@@ -11,6 +11,10 @@ from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from accwidgets import graph as accgraph
 from example_sources import SinusCurveSource
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class MainWindow(QMainWindow):
     """Example for the usage of the Extended PlotWidget in an QMainWindow"""

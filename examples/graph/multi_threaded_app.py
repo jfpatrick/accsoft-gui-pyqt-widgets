@@ -16,6 +16,10 @@ import numpy as np
 from qtpy.QtWidgets import QMainWindow, QApplication
 import accwidgets.graph as accgraph
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class ThreadSource(accgraph.UpdateSource):
 

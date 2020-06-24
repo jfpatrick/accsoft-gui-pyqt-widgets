@@ -16,6 +16,10 @@ from qtpy.QtGui import QColor
 
 from accwidgets import graph as accgraph
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class MainWindow(QMainWindow):
 

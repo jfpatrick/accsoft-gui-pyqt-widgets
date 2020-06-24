@@ -2,6 +2,10 @@ import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QColorDialog, QPushButton, QComboBox, QWidget, QGridLayout
 from accwidgets.led import Led
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class MainWindow(QMainWindow):
 

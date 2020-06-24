@@ -6,6 +6,10 @@ from qtpy.QtWidgets import QApplication, QMainWindow, QLabel
 from qtpy.uic import loadUi
 from accwidgets.property_edit import PropertyEdit
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class MainWindow(QMainWindow):
 

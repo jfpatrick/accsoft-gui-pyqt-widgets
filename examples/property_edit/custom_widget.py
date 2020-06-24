@@ -4,6 +4,10 @@ from typing import Dict, Any, Optional, cast
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLCDNumber
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, AbstractPropertyEditWidgetDelegate
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class CustomWidgetDelegate(AbstractPropertyEditWidgetDelegate):
     """

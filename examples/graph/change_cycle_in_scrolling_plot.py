@@ -13,6 +13,11 @@ from accwidgets import graph as accgraph
 import example_sources
 
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self):

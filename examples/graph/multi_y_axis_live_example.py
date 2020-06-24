@@ -22,6 +22,11 @@ from accwidgets import graph as accgraph
 import example_sources
 
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+
 class MainWindow(QMainWindow):
     """Example for the usage of the Extended PlotWidget in an QMainWindow"""
 

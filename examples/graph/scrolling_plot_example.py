@@ -20,6 +20,10 @@ from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from accwidgets import graph as accgraph
 import example_sources
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 # FIXME: This example spins up CPU usage to 100% (maybe others do too?) Is it localtimingsource problem?
 class MainWindow(QMainWindow):

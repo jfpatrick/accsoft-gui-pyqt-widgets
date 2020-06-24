@@ -16,6 +16,10 @@ import numpy as np
 from accwidgets import graph as accgraph
 import pyqtgraph as pg
 
+# Allow smooth exit on Ctrl+C
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 class RoughSinusSource(accgraph.UpdateSource):
 
