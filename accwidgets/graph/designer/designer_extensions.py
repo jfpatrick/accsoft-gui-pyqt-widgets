@@ -1,378 +1,168 @@
-import enum
-from typing import Union, Optional, Tuple, List, cast, Dict
 import json
-
-from qtpy.QtCore import QAbstractTableModel, Qt, QVariant, Slot, QItemSelection, QModelIndex, QObject
-from qtpy.QtGui import QResizeEvent
-from qtpy.QtDesigner import QDesignerFormWindowInterface
-from qtpy.QtWidgets import (
-    QDialog,
-    QAction,
-    QDialogButtonBox,
-    QPushButton,
-    QSpacerItem,
-    QVBoxLayout,
-    QTableView,
-    QAbstractItemView,
-    QSizePolicy,
-    QHBoxLayout,
-)
-
-from accwidgets import graph as accgraph
-from accwidgets.designer_base import WidgetsExtension
+import warnings
+from dataclasses import dataclass
+from typing import Union, Optional, Tuple, List, cast, Dict, Any
+from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
+from qtpy.QtWidgets import QAction, QWidget, QDoubleSpinBox, QStyleOptionViewItem, QStyledItemDelegate
+from accwidgets.graph import ExPlotWidget, ExPlotWidgetProperties
+from accwidgets._designer_base import WidgetsExtension, get_designer_cursor
+from accwidgets.qt import (AbstractTableModel, TableViewColumnResizer, AbstractTableDialog,
+                           BooleanPropertyColumnDelegate)
 
 
-class AxisEditorTableModelColumnNames(enum.Enum):
+@dataclass
+class LayerTableRow:
+    """View model class for the Plot layer table."""
+    axis_id: str
+    axis_label: Optional[str] = None
+    auto_range: bool = True
+    min_range: Optional[float] = None
+    max_range: Optional[float] = None
 
-    """Central enum to define column names."""
 
-    axis_identifier = "Axis Identifier"
-    axis_label = "Axis Label"
-    axis_auto_range = "Auto Range"
-    view_range_min = "View Range Min"
-    view_range_max = "View Range Max"
+class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
 
+    DEFAULT_VIEW_RANGE: Tuple[float, float] = (0.0, 1.0)
 
-class LayerEditorTmpValues:
-
-    def __init__(self, plot: accgraph.ExPlotWidget):
+    def __init__(self, data: List[LayerTableRow], parent: Optional[QObject] = None):
         """
-        We want to wait until the user clicks the 'DONE' button in the layer
-        editing dialog, before we apply the values back to the actual plot
-        we are editing. This way we can cancel our changes.
-
-        For this, this class offers a way to store the potential values passed
-        to the plots properties, which are involved when editing layers.
-        """
-        # we take the class that has the properties for auto-completion purposes
-        self._plot: accgraph.ExPlotWidgetProperties = cast(accgraph.ExPlotWidgetProperties, plot)
-        self.layer_ids: List[str] = []
-        self.axis_labels: Dict[str, str] = {}
-        self.axis_ranges: Dict[str, Union[str, Tuple[float, float]]] = {}
-        self._setup()
-
-    def apply(self):
-        """Apply the current values to the plot"""
-        self._plot.layerIDs = self.layer_ids
-        self._plot.axisLabels = json.dumps(self.axis_labels)
-        self._plot.axisRanges = json.dumps(self.axis_ranges)
-
-    @property
-    def plot(self) -> Union[accgraph.ExPlotWidgetProperties, accgraph.ExPlotWidget]:
-        """The Plot the Table model is based on."""
-        return self._plot
-
-    def remove_layer(self, layer: Union[int, str]) -> None:
-        """
-        Removing a layer requires also removing potential entries in the other
-        values which reference the removed layer. This function bundles this
-        so the user does not have to delete those obsolete reference by hand.
+        Model for layer editor dialog.
 
         Args:
-            layer: Identifier or index of the layer which should be removed
+            data: Initial data.
+            parent: Owning object.
         """
-        if isinstance(layer, int):
-            layer = self.layer_ids[layer]
-        self.layer_ids.remove(layer)
-        for dct in [self.axis_labels, self.axis_ranges]:
-            if cast(Dict, dct).get(layer) is not None:
-                del cast(Dict, dct)[layer]
+        AbstractTableModel.__init__(self, data=data, parent=parent)
 
-    def _setup(self):
-        """Get all initial values from the plot, on which we operate on."""
-        self.layer_ids = self._plot.layerIDs
-        self.axis_labels = json.loads(self._plot.axisLabels)
-        self.axis_ranges = json.loads(self._plot.axisRanges)
+    def create_row(self) -> LayerTableRow:
+        next_idx = self.rowCount() - 2  # Assuming 2 always occupied by x, y
 
+        def id_template(idx: int):
+            return f"y_{idx}"
 
-class LayerEditorTableModel(QAbstractTableModel):
+        def id_exists(idx: int):
+            return any(row.axis_id == id_template(idx) for row in self._data)
 
-    default_axes: Tuple[str, str] = ("x", "y")
-    axis_auto_range_key: str = "auto"
-    default_view_range: Tuple[int, int] = (0, 1)
+        while id_exists(next_idx):
+            next_idx += 1
+        return LayerTableRow(axis_id=id_template(next_idx))
 
-    def __init__(self, plot: accgraph.ExPlotWidget, parent: QObject = None):
-        """
-        Data Model for the Layer Editing Table of Plot Widgets.
+    def columnCount(self, *_, **__):
+        return 5
 
-        Args:
-            plot: Plot the data model is based on
-            parent: Parent Widget
-        """
-        super(QAbstractTableModel, self).__init__(parent=parent)
-        self._tmp = LayerEditorTmpValues(plot)
-        self.columns: Tuple[AxisEditorTableModelColumnNames, ...] = (
-            AxisEditorTableModelColumnNames.axis_identifier,
-            AxisEditorTableModelColumnNames.axis_label,
-            AxisEditorTableModelColumnNames.axis_auto_range,
-            AxisEditorTableModelColumnNames.view_range_min,
-            AxisEditorTableModelColumnNames.view_range_max,
-        )
+    def column_name(self, section: int) -> str:
+        if section == 0:
+            return "Axis Identifier"
+        elif section == 1:
+            return "Axis Label"
+        elif section == 2:
+            return "Auto Range"
+        elif section == 3:
+            return "View Range Min"
+        elif section == 4:
+            return "View Range Max"
+        raise ValueError(f"Unexpected column {section}")
 
-    def apply_to_plot(self) -> None:
-        """
-        Apply the current values of the temporary value storage to
-        the plot it is based on.
-        """
-        self._tmp.apply()
+    def get_cell_data(self, index: QModelIndex, row: LayerTableRow) -> Any:
+        section = index.column()
+        if section == 0:
+            return row.axis_id
+        elif section == 1:
+            return row.axis_label
+        elif section == 2:
+            return row.auto_range
+        elif section == 3:
+            return row.min_range if row.min_range is not None else self.DEFAULT_VIEW_RANGE[0]
+        elif section == 4:
+            return row.max_range if row.max_range is not None else self.DEFAULT_VIEW_RANGE[1]
+        raise ValueError(f"Unexpected column {section}")
 
-    @property
-    def plot(self) -> Union[accgraph.ExPlotWidgetProperties, accgraph.ExPlotWidget]:
-        """The Plot the Table model is based on."""
-        return self._tmp.plot
+    def set_cell_data(self, index: QModelIndex, row: LayerTableRow, value: Any) -> bool:
+        section = index.column()
+        if section == 0:
+            row.axis_id = str(value)
+        elif section == 1:
+            row.axis_label = str(value)
+        elif section == 2:
+            row.auto_range = bool(value)
+            if row.auto_range:
+                row.max_range = row.min_range = None
+        elif section == 3:
+            row.min_range = float(value)
+        elif section == 4:
+            row.max_range = float(value)
+        else:
+            return False
+        return True
 
-    @plot.setter
-    def plot(self, new_plot: accgraph.ExPlotWidget) -> None:
-        """
-        The Plot the Table model is based on.
-
-        Args:
-            new_plot: Plot which will replace the old plot in the table model
-        """
-        self.beginResetModel()
-        self._tmp = LayerEditorTmpValues(new_plot)
-        self.endResetModel()
-
-    @property
-    def all_axes(self) -> List[str]:
-        """All axes of the plot, including default and additional ones"""
-        return list(self.default_axes) + self._tmp.layer_ids
-
-    # Implementation of Interfaces etc.
-
-    def flags(self, index: QModelIndex) -> int:
-        """
-        Flags to render the table cell editable / selectable / enabled.
-
-        Args:
-            index: Position of the cell.
-
-        Returns:
-            Flags how to render the cell.
-        """
-        column = self.columns[index.column()]
+    def flags(self, index: QModelIndex):
+        column = index.column()
         row = index.row()
-        if column == AxisEditorTableModelColumnNames.axis_identifier and row <= 1:
-            return Qt.ItemIsSelectable | Qt.ItemIsEnabled
-        if (
-            column in (AxisEditorTableModelColumnNames.view_range_min, AxisEditorTableModelColumnNames.view_range_max)
-            and self._get_axis_auto_range(axis=self.all_axes[index.row()])
-        ):
-            # If auto range is enabled for the axis, disable manual range cells
+        if column == 0 and row <= 1:
+            # Forbid editing default axis IDs
+            return Qt.ItemIsSelectable
+        if column in [3, 4] and self._data[row].auto_range:
+            # Forbid editing range, when set to auto
             return Qt.ItemIsSelectable
         return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
 
-    def rowCount(self, _: QModelIndex = None) -> int:
-        """Row Count for the table = default x axis, default y axis, y axes of layers."""
-        return len(self.all_axes)
-
-    def columnCount(self, _: QModelIndex = None) -> int:
-        """Column Count for the Table."""
-        return len(self.columns)
-
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        """Return the columns name.
-
-        Args:
-            section: column / row of which the header data should be returned
-            orientation: Columns / Row
-            role: Not used by this implementation, if not DisplayRole, super
-                  implementation is called
-
-        Returns:
-            Header Data (f.e. name) for the row / column
-        """
-        if role != Qt.DisplayRole:
-            return super().headerData(section, orientation, role)
-        if orientation == Qt.Horizontal and section < self.columnCount():
-            return self.columns[section].value
-        elif orientation == Qt.Vertical and section < self.rowCount():
-            return str(section)
-        return ""
-
-    def append(self):
-        """Append a new layer to the plot."""
-        self.beginInsertRows(QModelIndex(), len(self.all_axes), len(self.all_axes))
-        self._tmp.layer_ids.append(self._next_layer_id())
-        self.endInsertRows()
-
-    def _next_layer_id(self) -> str:
-        i = 0
-        while f"y_{i}" in self._tmp.layer_ids:
-            i += 1
-        return f"y_{i}"
-
-    def remove_at_index(self, index: QModelIndex) -> None:
-        """
-        Remove a layer in the data model by a given index.
-
-        Args:
-            index: Index of row, which represents the layer which should be removed.
-        """
-        layer_index = index.row() - len(self.default_axes)
-        if layer_index >= 0:
-            self.beginRemoveRows(QModelIndex(), index.row(), index.row())
-            self._tmp.remove_layer(layer_index)
-            self.endRemoveRows()
-
-    def data(
-            self,
-            index: QModelIndex,
-            role: Qt.ItemDataRole = Qt.DisplayRole,
-    ) -> Union[QVariant, str, float, float]:
-        """
-        Get Data from the table's model by a given index.
-
-        Args:
-            index: row & column in the table
-            role: which property is requested
-
-        Returns:
-            Data associated with the passed index
-        """
-        # Handle invalid indices
-        if not index.isValid():
-            return QVariant()
-        if index.row() >= self.rowCount():
-            return QVariant()
-        if index.column() >= self.columnCount():
-            return QVariant()
-        # Return found data
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return self._get_data(index=index)
-        return QVariant()
-
-    def setData(
-            self,
-            index: QModelIndex,
-            value=Union[float, str],
-            role: Qt.ItemDataRole = Qt.EditRole,
-    ) -> bool:
-        """
-        Set Data to the tables data model at the given index.
-
-        Args:
-            index: Position of the new value
-            value: new value
-            role: which property is requested
-
-        Returns:
-            True if the data could be successfully set.
-        """
-        if not index.isValid():
-            return False
-        if index.row() >= self.rowCount():
-            return False
-        if index.column() >= self.columnCount():
-            return False
-        if role == Qt.EditRole:
-            self._set_data(value=value, index=index)
+    def notify_change(self, start: QModelIndex, end: QModelIndex, action_type: AbstractTableModel.ChangeType):
+        if action_type == self.ChangeType.UPDATE_ITEM and start.column() == 2:
+            # Update range cells as well
+            super().notify_change(start=start,
+                                  end=end.siblingAtColumn(end.model().columnCount() - 1),
+                                  action_type=action_type)
         else:
-            return False
-        self.dataChanged.emit(index, index)
-        return True
+            super().notify_change(start=start, end=end, action_type=action_type)
 
-    # Getter and Setter for Column Values:
-
-    def _get_data(self, index: QModelIndex) -> Union[QVariant, str, float, bool]:
-        column_name = self.columns[index.column()]
-        axis = self.all_axes[index.row()]
-        if column_name == AxisEditorTableModelColumnNames.axis_identifier:
-            return axis
-        if column_name == AxisEditorTableModelColumnNames.axis_label:
-            return self._get_axis_label(axis=axis)
-        if column_name == AxisEditorTableModelColumnNames.axis_auto_range:
-            return self._get_axis_auto_range(axis=axis)
-        if column_name == AxisEditorTableModelColumnNames.view_range_min:
-            return self._get_view_range(axis=axis)[0]
-        if column_name == AxisEditorTableModelColumnNames.view_range_max:
-            return self._get_view_range(axis=axis)[1]
-        return QVariant()
-
-    def _set_data(self, index: QModelIndex, value: Union[float, str, bool, QVariant]) -> None:
-        if isinstance(value, QVariant):
-            value = value.toString()
-        column = self.columns[index.column()]
-        axis = self.all_axes[index.row()]
-        if column == AxisEditorTableModelColumnNames.axis_identifier:
-            self._set_axis_identifier(axis=axis, identifier=cast(str, value))
-        if column == AxisEditorTableModelColumnNames.axis_label:
-            self._set_axis_label(axis=axis, label=cast(str, value))
-        if column == AxisEditorTableModelColumnNames.axis_auto_range:
-            self._set_axis_auto_range(axis=axis, auto_range=cast(bool, value))
-        if column == AxisEditorTableModelColumnNames.view_range_min:
-            self._set_view_range(axis=axis, vr_min=cast(float, value))
-        if column == AxisEditorTableModelColumnNames.view_range_max:
-            self._set_view_range(axis=axis, vr_max=cast(float, value))
-
-    def _set_axis_identifier(self, axis: str, identifier: str) -> None:
-        # Make sure the identifier is not yet taken by another layer
-        id_reserved = identifier in self.default_axes
-        id_taken = self._tmp.layer_ids.count(identifier) != 0
-        if not (id_reserved or id_taken):
-            old_label = self._tmp.axis_labels.get(axis)
-            old_range = self._tmp.axis_ranges.get(axis)
-            if old_label is not None:
-                self._tmp.axis_labels[identifier] = old_label
-                del self._tmp.axis_labels[axis]
-            if old_range is not None:
-                self._tmp.axis_ranges[identifier] = old_range
-                del self._tmp.axis_ranges[axis]
-            self._tmp.layer_ids = [identifier if x == axis else x for x in self._tmp.layer_ids]
-
-    def _get_axis_label(self, axis: str) -> str:
-        axes_labels = self._tmp.axis_labels
-        if axis in self._tmp.layer_ids:
-            label = axes_labels.get(axis, "")
-        elif axis == self.default_axes[0]:
-            label = axes_labels.get("bottom", axes_labels.get("top", ""))
-        elif axis == self.default_axes[1]:
-            label = axes_labels.get("left", axes_labels.get("right", ""))
-        return label
-
-    def _set_axis_label(self, axis: str, label: str) -> None:
-        label = label.strip()
-        if axis in self._tmp.layer_ids:
-            self._tmp.axis_labels.update({axis: label})
-        elif axis == self.default_axes[0]:
-            self._tmp.axis_labels.update({"bottom": label})
-            self._tmp.axis_labels.update({"top": label})
-        elif axis == self.default_axes[1]:
-            self._tmp.axis_labels.update({"left": label})
-            self._tmp.axis_labels.update({"right": label})
-
-    def _get_axis_auto_range(self, axis: str) -> bool:
-        return self._tmp.axis_ranges.get(axis) == self.axis_auto_range_key
-
-    def _set_axis_auto_range(self, axis: str, auto_range: bool) -> None:
-        if auto_range:
-            self._tmp.axis_ranges.update({axis: self.axis_auto_range_key})
-        elif auto_range != self._tmp.axis_ranges.get(axis):
-            self._tmp.axis_ranges.update({axis: self.default_view_range})
-
-    def _get_view_range(self, axis: str) -> Tuple[float, float]:
-        view_range = self._tmp.axis_ranges.get(axis, self.default_view_range)
-        if view_range == self.axis_auto_range_key:
-            return self.default_view_range
-        return cast(Tuple[float, float], view_range)
-
-    def _set_view_range(
-            self,
-            axis: str,
-            vr_min: Optional[float] = None,
-            vr_max: Optional[float] = None,
-    ) -> None:
-        current_range = list(self._tmp.axis_ranges.get(axis, self.default_view_range))
-        if vr_min is not None:
-            current_range[0] = vr_min
-        if vr_max is not None:
-            current_range[1] = vr_max
-        self._tmp.axis_ranges[axis] = cast(Tuple[float, float], tuple(current_range))
+    def validate(self):
+        """Note! This method has a side effect of filling in ranges, when they are set default and not modified"""
+        used_ids = set()
+        for idx, item in enumerate(self._data):
+            if not item.axis_id:
+                raise ValueError(f'Row #{idx+1} is lacking "Axis Identifier".')
+            if item.axis_id in used_ids:
+                raise ValueError(f'Axis Identifier "{item.axis_id}" is being used more than once.')
+            if not item.auto_range:
+                if item.min_range is None:
+                    item.min_range = self.DEFAULT_VIEW_RANGE[0]
+                if item.max_range is None:
+                    item.max_range = self.DEFAULT_VIEW_RANGE[1]
+                if item.min_range > item.max_range:
+                    raise ValueError(f"Row #{idx+1} has inverted view range (max < min).")
+                if item.min_range == item.max_range:
+                    raise ValueError(f"Row #{idx+1} has zero view range (max = min).")
+            used_ids.add(item.axis_id)
 
 
-class PlotLayerEditingDialog(QDialog):
+class RangeColumnDelegate(QStyledItemDelegate):
+    """Delegate to allow editing ranges with decimal values that can go down to 1e-6."""
 
-    def __init__(self, plot: accgraph.ExPlotWidget, parent: QObject = None):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+        editor = QDoubleSpinBox(parent)
+        editor.setDecimals(7)
+        return editor
+
+    def setEditorData(self, editor: QDoubleSpinBox, index: QModelIndex):
+        if not isinstance(editor, QDoubleSpinBox):
+            return
+        editor.setValue(index.data())
+
+    def setModelData(self, editor: QDoubleSpinBox, model: AbstractTableModel, index: QModelIndex):
+        if not isinstance(editor, QDoubleSpinBox):
+            return
+        model.setData(index, editor.value())
+
+    def displayText(self, value: QVariant, locale: QLocale):
+        return locale.toString(value)
+
+
+class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableModel]):
+
+    DEFAULT_AXES: List[str] = ["x", "y"]
+    AXIS_AUTO_RANGE_KEY = "auto"
+
+    def __init__(self, plot: ExPlotWidget, parent: QObject = None):
         """
         Dialog displaying a table to the user for editing the plots layers.
 
@@ -380,111 +170,95 @@ class PlotLayerEditingDialog(QDialog):
             plot: Plot that will be the base of the tables data model
             parent: Parent item for the dialog
         """
-        super().__init__(parent)
-        self.plot: accgraph.ExPlotWidget = plot
-        self.setup_ui()
-        self.layer_table_model = LayerEditorTableModel(self.plot)
-        self.layer_table_view.setModel(self.layer_table_model)
-        self.layer_table_model.plot = plot
-        # self.table_view.resizeColumnsToContents()
-        self.add_button.clicked.connect(self.add_layer)
-        self.remove_button.clicked.connect(self.remove_selected_layer)
-        self.remove_button.setEnabled(False)
-        self.layer_table_view.selectionModel().selectionChanged.connect(
-            self.handleSelectionChange)
-        plot_name = " ".join([s.capitalize() for s in self.plot.plotItem.plot_config.plotting_style.name.split("_")])
+        super().__init__(table_model=PlotLayerTableModel(self._unpack_json(plot)), parent=parent)
+        # self.layer_table_model = LayerEditorTableModel(self.plot)
+        self.plot = plot
+
+        plot_name = " ".join([s.capitalize() for s in plot.plotItem.plot_config.plotting_style.name.split("_")])
         self.setWindowTitle(f"Edit Axes of {plot_name}")
+
+        self.table.setItemDelegateForColumn(2, BooleanPropertyColumnDelegate(self.table))
+        self.table.setItemDelegateForColumn(3, RangeColumnDelegate(self.table))
+        self.table.setItemDelegateForColumn(4, RangeColumnDelegate(self.table))
+        self.table.set_persistent_editor_for_column(2)
+
+        TableViewColumnResizer.install_onto(self.table)
         self.resize(600, 300)
-        self.show()
 
-    def setup_ui(self) -> None:
-        """Setup the content of the dialog."""
-        # Table and Vertical Layout
-        self.vertical_layout = QVBoxLayout(self)
-        self.layer_table_view = QTableView(self)
-        self.layer_table_view.setEditTriggers(QAbstractItemView.DoubleClicked)
-        self.layer_table_view.setProperty("showDropIndicator", False)
-        self.layer_table_view.setDragDropOverwriteMode(False)
-        self.layer_table_view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.layer_table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.layer_table_view.setSortingEnabled(False)
-        self.layer_table_view.verticalHeader().setVisible(False)
-        self.vertical_layout.addWidget(self.layer_table_view)
-        # Add and Remove Button
-        self.add_remove_layout = QHBoxLayout()
-        spacer = QSpacerItem(40, 20, QSizePolicy.Expanding,
-                             QSizePolicy.Minimum)
-        self.add_remove_layout.addItem(spacer)
-        self.add_button = QPushButton("Add Axis", self)
-        self.add_remove_layout.addWidget(self.add_button)
-        self.remove_button = QPushButton("Remove Axis", self)
-        self.add_remove_layout.addWidget(self.remove_button)
-        self.vertical_layout.addLayout(self.add_remove_layout)
-        self.button_box = QDialogButtonBox(self)
-        self.button_box.setOrientation(Qt.Horizontal)
-        self.button_box.addButton(QDialogButtonBox.Cancel)
-        self.button_box.addButton(QDialogButtonBox.Apply)
-        self.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.saveChanges)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.reject)
-        self.vertical_layout.addWidget(self.button_box)
+    def on_save(self):
+        cursor = get_designer_cursor(self.plot)
+        if cursor:
+            cursor.setProperty("layerIDs", self._pack_ids())
+            cursor.setProperty("axisRanges", self._pack_ranges())
+            cursor.setProperty("axisLabels", self._pack_labels())
+        else:
+            warnings.warn("Unable to save edited data back to widget")
 
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        """
-        There seems to be no built in functionality to strech columns
-        equally, so we have to implement it ourself on a resive event.
+    def _pack_ids(self) -> List[str]:
+        ids = {row.axis_id for row in self._table_model._data}
+        ids.difference_update(set(self.DEFAULT_AXES))
+        return list(ids)
 
-        Args:
-            event: Resizing Event
-        """
-        column_count = self.layer_table_view.model().columnCount()
-        for i in range(column_count):
-            self.layer_table_view.setColumnWidth(i, int(self.width() / column_count) - 5)
-        super().resizeEvent(event)
+    def _pack_ranges(self) -> str:
+        res: Dict[str, Union[str, Tuple[Optional[float], Optional[float]]]] = {}
+        for row in self._table_model._data:
+            if row.auto_range:
+                res[row.axis_id] = self.AXIS_AUTO_RANGE_KEY
+            else:
+                res[row.axis_id] = row.min_range, row.max_range
+        return json.dumps(res)
 
-    @Slot()
-    def add_layer(self):
-        """Add a new layer to the plot."""
-        self.layer_table_model.append()
+    def _pack_labels(self) -> str:
+        res = {}
+        for row in self._table_model._data:
+            if row.axis_id == self.DEFAULT_AXES[0]:
+                res.update({
+                    "bottom": row.axis_label,
+                    "top": row.axis_label,
+                })
+            elif row.axis_id == self.DEFAULT_AXES[1]:
+                res.update({
+                    "left": row.axis_label,
+                    "right": row.axis_label,
+                })
+            else:
+                res[row.axis_id] = row.axis_label
+        return json.dumps(res)
 
-    @Slot()
-    def remove_selected_layer(self):
-        """Remove a layer at index, where the view's selection currently is placed"""
-        self.layer_table_model.remove_at_index(self.layer_table_view.currentIndex())
+    def _unpack_json(self, plot: ExPlotWidget) -> List[LayerTableRow]:
+        props = cast(ExPlotWidgetProperties, plot)
+        axis_labels: Dict[str, Any] = json.loads(props.axisLabels)
+        axis_ranges: Dict[str, Any] = json.loads(props.axisRanges)
 
-    @Slot()
-    def saveChanges(self):
-        """
-        When hitting the Done button we have to set these properties
-        explicitly in order for them to be correctly saved in UI Files.
-        Before we do that, we have to tell the table data model as well, that
-        we have to apply our temporary values to the actual plot.
-        """
-        self.layer_table_model.apply_to_plot()
-        formWindow = QDesignerFormWindowInterface.findFormWindow(self.plot)
-        if formWindow:
-            formWindow.cursor().setProperty("layerIDs", self.plot.layerIDs)
-            formWindow.cursor().setProperty("axisRanges", self.plot.axisRanges)
-            formWindow.cursor().setProperty("axisLabels", self.plot.axisLabels)
-        self.accept()
-
-    @Slot(QItemSelection, QItemSelection)
-    def handleSelectionChange(self, _selected: QItemSelection, _deselected: QItemSelection):
-        """
-        Depending on which layer is selected, enable or disable the remove button.
-
-        Args:
-            _selected: Current selection (not used in implementation)
-            _deselected: Selection previous to the current one (not used in implementation)
-        """
-        removable = self.layer_table_view.selectionModel().hasSelection() \
-            and self.layer_table_view.selectionModel().currentIndex().row() \
-            >= len(LayerEditorTableModel.default_axes)
-        self.remove_button.setEnabled(removable)
+        res = []
+        for axis_id in self.DEFAULT_AXES + props.layerIDs:
+            label: str
+            if axis_id == self.DEFAULT_AXES[0]:
+                label = axis_labels.get("bottom", axis_labels.get("top", ""))
+            elif axis_id == self.DEFAULT_AXES[1]:
+                label = axis_labels.get("left", axis_labels.get("right", ""))
+            else:
+                label = axis_labels.get(axis_id, "")
+            range: Union[Tuple[float, float], str] = axis_ranges.get(axis_id, (0.0, 1.0))
+            is_auto_range = range == "auto"
+            range_min: Optional[float]
+            range_max: Optional[float]
+            if is_auto_range:
+                range_min = None
+                range_max = None
+            else:
+                range_min, range_max = cast(Tuple[float, float], range)
+            res.append(LayerTableRow(axis_id=axis_id,
+                                     axis_label=label,
+                                     auto_range=is_auto_range,
+                                     max_range=range_max,
+                                     min_range=range_min))
+        return res
 
 
 class PlotLayerExtension(WidgetsExtension):
 
-    def __init__(self, widget: accgraph.ExPlotWidget):
+    def __init__(self, widget: ExPlotWidget):
         """
         Task Menu Extension for Editing a Plots Layer through a dialog.
 
@@ -497,8 +271,8 @@ class PlotLayerExtension(WidgetsExtension):
 
     def edit_curves(self, _):
         """Creates a new PlotLayerEditingDialog and starts its event loop."""
-        edit_curves_dialog = PlotLayerEditingDialog(self.widget, parent=self.widget)
-        edit_curves_dialog.exec_()
+        dialog = PlotLayerEditingDialog(self.widget, parent=self.widget)
+        dialog.exec_()
 
     def actions(self):
         """Actions associated with this extension."""

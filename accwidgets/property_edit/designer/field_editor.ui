@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>427</width>
     <height>300</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>icons/add.ico</normaloff>icons/add.ico</iconset>
+         <normaloff>../../icons/add.ico</normaloff>../../icons/add.ico</iconset>
        </property>
       </widget>
      </item>
@@ -34,7 +34,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>icons/remove.ico</normaloff>icons/remove.ico</iconset>
+         <normaloff>../../icons/remove.ico</normaloff>../../icons/remove.ico</iconset>
        </property>
       </widget>
      </item>
@@ -68,7 +68,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableView" name="table">
+    <widget class="PersistentEditorTableView" name="table">
      <property name="editTriggers">
       <set>QAbstractItemView::DoubleClicked</set>
      </property>
@@ -101,6 +101,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PersistentEditorTableView</class>
+   <extends>QTableView</extends>
+   <header>accwidgets.qt</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

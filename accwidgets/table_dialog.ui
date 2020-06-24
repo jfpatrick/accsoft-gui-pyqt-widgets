@@ -54,7 +54,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableView" name="table">
+    <widget class="PersistentEditorTableView" name="table">
      <property name="editTriggers">
       <set>QAbstractItemView::DoubleClicked</set>
      </property>
@@ -87,6 +87,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PersistentEditorTableView</class>
+   <extends>QTableView</extends>
+   <header>accwidgets.qt</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

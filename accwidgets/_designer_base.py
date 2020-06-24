@@ -10,6 +10,8 @@ from qtpy.QtDesigner import (
     QExtensionFactory,
     QPyDesignerTaskMenuExtension,
     QExtensionManager,
+    QDesignerFormWindowCursorInterface,
+    QDesignerFormWindowInterface,
 )
 from accwidgets.designer_check import set_designer
 
@@ -308,3 +310,8 @@ def create_plugin(widget_class: Type[QWidget],
                              whats_this=whats_this)
 
     return Plugin
+
+
+def get_designer_cursor(widget: QWidget) -> Optional[QDesignerFormWindowCursorInterface]:
+    form = QDesignerFormWindowInterface.findFormWindow(widget)
+    return form.cursor() if form else None
