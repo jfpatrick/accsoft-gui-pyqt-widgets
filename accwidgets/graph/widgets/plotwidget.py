@@ -806,24 +806,26 @@ class ExPlotWidgetProperties(XAxisSideOptions,
 
     def _get_show_legend(self) -> bool:
         """Does the plot show a legend."""
-        return cast(ExPlotWidget, self).plotItem.legend is not None
+        legend = cast(Optional[pg.LegendItem], cast(ExPlotWidget, self).plotItem.legend)
+        return legend is not None and legend.isVisible()
 
     def _set_show_legend(self, new_val: bool) -> None:
         """If true, the plot shows a legend."""
         if new_val != self._get_show_legend():  # type: ignore[has-type]
+            curr_legend = cast(Optional[pg.LegendItem], cast(ExPlotWidget, self).plotItem.legend)
             if new_val:
-                cast(ExPlotWidget, self).addLegend(size=None, offset=None)
-                old_pos = self._get_legend_position()
-                self._set_legend_position(
-                    x_alignment=old_pos[0],
-                    y_alignment=old_pos[1],
-                )
+                if curr_legend is None:
+                    cast(ExPlotWidget, self).addLegend(size=None, offset=None)
+                    old_pos = self._get_legend_position()
+                    self._set_legend_position(
+                        x_alignment=old_pos[0],
+                        y_alignment=old_pos[1],
+                    )
+                else:
+                    curr_legend.setVisible(True)
             else:
-                legend = cast(ExPlotWidget, self).plotItem.legend
-                if legend is not None:
-                    cast(ExPlotWidget, self).removeItem(legend)
-                    legend.deleteLater()
-                    cast(ExPlotWidget, self).plotItem.legend = None
+                if curr_legend is not None:
+                    curr_legend.setVisible(False)
             cast(ExPlotWidget, self).update()
 
     showLegend: bool = Property(bool, _get_show_legend, _set_show_legend)
