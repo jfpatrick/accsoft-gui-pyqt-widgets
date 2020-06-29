@@ -1,4 +1,11 @@
 # Placeholder for user defined entries. If you would like to extend this file, please put your entries in this section.
+.pyre
+__pycache__
+*.inv
+*.log
+*.egg-info
+.pytest_cache
+.mypy_cache
 
 # Output file for pytests test coverage check
 *.coverage
