@@ -108,6 +108,11 @@ setup(
     package_data={
         "": ["*.ico", "*.ui"],
     },
+    entry_points={
+        "console_scripts": [
+            "accwidgets_designer_path=_accwidgets._designer_path:run",
+        ],
+    },
     platforms=["centos7"],
     test_suite="tests",
 )
