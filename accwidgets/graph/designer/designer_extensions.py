@@ -1,5 +1,6 @@
 import json
 import warnings
+from sys import float_info
 from dataclasses import dataclass
 from typing import Union, Optional, Tuple, List, cast, Dict, Any
 from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
@@ -141,6 +142,8 @@ class RangeColumnDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         editor = QDoubleSpinBox(parent)
         editor.setDecimals(7)
+        editor.setMinimum(-float_info.max)
+        editor.setMaximum(float_info.max)
         return editor
 
     def setEditorData(self, editor: QDoubleSpinBox, index: QModelIndex):
