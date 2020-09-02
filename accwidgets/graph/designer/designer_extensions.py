@@ -1,5 +1,6 @@
 import json
 import warnings
+from sys import float_info
 from dataclasses import dataclass
 from typing import Union, Optional, Tuple, List, cast, Dict, Any
 from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
@@ -72,9 +73,9 @@ class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
         elif section == 2:
             return row.auto_range
         elif section == 3:
-            return row.min_range if row.min_range is not None else self.DEFAULT_VIEW_RANGE[0]
+            return row.min_range if row.min_range is not None else "Auto"
         elif section == 4:
-            return row.max_range if row.max_range is not None else self.DEFAULT_VIEW_RANGE[1]
+            return row.max_range if row.max_range is not None else "Auto"
         raise ValueError(f"Unexpected column {section}")
 
     def set_cell_data(self, index: QModelIndex, row: LayerTableRow, value: Any) -> bool:
@@ -87,6 +88,11 @@ class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
             row.auto_range = bool(value)
             if row.auto_range:
                 row.max_range = row.min_range = None
+            else:
+                if row.min_range is None:
+                    row.min_range = self.DEFAULT_VIEW_RANGE[0]
+                if row.max_range is None:
+                    row.max_range = self.DEFAULT_VIEW_RANGE[1]
         elif section == 3:
             row.min_range = float(value)
         elif section == 4:
@@ -141,6 +147,8 @@ class RangeColumnDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         editor = QDoubleSpinBox(parent)
         editor.setDecimals(7)
+        editor.setMinimum(-float_info.max)
+        editor.setMaximum(float_info.max)
         return editor
 
     def setEditorData(self, editor: QDoubleSpinBox, index: QModelIndex):
@@ -153,8 +161,8 @@ class RangeColumnDelegate(QStyledItemDelegate):
             return
         model.setData(index, editor.value())
 
-    def displayText(self, value: QVariant, locale: QLocale):
-        return locale.toString(value)
+    def displayText(self, value: QVariant, locale: QLocale) -> str:
+        return value if isinstance(value, str) else locale.toString(value)
 
 
 class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableModel]):

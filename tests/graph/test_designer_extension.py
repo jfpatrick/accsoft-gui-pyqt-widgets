@@ -46,8 +46,8 @@ def test_layer_dialog_data_standard_plot(qtbot,
     qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
-        ["x", "", True, 0.0, 1.0],
-        ["y", "", True, 0.0, 1.0],
+        ["x", "", True, "Auto", "Auto"],
+        ["y", "", True, "Auto", "Auto"],
     ])
 
 
@@ -79,9 +79,9 @@ def test_layer_dialog_data_plot_with_additional_standard_layer(qtbot,
     qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
-        ["x", "", True, 0.0, 1.0],
-        ["y", "", True, 0.0, 1.0],
-        ["my new layer", "", True, 0.0, 1.0],
+        ["x", "", True, "Auto", "Auto"],
+        ["y", "", True, "Auto", "Auto"],
+        ["my new layer", "", True, "Auto", "Auto"],
     ])
 
 
@@ -98,8 +98,8 @@ def test_layer_dialog_data_plot_with_additional_altered_layer(qtbot,
     qtbot.add_widget(empty_testing_window)
     model, _ = table_model(qtbot=qtbot, plot=plot)
     compare_table_contents(model=model, desired=[
-        ["x", "", True, 0.0, 1.0],
-        ["y", "", True, 0.0, 1.0],
+        ["x", "", True, "Auto", "Auto"],
+        ["y", "", True, "Auto", "Auto"],
         ["l1", "some label text", False, -100.0, 100.0],
     ])
 
