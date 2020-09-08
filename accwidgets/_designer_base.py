@@ -1,7 +1,8 @@
 import warnings
 from abc import ABCMeta, abstractmethod
+from enum import Enum
 from pathlib import Path
-from typing import Type, Optional, List, TypeVar
+from typing import Type, Optional, List, TypeVar, Union
 from qtpy.QtWidgets import QWidget, QAction
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtDesigner import (
@@ -14,6 +15,19 @@ from qtpy.QtDesigner import (
     QDesignerFormWindowInterface,
 )
 from accwidgets.designer_check import set_designer
+
+
+class WidgetBoxGroup(Enum):
+
+    LAYOUTS = "Layouts"
+    SPACERS = "Spacers"
+    BUTTONS = "Buttons"
+    ITEM_VIEWS = "Item Views (Model-Based)"
+    ITEM_WIDGETS = "Item Widgets (Item-Based)"
+    CONTAINERS = "Containers"
+    INPUTS = "Input Widgets"
+    CHARTS = "Charts"
+    INDICATORS = "Display Widgets"
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,7 +284,7 @@ _T = TypeVar("_T", bound=WidgetDesignerPlugin)
 
 
 def create_plugin(widget_class: Type[QWidget],
-                  group: str,
+                  group: Union[str, WidgetBoxGroup],
                   cls: Type[_T] = WidgetDesignerPlugin,
                   extensions: Optional[List[Type[_E]]] = None,
                   is_container: bool = False,
@@ -303,7 +317,7 @@ def create_plugin(widget_class: Type[QWidget],
         def __init__(self):
             super().__init__(widget_class=widget_class,
                              extensions=extensions,
-                             group_name=group,
+                             group_name=group.value if isinstance(group, WidgetBoxGroup) else group,
                              is_container=is_container,
                              icon_base_path=icon_base_path,
                              tooltip=tooltip,
