@@ -430,7 +430,7 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line)
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line)
     """Vertical Line displaying the current time stamp"""
 
     def _get_right_time_span_boundary(self) -> float:
@@ -1057,10 +1057,6 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         for item in items_to_move:
             cast(ExPlotWidget, self).plotItem.getViewBox().addItem(item)
 
-    @staticmethod
-    def diff(list1, list2):
-        return list(set(list1).symmetric_difference(set(list2)))
-
 
 class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
 
@@ -1422,22 +1418,8 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
     """Vertical Line displaying the current time stamp, not supported by the static plotting style"""
-
-    def _get_time_span(self) -> float:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-        return 0.0
-
-    def _set_time_span(self, new_val: float):
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-
-    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
-    """Range from which the plot displays data, not supported by the static plotting style"""
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
@@ -1644,22 +1626,8 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
             warnings.warn("Property 'showTimeProgressLine is not supposed to be used with at editable plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
     """Vertical Line displaying the current time stamp, not supported by the editable plotting style"""
-
-    def _get_time_span(self) -> float:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-        return 0.0
-
-    def _set_time_span(self, new_val: float):
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-
-    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
-    """Range from which the plot displays data, not supported by the editable plotting style"""
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
