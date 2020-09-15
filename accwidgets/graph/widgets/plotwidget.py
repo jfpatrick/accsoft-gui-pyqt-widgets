@@ -59,15 +59,13 @@ class ExPlotWidget(pg.PlotWidget):
     Signal informing about an entire plot being selected for editing.
     """
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            config: Optional[ExPlotWidgetConfig] = None,
-            axis_items: Optional[Dict[str, ExAxisItem]] = None,
-            timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 config: Optional[ExPlotWidgetConfig] = None,
+                 axis_items: Optional[Dict[str, ExAxisItem]] = None,
+                 timing_source: Optional[UpdateSource] = None,
+                 **plotitem_kwargs):
         """Extended PlotWidget
 
         Extended version of PyQtGraphs PlotWidget with additional functionality
@@ -1258,40 +1256,34 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             time_progress_line=time_progress_line,
         )
         ExPlotWidgetProperties.__init__(self)
-        ExPlotWidget.__init__(
-            self,
-            parent=parent,
-            background=background,
-            config=config,
-            axis_items=axis_items,
-            timing_source=timing_source,
-            **plotitem_kwargs,
-        )
+        ExPlotWidget.__init__(self,
+                              parent=parent,
+                              background=background,
+                              config=config,
+                              axis_items=axis_items,
+                              timing_source=timing_source,
+                              **plotitem_kwargs)
 
-    leftBoundary: float = Property(
-        float,
-        ExPlotWidget._get_left_time_span_boundary,
-        ExPlotWidget._set_left_time_span_boundary,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=ExPlotWidget._get_left_time_span_boundary,
+                                       fset=ExPlotWidget._set_left_time_span_boundary)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at cyclic plot, "
                           "since a cyclic plot can not be drawn without both boundaries defined.")
         return False
 
     def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at cyclic plot, "
                           "since a cyclic plot can not be drawn without both boundaries defined.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
     """DO NOT USE WITH A CYCLIC PLOT."""
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1409,13 +1401,13 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return False
 
     def _set_show_time_line(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
@@ -1423,59 +1415,53 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
     def _set_right_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    rightBoundary: float = Property(
-        float,
-        _get_right_time_span_boundary,
-        _set_right_time_span_boundary,
-        designable=False,
-    )
+    rightTimeBoundary: float = Property(float,
+                                        fget=_get_right_time_span_boundary,
+                                        fset=_set_right_time_span_boundary,
+                                        designable=False)
     """Value of the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
     def _set_left_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftBoundary: float = Property(
-        float,
-        _get_left_time_span_boundary,
-        _set_left_time_span_boundary,
-        designable=False,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=_get_left_time_span_boundary,
+                                       fset=_set_left_time_span_boundary,
+                                       designable=False)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
     def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
 
     # ~~~~~~~~~~~~ replaceData ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1623,48 +1609,46 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
 
     def _set_show_time_line(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'showTimeProgressLine is not supposed to be used with at editable plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at editable plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
-    """Vertical Line displaying the current time stamp, not supported by the editable plotting style"""
+    """
+    .. warning:: Do not use this in a static plot.
+    """
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
         return False
 
     def _set_right_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    rightBoundary: float = Property(
-        float,
-        _get_right_time_span_boundary,
-        _set_right_time_span_boundary,
-        designable=False,
-    )
+    rightTimeBoundary: float = Property(float,
+                                        fget=_get_right_time_span_boundary,
+                                        fset=_set_right_time_span_boundary,
+                                        designable=False)
     """Value of the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
         return False
 
     def _set_left_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    leftBoundary: float = Property(
-        float,
-        _get_left_time_span_boundary,
-        _set_left_time_span_boundary,
-        designable=False,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=_get_left_time_span_boundary,
+                                       fset=_set_left_time_span_boundary,
+                                       designable=False)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self) -> bool:
@@ -1675,12 +1659,10 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
 
     def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
