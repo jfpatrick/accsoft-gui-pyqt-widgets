@@ -3,11 +3,12 @@ from enum import IntEnum, auto
 from pathlib import Path
 from typing import Optional, Set, List, TypeVar, Generic, Any, cast
 from abc import abstractmethod, ABCMeta
-from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog,
+from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog, QColorDialog,
                             QDialogButtonBox, QStyledItemDelegate, QStyleOptionViewItem, QSpacerItem, QSizePolicy,
-                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem)
+                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant, QEvent,
                          QPersistentModelIndex, QLocale, Signal)
+from qtpy.QtGui import QFont, QColor
 from qtpy.uic import loadUi
 from accwidgets._generics import GenericQtMeta
 
@@ -322,7 +323,6 @@ class AbstractListModel(Generic[LI], metaclass=GenericQtMeta):
                           RuntimeWarning)
         self._data = data
 
-    @abstractmethod
     def create_row(self) -> LI:
         """Create a new empty object when appending a new row to the table."""
         pass
@@ -333,12 +333,17 @@ class AbstractListModel(Generic[LI], metaclass=GenericQtMeta):
 
     def append_row(self):
         """Append a new empty row to the model."""
-        new_row = self.rowCount()
-        self.beginInsertRows(QModelIndex(), new_row, new_row)  # type: ignore   # presuming QAbstractItemView super
-        self._data.append(self.create_row())
+        new_row = self.create_row()
+        if new_row is None:
+            # Method was not overridden, assume the table does not support adding new items (only fixed contents)
+            return
+
+        new_row_idx = self.rowCount()
+        self.beginInsertRows(QModelIndex(), new_row_idx, new_row_idx)  # type: ignore   # presuming QAbstractItemView super
+        self._data.append(new_row)
         self.endInsertRows()  # type: ignore   # presuming QAbstractItemView super
-        new_row = len(self._data) - 1
-        new_index = self.createIndex(new_row, 0)
+        new_row_idx = len(self._data) - 1
+        new_index = self.createIndex(new_row_idx, 0)
         self.notify_change(start=new_index, end=new_index, action_type=self.ChangeType.ADD_ROW)
 
     def remove_row_at_index(self, index: QModelIndex):
@@ -756,3 +761,88 @@ class BooleanPropertyColumnDelegate(QStyledItemDelegate):
         index: Optional[QPersistentModelIndex] = getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None)
         if index and index.isValid():
             self.setModelData(editor, index.model(), QModelIndex(index))
+
+
+class ColorButton(QToolButton):
+
+    def __init__(self, parent: Optional[QObject] = None):
+        """
+        Button that opens a picker and displays the selected color using the RBG hex, as well as a thumbnail
+        with background color corresponding to the picked color.
+
+        Args:
+            parent: Owning object.
+        """
+        super().__init__(parent)
+        font = QFont("Monospace")
+        font.setStyleHint(QFont.TypeWriter)
+        self.setFont(font)
+        self.setAutoRaise(True)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        layout = QHBoxLayout()
+        layout.setContentsMargins(5, 0, 0, 0)
+        icon = QFrame(self)
+        icon.setFrameStyle(QFrame.Box)
+        icon.resize(10, 10)
+        icon.setMinimumSize(10, 10)
+        icon.setMaximumSize(10, 10)
+        layout.addWidget(icon)
+        layout.addSpacerItem(QSpacerItem(10, 1, QSizePolicy.Expanding, QSizePolicy.Preferred))
+        self._color_thumb = icon
+        self.setLayout(layout)
+        self.color = "#000000"
+
+    @property
+    def color(self) -> str:
+        """Currently selected color, in RGB hex notation."""
+        return self.text()
+
+    @color.setter
+    def color(self, new_val: str):
+        name = QColor(new_val).name()  # Transform things like 'red' or 'darkblue' to HEX
+        self.setText(name.upper())
+        self._color_thumb.setStyleSheet(f"background-color: {new_val}")
+
+
+class ColorPropertyColumnDelegate(QStyledItemDelegate):
+    """
+    Table delegate that draws :class:`ColorButton` widget in the cell.
+    """
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
+        editor = ColorButton(parent)
+        editor.clicked.connect(self._open_color_dialog)
+        setattr(editor, _STYLED_ITEM_DELEGATE_INDEX, QPersistentModelIndex(index))
+        return editor
+
+    def setEditorData(self, editor: ColorButton, index: QModelIndex):
+        if not isinstance(editor, ColorButton):
+            return
+        editor.color = str(index.data())
+        if getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None) != index:
+            setattr(editor, _STYLED_ITEM_DELEGATE_INDEX, QPersistentModelIndex(index))
+
+    def setModelData(self, editor: QWidget, model: QAbstractTableModel, index: QModelIndex):
+        # Needs to be overridden so that underlying implementation does not set garbage data to the model
+        # This delegate is read-only, as we don not propagate value to the model from the editor, but rather
+        # open the dialog ourselves.
+        pass
+
+    def displayText(self, value: Any, locale: QLocale) -> str:
+        # Make sure that transparent button does not expose set label underneath
+        return ""
+
+    def _open_color_dialog(self):
+        # This can't be part of the ColorButton, as sometimes it gets deallocated by the table, while color dialog
+        # is open, resulting in C++ deallocation, while Python logic is in progress. Therefore, we keep it in the
+        # delegate, that exists as long as table model exists.
+        editor: ColorButton = self.sender()
+        index: Optional[QPersistentModelIndex] = getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None)
+        if not index or not index.isValid():
+            return
+        new_color = QColorDialog.getColor(QColor(str(index.data())))
+        if not new_color.isValid():
+            # User cancelled the selection
+            return
+        new_name = new_color.name()
+        index.model().setData(QModelIndex(index), new_name)
