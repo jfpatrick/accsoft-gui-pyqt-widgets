@@ -10,7 +10,7 @@ from .datamodel.datastructures import (InvalidDataStructureWarning, InvalidValue
 from .datamodel.connection import UpdateSource, SignalBoundDataSource, PlottingItemDataFactory
 from .datamodel.datamodelbuffer import (BaseSortedDataBuffer, SortedBarGraphDataBuffer, SortedCurveDataBuffer,
                                         SortedInjectionBarsDataBuffer, SortedTimestampMarkerDataBuffer)
-from .datamodel.itemdatamodel import (WrongDataType, StaticBarGraphDataModel, StaticCurveDataModel,
+from .datamodel.itemdatamodel import (StaticBarGraphDataModel, StaticCurveDataModel,
                                       StaticInjectionBarDataModel, StaticTimestampMarkerDataModel,
                                       AbstractBaseDataModel, AbstractLiveDataModel, LiveBarGraphDataModel,
                                       LiveCurveDataModel, LiveInjectionBarDataModel, LiveTimestampMarkerDataModel,

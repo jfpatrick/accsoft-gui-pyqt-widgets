@@ -14,15 +14,6 @@ from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, SortedBarGraphD
 from .history import History
 
 
-class WrongDataType(Warning):
-    """
-    Warning for an invalid Data Structure. PlottingItemData should emit
-    this if they are invalid, which means that they can not be drawn
-    in their fitting graph-type.
-    """
-    pass
-
-
 class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
 
     sig_data_model_changed = Signal()
