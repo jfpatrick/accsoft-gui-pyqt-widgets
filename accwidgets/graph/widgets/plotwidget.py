@@ -495,7 +495,7 @@ class ExPlotWidget(pg.PlotWidget):
                                              designable=False)
     """
     Toggle for the left (lower) boundary of the plot's time span.
-    
+
     This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
     """
 
@@ -1142,7 +1142,7 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
                                              fset=ExPlotWidget._set_left_time_span_boundary_bool)
     """
     Toggle for the left (lower) boundary of the plot's time span.
-    
+
     This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
     """
 
@@ -1449,38 +1449,55 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     replaceDataItemPenColor: QColor = Property(QColor,
                                                fget=ExPlotWidget._get_slot_item_pen_color,
                                                fset=ExPlotWidget._set_slot_item_pen_color)
-    """Pen color for the item displaying data through the 'replaceData' slot"""
+    """
+    Pen color for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     replaceDataItemPenWidth: int = Property(int,
                                             fget=ExPlotWidget._get_slot_item_pen_width,
                                             fset=ExPlotWidget._set_slot_item_pen_width)
-    """Pen width for the item displaying data through the 'replaceData' slot"""
+    """
+    Pen width for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     replaceDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
                                                     fget=ExPlotWidget._get_slot_item_pen_style,
                                                     fset=ExPlotWidget._set_slot_item_pen_style)
-    """Pen line style for the item displaying data through 'replaceData' the slot"""
+    """
+    Pen line style for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     replaceDataItemBrushColor: str = Property(QColor,
                                               fget=ExPlotWidget._get_slot_item_brush_color,
                                               fset=ExPlotWidget._set_slot_item_brush_color)
-    """Brush color for the item displaying data through the 'replaceData' slot"""
+    """
+    Brush color for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     replaceDataItemSymbol: int = Property(SymbolOptions,
                                           fget=ExPlotWidget._get_slot_item_symbol,
                                           fset=ExPlotWidget._set_slot_item_symbol)
-    """Symbol for the item displaying data through 'replaceData' the slot"""
+    """
+    Symbol for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     @Slot(np.ndarray)
     @Slot(CurveData)
     def replaceDataAsCurve(self, data: Union[Sequence[float], CurveData]):
         """
         This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn.
-        A full curve is expected as either a 2D numpy array or a CurveData
-        object. The curve will replace all data shown prior to its arrival.
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Curve object or a sequence of values representing the curve that will be evenly distributed.
         """
         if not isinstance(data, CurveData):
             data = cast(CurveData, PlottingItemDataFactory.transform(CurveData, data))  # type: ignore
@@ -1496,9 +1513,13 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     def replaceDataAsBarGraph(self, data: BarCollectionData):
         """
         This slot exposes the possibility to draw data on a
-        single bar graph in the plot. If this bar_graph does not yet exist,
-        it will be created automatically. The data will be collected by
-        the bar graph and drawn.
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Collection of bar graphs.
         """
         self.plotItem.plot_data_on_single_data_item(data=data,
                                                     # ignore, bc mypy wants concrete class
@@ -1509,10 +1530,14 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     @Slot(InjectionBarCollectionData)
     def replaceDataAsInjectionBars(self, data: InjectionBarCollectionData):
         """
-        This slot exposes the possibility to draw data on a single injection
-        bar graph in the plot. If this graph does not yet exist, it will be
-        created automatically. The data will be collected by the graph and
-        drawn.
+        This slot exposes the possibility to draw data on a
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Collection of injection bars.
         """
         self.plotItem.plot_data_on_single_data_item(data=data,
                                                     # ignore, bc mypy wants concrete class
@@ -1535,17 +1560,18 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                  axis_items: Optional[Dict[str, pg.AxisItem]] = None,
                  **plotitem_kwargs):
         """
-        The EditablePlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the editable plot style. Properties that do
-        not have any effect on the ExPlotWidget in this plotting style, are
-        explicitly hidden in Qt Designer.
+        Editable plot is a static, non-live plot that allows modifying data in an
+        interactive way, by dragging individual points or sets of points and
+        applying transformations to them via :class:`EditableToolbar`.
 
-         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
+        Args:
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
-            **plotitem_kwargs: Params passed to the plot item
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
         config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.EDITABLE)
         ExPlotWidgetProperties.__init__(self)

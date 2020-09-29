@@ -22,71 +22,65 @@ BoundsAxisEntry = Tuple[Tuple[FracValue, OrthoRange], BoundsValue]
 class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(self, plot_item: "ExPlotItem", data_model: AbstractBaseDataModel, **bargraphitem_kwargs):
-        """Base class for different live bar graph plots.
+        """
+        Base class for bar graph plots.
 
         Args:
-            plot_item: Plot Item that called the constructor
-            data_model: Data Model for the Bar Graph Item
-            **bargraphitem_kwargs: Keyword arguments for the BarGraphItem's constructor
+            plot_item: Parent plot item.
+            data_model: Data model serving the item.
+            **bargraphitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
         """
         self._fixed_bar_width = bargraphitem_kwargs.get("width", np.nan)
         self._boundsCache: List[Optional[BoundsAxisEntry]] = [None, None]
         bargraphitem_kwargs = LiveBarGraphItem._prepare_bar_graph_item_params(**bargraphitem_kwargs)
         pg.BarGraphItem.__init__(self, **bargraphitem_kwargs)
-        DataModelBasedItem.__init__(
-            self,
-            data_model=data_model,
-            parent_plot_item=plot_item,
-        )
+        DataModelBasedItem.__init__(self,
+                                    data_model=data_model,
+                                    parent_plot_item=plot_item)
 
     @classmethod
-    def from_plot_item(
-            cls,
-            plot_item: "ExPlotItem",
-            data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **bargraphitem_kwargs,
-    ) -> "AbstractBaseBarGraphItem":
-        """Factory method for creating curve object fitting to the given plot item.
+    def from_plot_item(cls,
+                       plot_item: "ExPlotItem",
+                       data_source: UpdateSource,
+                       buffer_size: int = DEFAULT_BUFFER_SIZE,
+                       **bargraphitem_kwargs) -> "AbstractBaseBarGraphItem":
+        """
+        Factory method for creating bar graph objects matching the given plot item.
 
-        This function allows easier creation of the right object instead of creating
-        the right object that fits to the plotting style of the plot item by hand. This
-        function only initializes the item but does not yet add it to the plot item.
+        This function allows easier creation of proper items by using the right type.
+        It only initializes the item but does not yet add it to the plot item.
 
         Args:
-            plot_item: plot item the item should fit to
-            data_source: source the item receives data from
-            buffer_size: count of values the item's data model's buffer should hold at max
-            **bargraphitem_kwargs: keyword arguments for the items base class
+            plot_item: Plot item the item should fit to.
+            data_source: Source the item receives data from.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **bargraphitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
 
         Returns:
-            the created item
+            A new bar graph which receives data from the given data source.
         """
         subclass = cls.get_subclass_fitting_plotting_style(plot_item=plot_item)
-        data_model = subclass.data_model_type(
-            data_source=data_source,
-            buffer_size=buffer_size,
-        )
-        return subclass(
-            plot_item=plot_item,
-            data_model=data_model,
-            **bargraphitem_kwargs,
-        )
+        data_model = subclass.data_model_type(data_source=data_source,
+                                              buffer_size=buffer_size)
+        return subclass(plot_item=plot_item,
+                        data_model=data_model,
+                        **bargraphitem_kwargs)
 
     def dataBounds(self, ax: int, frac: FracValue = 1.0, orthoRange: OrthoRange = None) -> Optional[BoundsValue]:
         """
         Declares a method dynamically probed to have proper auto-scaling on bar graphs.
         This method is called by :class:`~pyqtgraph.ViewBox` when auto-scaling.
-        NOTE! orthoRange and frac are ignored in this implementation (simply no need for it now).
+
+        .. note:: ``orthoRange`` and ``frac`` are ignored in this implementation (simply no need for it now).
 
         Args:
-            ax: index of the axis (0 or 1) for which to return this item's data range.
+            ax: index of the axis (``0`` or ``1``) for which to return this item's data range.
             frac: Specifies what fraction (0.0-1.0) of the total data range to return.
                   By default, the entire range is returned. This allows the :class:`~pyqtgraph.ViewBox`
                   to ignore large spikes in the data when auto-scaling.
-            orthoRange: Specifies that only the data within the given range (orthogonal to *ax*)
-                        should me measured when returning the data range. (For example, a
-                        :class:`~pyqtgrah.ViewBox` might ask what is the y-range of all data
+            orthoRange: Specifies that only the data within the given range (orthogonal to ``ax``)
+                        should be measured when returning the data range. (For example, a
+                        :class:`~pyqtgraph.ViewBox` might ask what is the y-range of all data
                         with x-values between min and max).
 
         Returns:
@@ -198,8 +192,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
         This method is called by :class:`~pyqtgraph.ViewBox` when auto-scaling.
 
         Returns:
-            The size in pixels that this item may draw beyond the values returned by
-            :meth:`~AbstractBaseBarGraphItem.dataBounds`.
+            The size in pixels that this item may draw beyond the values returned by :meth:`dataBounds`.
         """
 
         # Combination of retrieving pens, as in pyqtgraph.BarGraphItem.drawPicture
@@ -217,6 +210,12 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
         return w
 
     def setOpts(self, **opts):
+        """
+        Update dynamic options and invalidate bounds of the item.
+
+        Args:
+            **opts: Ketword arguments for any options stored in :attr:`self.opts <opts>`.
+        """
         self.invalidateBounds()
         super().setOpts(**opts)
 
@@ -226,6 +225,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
         self.prepareGeometryChange()
 
     def invalidateBounds(self):
+        """Invalidates bounds cache."""
         self._boundsCache = [None, None]
 
 
@@ -234,68 +234,54 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
     data_model_type = LiveBarGraphDataModel
 
     @deprecated_param_alias(data_source="data_model")
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: Union[LiveBarGraphDataModel, UpdateSource],
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **bargraphitem_kwargs,
-    ):
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: Union[LiveBarGraphDataModel, UpdateSource],
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 **bargraphitem_kwargs):
         """
-        Live Bar Graph Item, abstract base class for all live data bar graphs like
-        the scrolling bar graph. Either Data Source of data model have to be set.
+        Base class for live bar graph plots.
 
         Args:
-            plot_item: Plot Item the curve is created for
-            data_model: Either an Update Source or a already initialized data
-                        model
-            buffer_size: Buffer size, which will be passed to the data model,
-                         will only be used if the data_model is only an Update
-                         Source.
-            **bargraphitem_kwargs: Further Keyword Arguments for the BarGraphItem
+            plot_item: Parent plot item.
+            data_model: Either an update source or an already intialized data model.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **bargraphitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
         """
         if isinstance(data_model, UpdateSource):
-            data_model = LiveBarGraphDataModel(
-                data_source=data_model,
-                buffer_size=buffer_size,
-            )
+            data_model = LiveBarGraphDataModel(data_source=data_model,
+                                               buffer_size=buffer_size)
         if data_model is not None:
-            super().__init__(
-                plot_item=plot_item,
-                data_model=data_model,
-                **bargraphitem_kwargs,
-            )
+            super().__init__(plot_item=plot_item,
+                             data_model=data_model,
+                             **bargraphitem_kwargs)
         else:
             raise TypeError("Need either data source or data model to create "
                             f"a {type(self).__name__} instance")
 
     @classmethod
-    def clone(
-            cls: Type["LiveBarGraphItem"],
-            object_to_create_from: "LiveBarGraphItem",
-            **bargraph_kwargs,
-    ) -> "LiveBarGraphItem":
+    def clone(cls: Type["LiveBarGraphItem"],
+              object_to_create_from: "LiveBarGraphItem",
+              **bargraph_kwargs) -> "LiveBarGraphItem":
         """
-        Recreate graph item from existing one. The datamodel is shared, but the new graph item
-        is fitted to the old graph item's parent plot item's style. If this one has changed
-        since the creation of the old graph item, the new graph item will have the new style.
+        Clone graph item from an existing one. The data model is shared, but the new graph item
+        is relying on the style of the old graph's parent plot item. If this style has changed
+        since the creation of the old graph item, the new graph item will also have the new style.
 
         Args:
-            object_to_create_from: object which e.g. datamodel should be taken from
-            **bargraph_kwargs: Keyword arguments for the bargraph base class
+            object_to_create_from: Source object.
+            **bargraph_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
 
         Returns:
-            New live data bar graph with the datamodel from the old passed one
+            New live bar graph with the data model from the old one.
         """
         item_class = LiveBarGraphItem.get_subclass_fitting_plotting_style(
             object_to_create_from._parent_plot_item)
         kwargs = copy(object_to_create_from.opts)
         kwargs.update(bargraph_kwargs)
-        return cast(Type[LiveBarGraphItem], item_class)(
-            plot_item=object_to_create_from._parent_plot_item,
-            data_model=object_to_create_from._data_model,
-            **kwargs,
-        )
+        return cast(Type[LiveBarGraphItem], item_class)(plot_item=object_to_create_from._parent_plot_item,
+                                                        data_model=object_to_create_from._data_model,
+                                                        **kwargs)
 
     @staticmethod
     def _prepare_bar_graph_item_params(**bargraph_kwargs) -> Dict:
@@ -314,33 +300,25 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
 
 
 class ScrollingBarGraphItem(LiveBarGraphItem):
-
-    """Bar Graph Item to display arriving live data"""
+    """Bar graph to display live data in a :class:`ScrollingPlotWidget`."""
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
     def update_item(self):
-        """Update item based on the plot items time span information"""
         if self._fixed_bar_width == np.nan:
             smallest_distance = self._data_model.min_dx
             width = 0.9 * smallest_distance if smallest_distance != np.inf else 1.0
         else:
             width = self._fixed_bar_width
         if self._parent_plot_item.time_span is not None:
-            curve_x, curve_y, height = self._data_model.subset_for_xrange(
-                start=self._parent_plot_item.time_span.start,
-                end=self._parent_plot_item.time_span.end,
-            )
+            curve_x, curve_y, height = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
+                                                                          end=self._parent_plot_item.time_span.end)
             if curve_x.size == curve_y.size and curve_x.size > 0:
                 self.setOpts(x=curve_x, y0=curve_y, height=height, width=width)
 
 
 class StaticBarGraphItem(AbstractBaseBarGraphItem):
-
-    """
-    Bar Graph Item for displaying static data, where new arriving data replaces
-    the old one entirely.
-    """
+    """Bar graph to display static data in a :class:`StaticPlotWidget`."""
 
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticBarGraphDataModel

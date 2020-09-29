@@ -35,7 +35,10 @@ class PropertyEditField:
     """Optional label for the field. If undefined, `field` will be placed as a label."""
 
     user_data: Optional[Dict[str, Any]] = None
-    """Optional additional data for specific fields. For example, ENUM configuration needs `options`."""
+    """
+    Optional additional data for specific fields. For example, :attr:`~PropertyEdit.ValueType.ENUM`
+    configuration needs ``options``.
+    """
 
 
 # For Qt Designer purposes

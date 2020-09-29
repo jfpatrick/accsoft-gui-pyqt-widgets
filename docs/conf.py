@@ -65,7 +65,10 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 html_short_title = f"{project} v{__version__}"
-html_title = f"{html_short_title} docs"
+html_title = f"{html_short_title} wiki"
+
+html_favicon = html_logo = "./img/logo.png"  # Must be png here, as ico won't be rendered by Chrome (and is not advised by MDN)
+
 html_css_files = [
     "fix_tables.css",
     "fix_bullets.css",
@@ -564,8 +567,67 @@ autodoc_default_options = {
                        "addLibraryPath,"
                        "alert,"
                        "allWidgets,"
-                       "allWindows",
+                       "allWindows,"
+                       "GraphicsItemChange,"
+                       "GraphicsItemFlag,"
+                       "GraphicsItemFlags,"
+                       "ItemAcceptsInputMethod,"
+                       "ItemChildAddedChange,"
+                       "ItemChildRemovedChange,"
+                       "ItemClipsChildrenToShape,"
+                       "ItemClipsToShape,"
+                       "ItemContainsChildrenInShape,"
+                       "ItemCoordinateCache,"
+                       "ItemCursorChange,"
+                       "ItemCursorHasChanged,"
+                       "ItemDoesntPropagateOpacityToChildren,"
+                       "ItemEnabledChange,"
+                       "ItemEnabledHasChanged,"
+                       "ItemFlagsChange,"
+                       "ItemFlagsHaveChanged,"
+                       "ItemHasNoContents,"
+                       "ItemIgnoresParentOpacity,"
+                       "ItemIgnoresTransformations,"
+                       "ItemIsFocusable,"
+                       "ItemIsMovable,"
+                       "ItemIsPanel,"
+                       "ItemIsSelectable,"
+                       "ItemMatrixChange,"
+                       "ItemNegativeZStacksBehindParent,"
+                       "ItemOpacityChange,"
+                       "ItemOpacityHasChanged,"
+                       "ItemParentChange,"
+                       "ItemParentHasChanged,"
+                       "ItemPositionChange,"
+                       "ItemPositionHasChanged,"
+                       "ItemRotationChange,"
+                       "ItemRotationHasChanged,"
+                       "ItemScaleChange,"
+                       "ItemScaleHasChanged,"
+                       "ItemSceneChange,"
+                       "ItemSceneHasChanged,"
+                       "ItemScenePositionHasChanged,"
+                       "ItemSelectedChange,"
+                       "ItemSelectedHasChanged,"
+                       "ItemSendsGeometryChanges,"
+                       "ItemSendsScenePositionChanges,"
+                       "ItemStacksBehindParent,"
+                       "ItemToolTipChange,"
+                       "ItemToolTipHasChanged,"
+                       "ItemTransformChange,"
+                       "ItemTransformHasChanged,"
+                       "ItemTransformOriginPointChange,"
+                       "ItemTransformOriginPointHasChanged,"
+                       "ItemUsesExtendedStyleOption,"
+                       "ItemVisibleChange,"
+                       "ItemVisibleHasChanged,"
+                       "ItemZValueChange,"
+                       "ItemZValueHasChanged,"
+                       "NoCache,"
+                       "NonModal,"
+                       "PanelModal,",
 }
+
 # Scan all found documents for autosummary directives, and generate stub pages for each.
 autosummary_generate = True
 # Document classes and functions imported in modules
@@ -584,6 +646,7 @@ intersphinx_mapping = {
     f"PyQt{pyqt_major}": (f"https://www.riverbankcomputing.com/static/Docs/PyQt{pyqt_major}/", "./pyqt.inv"),
     "numpy": ("http://docs.scipy.org/doc/numpy/", None),
     "pyqtgraph": ("http://www.pyqtgraph.org/documentation/", None),
+    "comrad": ("https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/rad/accsoft-gui-rad-comrad/docs/stable/", None),
 }
 
 

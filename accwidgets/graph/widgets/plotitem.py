@@ -1036,10 +1036,8 @@ class ExPlotItem(pg.PlotItem):
             show_button = (self._exportOpts is False
                            and self.mouseHovering
                            and not self.buttonsHidden
-                           and (
-                                   not all(self.vb.autoRangeEnabled())
-                                   or not all(l.view_box.autoRangeEnabled()[1] for l in self.non_default_layers)
-                           ))
+                           and (not all(self.vb.autoRangeEnabled())
+                                or not all(l.view_box.autoRangeEnabled()[1] for l in self.non_default_layers)))
             if show_button:
                 self.autoBtn.show()
             else:

@@ -21,22 +21,18 @@ class DataModelBasedItem(ABC):
     data_model_type: Type[AbstractBaseDataModel] = None  # type: ignore
     """Compatible data model class."""
 
-    def __init__(
-        self,
-        data_model: Union[AbstractBaseDataModel, UpdateSource],
-        parent_plot_item: "ExPlotItem",
-    ):
-        """Base class for data source / data model based graph items
-
-        Base class for attaching an pyqtgraph based item do a data source.
-        By subclassing this class and implementing the mandatory functions the
-        item is attached to the data source and can react to changes in its data.
+    def __init__(self,
+                 data_model: Union[AbstractBaseDataModel, UpdateSource],
+                 parent_plot_item: "ExPlotItem"):
+        """
+        Base class for data source / data model based graph items.
+        Subclasses can react to changes in the data of the corresponding data source.
 
         Args:
-            data_model: data model for the item. If an update source is passed,
-                        we will initialize the data model the subclass lists
-                        in the class attribute 'data_model_type'
-            parent_plot_item: plot item this item is displayed in
+            data_model: Data model serving the item. If an :class:`UpdateSource` is given,
+                        data model of the type :attr:`DataModelBasedItem.data_model_type` will
+                        be initialized.
+            parent_plot_item: Parent plot item.
         """
         if isinstance(data_model, UpdateSource):
             data_model = self.data_model_type(data_source=data_model)
@@ -47,25 +43,25 @@ class DataModelBasedItem(ABC):
 
     @classmethod
     @abstractmethod
-    def from_plot_item(
-            cls,
-            plot_item: "ExPlotItem",
-            data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **base_kargs,
-    ) -> "DataModelBasedItem":
+    def from_plot_item(cls,
+                       plot_item: "ExPlotItem",
+                       data_source: UpdateSource,
+                       buffer_size: int = DEFAULT_BUFFER_SIZE,
+                       **base_kargs) -> "DataModelBasedItem":
         """
-        Factory method for creating for creating a concrete data item class
-        for the given plot.
+        Factory method for creating bar graph objects matching the given plot item.
+
+        This function allows easier creation of proper items by using the right type.
+        It only initializes the item but does not yet add it to the plot item.
 
         Args:
-            plot_item: plot item the item should fit to
-            data_source: source the item receives data from
-            buffer_size: count of values the item's data model's buffer should hold at max
-            base_kwargs: keyword arguments for the items base class
+            plot_item: Plot item the item should fit to.
+            data_source: Source the item receives data from.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **base_kargs: Keyword arguments for the item's base constructor.
 
         Returns:
-            Instance of the concrete class
+            A new graph item which receives data from the given data source.
 
         Raises:
             ValueError: The item does not fit the passed plot item's plotting style.
@@ -73,17 +69,15 @@ class DataModelBasedItem(ABC):
         pass
 
     @classmethod
-    def get_subclass_fitting_plotting_style(
-            cls: Type[_T],
-            plot_item: "ExPlotItem",
-    ) -> Type[_T]:
+    def get_subclass_fitting_plotting_style(cls: Type[_T], plot_item: "ExPlotItem") -> Type[_T]:
         """
+        Resolve an appropriate item subclass that is compatible with the given ``plot_item``.
 
         Args:
-            plot_item: Plot Item, which the item should be searched for
+            plot_item: Parent plot item.
 
         Returns:
-            View Item class, Data Model
+            Resolved type.
         """
         fitting_classes: List[Type[_T]] = [
             c for c in DataModelBasedItem.plotting_style_subclasses(cls)
@@ -103,7 +97,7 @@ class DataModelBasedItem(ABC):
     def plotting_style_subclasses(cls):
         """
         Search for all subclasses of a class recursively, which support a
-        specific plotting style. Derived classes
+        specific plotting style.
         """
         subclasses: List[Type[DataModelBasedItem]] = []
         for c in cls.__subclasses__():
@@ -119,22 +113,13 @@ class DataModelBasedItem(ABC):
         pass
 
     @staticmethod
-    def check_plotting_style_support(
-            plot_config: ExPlotWidgetConfig,
-            supported_styles: List[PlotWidgetStyle],
-    ):
-        """ Check an items plotting style compatibility
-
-        Check if the requested plotting style is supported by this item.
-        If no supported styles is passed, the function checks, if 'supported_plotting_styles'
-        exists as a class or instance variable.
-        If a list of supported styles is found, the requested style is checked and, if not
-        fitting a TypeError is raised. If no such list is provided in any of these both ways
-        or the style is supported, no Error is raised.
+    def check_plotting_style_support(plot_config: ExPlotWidgetConfig, supported_styles: List[PlotWidgetStyle]):
+        """
+        Check the compatibility of the item with the given plotting style.
 
         Args:
-            plot_config: plot configuration of the plot for which the item should be created
-            supported_styles: optional list of supported styles
+            plot_config: Configuration of the plot for which the item should be created.
+            supported_styles: List of supported styles.
         """
         if not supported_styles:
             return
@@ -142,19 +127,18 @@ class DataModelBasedItem(ABC):
             raise TypeError(f"Unsupported plotting style: {plot_config.plotting_style.name}")
 
     def model(self) -> AbstractBaseDataModel:
-        """Data Model that the item is based on."""
+        """Data model that the item is based on."""
         return self._data_model
 
     @property
     def layer_id(self) -> str:
-        """Identifier of the layer the object is located in"""
+        """Identifier of the layer the object is located in."""
         if self._layer_id is None:
             return ""
         return self._layer_id
 
     @layer_id.setter
     def layer_id(self, layer_id: str):
-        """Set the identifier of the layer the item was added to"""
         self._layer_id = layer_id
 
     def _handle_data_model_change(self):
