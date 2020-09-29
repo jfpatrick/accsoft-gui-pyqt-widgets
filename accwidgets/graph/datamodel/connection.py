@@ -6,10 +6,9 @@ import numpy as np
 from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict
 from datetime import datetime
 from qtpy.QtCore import QObject, Signal, Slot
-from accwidgets.graph.datamodel.datastructures import (DEFAULT_COLOR, BarCollectionData, BarData, CurveData,
-                                                       TimestampMarkerCollectionData, TimestampMarkerData,
-                                                       InjectionBarCollectionData, InjectionBarData,
-                                                       PointData, PlottingItemData)
+from accwidgets.graph import (DEFAULT_COLOR, BarCollectionData, BarData, CurveData, TimestampMarkerCollectionData,
+                              TimestampMarkerData, InjectionBarCollectionData, InjectionBarData, PointData,
+                              PlottingItemData)
 
 
 class UpdateSource(QObject):
@@ -17,8 +16,8 @@ class UpdateSource(QObject):
     This class is a proxy of the actual source of data. It declares signals
     that can be used to publish any changes related to the displayed data.
     Convenience functions, such as
-    :meth:`~accwidgets.graph.widgets.plotwidget.ExPlotWidget.addCurve` of
-    :class:`~accwidgets.graph.widgets.plotwidget.ExPlotWidget`,
+    :meth:`.ExPlotWidget.addCurve` of
+    :class:`.ExPlotWidget`,
     setup these connections automatically to receive the data from the UpdateSource.
 
     Additionally, UpdateSource can be used to publish supplemental information to the
@@ -116,9 +115,9 @@ class SignalBoundDataSource(UpdateSource):
 
 class PlottingItemDataFactory:
     """
-    Collection of factory methods for transforming data inside :class:`UpdateSource`
+    Collection of factory methods for transforming data inside :class:`.UpdateSource`
     instances. E.g. it can repackage :obj:`float` values into
-    :class:`~accwidgets.graph.datamodel.datastructures.PlottingItemData` objects.
+    :class:`.PlottingItemData` objects.
     """
 
     TIMESTAMP_HEADER_FIELD = "acqStamp"

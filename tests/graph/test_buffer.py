@@ -1,10 +1,10 @@
 """Tests for the Sorting functionality of the buffers as well as CurveDataBuffer."""
-from typing import List, Tuple
 
 import numpy as np
 import pytest
-
-from accwidgets import graph as accgraph
+from typing import List, Tuple
+from accwidgets.graph import (BaseSortedDataBuffer, SortedCurveDataBuffer, UpdateSource, LivePlotCurve,
+                              LiveBarGraphItem, LiveTimestampMarker, LiveInjectionBarGraphItem, DataModelBasedItem)
 
 
 # ~~~ Sorting Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -17,7 +17,7 @@ def test_check_sorting_of_many_points():
     actual_x = np.copy(expected_x)
     np.random.shuffle(actual_x)
     actual_y = np.copy(actual_x)
-    actual_x, actual_y = accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+    actual_x, actual_y = BaseSortedDataBuffer.sorted_data_arrays(
         primary_values=actual_x, secondary_values_list=[actual_y],
     )
     assert np.array_equal(expected_x, actual_x)
@@ -33,7 +33,7 @@ def test_sorting_lists_with_different_lengths():
     np.random.shuffle(actual_x)
     np.random.shuffle(actual_y)
     with pytest.raises(ValueError):
-        accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+        BaseSortedDataBuffer.sorted_data_arrays(
             primary_values=actual_x, secondary_values_list=[actual_y],
         )
 
@@ -47,7 +47,7 @@ def test_sorting_lists_with_different_dimensions():
     np.random.shuffle(actual_x)
     np.random.shuffle(actual_y)
     with pytest.raises(ValueError):
-        accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+        BaseSortedDataBuffer.sorted_data_arrays(
             primary_values=actual_x, secondary_values_list=[actual_y],
         )
 
@@ -60,7 +60,7 @@ def test_sorting_of_empty_lists():
     actual_y = np.copy(expected_y)
     np.random.shuffle(actual_x)
     np.random.shuffle(actual_y)
-    accgraph.BaseSortedDataBuffer.sorted_data_arrays(
+    BaseSortedDataBuffer.sorted_data_arrays(
         primary_values=actual_x, secondary_values_list=[actual_y],
     )
     assert np.array_equal(expected_x, actual_x)
@@ -74,7 +74,7 @@ def test_subset_creation_with_clipping_of_data_model_without_nan_values(
         length_for_buffer,
 ):
     """Subset Creation with """
-    buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
+    buffer = SortedCurveDataBuffer(size=length_for_buffer)
     buffer.add_list_of_entries(
         x=np.arange(start=0.0, stop=10.0),
         y=np.arange(start=0.0, stop=10.0),
@@ -162,7 +162,7 @@ def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
         length_for_buffer,
 ):
     """Check same subsets as with buffer without nans with an full buffer and an buffer with empty places left"""
-    buffer = accgraph.SortedCurveDataBuffer(size=length_for_buffer)
+    buffer = SortedCurveDataBuffer(size=length_for_buffer)
     buffer.add_entry(x=np.nan, y=np.nan)
     buffer.add_list_of_entries(
         x=np.array([0.0, 1.0]), y=np.array([0.0, 1.0]),
@@ -212,7 +212,7 @@ def test_subset_creation_with_clipping_of_data_model_with_multiple_nan_values(
 
 def test_add_empty_list():
     """Check if an empty list of entries is handled correctly when appended"""
-    buffer = accgraph.SortedCurveDataBuffer(size=10)
+    buffer = SortedCurveDataBuffer(size=10)
     buffer.add_list_of_entries(
         x=np.array([]), y=np.array([]),
     )
@@ -220,22 +220,22 @@ def test_add_empty_list():
 
 
 @pytest.mark.parametrize("item_to_add", [
-    (accgraph.LivePlotCurve, "addCurve"),
-    (accgraph.LiveBarGraphItem, "addBarGraph"),
-    (accgraph.LiveInjectionBarGraphItem, "addInjectionBar"),
-    (accgraph.LiveTimestampMarker, "addTimestampMarker"),
+    (LivePlotCurve, "addCurve"),
+    (LiveBarGraphItem, "addBarGraph"),
+    (LiveInjectionBarGraphItem, "addInjectionBar"),
+    (LiveTimestampMarker, "addTimestampMarker"),
 ])
 @pytest.mark.parametrize("use_convenience_functions", [True, False])
 def test_buffer_size_configurability(
         qtbot,
-        item_to_add: Tuple[accgraph.DataModelBasedItem, str],
+        item_to_add: Tuple[DataModelBasedItem, str],
         use_convenience_functions: bool,
         minimal_test_window,
 ):
     """Test if the datamodels buffer size is properly configurable."""
     qtbot.add_widget(minimal_test_window)
     plot_item = minimal_test_window.plot.plotItem
-    data_source = accgraph.UpdateSource()
+    data_source = UpdateSource()
     if use_convenience_functions:
         # create item with the addXyz() functions
         convenience_function = getattr(plot_item, item_to_add[1])

@@ -2,36 +2,22 @@
 Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
-from typing import Tuple, Dict, cast, Type, Union, Optional, List
-from copy import copy
-from enum import IntEnum, Flag, auto
-
 import numpy as np
 import pyqtgraph as pg
+from typing import Tuple, Dict, cast, Type, Union, Optional, List, TYPE_CHECKING
+from copy import copy
+from enum import IntEnum, Flag, auto
 from qtpy.QtCore import QRectF, Signal, Qt, QPointF
 from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 from qtpy.QtGui import QColor, QPen, QBrush
 
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveCurveDataModel,
-    StaticCurveDataModel,
-    EditableCurveDataModel,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractBaseDataModel,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.datamodel.datastructures import CurveData
-from accwidgets.graph.widgets.plotconfiguration import PlotWidgetStyle
-from accwidgets.graph.widgets.plottimespan import CyclicPlotTimeSpan
-from accwidgets.graph.util import deprecated_param_alias
-from typing import TYPE_CHECKING
+from accwidgets.graph import (UpdateSource, LiveCurveDataModel, StaticCurveDataModel, EditableCurveDataModel,
+                              DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem, AbstractBaseDataModel,
+                              AbstractDataModelBasedItemMeta, CurveData, PlotWidgetStyle, CyclicPlotTimeSpan)
+from accwidgets._deprecations import deprecated_param_alias
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
+
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [

@@ -2,17 +2,13 @@
 
 import abc
 import warnings
-from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
-
 import numpy as np
 import pyqtgraph as pg
-
-from accwidgets.graph.datamodel.itemdatamodel import AbstractBaseDataModel
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
+from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
+from accwidgets.graph import (AbstractBaseDataModel, UpdateSource, DEFAULT_BUFFER_SIZE, ExPlotWidgetConfig,
+                              PlotWidgetStyle)
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
 
 
 _T = TypeVar("_T", bound="DataModelBasedItem")

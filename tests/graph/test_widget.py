@@ -1,40 +1,15 @@
-from datetime import datetime
-from typing import Union, List, Tuple, Dict, Type, Optional, cast
 import itertools
-
 import pytest
 import pyqtgraph as pg
 import numpy as np
-
-from accwidgets.graph import (
-    LiveBarGraphItem,
-    LiveTimestampMarker,
-    LiveInjectionBarGraphItem,
-    LivePlotCurve,
-    StaticPlotCurve,
-    StaticBarGraphItem,
-    StaticInjectionBarGraphItem,
-    StaticTimestampMarker,
-    ExPlotItem,
-    ExPlotWidget,
-    ExPlotWidgetConfig,
-    BarData,
-    DataModelBasedItem,
-    TimestampMarkerData,
-    InjectionBarData,
-    PlotWidgetStyle,
-    PointData,
-    RelativeTimeAxisItem,
-    ScrollingBarGraphItem,
-    ScrollingTimestampMarker,
-    ScrollingInjectionBarGraphItem,
-    ScrollingPlotCurve,
-    CyclicPlotCurve,
-    TimeAxisItem,
-    UpdateSource,
-    TimeSpan,
-)
-
+from datetime import datetime
+from typing import Union, List, Tuple, Dict, Type, Optional, cast
+from accwidgets.graph import (LiveBarGraphItem, LiveTimestampMarker, LiveInjectionBarGraphItem, LivePlotCurve,
+                              StaticPlotCurve, StaticBarGraphItem, StaticInjectionBarGraphItem, StaticTimestampMarker,
+                              ExPlotItem, ExPlotWidget, ExPlotWidgetConfig, BarData, DataModelBasedItem,
+                              TimestampMarkerData, InjectionBarData, PlotWidgetStyle, PointData, RelativeTimeAxisItem,
+                              ScrollingBarGraphItem, ScrollingTimestampMarker, ScrollingInjectionBarGraphItem,
+                              ScrollingPlotCurve, CyclicPlotCurve, TimeAxisItem, UpdateSource, TimeSpan)
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
 

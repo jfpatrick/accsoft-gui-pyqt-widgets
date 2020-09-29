@@ -1,20 +1,10 @@
-from typing import List, Tuple, Dict, Optional, Union
-
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.GraphicsScene.mouseEvents import HoverEvent
 import pytest
-
-from accwidgets.graph import (
-    PlotItemLayer,
-    LayerIdentification,
-    ExPlotItem,
-    ExPlotWidget,
-    ExViewBox,
-    ExPlotWidgetConfig,
-    PlotWidgetStyle,
-)
-
+from typing import List, Tuple, Dict, Optional, Union
+from pyqtgraph.GraphicsScene.mouseEvents import HoverEvent
+from accwidgets.graph import (PlotItemLayer, LayerIdentification, ExPlotItem, ExPlotWidget, ExViewBox,
+                              ExPlotWidgetConfig, PlotWidgetStyle)
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
 

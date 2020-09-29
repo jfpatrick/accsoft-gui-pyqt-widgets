@@ -3,7 +3,7 @@
 import warnings
 import numpy as np
 from typing import Dict, List, Union
-from .datastructures import CurveData, PointData
+from accwidgets.graph import CurveData, PointData
 
 
 def intersect(graph_points: CurveData, vertical_line_x_position: float) -> Dict[str, Union[PointData, int]]:

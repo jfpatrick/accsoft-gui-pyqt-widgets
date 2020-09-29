@@ -1,7 +1,6 @@
 """Update Source for Data for Testing purposes"""
 
 from typing import List, Union, Type, Any
-
 from accwidgets.graph import UpdateSource, PointData, BarData
 
 

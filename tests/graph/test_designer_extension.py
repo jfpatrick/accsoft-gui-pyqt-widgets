@@ -1,12 +1,12 @@
+import pytest
+import numpy as np
 from typing import Type, List, Tuple, Any
 from pytestqt.qtbot import QtBot
 from unittest import mock
-import pytest
 from qtpy.QtWidgets import QDialogButtonBox
-import numpy as np
 from PyQt5.QtTest import QAbstractItemModelTester
 from accwidgets.graph import ExPlotWidget, ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget, UpdateSource
-from accwidgets.graph.designer.designer_extensions import PlotLayerEditingDialog, PlotLayerTableModel
+from accwidgets.graph.designer import PlotLayerEditingDialog, PlotLayerTableModel
 from .mock_utils.widget_test_window import MinimalTestWindow
 
 

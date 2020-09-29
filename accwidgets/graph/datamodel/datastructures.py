@@ -10,7 +10,8 @@ import pyqtgraph as pg
 from abc import ABC, abstractmethod
 from typing import List, Union, Any, Sequence, Dict
 from copy import deepcopy
-from ..util import deprecated_param_alias
+from accwidgets._deprecations import deprecated_param_alias
+from accwidgets.graph import DEFAULT_COLOR
 
 
 class InvalidDataStructureWarning(Warning):
@@ -74,13 +75,6 @@ class PlottingItemData(ABC):
         for k, v in self.__dict__.items():
             setattr(result, k, deepcopy(v, memo))
         return result
-
-
-DEFAULT_COLOR = "w"
-"""
-Default color for rendered items, when a color is not specified.
-It is set as white, because PyQtGraph has a black background by default.
-"""
 
 
 class PointData(PlottingItemData):

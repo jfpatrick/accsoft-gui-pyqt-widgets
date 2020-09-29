@@ -1,10 +1,8 @@
 """
 Different AxisItem implementations for Timestamp based plotting for better readability
 """
-
 from datetime import datetime
 from typing import List, Iterable
-
 from pyqtgraph import AxisItem
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal

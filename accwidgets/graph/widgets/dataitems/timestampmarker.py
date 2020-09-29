@@ -1,23 +1,17 @@
 """Scrolling Bar Chart for live data plotting"""
 
-from typing import List, Type, Union
-
 import pyqtgraph as pg
+from typing import List, Type, Union
 from qtpy.QtGui import QPainter
 from qtpy.QtWidgets import QGraphicsItem
 from qtpy.QtCore import QRectF
-
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveTimestampMarkerDataModel,
-    StaticTimestampMarkerDataModel,
-    AbstractBaseDataModel,
-)
-from accwidgets.graph import DEFAULT_BUFFER_SIZE, DataModelBasedItem, AbstractDataModelBasedItemMeta, PlotWidgetStyle
-from accwidgets.graph.util import deprecated_param_alias
+from accwidgets.graph import (UpdateSource, LiveTimestampMarkerDataModel, StaticTimestampMarkerDataModel,
+                              AbstractBaseDataModel, DEFAULT_BUFFER_SIZE, DataModelBasedItem,
+                              AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+from accwidgets._deprecations import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
 
 """which plotting style is achieved by which class"""
 

@@ -2,7 +2,7 @@
 
 import abc
 import numpy as np
-from ..widgets.plotconfiguration import TimeSpan
+from accwidgets.graph import TimeSpan
 
 
 class BasePlotTimeSpan(metaclass=abc.ABCMeta):

@@ -1,5 +1,5 @@
 import pytest
-from accwidgets.graph.util import deprecated_param_alias
+from accwidgets._deprecations import deprecated_param_alias
 
 
 @pytest.fixture

@@ -9,9 +9,9 @@ import warnings
 import numpy as np
 from typing import Optional, Tuple, List, Union
 from abc import ABC, abstractmethod
-from accwidgets.graph.util import deprecated_param_alias
+from accwidgets.graph import PointData
+from accwidgets._deprecations import deprecated_param_alias
 from .datamodelclipping import calc_intersection
-from .datastructures import PointData
 
 
 DEFAULT_BUFFER_SIZE: int = 100000

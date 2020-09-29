@@ -5,9 +5,9 @@ TODO: remove when switching to pyqtgraph 0.11.0, since these
       issues have been addresses there.
 """
 
+import pyqtgraph as pg
 from typing import Tuple, Optional
 from qtpy.QtGui import QPainter, QPen, QBrush
-import pyqtgraph as pg
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
 

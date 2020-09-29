@@ -1,30 +1,16 @@
 """Scrolling Bar Chart for live-data plotting"""
 
-from typing import List, Type, Union, cast
-from copy import copy
-
 import pyqtgraph as pg
 import numpy as np
-
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveInjectionBarDataModel,
-    StaticInjectionBarDataModel,
-    AbstractBaseDataModel,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    PlotWidgetStyle,
-)
-from accwidgets.graph.util import deprecated_param_alias
-from typing import TYPE_CHECKING
+from typing import List, Type, Union, cast, TYPE_CHECKING
+from copy import copy
+from accwidgets.graph import (UpdateSource, LiveInjectionBarDataModel, StaticInjectionBarDataModel,
+                              AbstractBaseDataModel, DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem,
+                              AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+from accwidgets._deprecations import deprecated_param_alias
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
+
 
 _PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingInjectionBarGraphItem",

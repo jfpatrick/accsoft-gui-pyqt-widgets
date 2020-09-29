@@ -1,16 +1,15 @@
-from typing import List
-from enum import Enum
-
 import numpy as np
 import pyqtgraph as pg
 import pytest
+from typing import List
+from enum import Enum
 from qtpy import QtCore, QtWidgets, QtGui
-# qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
-from PyQt5 import QtTest
+from PyQt5 import QtTest  # qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
 from unittest import mock
-
-from accwidgets import graph as accgraph
-
+from accwidgets.graph import (ExPlotItem, ExPlotWidgetConfig, TimeSpan, ScrollingPlotWidget, BarCollectionData,
+                              StaticPlotWidget, EditablePlotWidget, CyclicPlotWidget, EditablePlotCurve, UpdateSource,
+                              PointData, ExPlotWidget, CurveData, InjectionBarCollectionData, LivePlotCurve,
+                              PlotWidgetStyle)
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
 from .mock_utils.utils import sim_selection_moved
 
@@ -44,7 +43,7 @@ class TransformRangeOperation(Enum):
     transform_y = 3
 
 
-def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: ResumeRangeOperation):
+def _resume_to_orig_range(plot_item: ExPlotItem, reset_operation: ResumeRangeOperation):
     """Reset the view range of a plot item"""
     if reset_operation == ResumeRangeOperation.auto_button:
         plot_item.autoBtn.mouseClickEvent(ev=None)
@@ -54,7 +53,7 @@ def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: Resum
         raise ValueError(f"{reset_operation} is not a known operation for resetting the view range in the plot.")
 
 
-def _prepare_scrolling_plot_test_window(qtbot, time_span: accgraph.TimeSpan, should_create_timing_source: bool = True):
+def _prepare_scrolling_plot_test_window(qtbot, time_span: TimeSpan, should_create_timing_source: bool = True):
     """
     Prepare a window for testing
 
@@ -62,14 +61,14 @@ def _prepare_scrolling_plot_test_window(qtbot, time_span: accgraph.TimeSpan, sho
         qtbot: qtbot pytest fixture
         time_span: time span size, how much data should be shown
     """
-    plot_config = accgraph.ExPlotWidgetConfig(
-        plotting_style=accgraph.PlotWidgetStyle.SCROLLING_PLOT,
+    plot_config = ExPlotWidgetConfig(
+        plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
         time_span=time_span,
         time_progress_line=True,
     )
     window = PlotWidgetTestWindow(
         plot_config,
-        item_to_add=accgraph.LivePlotCurve,
+        item_to_add=LivePlotCurve,
         should_create_timing_source=should_create_timing_source,
     )
     window.show()
@@ -99,7 +98,7 @@ def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
     """
     window = _prepare_scrolling_plot_test_window(
         qtbot=qtbot,
-        time_span=accgraph.TimeSpan(left=5.0, right=0.0),
+        time_span=TimeSpan(left=5.0, right=0.0),
         should_create_timing_source=True,
     )
     plot_item: pg.PlotItem = window.plot.plotItem
@@ -148,7 +147,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
     """
     window = _prepare_scrolling_plot_test_window(qtbot=qtbot,
                                                  should_create_timing_source=True,
-                                                 time_span=accgraph.TimeSpan(left=20.0, right=0.0))
+                                                 time_span=TimeSpan(left=20.0, right=0.0))
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
     data = window.data_source_mock
@@ -163,7 +162,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
     assert (-15.0 - 30 * 0.1) <= plot_item.vb.targetRange()[1][0] <= -15.0
     assert 15.0 <= plot_item.vb.targetRange()[1][1] <= (15.0 + 30 * 0.1)
 
-    def get_transform_range(plot_item: accgraph.ExPlotItem, tx: bool, ty: bool, offset: float = 0.0) -> List[List[float]]:
+    def get_transform_range(plot_item: ExPlotItem, tx: bool, ty: bool, offset: float = 0.0) -> List[List[float]]:
         # We want to make sure no auto range updates are pending anymore.
         # If auto-range updates are pending, they might get executed after
         # setting the range which would destroy the range set by hand.
@@ -173,7 +172,7 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
         expected_y = [10.0 - offset, 25.0 + offset] if ty else [np.nan, np.nan]
         return [expected_x, expected_y]
 
-    def do_transform(plot_item: accgraph.ExPlotItem, range: List[List[float]]):
+    def do_transform(plot_item: ExPlotItem, range: List[List[float]]):
         """Transform the view range of the given plot item in the given way."""
         ev = mock.MagicMock()
         ev.delta.return_value = 0.3
@@ -218,73 +217,73 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
 
 @pytest.mark.parametrize("plot_type, slot, data, expected", [
     # Single values
-    (accgraph.ScrollingPlotWidget,
+    (ScrollingPlotWidget,
      "pushData",
      [0, 1, 2],
      [0, 1, 2]),
     # (y, x) as tuple
-    (accgraph.ScrollingPlotWidget,
+    (ScrollingPlotWidget,
      "pushData",
      [(1, 0), (2, 1), (3, 2)],
      [(0, 1), (1, 2), (2, 3)]),
     # (y, x) as list
-    (accgraph.ScrollingPlotWidget,
+    (ScrollingPlotWidget,
      "pushData",
      [[1, 0], [2, 1], [3, 2]],
      [(0, 1), (1, 2), (2, 3)]),
     # (y, x) as numpy array
-    (accgraph.ScrollingPlotWidget,
+    (ScrollingPlotWidget,
      "pushData",
      [np.array([1, 0]), np.array([2, 1]), np.array([3, 2])],
      [(0, 1), (1, 2), (2, 3)]),
     # PointData(x, y)
-    (accgraph.ScrollingPlotWidget,
+    (ScrollingPlotWidget,
      "pushData",
-     [accgraph.PointData(0, 0), accgraph.PointData(1, 1), accgraph.PointData(2, 2)],
+     [PointData(0, 0), PointData(1, 1), PointData(2, 2)],
      [(0, 0), (1, 1), (2, 2)]),
 
     # Single values
-    (accgraph.CyclicPlotWidget,
+    (CyclicPlotWidget,
      "pushData",
      [0, 1, 2], [0, 1, 2]),
     # (y, x) as tuple
-    (accgraph.CyclicPlotWidget,
+    (CyclicPlotWidget,
      "pushData",
      [(1, 0), (2, 1), (3, 2)],
      [(0, 1), (1, 2), (2, 3)]),
     # (y, x) as list
-    (accgraph.CyclicPlotWidget,
+    (CyclicPlotWidget,
      "pushData",
      [[1, 0], [2, 1], [3, 2]],
      [(0, 1), (1, 2), (2, 3)]),
     # (y, x) as numpy array
-    (accgraph.CyclicPlotWidget,
+    (CyclicPlotWidget,
      "pushData",
      [np.array([1, 0]), np.array([2, 1]), np.array([3, 2])],
      [(0, 1), (1, 2), (2, 3)]),
     # PointData(x, y)
-    (accgraph.CyclicPlotWidget,
+    (CyclicPlotWidget,
      "pushData",
-     [accgraph.PointData(0, 0), accgraph.PointData(1, 1), accgraph.PointData(2, 2)],
+     [PointData(0, 0), PointData(1, 1), PointData(2, 2)],
      [(0, 0), (1, 1), (2, 2)]),
 
     # array of y values
-    (accgraph.StaticPlotWidget,
+    (StaticPlotWidget,
      "replaceDataAsCurve",
      [np.array([0, 1, 2])],
      [(0, 0), (1, 1), (2, 2)]),
     # curve as 2D numpy value
-    (accgraph.StaticPlotWidget,
+    (StaticPlotWidget,
      "replaceDataAsCurve",
      [np.array([[10, 20, 30], [0, 1, 2]])],
      [(10, 0), (20, 1), (30, 2)]),
     # CurveData([x], [y])
-    (accgraph.StaticPlotWidget,
+    (StaticPlotWidget,
      "replaceDataAsCurve",
-     [accgraph.CurveData([10, 20, 30], [0, 1, 2])],
+     [CurveData([10, 20, 30], [0, 1, 2])],
      [(10, 0), (20, 1), (30, 2)]),
     # multiple updates
-    (accgraph.StaticPlotWidget,
+    (StaticPlotWidget,
      "replaceDataAsCurve",
      [np.array([0, 1, 2]), np.array([10, 20, 30])],
      [(0, 10), (1, 20), (2, 30)]),
@@ -294,7 +293,7 @@ def test_curve_plotting_slot(qtbot,
                              slot,
                              data,
                              expected):
-    plot: accgraph.ExPlotWidget = plot_type()
+    plot: ExPlotWidget = plot_type()
     qtbot.add_widget(plot)
     plot.show()
     slot = getattr(plot, slot)
@@ -313,20 +312,20 @@ def test_curve_plotting_slot(qtbot,
 
 @pytest.mark.parametrize("plot_type, data, expected", [
     # BarCollectionData([x], [y], [height])
-    (accgraph.StaticPlotWidget,
-     [accgraph.BarCollectionData(x=[10, 20, 30], y=[0, 1, 2], heights=[3, 4, 5])],
+    (StaticPlotWidget,
+     [BarCollectionData(x=[10, 20, 30], y=[0, 1, 2], heights=[3, 4, 5])],
      [[10, 20, 30], [0, 1, 2], [3, 4, 5]]),
     # Multiple Updates
-    (accgraph.StaticPlotWidget,
-     [accgraph.BarCollectionData(x=[1, 2, 3], y=[4, 3, 2], heights=[1, 0, -1]),
-      accgraph.BarCollectionData(x=[10, 20, 30], y=[0, 1, 2], heights=[3, 4, 5])],
+    (StaticPlotWidget,
+     [BarCollectionData(x=[1, 2, 3], y=[4, 3, 2], heights=[1, 0, -1]),
+      BarCollectionData(x=[10, 20, 30], y=[0, 1, 2], heights=[3, 4, 5])],
      [[10, 20, 30], [0, 1, 2], [3, 4, 5]]),
 ])
 def test_bar_plotting_slots(qtbot,
                             plot_type,
                             data,
                             expected):
-    plot: accgraph.StaticPlotWidget = plot_type()
+    plot: StaticPlotWidget = plot_type()
     qtbot.add_widget(plot)
     plot.show()
     assert plot.plotItem.single_value_slot_dataitem is None
@@ -341,32 +340,32 @@ def test_bar_plotting_slots(qtbot,
 
 @pytest.mark.parametrize("plot_type, data, expected", [
     # InjectionBarCollectionData([x], [y], [height], [width], [label])
-    (accgraph.StaticPlotWidget,
-     [accgraph.InjectionBarCollectionData(x=[10, 20, 30],
-                                          y=[0, 1, 2],
-                                          heights=[3, 4, 5],
-                                          widths=[1, 1, 1],
-                                          labels=["a", "b", "c"])],
+    (StaticPlotWidget,
+     [InjectionBarCollectionData(x=[10, 20, 30],
+                                 y=[0, 1, 2],
+                                 heights=[3, 4, 5],
+                                 widths=[1, 1, 1],
+                                 labels=["a", "b", "c"])],
      [[10, 20, 30], [0, 1, 2], [3, 4, 5], [1, 1, 1], ["a", "b", "c"]]),
     # Multiple Updates
-    (accgraph.StaticPlotWidget,
-     [accgraph.InjectionBarCollectionData(x=[50, 60, 70],
-                                          y=[2, 1, 1],
-                                          heights=[5, 4, 3],
-                                          widths=[2, 2, 2],
-                                          labels=["l", "o", "l"]),
-      accgraph.InjectionBarCollectionData(x=[10, 20, 30],
-                                          y=[0, 1, 2],
-                                          heights=[3, 4, 5],
-                                          widths=[1, 1, 1],
-                                          labels=["a", "b", "c"])],
+    (StaticPlotWidget,
+     [InjectionBarCollectionData(x=[50, 60, 70],
+                                 y=[2, 1, 1],
+                                 heights=[5, 4, 3],
+                                 widths=[2, 2, 2],
+                                 labels=["l", "o", "l"]),
+      InjectionBarCollectionData(x=[10, 20, 30],
+                                 y=[0, 1, 2],
+                                 heights=[3, 4, 5],
+                                 widths=[1, 1, 1],
+                                 labels=["a", "b", "c"])],
      [[10, 20, 30], [0, 1, 2], [3, 4, 5], [1, 1, 1], ["a", "b", "c"]]),
 ])
 def test_inj_bar_plotting_slots(qtbot,
                                 plot_type,
                                 data,
                                 expected):
-    plot: accgraph.StaticPlotWidget = plot_type()
+    plot: StaticPlotWidget = plot_type()
     qtbot.add_widget(plot)
     plot.show()
     assert plot.plotItem.single_value_slot_dataitem is None
@@ -390,18 +389,18 @@ def test_send_all_editables_state(qtbot,
                                   editable_testing_window):
     curve_count = 5
     qtbot.add_widget(editable_testing_window)
-    plot: accgraph.EditablePlotWidget = editable_testing_window.plot
+    plot: EditablePlotWidget = editable_testing_window.plot
 
-    sources: List[accgraph.UpdateSource] = []
-    curves: List[accgraph.EditablePlotCurve] = []
+    sources: List[UpdateSource] = []
+    curves: List[EditablePlotCurve] = []
     spies: List[QtTest.QSignalSpy] = []
     for i in range(curve_count):
-        source = accgraph.UpdateSource()
+        source = UpdateSource()
         sources.append(source)
         curve = plot.addCurve(data_source=source)
         curves.append(curve)
         spies.append(QtTest.QSignalSpy(curve.model().sig_data_model_edited))
-        initial_data = accgraph.CurveData([0, 1, 2], [1 + i, 0 + i, 1 + i])
+        initial_data = CurveData([0, 1, 2], [1 + i, 0 + i, 1 + i])
         source.send_data(initial_data)
 
     for i, c in list(enumerate(curves)):
@@ -417,7 +416,7 @@ def test_send_all_editables_state(qtbot,
 def test_plot_item_selection(qtbot,
                              editable_testing_window):
     qtbot.add_widget(editable_testing_window)
-    plot: accgraph.EditablePlotWidget = editable_testing_window.plot
+    plot: EditablePlotWidget = editable_testing_window.plot
     # Per default the plotselection is disabled (only activated when multiple
     # plots are connected to a editing-toolbar)
     plot.plotItem.make_selectable(True)

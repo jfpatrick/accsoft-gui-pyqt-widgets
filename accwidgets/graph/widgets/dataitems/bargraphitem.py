@@ -1,29 +1,15 @@
 """Scrolling Bar Chart for live data plotting"""
 
-from typing import Type, Dict, Union, cast, List, Tuple, Optional
-from copy import copy
-
 import numpy as np
 import pyqtgraph as pg
+from copy import copy
+from typing import Type, Dict, Union, cast, List, Tuple, Optional, TYPE_CHECKING
+from accwidgets.graph import (UpdateSource, LiveBarGraphDataModel, StaticBarGraphDataModel, AbstractBaseDataModel,
+                              DEFAULT_BUFFER_SIZE, DataModelBasedItem, AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+from accwidgets._deprecations import deprecated_param_alias
 
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveBarGraphDataModel,
-    StaticBarGraphDataModel,
-    AbstractBaseDataModel,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    PlotWidgetStyle,
-)
-from accwidgets.graph.util import deprecated_param_alias
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
 
 
 OrthoRange = Union[List[float], Tuple[float, float], None]
@@ -34,12 +20,7 @@ BoundsAxisEntry = Tuple[Tuple[FracValue, OrthoRange], BoundsValue]
 
 class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
 
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: AbstractBaseDataModel,
-            **bargraphitem_kwargs,
-    ):
+    def __init__(self, plot_item: "ExPlotItem", data_model: AbstractBaseDataModel, **bargraphitem_kwargs):
         """Base class for different live bar graph plots.
 
         Args:
@@ -91,12 +72,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
             **bargraphitem_kwargs,
         )
 
-    def dataBounds(
-            self,
-            ax: int,
-            frac: FracValue = 1.0,
-            orthoRange: OrthoRange = None,
-    ) -> Optional[BoundsValue]:
+    def dataBounds(self, ax: int, frac: FracValue = 1.0, orthoRange: OrthoRange = None) -> Optional[BoundsValue]:
         """
         Declares a method dynamically probed to have proper auto-scaling on bar graphs.
         This method is called by :class:`~pyqtgraph.ViewBox` when auto-scaling.

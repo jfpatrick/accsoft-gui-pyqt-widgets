@@ -2,49 +2,23 @@
 Extended Widget for custom plotting with simple configuration wrappers
 """
 
-from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
-from copy import deepcopy
 import json
 import warnings
-from dataclasses import dataclass
-
 import numpy as np
 import pyqtgraph as pg
+from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
+from copy import deepcopy
+from dataclasses import dataclass
 from qtpy.QtCore import Signal, Slot, Property, Q_ENUM, Qt
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QPen, QMouseEvent, QColor
-
-from accwidgets.graph.datamodel.connection import UpdateSource, PlottingItemDataFactory
-from accwidgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
-    PlotWidgetStyle,
-    TimeSpan,
-)
-from accwidgets.graph.widgets.plotitem import (
-    ExPlotItem,
-    PlotItemLayer,
-    LayerIdentification,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.dataitems.plotdataitem import AbstractBasePlotCurve
-from accwidgets.graph.widgets.dataitems.bargraphitem import (
-    LiveBarGraphItem,
-    AbstractBaseBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.injectionbaritem import (
-    LiveInjectionBarGraphItem,
-    AbstractBaseInjectionBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
-from accwidgets.graph.widgets.axisitems import ExAxisItem
-from accwidgets.graph.datamodel.datastructures import (
-    PointData,
-    CurveData,
-    BarCollectionData,
-    InjectionBarCollectionData,
-)
 from accwidgets import designer_check
+from accwidgets.graph import (UpdateSource, PlottingItemDataFactory, ExPlotWidgetConfig, PlotWidgetStyle, TimeSpan,
+                              ExPlotItem, PlotItemLayer, LayerIdentification, DEFAULT_BUFFER_SIZE,
+                              AbstractBasePlotCurve, LiveBarGraphItem, AbstractBaseBarGraphItem,
+                              LiveInjectionBarGraphItem, AbstractBaseInjectionBarGraphItem, LiveTimestampMarker,
+                              DataModelBasedItem, ExAxisItem, PointData, CurveData, BarCollectionData,
+                              InjectionBarCollectionData)
 
 
 class SymbolOptions:

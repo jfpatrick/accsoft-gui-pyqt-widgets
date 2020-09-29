@@ -15,10 +15,8 @@ Example:
         assert dm_utils.check_datamodel(datamodel, [1.0, 2.0, 3.0])
 """
 
-from typing import List, Tuple, Union
-
 import numpy as np
-
+from typing import List, Tuple, Union
 from accwidgets.graph import (AbstractLiveDataModel, LiveCurveDataModel, LiveBarGraphDataModel,
                               LiveInjectionBarDataModel, LiveTimestampMarkerDataModel, BarCollectionData,
                               PointData, BarData, InjectionBarData, TimestampMarkerData, CurveData,

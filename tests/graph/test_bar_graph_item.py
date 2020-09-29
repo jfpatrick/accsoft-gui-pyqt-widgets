@@ -4,7 +4,6 @@ from unittest import mock
 from pytestqt.qtbot import QtBot
 from accwidgets.graph import (ExPlotWidgetConfig, PlotWidgetStyle, UpdateSource, BarData, BarCollectionData,
                               PointData, CurveData)
-
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
 
 

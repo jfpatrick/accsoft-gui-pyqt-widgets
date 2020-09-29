@@ -2,33 +2,16 @@
 
 import abc
 import warnings
-from typing import Optional, Tuple, Union, cast
-
 import numpy as np
+from typing import Optional, Tuple, Union, cast
 from qtpy.QtCore import QObject, Signal, Slot
 
 from accwidgets.qt import AbstractQObjectMeta
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.datamodelbuffer import (
-    DEFAULT_BUFFER_SIZE,
-    SortedBarGraphDataBuffer,
-    SortedCurveDataBuffer,
-    BaseSortedDataBuffer,
-    SortedTimestampMarkerDataBuffer,
-    SortedInjectionBarsDataBuffer,
-)
-from accwidgets.graph.datamodel.datastructures import (
-    BarCollectionData,
-    BarData,
-    CurveData,
-    TimestampMarkerCollectionData,
-    TimestampMarkerData,
-    InjectionBarCollectionData,
-    InjectionBarData,
-    PointData,
-    PlottingItemData,
-)
-from accwidgets.graph.common import History
+from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, SortedBarGraphDataBuffer, SortedCurveDataBuffer,
+                              BaseSortedDataBuffer, SortedTimestampMarkerDataBuffer, SortedInjectionBarsDataBuffer,
+                              BarCollectionData, BarData, CurveData, TimestampMarkerCollectionData, TimestampMarkerData,
+                              InjectionBarCollectionData, InjectionBarData, PointData, PlottingItemData)
+from .history import History
 
 
 class WrongDataType(Warning):

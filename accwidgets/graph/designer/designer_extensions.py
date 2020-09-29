@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from typing import Union, Optional, Tuple, List, cast, Dict, Any
 from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
 from qtpy.QtWidgets import QAction, QWidget, QDoubleSpinBox, QStyleOptionViewItem, QStyledItemDelegate
-from accwidgets.graph import ExPlotWidget, ExPlotWidgetProperties
+from accwidgets.graph import ExPlotWidget
+from accwidgets.graph.widgets.plotwidget import ExPlotWidgetProperties
 from accwidgets._designer_base import WidgetsExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableModel, TableViewColumnResizer, AbstractTableDialog,
                            BooleanPropertyColumnDelegate)
@@ -233,13 +234,12 @@ class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableMo
                 res[row.axis_id] = row.axis_label
         return json.dumps(res)
 
-    def _unpack_json(self, plot: ExPlotWidget) -> List[LayerTableRow]:
-        props = cast(ExPlotWidgetProperties, plot)
-        axis_labels: Dict[str, Any] = json.loads(props.axisLabels)
-        axis_ranges: Dict[str, Any] = json.loads(props.axisRanges)
+    def _unpack_json(self, plot: Union[ExPlotWidget, ExPlotWidgetProperties]) -> List[LayerTableRow]:
+        axis_labels: Dict[str, Any] = json.loads(plot.axisLabels)
+        axis_ranges: Dict[str, Any] = json.loads(plot.axisRanges)
 
         res = []
-        for axis_id in self.DEFAULT_AXES + props.layerIDs:
+        for axis_id in self.DEFAULT_AXES + plot.layerIDs:
             label: str
             if axis_id == self.DEFAULT_AXES[0]:
                 label = axis_labels.get("bottom", axis_labels.get("top", ""))

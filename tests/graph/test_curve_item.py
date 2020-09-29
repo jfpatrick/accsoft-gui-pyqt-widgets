@@ -1,20 +1,8 @@
-from typing import List, Union, Optional, cast, NamedTuple, Any
-
 import pytest
 import numpy as np
-
-from accwidgets.graph import (
-    LivePlotCurve,
-    ExPlotWidgetConfig,
-    CurveData,
-    PlotWidgetStyle,
-    CyclicPlotCurve,
-    UpdateSource,
-    PointData,
-    CyclicPlotTimeSpan,
-    InvalidDataStructureWarning,
-)
-
+from typing import List, Union, Optional, cast, NamedTuple, Any
+from accwidgets.graph import (LivePlotCurve, ExPlotWidgetConfig, CurveData, PlotWidgetStyle, CyclicPlotCurve,
+                              UpdateSource, PointData, CyclicPlotTimeSpan, InvalidDataStructureWarning)
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.mock_timing_source import MockTimingSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow

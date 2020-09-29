@@ -1,4 +1,4 @@
-from accwidgets.graph.common import History
+from accwidgets.graph.datamodel.history import History
 
 
 def test_empty_his():

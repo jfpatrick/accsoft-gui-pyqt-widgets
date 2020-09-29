@@ -5,22 +5,21 @@ different datamodels. The right values for each datamodel are created with
 the functions in datamodel_generalization_util.py
 """
 
-from typing import Type, Optional
-
 import numpy as np
 import pytest
+from typing import Type, Optional
 from unittest.mock import patch
-
-from accwidgets import graph as accgraph
-
+from accwidgets.graph import (AbstractLiveDataModel, LiveCurveDataModel, LiveBarGraphDataModel, CurveData, UpdateSource,
+                              LiveInjectionBarDataModel, LiveTimestampMarkerDataModel, InvalidDataStructureWarning,
+                              EditableCurveDataModel)
 from .mock_utils import datamodel_generalization_util as dm_util
 from .mock_utils.mock_data_source import MockDataSource
 
 DATAMODELS_TO_TEST = [
-    accgraph.LiveCurveDataModel,
-    accgraph.LiveBarGraphDataModel,
-    accgraph.LiveInjectionBarDataModel,
-    accgraph.LiveTimestampMarkerDataModel,
+    LiveCurveDataModel,
+    LiveBarGraphDataModel,
+    LiveInjectionBarDataModel,
+    LiveTimestampMarkerDataModel,
 ]
 
 # For matching warning messages we capture
@@ -31,10 +30,10 @@ _INVALID_DATA_STRUCTURE_WARNING_MSG = r"is not valid and can't be drawn for " \
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_datamodel_is_empty(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_datamodel_is_empty(model_type: Type[AbstractLiveDataModel]):
     """ Check if datamodel is empty is correct """
     data_source: MockDataSource = MockDataSource()
-    datamodel: accgraph.LiveBarGraphDataModel = model_type(data_source=data_source, buffer_size=5)
+    datamodel: LiveBarGraphDataModel = model_type(data_source=data_source, buffer_size=5)
     assert datamodel.is_empty
     data_source.emit_new_object(dm_util.create_fitting_object(datamodel, 1.0))
     assert not datamodel.is_empty
@@ -45,7 +44,7 @@ def test_datamodel_is_empty(model_type: Type[accgraph.AbstractLiveDataModel]):
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_data_source_replacement(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_data_source_replacement(model_type: Type[AbstractLiveDataModel]):
     """Check replacement of data source with and without buffer clearing"""
     data_source_1: MockDataSource = MockDataSource()
     data_source_2: MockDataSource = MockDataSource()
@@ -70,7 +69,7 @@ def test_data_source_replacement(model_type: Type[accgraph.AbstractLiveDataModel
 # ~~~~~ Databuffer tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_long_list_of_simple_values(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_append_long_list_of_simple_values(model_type: Type[AbstractLiveDataModel]):
     """Append a long list of simple values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -79,7 +78,7 @@ def test_append_long_list_of_simple_values(model_type: Type[accgraph.AbstractLiv
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type: Type[AbstractLiveDataModel]):
     """Append a long list that is longer than the buffers overall size"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -90,7 +89,7 @@ def test_append_list_of_points_longer_than_size_into_non_empty_buffer(model_type
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_type: Type[AbstractLiveDataModel]):
     """Append a long list that is longer than the buffers overall size while the buffer is already filled to a part"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -100,8 +99,8 @@ def test_append_list_of_points_longer_than_size_into_half_filled_buffer(model_ty
     assert dm_util.check_datamodel(datamodel, 5, [98.0, 99.0, 100.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_append_nan_point_for_line_splitting(model_type: Type[AbstractLiveDataModel]):
     """Append a nan value to represent a split in a line"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -113,8 +112,8 @@ def test_append_nan_point_for_line_splitting(model_type: Type[accgraph.AbstractL
     assert dm_util.check_datamodel(datamodel, 5, [1.0, np.nan, 2.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_sort_values_around_nan_value(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_sort_values_around_nan_value(model_type: Type[AbstractLiveDataModel]):
     """Test sorting values right next to a NaN value"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -131,8 +130,8 @@ def test_sort_values_around_nan_value(model_type: Type[accgraph.AbstractLiveData
     assert dm_util.check_datamodel(datamodel, 5, [2.0, 2.5, 2.75, 3.0, np.nan])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_append_nan_on_first_position(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_append_nan_on_first_position(model_type: Type[AbstractLiveDataModel]):
     """First value appended to the DataModel is NaN"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -142,8 +141,8 @@ def test_append_nan_on_first_position(model_type: Type[accgraph.AbstractLiveData
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 1.0, 2.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_nan_get_first_value_after_shift(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_nan_get_first_value_after_shift(model_type: Type[AbstractLiveDataModel]):
     """First value after shift in databuffer is NaN"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -156,8 +155,8 @@ def test_nan_get_first_value_after_shift(model_type: Type[accgraph.AbstractLiveD
     assert dm_util.check_datamodel(datamodel, 5, [np.nan, 3.0, 4.0])
 
 
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_append_list_containing_nan(model_type: Type[accgraph.AbstractLiveDataModel]):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_append_list_containing_nan(model_type: Type[AbstractLiveDataModel]):
     """Append a list with values that contain a nan"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=5)
@@ -172,7 +171,7 @@ def test_append_list_containing_nan(model_type: Type[accgraph.AbstractLiveDataMo
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
+def test_subset_creation_of_data_model_without_nan_values(model_type: Type[AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does not contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -204,8 +203,8 @@ def test_subset_creation_of_data_model_without_nan_values(model_type: Type[accgr
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type[AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -243,8 +242,8 @@ def test_subset_creation_of_data_model_with_multiple_nan_values(model_type: Type
 
 
 @pytest.mark.parametrize("length_for_buffer", [10, 14])
-@pytest.mark.parametrize("model_type", [accgraph.LiveCurveDataModel])
-def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_value(model_type: Type[accgraph.AbstractLiveDataModel], length_for_buffer: int):
+@pytest.mark.parametrize("model_type", [LiveCurveDataModel])
+def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_value(model_type: Type[AbstractLiveDataModel], length_for_buffer: int):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source_1: MockDataSource = MockDataSource()
     datamodel = model_type(data_source=data_source_1, buffer_size=length_for_buffer)
@@ -284,7 +283,7 @@ def test_subset_creation_of_data_model_with_multiple_nan_values_and_nan_as_last_
 
 
 @pytest.mark.parametrize("model_type", DATAMODELS_TO_TEST)
-def test_smallest_distance_between_primary_values(model_type: Type[accgraph.AbstractLiveDataModel]):
+def test_smallest_distance_between_primary_values(model_type: Type[AbstractLiveDataModel]):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source: MockDataSource = MockDataSource()
     data_model = model_type(data_source=data_source, buffer_size=5)
@@ -300,12 +299,12 @@ def test_smallest_distance_between_primary_values(model_type: Type[accgraph.Abst
 
 
 @pytest.mark.parametrize("model_type, nan_warning", [
-    (accgraph.LiveCurveDataModel, None),
-    (accgraph.LiveBarGraphDataModel, accgraph.InvalidDataStructureWarning),
-    (accgraph.LiveInjectionBarDataModel, accgraph.InvalidDataStructureWarning),
-    (accgraph.LiveTimestampMarkerDataModel, accgraph.InvalidDataStructureWarning),
+    (LiveCurveDataModel, None),
+    (LiveBarGraphDataModel, InvalidDataStructureWarning),
+    (LiveInjectionBarDataModel, InvalidDataStructureWarning),
+    (LiveTimestampMarkerDataModel, InvalidDataStructureWarning),
 ])
-def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataModel],
+def test_get_highest_primary_value(model_type: Type[AbstractLiveDataModel],
                                    nan_warning: Optional[Type[UserWarning]]):
     """Test subset creation from datamodel that does contain any nan values"""
     data_source: MockDataSource = MockDataSource()
@@ -336,23 +335,23 @@ def test_get_highest_primary_value(model_type: Type[accgraph.AbstractLiveDataMod
 # ~~~~~~~~~~~~ Test data model when editing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-@patch.object(accgraph.UpdateSource, "handle_data_model_edit")
+@patch.object(UpdateSource, "handle_data_model_edit")
 def test_editable_curve_datamodel_notifying(mock_handler):
     """Tests, that editing is properly propagated to the update source"""
-    data_source = accgraph.UpdateSource()
-    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+    data_source = UpdateSource()
+    data_model = EditableCurveDataModel(data_source=data_source)
     # Initial update from the update source
-    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[0, 1, 2, 3, 4])
+    source_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[0, 1, 2, 3, 4])
     data_source.send_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
     # Another update from the source
-    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[0, 1, 2, 1, 0])
+    source_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[0, 1, 2, 1, 0])
     data_source.send_data(source_data)
     data_source.handle_data_model_edit.assert_not_called()
-    edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[4, 3, 2, 1, 0])
+    edited_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[4, 3, 2, 1, 0])
     data_model.handle_editing(edited_data)
     mock_handler.assert_not_called()
     data_model.send_current_state()
@@ -362,21 +361,21 @@ def test_editable_curve_datamodel_notifying(mock_handler):
 def test_editable_curve_datamodel():
     """Tests, that editing is properly propagated to the update source"""
     def to_curve_data(array):
-        return accgraph.CurveData(array[0], array[1])
-    data_source = accgraph.UpdateSource()
-    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+        return CurveData(array[0], array[1])
+    data_source = UpdateSource()
+    data_model = EditableCurveDataModel(data_source=data_source)
     # Initial update from the update source
-    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[0, 1, 2, 3, 4])
+    source_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[0, 1, 2, 3, 4])
     data_source.send_data(source_data)
     assert to_curve_data(data_model.full_data_buffer) == source_data
     # Another update from the source
-    source_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[0, 1, 2, 1, 0])
+    source_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[0, 1, 2, 1, 0])
     data_source.send_data(source_data)
     assert to_curve_data(data_model.full_data_buffer) == source_data
-    edited_data = accgraph.CurveData(x=[0, 1, 2, 3, 4],
-                                     y=[4, 3, 2, 1, 0])
+    edited_data = CurveData(x=[0, 1, 2, 3, 4],
+                            y=[4, 3, 2, 1, 0])
     data_model.handle_editing(edited_data)
     assert to_curve_data(data_model.full_data_buffer) == edited_data
 
@@ -412,9 +411,9 @@ def test_replace_selection_in_editable_data_model(original,
     with the return value of the function.
     """
     def to_curve_data(array):
-        return accgraph.CurveData(array[0], array[1])
-    data_source = accgraph.UpdateSource()
-    data_model = accgraph.EditableCurveDataModel(data_source=data_source)
+        return CurveData(array[0], array[1])
+    data_source = UpdateSource()
+    data_model = EditableCurveDataModel(data_source=data_source)
 
     original_cd = to_curve_data(original)
     replacement_cd = to_curve_data(replacement)
@@ -430,119 +429,119 @@ def test_replace_selection_in_editable_data_model(original,
     ([], False, False),  # Start
 
     ([[0, 1],  # Select
-      accgraph.CurveData([0, 1], [4, 3])],  # Replace
+      CurveData([0, 1], [4, 3])],  # Replace
      True, False),
 
-    ([accgraph.CurveData([-2, -1], [4, 3])],  # Add Points
+    ([CurveData([-2, -1], [4, 3])],  # Add Points
      True, False),
 
     ([[0, 1],  # Select
-      accgraph.CurveData([], [])],  # Delete
+      CurveData([], [])],  # Delete
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       "UNDO"],
      False, True),
 
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
-      accgraph.CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [2, 3]),
       "UNDO"],
      True, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       [1, 2],
-      accgraph.CurveData([1, 2], [2, 3])],
+      CurveData([1, 2], [2, 3])],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       [1, 2],
-      accgraph.CurveData([1, 2], [2, 3]),
+      CurveData([1, 2], [2, 3]),
       "UNDO"],
      True, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       [1, 2],
-      accgraph.CurveData([1, 2], [2, 3]),
+      CurveData([1, 2], [2, 3]),
       "UNDO",
       "UNDO"],
      False, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
-      accgraph.CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [2, 3]),
       "UNDO",
       "UNDO"],
      False, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
-      accgraph.CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [2, 3]),
       "UNDO",
       "UNDO",
       "REDO"],
      True, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       "UNDO",
       "REDO"],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       "UNDO",
       "REDO",
       "UNDO"],
      False, True),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       "UNDO",
-      accgraph.CurveData([0, 1], [3, 2])],
+      CurveData([0, 1], [3, 2])],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [2, 3]),
       "SEND"],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [2, 3]),
       "UNDO",
       "REDO",
       "SEND"],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [2, 3]),
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [2, 3]),
+      CurveData([0, 1], [4, 3]),
       "SEND"],
      True, False),
 
     ([[0, 1],
-      accgraph.CurveData([0, 1], [4, 3]),
+      CurveData([0, 1], [4, 3]),
       "UNDO",
-      accgraph.CurveData([0, 1], [3, 2]),
+      CurveData([0, 1], [3, 2]),
       "SEND"],
      True, False),
 ])
 def test_data_model_undoable_redoable(ops, undoable, redoable):
     """Test if undo /redo can be called on the data model after a sequence
     of passed operations"""
-    source = accgraph.UpdateSource()
-    model = accgraph.EditableCurveDataModel(data_source=source)
-    source.send_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
+    source = UpdateSource()
+    model = EditableCurveDataModel(data_source=source)
+    source.send_data(CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
     current_selection = []
     for op in ops:
         if isinstance(op, list):
             current_selection = op
-        elif isinstance(op, accgraph.CurveData):
+        elif isinstance(op, CurveData):
             model.replace_selection(current_selection, op)
         elif isinstance(op, str):
             if op == "UNDO":

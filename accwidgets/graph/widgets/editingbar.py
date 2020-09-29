@@ -1,27 +1,16 @@
-from typing import Optional, List, Callable, cast, Union, Any, Tuple, Dict
-from collections import defaultdict
-import warnings
-from copy import deepcopy
 
-from qtpy.QtWidgets import (
-    QSpinBox,
-    QLabel,
-    QGridLayout,
-    QDialog,
-    QDialogButtonBox,
-    QToolBar,
-    QAction,
-    QWidget,
-)
-from qtpy.QtCore import Signal, Slot
+import warnings
+import numpy as np
 import pyqtgraph as pg
 import qtawesome as qta
+from typing import Optional, List, Callable, cast, Union, Any, Tuple, Dict
+from collections import defaultdict
+from copy import deepcopy
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
-import numpy as np
-
-from accwidgets.graph.datamodel.datastructures import CurveData
-from accwidgets.graph.widgets.plotwidget import ExPlotWidget
+from qtpy.QtWidgets import QSpinBox, QLabel, QGridLayout, QDialog, QDialogButtonBox, QToolBar, QAction, QWidget
+from qtpy.QtCore import Signal, Slot
+from accwidgets.graph import CurveData, ExPlotWidget
 
 
 TransformationFunction = Callable[[CurveData], CurveData]
