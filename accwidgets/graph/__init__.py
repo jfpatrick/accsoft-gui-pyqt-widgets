@@ -18,7 +18,7 @@ from .datamodel.itemdatamodel import (StaticBarGraphDataModel, StaticCurveDataMo
 from .widgets.plottimespan import BasePlotTimeSpan, CyclicPlotTimeSpan, ScrollingPlotTimeSpan
 from .widgets.legenditem import ExLegendItem
 from .widgets.axisitems import ExAxisItem, TimeAxisItem, RelativeTimeAxisItem
-from .widgets.dataitems.datamodelbaseditem import (DataModelBasedItem, AbstractDataModelBasedItemMeta)
+from .widgets.dataitems.datamodelbaseditem import DataModelBasedItem
 from .widgets.dataitems.bargraphitem import (AbstractBaseBarGraphItem, LiveBarGraphItem, ScrollingBarGraphItem,
                                              StaticBarGraphItem)
 from .widgets.dataitems.timestampmarker import (AbstractBaseTimestampMarker, LiveTimestampMarker,

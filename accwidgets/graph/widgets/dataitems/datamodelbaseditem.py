@@ -1,9 +1,8 @@
 """Module with base classes for attaching pyqtgraph based items to a datamodel"""
 
-import abc
 import warnings
 import numpy as np
-import pyqtgraph as pg
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
 from accwidgets.graph import (AbstractBaseDataModel, UpdateSource, DEFAULT_BUFFER_SIZE, ExPlotWidgetConfig,
                               PlotWidgetStyle)
@@ -14,13 +13,13 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound="DataModelBasedItem")
 
 
-class DataModelBasedItem(metaclass=abc.ABCMeta):
+class DataModelBasedItem(ABC):
 
     supported_plotting_style: PlotWidgetStyle = None  # type: ignore
-    """Which plotting style does this item support?"""
+    """Compatible widget plot type."""
 
     data_model_type: Type[AbstractBaseDataModel] = None  # type: ignore
-    """Which is the default data model type for this item."""
+    """Compatible data model class."""
 
     def __init__(
         self,
@@ -47,7 +46,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         self._layer_id: str = ""
 
     @classmethod
-    @abc.abstractmethod
+    @abstractmethod
     def from_plot_item(
             cls,
             plot_item: "ExPlotItem",
@@ -114,9 +113,9 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
                 subclasses.append(c)
         return subclasses
 
-    @abc.abstractmethod
+    @abstractmethod
     def update_item(self):
-        """Update item based on the plot items time span information"""
+        """Update item based on the plot item's time span."""
         pass
 
     @staticmethod
@@ -175,17 +174,3 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         elif not plot.timing_source_compatible or \
                 (plot.timing_source_attached and plot.last_timestamp != -1.0):
             self.update_item()
-
-
-class AbstractDataModelBasedItemMeta(type(pg.GraphicsObject), type(DataModelBasedItem)):  # type: ignore
-
-    """ Metaclass to avoid metaclass conflicts
-
-    By creating a Metaclass that derives from GraphicsObject and our DataModelBasedItem
-    (which uses ABCMeta as metaclass) we can avoid the following metaclass conflict:
-
-    TypeError: metaclass conflict: the metaclass of a derived class must be
-    a (non-strict) subclass of the metaclasses of all its bases
-    """
-
-    pass

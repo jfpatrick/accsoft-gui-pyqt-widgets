@@ -6,7 +6,8 @@ from typing import List, Type, Union, cast, TYPE_CHECKING
 from copy import copy
 from accwidgets.graph import (UpdateSource, LiveInjectionBarDataModel, StaticInjectionBarDataModel,
                               AbstractBaseDataModel, DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem,
-                              AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+                              PlotWidgetStyle)
+from accwidgets.qt import AbstractQGraphicsItemMeta
 from accwidgets._deprecations import deprecated_param_alias
 if TYPE_CHECKING:
     from accwidgets.graph import ExPlotItem
@@ -20,7 +21,7 @@ _PLOTTING_STYLE_TO_CLASS_MAPPING = {
 
 class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
                                         pg.ErrorBarItem,
-                                        metaclass=AbstractDataModelBasedItemMeta):
+                                        metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(
         self,

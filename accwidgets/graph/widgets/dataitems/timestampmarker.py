@@ -7,7 +7,8 @@ from qtpy.QtWidgets import QGraphicsItem
 from qtpy.QtCore import QRectF
 from accwidgets.graph import (UpdateSource, LiveTimestampMarkerDataModel, StaticTimestampMarkerDataModel,
                               AbstractBaseDataModel, DEFAULT_BUFFER_SIZE, DataModelBasedItem,
-                              AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+                              PlotWidgetStyle)
+from accwidgets.qt import AbstractQGraphicsItemMeta
 from accwidgets._deprecations import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 """which plotting style is achieved by which class"""
 
 
-class AbstractBaseTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=AbstractDataModelBasedItemMeta):
+class AbstractBaseTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(
             self,

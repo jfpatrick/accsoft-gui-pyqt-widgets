@@ -5,7 +5,8 @@ import pyqtgraph as pg
 from copy import copy
 from typing import Type, Dict, Union, cast, List, Tuple, Optional, TYPE_CHECKING
 from accwidgets.graph import (UpdateSource, LiveBarGraphDataModel, StaticBarGraphDataModel, AbstractBaseDataModel,
-                              DEFAULT_BUFFER_SIZE, DataModelBasedItem, AbstractDataModelBasedItemMeta, PlotWidgetStyle)
+                              DEFAULT_BUFFER_SIZE, DataModelBasedItem, PlotWidgetStyle)
+from accwidgets.qt import AbstractQGraphicsItemMeta
 from accwidgets._deprecations import deprecated_param_alias
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ BoundsValue = Tuple[float, float]
 BoundsAxisEntry = Tuple[Tuple[FracValue, OrthoRange], BoundsValue]
 
 
-class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractDataModelBasedItemMeta):
+class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(self, plot_item: "ExPlotItem", data_model: AbstractBaseDataModel, **bargraphitem_kwargs):
         """Base class for different live bar graph plots.
