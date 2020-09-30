@@ -16,7 +16,7 @@ class AbstractQObjectMeta(type(QObject), ABCMeta):  # type: ignore
     """
     Metaclass for abstract classes based on :class:`QObject`.
 
-    A class inheriting from :class:`QObject` with :class:`ABCMeta` as metaclass will lead to
+    A class inheriting from :class:`QObject` with :class:`~abc.ABCMeta` as metaclass will lead to
     an metaclass conflict:
 
     ``TypeError: metaclass conflict: the metaclass of a derived class must be
@@ -308,7 +308,7 @@ class AbstractListModel(Generic[LI], metaclass=GenericQtMeta):
 
     def __init__(self, data: List[LI]):
         """
-        Simple model that is based on :class:`List` data structure, called ``self._data``.
+        Simple model that is based on :class:`~typing.List` data structure, called ``self._data``.
         It implements common scenarios for 1-dimensional list, but does not inherit directly
         from the Qt base class, since it can be used with both :class:`QAbstractTableModel` and
         :class:`QAbstractListModel`. As a bonus, this model allows serializing data as JSON.
@@ -411,7 +411,7 @@ class AbstractListModel(Generic[LI], metaclass=GenericQtMeta):
 
     def validate(self):
         """
-        Validate the model before saving it to file. Throw :class:`ValueError` on any problem that you find.
+        Validate the model before saving it to file. Throw :exc:`ValueError` on any problem that you find.
 
         Raises:
             ValueError: Whenever a problem is detected with the data model.
@@ -503,7 +503,7 @@ class AbstractTableModel(AbstractListModel[LI], QAbstractTableModel, Generic[LI]
                   implementation is called
 
         Returns:
-            Header Data (f.e. name) for the row / column
+            Header Data (e.g. name) for the row / column
         """
         if role != Qt.DisplayRole:
             return super().headerData(section, orientation, role)

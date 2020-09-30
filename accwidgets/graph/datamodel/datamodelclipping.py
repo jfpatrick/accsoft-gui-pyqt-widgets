@@ -1,5 +1,3 @@
-""" Clipping functionality for linegraph datamodel """
-
 import warnings
 import numpy as np
 from typing import Dict, List, Union

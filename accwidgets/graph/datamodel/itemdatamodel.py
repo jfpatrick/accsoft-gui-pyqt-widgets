@@ -1,4 +1,11 @@
-""" Data Model for one single curve. """
+"""
+Data models are managing information presented by views. Each view (e.g. a live plotted curve)
+is associated with a specific data model type, which is created when initializing the view.
+The model is responsible for:
+
+* Storing data
+* Notifying the view about updates via PyQt signals
+"""
 
 import abc
 import warnings
@@ -19,54 +26,53 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     sig_data_model_changed = Signal()
     """
     General purpose signal informing that any changed happened to the data
-    stored by the data model. Emitting this change means that the change did not
-    come from the view (e.g. if it is in editing mode), but from the update
-    update source.
+    stored by the data model. This signal is triggered when the data is
+    changed in direction from the :class:`UpdateSource` to the view,
+    but not in the opposite one.
     """
 
+    # TODO: Does it need to be in the superclass. Sounds like it is for editing only.
     sig_data_model_edited = Signal([CurveData])
     """
-    Signal informing that the data model was edited from the view. Emitting this
-    signal means that the edit should be sent back to the source it is coming
-    from.
+    Signal informing that the data model was edited from the view.
     """
 
     def __init__(self, data_source: UpdateSource, **_):
         """
-        Abstract base class that defines signals and slots that all derived data
-        models can use to publish and implement to react to data related changes.
+        Base class for all data models.
 
-        The handler slots offered by this class are connected to signals from the
-        passed update source that can react to changes published from it. These
-        handler slots can also be used by an item that allows altering the data model.
-        This class also offers signals that others can connect to, to receive any
-        information about changes in the data model. By default these are connected
-        to the handler slots of the update source to publish changes in the datamodel
-        back to the attached source. These signals can of course also be used by an
-        item that wants to display changes happened in this data model.
+        It exposes signals and slots to be connected to the :class:`UpdateSource`
+        subclasses and views.
 
-        Connections from the datamodel to a view item have to be initialized by the
-        view item itself. Connections to the update source are automatically
-        initialized when creating the data model or replacing the update source
-        through the fitting API.
+        Connections between the data model and the view must be initialized by the
+        view itself. In contrast, connections to the :class:`UpdateSource` are
+        made automatically when initializing the data model or replacing the update
+        source in the existing data model.
 
         Args:
-            data_source: source for data updates this data-model connects to.
-            **_: Swallows unused keyword arguments
+            data_source: Source for data updates that this model should be attached to.
         """
         super().__init__()
         self._data_source = data_source
         self._connect_to_data_source()
 
+    # TODO: Does it need to be in the superclass. Sounds like it is for editing only.
+    @abc.abstractmethod
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """Slot for receiving data updates performed in the view."""
+        pass
+
     def replace_data_source(self, data_source: UpdateSource):
         """
-        Disconnect the data model from the old data source and connect to a new
-        one. If replacing the data source should lead to the deletion of all up
-        to this point stored data, this has to be implemented by the derived class
-        by overriding this function in the desired way.
+        Replace associated data source, removing connections from the old one and
+        creating new connections with the passed object.
+
+        Override this method if replacing a data source must trigger the purge of
+        all buffered data.
 
         Args:
-            data_source: New source the model should connect to.
+            data_source: New source that model should be associated with.
         """
         self._disconnect_from_data_source()
         self._data_source = data_source
@@ -74,15 +80,16 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
 
     @property
     def data_source(self) -> UpdateSource:
-        """Source for data updates the data-model is attached to."""
+        """Source for data updates that this data model is attached to."""
         return self._data_source
 
     @property
     @abc.abstractmethod
     def full_data_buffer(self) -> Tuple[np.ndarray, ...]:
         """
-        Return the data saved in the data model as a tuple of numpy arrays.
-        The count of numpy arrays are dependent on the type of data model.
+        Return the all data stored in the internal buffer.
+
+        The return type depends on the concrete subclass implementation.
         """
         pass
 
@@ -118,24 +125,20 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         """Handle arriving data"""
         pass
 
-    @abc.abstractmethod
-    @Slot(CurveData)
-    def handle_editing(self, data: CurveData):
-        """Slot for receiving data model edits from the view."""
-        pass
-
 
 class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
 
     def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         """
-        Abstract base class for any live plotting data models that are built on top
-        of a sorted buffer that is optimized for fast storage of new arriving data.
+        Base class for all live plotting data models.
+
+        Such models are built on top of a sorted buffer (see :class:`BaseSortedDataBuffer`),
+        which is optimized for fast storage of the newly arriving data.
 
         Args:
-            data_source: source for data updates
-            buffer_size: Amount of entries the buffer is holding (not equal the
-                         amount of displayed entries)
+            data_source: Source for data updates that this model should be attached to.
+            buffer_size: Amount of entries that the buffer can hold (not necessarily equal
+                         the amount of visible entries).
         """
         super().__init__(data_source=data_source)
         self._buffer_size = buffer_size
@@ -144,59 +147,59 @@ class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
 
     def replace_data_source(self, data_source: UpdateSource, clear_buffer: bool = True):
         """
-        Replace the current data source and clear the inner saved data if wanted
+        Replace associated data source, removing connections from the old one and
+        creating new connections with the passed object.
 
         Args:
-            data_source: New source the model should connect to.
-            clear_buffer: Should all up to this point accumulated points be deleted
+            data_source: New source that model should be associated with.
+            clear_buffer: Purge of all buffered data.
         """
         super().replace_data_source(data_source=data_source)
         if clear_buffer:
             self._full_data_buffer.reset()
 
     def subset_for_xrange(self, start: float, end: float) -> Tuple[np.ndarray, ...]:
-        """ Get Subset of a specific start and end
-
-        Return a subset of the curve whose x values fulfill the condition start <= x <= end.
-        The subset will only contain points from the original data and won't be clipped
-        at start and end. This means that there might be gaps between boundaries and the
-        first and last points.
+        """
+        Get slice of data, where x-values lie in range between start and end (including).
+        This subset is not interpolated on the edges, meaning there might be gaps between
+        range boundaries and the first and last data samples.
 
         Args:
-            start: No x value in the subset is smaller than start
-            end: No x value in the subset is bigger than end
+            start: Lower boundary on the x-axis.
+            end: Upper boundary on the x-axis.
 
         Returns:
-            View on a subset of the data in the given range
+            Tuple of slices in the form *(x-values, corresponding specific data arrays...)*,
+            where amount of slices depends on the dimensions of the secondary array.
         """
         return self._full_data_buffer.subset_for_primary_val_range(start=start, end=end)
 
     @property
     def full_data_buffer(self) -> Tuple[np.ndarray, ...]:
         """
-        Return the data saved in the data model as a tuple of numpy arrays.
-        The count of numpy arrays are dependent on the type of data model.
+        Return the data saved in the data model as a tuple of :class:`numpy.array`.
+        The amount of returned arrays depends on the data model implementation.
         """
         return self._full_data_buffer.as_np_array()
 
     @property
     def min_dx(self) -> float:
-        """The smallest distance between two x values in the buffer."""
+        """Smallest distance between two x-values in the data model's buffer."""
         return self._full_data_buffer.min_dx
 
     @property
     def is_empty(self) -> bool:
-        """Check if the buffer has any values in it"""
+        """Check if the model's buffer is empty."""
         return self._full_data_buffer.is_empty
 
     @property
     def buffer_size(self) -> int:
-        """Number of entries the data buffer can hold at max."""
+        """Maximum entry count that model's buffer can hold."""
         return self._full_data_buffer.capacity
 
     @property
     def max_primary_val(self) -> Optional[float]:
-        """Biggest x value available in the buffer that is not nan"""
+        """Largest x-value available in the buffer that is not :obj:`~numpy.nan`."""
         primary_values = self.full_data_buffer[0]
         if primary_values.size == 0:
             return None
@@ -209,39 +212,39 @@ class AbstractLiveDataModel(AbstractBaseDataModel, metaclass=abc.ABCMeta):
 
     @Slot(CurveData)
     def handle_editing(self, data: CurveData):
-        """We do not care about / allow editing in live data plotting"""
+        """This is an empty implementation, as editing is irrelevant in the live plotting model"""
+        # TODO: See the comment in the base class. When it's removed, this implementation is not needed.
         pass
 
 
 class LiveCurveDataModel(AbstractLiveDataModel):
 
     def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
-        """DataModel for a live line graph
+        """
+        Data model tailored for live line graphs.
 
         Args:
-            data_source: update source for data related updates
-            buffer_size: Amount of entries the buffer is holding
-                         (not equal the amount of displayed entries)
+            data_source: Source for data updates that this model should be attached to.
+            buffer_size: Amount of entries that the buffer can hold (not necessarily equal
+                         the amount of visible entries).
         """
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedCurveDataBuffer = SortedCurveDataBuffer(size=buffer_size)
 
     def subset_for_xrange(self, start: float, end: float, interpolated: bool = False) -> Tuple[np.ndarray, np.ndarray]:
-        """ Get a subset of the data models data in a specific x range
-
-        Since the data buffer keeps data sorted, the subset will be sorted as well.
-
-        **Note:** This method returns a view on the original data, if the data is not interpolated.
-        If the curve is interpolated, a copy of the data is returned, which contains the two interpolated
-        points at the start and end.
+        """
+        Get slice of data, where x-values lie in range between start and end (including).
+        The interpolated points are imaginary points on both edges of the subset that are lying on the requested
+        range boundaries, (for cases, when boundaries do not directly coincide with real data points in the buffer).
 
         Args:
-            start: No x value in the subset is smaller than start
-            end: No x value in the subset is bigger than end
-            interpolated: Should the subset be linearly interpolated at the start and end point?
+            start: Lower boundary on the x-axis.
+            end: Upper boundary on the x-axis.
+            interpolated: Interpolate the curve at the edges, creating an imaginary point on each end
+                          (for purposes, when range does not coincide with points directly).
 
         Returns:
-            Subset of the data in the given range
+            Tuple of x-values and y-values subsets.
         """
         return self._full_data_buffer.subset_for_primary_val_range(start, end, interpolated=interpolated)
 
@@ -274,11 +277,13 @@ class LiveCurveDataModel(AbstractLiveDataModel):
 class LiveBarGraphDataModel(AbstractLiveDataModel):
 
     def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
-        """ DataModel for a live bar graph.
+        """
+        Data model tailored for live bar graphs.
+
         Args:
-            data_source: update source for data related updates
-            buffer_size: Amount of entries the buffer is holding
-                         (not equal the amount of displayed entries)
+            data_source: Source for data updates that this model should be attached to.
+            buffer_size: Amount of entries that the buffer can hold (not necessarily equal
+                         the amount of visible entries).
         """
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedBarGraphDataBuffer = SortedBarGraphDataBuffer(size=buffer_size)
@@ -318,12 +323,13 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
 class LiveInjectionBarDataModel(AbstractLiveDataModel):
 
     def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
-        """DataModel for a live injection bar graph
+        """
+        Data model tailored for live injection bar graphs.
 
         Args:
-            data_source: source for data updates
-            buffer_size: Amount of entries the buffer is holding
-                         (not equal the amount of displayed entries)
+            data_source: Source for data updates that this model should be attached to.
+            buffer_size: Amount of entries that the buffer can hold (not necessarily equal
+                         the amount of visible entries).
         """
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedInjectionBarsDataBuffer = SortedInjectionBarsDataBuffer(size=buffer_size)
@@ -364,12 +370,12 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
 
     def __init__(self, data_source: UpdateSource, buffer_size: int = DEFAULT_BUFFER_SIZE):
         """
-        DataModel for a live timestamp markers.
+        Data model tailored for live timestamp markers.
 
         Args:
-            data_source: source for data updates
-            buffer_size: Amount of entries the buffer is holding
-                         (not equal the amount of displayed entries)
+            data_source: Source for data updates that this model should be attached to.
+            buffer_size: Amount of entries that the buffer can hold (not necessarily equal
+                         the amount of visible entries).
         """
         super().__init__(data_source=data_source, buffer_size=buffer_size)
         self._full_data_buffer: SortedTimestampMarkerDataBuffer = SortedTimestampMarkerDataBuffer(size=buffer_size)
@@ -402,16 +408,28 @@ class StaticCurveDataModel(AbstractBaseDataModel):
 
     def __init__(self, data_source: UpdateSource, **_):
         """
-        Data model for a static curve. If new data arrives, the
-        old one will be replaced entirely with the new one.
+        Data model tailored for static line graphs. Contrary to "live" curves,
+        new data fully overwrites the existing one, instead of appending to it.
 
         Args:
-            data_source: Source for the new arriving data
-            **_: Swallow unused keyword arguments
+            data_source: Source for data updates that this model should be attached to.
         """
         super().__init__(data_source=data_source)
         self._x_values: np.ndarray = np.array([])
         self._y_values: np.ndarray = np.array([])
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Return the all data stored in the internal buffer as a tuple of x-values and y-values.
+        """
+        return self._x_values, self._y_values
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """This is an empty implementation, as editing is irrelevant in the live plotting model"""
+        # TODO: See the comment in the base class. When it's removed, this implementation is not needed.
+        pass
 
     def _set_data(self, data: Union[PointData, CurveData]) -> bool:
         if isinstance(data, PointData) and data.is_valid():
@@ -432,35 +450,34 @@ class StaticCurveDataModel(AbstractBaseDataModel):
         if self._set_data(data=data):
             self.sig_data_model_changed.emit()
 
-    @property
-    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Return the data saved in the data model as a tuple of numpy arrays
-        in the form (x_values, y_values).
-        """
-        return self._x_values, self._y_values
-
-    @Slot(CurveData)
-    def handle_editing(self, data: CurveData):
-        """We do not care about / allow editing in live data plotting"""
-        pass
-
 
 class StaticBarGraphDataModel(AbstractBaseDataModel):
 
     def __init__(self, data_source: UpdateSource, **_):
         """
-        Data model for a static bar graph. If new data arrives, the
-        old one will be replaced.
+        Data model tailored for static bar graphs. Contrary to "live" graphs,
+        new data fully overwrites the existing one, instead of appending to it.
 
         Args:
-            data_source: Source for the new arriving data
-            **_: Swallow unused keyword arguments
+            data_source: Source for data updates that this model should be attached to.
         """
         super().__init__(data_source=data_source)
         self._x_values: np.ndarray = np.array([])
         self._y_values: np.ndarray = np.array([])
         self._heights: np.ndarray = np.array([])
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the all data stored in the internal buffer as a tuple of x-values, y-values and heights.
+        """
+        return self._x_values, self._y_values, self._heights
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """This is an empty implementation, as editing is irrelevant in the live plotting model"""
+        # TODO: See the comment in the base class. When it's removed, this implementation is not needed.
+        pass
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, BarData) and data.is_valid():
@@ -479,30 +496,16 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
                               f"bar graph datamodel or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
-    @property
-    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Return the data saved in the data model as a tuple of numpy arrays
-        in the form (x_values, y_values, height_values).
-        """
-        return self._x_values, self._y_values, self._heights
-
-    @Slot(CurveData)
-    def handle_editing(self, data: CurveData):
-        """We do not care about / allow editing in live data plotting"""
-        pass
-
 
 class StaticInjectionBarDataModel(AbstractBaseDataModel):
 
     def __init__(self, data_source: UpdateSource, **_):
         """
-        Data model for a static injection bar graph. If new data arrives, the
-        old one will be replaced.
+        Data model tailored for static injection bar graphs. Contrary to "live" graphs,
+        new data fully overwrites the existing one, instead of appending to it.
 
         Args:
-            data_source: Source for the new arriving data
-            **_: Swallow unused keyword arguments
+            data_source: Source for data updates that this model should be attached to.
         """
         super().__init__(data_source=data_source)
         self._x_values: np.ndarray = np.array([])
@@ -510,6 +513,19 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
         self._heights: np.ndarray = np.array([])
         self._widths: np.ndarray = np.array([])
         self._labels: np.ndarray = np.array([])
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the all data stored in the internal buffer as a tuple of x-values, y-values, heights, widths and labels.
+        """
+        return self._x_values, self._y_values, self._heights, self._widths, self._labels
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """This is an empty implementation, as editing is irrelevant in the live plotting model"""
+        # TODO: See the comment in the base class. When it's removed, this implementation is not needed.
+        pass
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, InjectionBarData) and data.is_valid():
@@ -532,35 +548,34 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
                               f"injection bar data model or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
-    @property
-    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Return the data saved in the data model as a tuple of numpy arrays
-        in the form (x_values, y_values, height_values, width_values, labels).
-        """
-        return self._x_values, self._y_values, self._heights, self._widths, self._labels
-
-    @Slot(CurveData)
-    def handle_editing(self, data: CurveData):
-        """We do not care about / allow editing in live data plotting"""
-        pass
-
 
 class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
 
     def __init__(self, data_source: UpdateSource, **_):
         """
-        Data model for a static time stamp markers. If new data arrives, the
-        old one will be replaced.
+        Data model tailored for static timestamp markers. Contrary to "live" markers,
+        new data fully overwrites the existing one, instead of appending to it.
 
         Args:
-            data_source: Source for the new arriving data
-            **_: Swallow unused keyword arguments
+            data_source: Source for data updates that this model should be attached to.
         """
         super().__init__(data_source=data_source)
         self._x_values: np.ndarray = np.array([])
         self._colors: np.ndarray = np.array([])
         self._labels: np.ndarray = np.array([])
+
+    @property
+    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Return the all data stored in the internal buffer as a tuple of x-values and colors and labels.
+        """
+        return self._x_values, self._colors, self._labels
+
+    @Slot(CurveData)
+    def handle_editing(self, data: CurveData):
+        """This is an empty implementation, as editing is irrelevant in the live plotting model"""
+        # TODO: See the comment in the base class. When it's removed, this implementation is not needed.
+        pass
 
     def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, TimestampMarkerData) and data.is_valid():
@@ -579,50 +594,26 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
                               f"timestamp marker data model or is invalid and will be ignored.")
                 cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
 
-    @property
-    def full_data_buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Return the data saved in the data model as a tuple of numpy arrays
-        in the form (x_values, color_string_values, labels).
-        """
-        return self._x_values, self._colors, self._labels
-
-    @Slot(CurveData)
-    def handle_editing(self, data: CurveData):
-        """We do not care about / allow editing in live data plotting"""
-        pass
-
 
 class EditableCurveDataModel(StaticCurveDataModel):
 
     def __init__(self, data_source: UpdateSource, **kwargs):
         """
-        Editable curve data model that extends the static Curve Data Model
-        with editing capabilities.
+        Model for editing static curves by interactively dragging points.
 
         Args:
-            data_source: Source for the new arriving data
-            kwargs: Further keyword arguments for the base class
+            data_source: Access point for data updates that this model should be attached to.
+            **kwargs: Any keyword arguments from :class:`StaticCurveDataModel`.
         """
         StaticCurveDataModel.__init__(self, data_source=data_source, **kwargs)
         self._history = History[CurveData]()
 
-    def _handle_data_update_signal(self, data: CurveData):
-        """
-        Extend the static data models update handler with appending the state
-        to the local history.
-
-        Args:
-            data: data coming from the update source
-        """
-        super()._handle_data_update_signal(data)
-        self._history.save_state(data)
-
     @Slot(CurveData)
     def handle_editing(self, data: CurveData):
         """
-        Receives a change from e.g. a view which allows editing, saves it
-        in the data model. This does not yet send it through the update source.
+        Slot that receives a change from view during interactive editing. Changes are
+        registered in the data model but are not yet committed to propagate into the
+        :attr:`~EditableCurveDataModel.data_source`.
         """
         if self._set_data(data=data):
             self._history.save_state(data)
@@ -630,13 +621,13 @@ class EditableCurveDataModel(StaticCurveDataModel):
 
     def replace_selection(self, indices: np.ndarray, replacement: CurveData):
         """
-        Replace the values at the passed indices with the replacement values.
-        The replacements will be sorted in by their x values. Count of
-        indices and replacement length can differ from each other.
+        Replace the existing data residing at the given indices with the replacement values.
+        The replacements will be sorted in by their x-values. Lengths of ``indices`` and
+        ``replacement`` are allowed to be different.
 
         Args:
-            indices: Which indices should be replaced
-            replacement: values that should be inserted
+            indices: Positions that should be replaced with new values.
+            replacement: Replacement values.
         """
         self._x_values = np.delete(self._x_values, indices)
         self._y_values = np.delete(self._y_values, indices)
@@ -654,10 +645,10 @@ class EditableCurveDataModel(StaticCurveDataModel):
 
     def send_current_state(self) -> bool:
         """
-        Send the state back through the update source.
+        Commit performed changes into the :attr:`~EditableCurveDataModel.data_source`.
 
         Returns:
-            True if there was a state to send
+            Whether change was successfully committed.
         """
         if self.sendable_state_exists:
             sendable_state = self._history.current_state
@@ -669,26 +660,26 @@ class EditableCurveDataModel(StaticCurveDataModel):
     @property
     def sendable_state_exists(self) -> bool:
         """
-        Does a edited state exist which can be sent back to the control system
+        Check whether there are any changes that can be committed into the :attr:`~EditableCurveDataModel.data_source`.
         """
         return self._history.current_state is not None
 
     @property
     def undoable(self) -> bool:
-        """Is there an older state we can roll back to?"""
+        """Check whether there is an older state that can be rolled back to."""
         return self._history.undoable
 
     @property
     def redoable(self) -> bool:
-        """Is there a newer state we can jump to?"""
+        """Check whether there is a newer state that can be transitioned to."""
         return self._history.redoable
 
     def undo(self) -> bool:
         """
-        Jump to the next older state.
+        Roll back to the next older state.
 
         Returns:
-            True, if the undo was successful.
+            Undo was successful.
         """
         if self.undoable:
             state = self._history.undo()
@@ -703,10 +694,10 @@ class EditableCurveDataModel(StaticCurveDataModel):
 
     def redo(self) -> bool:
         """
-        Jump to the next newer state.
+        Transition to the next newer state.
 
         Returns:
-            True, if the redo was successful.
+            Redo was successful.
         """
         if self.redoable:
             state = self._history.redo()
@@ -718,3 +709,14 @@ class EditableCurveDataModel(StaticCurveDataModel):
                 warnings.warn(f"State {state} can't be applied.")
                 return False
         return False
+
+    def _handle_data_update_signal(self, data: CurveData):
+        """
+        Extend the static data models update handler with appending the state
+        to the local history.
+
+        Args:
+            data: data coming from the update source
+        """
+        super()._handle_data_update_signal(data)
+        self._history.save_state(data)

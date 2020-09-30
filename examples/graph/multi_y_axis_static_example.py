@@ -1,7 +1,7 @@
 """
 ExPlotWidget offers the possibility to plot against multiple
 y axes. Each additional y axis is attached to an extra view box,
-the area in which f.e. a curve is drawn in. The y-axis and its
+the area in which e.g. a curve is drawn in. The y-axis and its
 attached view box are grouped together as a 'layer'. Each layer has
 its own user given string identifier.
 

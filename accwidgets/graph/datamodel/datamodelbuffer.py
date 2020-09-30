@@ -1,6 +1,5 @@
 """
-Data buffers for the data model for different items
-that are able to safe different types and amount of data
+Data buffers store the actual visualized data that is managed by a model.
 """
 
 
@@ -9,43 +8,34 @@ import warnings
 import numpy as np
 from typing import Optional, Tuple, List, Union
 from abc import ABC, abstractmethod
-from accwidgets.graph import PointData
+from accwidgets.graph import PointData, DEFAULT_BUFFER_SIZE
 from accwidgets._deprecations import deprecated_param_alias
 from .datamodelclipping import calc_intersection
-
-
-DEFAULT_BUFFER_SIZE: int = 100000
 
 
 class BaseSortedDataBuffer(ABC):
 
     def __init__(self, size: int = DEFAULT_BUFFER_SIZE):
         """
-        Base class for different data buffers.
+        Base class for all data buffers. Internally, data is split into
+        2 separate arrays of "primary" and "secondary" values respectively.
+        Primary values are always a 1-dimensional array, for x-position of
+        each data entry. Secondary values are a multidimensional array,
+        representing the y-value and supporting information. For instance,
+        a curve can be stored as:
 
-        Buffer for multiple arrays with data of different types.
-        The buffer is containing one array of primary values which
-        all values are sorted by. The n arrays of secondary values
-        are the values that are belonging to the x axis with the same
-        index. For better understanding here a few simple examples:
+        * **primary**: x-position; **secondary**: y-position
 
-        For a curve this could look like this:
-            primary value:      x position
+        while a bar graph can be recoded as:
 
-            secondary value:    y position
+        * **primary**: x-position; **secondary**: [y-position, height]
 
-        For a bar chart this could look like this:
-            primary value:      x position
-
-            secondary value:    y position, height
-
-        Subclasses should initialize the primary and secondary values
-        according to the values they want to save. A convenient way is to
-        implement the preparation of primary and secondary values in the
-        clear() function.
+        Subclasses should initialize the primary and secondary arrays to
+        the values that are appropriate. It is convenient, to do that in
+        :meth:`clear`.
 
         Args:
-            size: Amount of entries fitting in the buffer
+            size: Amount of entries fitting in the buffer.
         """
         size = size or DEFAULT_BUFFER_SIZE
         if size < 3:
@@ -65,27 +55,30 @@ class BaseSortedDataBuffer(ABC):
 
     @abstractmethod
     def subset_for_primary_val_range(self, start: float, end: float) -> Tuple[np.ndarray, ...]:
-        """ Get Subset of a specific start and end point
+        """
+        Get slices of both primary and secondary arrays, ranging between the given start and end points.
 
         Args:
-            start: start boundary for primary values of elements that should be included in the subset
-            end: end boundary for primary values of elements that should be included in the subset
+            start: Lower boundary of the subset.
+            end: Upper boundary of the subset.
 
         Returns:
-            Primary and Secondary Values of the subset in a tuple of the form (p_vals, s_vals_1, s_vals_2, ...)
+            Tuple of slices in the form *(primary_slice, secondary_slice1, secondary_slice2, ...)*,
+            where amount of slices depends on the dimensions of the secondary array.
         """
         pass
 
+    # TODO: Make protected to not pollute public API. Meant to be accessed by subclasses only.
     def add_entry_to_buffer(self, primary_value: float, secondary_values: List[Union[float, str]]):
-        """Append a new entry to the buffer
+        """
+        Add a new entry to the buffer.
 
-        Add a single entry into the buffer and sort it in at the right position.
-        Before calling make sure your data is valid and can be drawn.
+        This method will also sort the buffer after insertion by the primary value. You must ensure that the
+        entered data is valid and can be drawn.
 
         Args:
-            primary_value: Single primary value that should be added to the buffer
-            secondary_values: List of secondary values that are added to the buffer
-                              at the same position as the primary value
+            primary_value: Single primary value that should be added to the buffer.
+            secondary_values: List of secondary values corresponding to the primary value.
         """
         svl = [np.array([secondary_value]) for secondary_value in secondary_values]
         primary_values, secondary_values_list = self._prepare_buffer_and_values(
@@ -97,19 +90,20 @@ class BaseSortedDataBuffer(ABC):
         ]:
             self._sort_in_point(primary_value=primary_value, secondary_values=secondary_values)
 
+    # TODO: Make protected to not pollute public API. Meant to be accessed by subclasses only.
     def add_entries_to_buffer(self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]):
-        """Append a list of entries
+        """
+        Add an array new entries to the buffer.
 
-        Entries that are passed will be ordered according to their primary value.
-        NaN values are sorted according to numpy.sort, which means they will
-        be moved to the end of the array. To make sure NaN is appended at the
-        right position, it should be passed as a single point (add_point()).
-        Before calling make sure the passed data is valid.
+        This method will also sort the buffer after inserting the values by the primary value.
+        :obj:`~numpy.nan` are treated similarly to :func:`numpy.sort`, meaning they will be moved
+        to the end of the array. If :obj:`~numpy.nan` values are to be stored at the specific
+        positions, use :meth:`add_entry_to_buffer`.
 
         Args:
-            primary_values: List of primary values that should be added to the buffer
-            secondary_values_list: List of secondary values arrays that should be added
-                                   to the buffer at the position of their primary value
+            primary_values: Array of primary values that should be added to the buffer.
+            secondary_values_list: List of arrays of secondary values, where each array corresponds to the
+                                   primary value of the same index.
         """
         if primary_values is None or secondary_values_list is None:
             raise ValueError("Passed keyword arguments do not match the expected ones.")
@@ -124,12 +118,12 @@ class BaseSortedDataBuffer(ABC):
             self._sort_in_point(primary_value=p_val, secondary_values=sec_values)
 
     def reset(self):
-        """ Clear all saved fields and intialize them again
+        """
+        Clear internal state and reinitialize attributes to their default values.
 
-        Clear the buffer by initializing primary and secondary values again.
-        Since different databuffers can hold different types and amounts of secondary
-        values, initializing the list of secondary values has to be done in each
-        subclass.
+        This method re-instantiates buffer arrays, instead of clearing them. Since every
+        subclass might use a different structure for those arrays, this method must be overridden
+        in subclasses to properly initialize the secondary value array(s).
         """
         self._primary_values = np.array([])
         self._secondary_values_lists = []
@@ -140,12 +134,11 @@ class BaseSortedDataBuffer(ABC):
         self._contains_nan = False
 
     def as_np_array(self) -> Tuple[np.ndarray, ...]:
-        """ Return Buffer as Tuple of Numpy arrays
+        """
+        Return the buffer as tuple of numpy arrays.
 
-        Gets the buffers written values (empty fields are cut) as numpy
-        arrays packaged in a tuple with the first one being the primary values
-        and the followings being the secondary values in the same order as they
-        are saved in the Buffer's secondary values list.
+        Returns:
+            Tuple, where the first member is the primary array, followed by one or more secondary value arrays.
         """
         i = self.occupied_size
         values: List[np.ndarray] = [self._primary_values[:i]]
@@ -153,16 +146,25 @@ class BaseSortedDataBuffer(ABC):
             values.append(secondary_values[:i])
         return tuple(values)
 
+    # TODO: Make protected to not pollute public API (or even private function in this file). Meant to be accessed by subclasses only.
     @staticmethod
     def sorted_data_arrays(
             primary_values: np.ndarray,
             secondary_values_list: List[np.ndarray],
     ) -> Tuple[np.ndarray, List[np.ndarray]]:
-        """ Sort Primary and Secondary Values
+        """
+        Create a sorted copies of passed arrays.
 
-        Sort the passed primary and secondary values by the primary one.
-        Nan Values will be sorted to the end. The original arrays are not
-        mutated, returned are sorted copies of the original passed data.
+        All arrays are sorted in accordance with ``primary_values``, which is also sorted.
+        :obj:`~numpy.nan` values are moved to the end of the array.
+
+        Args:
+            primary_values: Array of primary values that will be sorted.
+            secondary_values_list: List of arrays of secondary values, where each array corresponds to the
+                                   primary value of the same index.
+
+        Returns:
+            Sorted copies of arrays.
         """
         if not SortedCurveDataBuffer.data_arrays_are_compatible(primary_values, secondary_values_list):
             raise ValueError("The passed arrays must have the same length.")
@@ -176,9 +178,20 @@ class BaseSortedDataBuffer(ABC):
             secondary_values_list_sorted.append(sorted_secondary_values)
         return sorted_primary_values, secondary_values_list_sorted
 
+    # TODO: Make protected to not pollute public API (or even private function in this file). Meant to be accessed by subclasses only.
     @staticmethod
     def data_arrays_are_compatible(primary_values: np.ndarray, secondary_values_list: List[np.ndarray]) -> bool:
-        """Check if both arrays have the same shape and length and the correct type"""
+        """
+        Check whether both arrays have the proper type, same shape and size.
+
+        Args:
+            primary_values: Array of primary values that should be checked.
+            secondary_values_list: List of arrays of secondary values, where each array corresponds to the
+                                   primary value of the same index.
+
+        Returns:
+            Both arguments are compatible with each other.
+        """
         arrays_are_not_none = primary_values is not None
         arrays_correct_type = isinstance(primary_values, np.ndarray)
         arrays_right_shape = True
@@ -197,17 +210,19 @@ class BaseSortedDataBuffer(ABC):
             and arrays_right_size
         )
 
-    # ~~~~~~~~~~ Properties ~~~~~~~~~~
-
     @property
     def space_left(self) -> int:
-        """Free spaces left in the buffer"""
+        """Free spots left in the buffer arrays."""
         self._update_space_left()
         return self._space_left
 
     @property
     def occupied_size(self) -> int:
-        """Next free index location (== amount of occupied indices)"""
+        """
+        Amount of occupied spots in the buffer arrays.
+
+        It is also equal to the next available index.
+        """
         return self._size - self.space_left
 
     @property
@@ -217,7 +232,7 @@ class BaseSortedDataBuffer(ABC):
 
     @property
     def index_of_last_valid(self) -> int:
-        """The newest primary value (e.g. x value) that is a number and not NaN."""
+        """Index of the newest primary value (i.e. x-value) that is a number and not :obj:`~numpy.nan`."""
         next_free_index = self.occupied_size
         last_non_free_and_not_none_index = next_free_index - 1
         while last_non_free_and_not_none_index > 0 and np.isnan(self._primary_values[last_non_free_and_not_none_index]):
@@ -226,12 +241,12 @@ class BaseSortedDataBuffer(ABC):
 
     @property
     def min_dx(self) -> float:
-        """Smallest distance between two primary values in the buffer"""
+        """Smallest distance between two primary values in the buffer."""
         return self._min_primary_value_delta
 
     @property
     def is_empty(self) -> bool:
-        """Check if the buffer is still empty"""
+        """Check if the buffer is still empty."""
         return self._is_empty
 
     # ~~~~~~~~~~ Private ~~~~~~~~~~
@@ -502,18 +517,13 @@ class BaseSortedDataBuffer(ABC):
 
 
 class SortedCurveDataBuffer(BaseSortedDataBuffer):
-
     """
-    Sorted Buffer for a Line Graph.
+    Sorted buffer for a line graph. Its contents are:
 
-    Content
-        Primary Value =     X Value
-
-        Secondary Values =  Y Value
+    * **primary**: x-position; **secondary**: y-position
     """
 
     def reset(self):
-        """ Reset the buffer"""
         super().reset()
         # X Value
         self._primary_values = np.empty(self._size)
@@ -524,27 +534,30 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
 
     @deprecated_param_alias(x_value="x", y_value="y")
     def add_entry(self, x: float, y: float):
-        """Append a single point to the buffer
+        """
+        Add a single point to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case.
+        This method will also sort the buffer after insertion by the x-value. You must ensure that the
+        entered data is valid and can be drawn.
 
         Args:
-            x: x value that should be added to the buffer
-            y: y value that should be added to the buffer
+            x: x-value that should be added to the buffer.
+            y: y-value that should be added to the buffer.
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y])
 
     @deprecated_param_alias(x_values="x", y_values="y")
     def add_list_of_entries(self, x: np.ndarray, y: np.ndarray):
-        """Append a list of points to the buffer
+        """
+        Add an array of points to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case.
+        This method will also sort the buffer after inserting the values by the x-value. :obj:`~numpy.nan` are
+        treated similarly to :func:`numpy.sort`, meaning they will be moved to the end of the array.
+        If :obj:`~numpy.nan` values are to be stored at the specific positions, use :meth:`add_entry`.
 
         Args:
-            x: Array of x values that should be added to the buffer
-            y: Array of y values that should be added to the buffer.
+            x: Array of x-values that should be added to the buffer.
+            y: Array of y-values that should be added to the buffer.
         """
         super().add_entries_to_buffer(primary_values=x, secondary_values_list=[y])
 
@@ -555,7 +568,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
             interpolated: bool = False,
             interpolation_max: int = 100,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Get Subset of the data
+        """
+        Get slice of the data, ranging between the given start and end points.
 
         Additional to the base class it is possible to clip the curve at the
         start and end, so the curve fills the whole area. The subset then
@@ -565,15 +579,15 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         and are only included in the returned subset.
 
         Args:
-            start: start boundary for primary values of elements that should be included in the subset
-            end: end boundary for primary values of elements that should be included in the subset
-            interpolated: If true the curve will be interpolated at the edges and the two
-                          new points at the edge will be contained in the subset
-            interpolation_max: If more points are included than the given amount, skip the interpolation
-                               since it does not make a visual difference
+            start: Lower boundary of the subset.
+            end: Upper boundary of the subset.
+            interpolated: Interpolate the curve at the edges, creating an imaginary point on each end
+                          (for purposes, when range does not coincide with points directly).
+            interpolation_max: Threshold for the amount of points in the slice. When exceeded, interpolation is
+                               omitted, since it does not make a visual difference.
 
         Returns:
-            X and Y Values of the subset in a tuple of the form (x, y)
+            Tuple of x-values and y-values subsets.
         """
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]
@@ -686,18 +700,13 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
 
 
 class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
-
     """
-    Sorted Buffer for a Bar Graph.
+    Sorted buffer for a bar graph. Its contents are:
 
-    Content:
-        Primary Value =     X Value
-
-        Secondary Values =  Y Value, Height
+    * **primary**: x-position; **secondary**: [y-position, height]
     """
 
     def reset(self):
-        """Reset the buffer"""
         super().reset()
         # X Value
         self._primary_values = np.empty(self._size)
@@ -711,41 +720,46 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
 
     @deprecated_param_alias(x_value="x", y_value="y")
     def add_entry(self, x: float, y: float, height: float):
-        """Append a single bar to the buffer
+        """
+        Add a single bar to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        This method will also sort the buffer after insertion by the x-value. You must ensure that the
+        entered data is valid and can be drawn.
 
         Args:
-            x: x value that should be added to the buffer
-            y: x value that should be added to the buffer
-            height: height of a bar that should be added to the buffer
+            x: x-value that should be added to the buffer.
+            y: y-value that should be added to the buffer.
+            height: Height of the bar.
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y, height])
 
     @deprecated_param_alias(x_values="x", y_values="y")
     def add_list_of_entries(self, x: np.ndarray, y: np.ndarray, heights: np.ndarray):
-        """Append a list of bars to the buffer
+        """
+        Add a list of bars to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        This method will also sort the buffer after inserting the values by the x-value.
+        :obj:`~numpy.nan` are treated similarly to :func:`numpy.sort`, meaning they will be moved to the
+        end of the array. If :obj:`~numpy.nan` values are to be stored at the specific positions, use
+        :meth:`add_entry`.
 
         Args:
-            x: Array of x values that should be added to the buffer
-            y: Array of y values that should be added to the buffer
-            heights: Array of bar-heights that should be added to the buffer
+            x: Array of x-values that should be added to the buffer.
+            y: Array of y-values that should be added to the buffer.
+            heights: Array of the heights of the bars.
         """
         super().add_entries_to_buffer(primary_values=x, secondary_values_list=[y, heights])
 
     def subset_for_primary_val_range(self, start: float, end: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """ Get Subset of a specific start and end point
+        """
+        Get slice of the data, ranging between the given start and end points.
 
         Args:
-            start: start boundary for primary values of elements that should be included in the subset
-            end: end boundary for primary values of elements that should be included in the subset
+            start: Lower boundary of the subset.
+            end: Upper boundary of the subset.
 
         Returns:
-            Primary and Secondary Values of the subset in a tuple of the form (x, y, height_values)
+            Tuple of subsets for x-values, y-values and heights.
         """
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]
@@ -766,18 +780,13 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
 
 
 class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
-
     """
-    Sorted Buffer for a Injection Bar Graph.
+    Sorted buffer for an injection bar graph. Its contents are:
 
-    Content
-        Primary Value =     X Value
-
-        Secondary Values =  Y Value, Height, Width, Label
+    * **primary**: x-position; **secondary**: [y-position, height, width, label]
     """
 
     def reset(self):
-        """Reset the buffer"""
         super().reset()
         # X Value
         self._primary_values = np.empty(self._size)
@@ -795,25 +804,19 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def add_entry(
-        self,
-        x: float,
-        y: float,
-        height: float,
-        width: float,
-        label: str,
-    ):
-        """Append an injection bar to the buffer
+    def add_entry(self, x: float, y: float, height: float, width: float, label: str):
+        """
+        Add a single injection bar to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        This method will also sort the buffer after insertion by the x-value. You must ensure that the
+        entered data is valid and can be drawn.
 
         Args:
-            x: x value that should be added to the buffer
-            y: y value that should be added to the buffer
-            height: bar height that should be added to the buffer
-            width: bar width that should be added to the buffer
-            label: label text that should be added to the buffer
+            x: x-value that should be added to the buffer.
+            y: y-value that should be added to the buffer.
+            height: Height of the bar.
+            width: Width of the bar.
+            label: Text displayed next to the corresponding bar.
         """
         super().add_entry_to_buffer(
             primary_value=x,
@@ -829,17 +832,20 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         widths: np.ndarray,
         labels: np.ndarray,
     ):
-        """Append a list of injection bars to the buffer
+        """
+        Add a list of injection bars to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case.
+        This method will also sort the buffer after inserting the values by the x-value.
+        :obj:`~numpy.nan` are treated similarly to :func:`numpy.sort`, meaning they will be moved to the
+        end of the array. If :obj:`~numpy.nan` values are to be stored at the specific positions, use
+        :meth:`add_entry`.
 
         Args:
-            x: Array of x values that should be added to the buffer
-            y: Array of y values that should be added to the buffer
-            heights: Array of heights that should be added to the buffer
-            widths: Array of widths that should be added to the buffer
-            labels: Array of label texts that should be added to the buffer
+            x: Array of x-values that should be added to the buffer.
+            y: Array of y-values that should be added to the buffer.
+            heights: Array of the heights of the bars.
+            widths: Array of the widths of the bars.
+            labels: Array of texts displayed next to each corresponding bar.
         """
         super().add_entries_to_buffer(
             primary_values=x,
@@ -853,15 +859,15 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         np.ndarray,
         np.ndarray,
     ]:
-        """ Get Subset of a specific start and end point
+        """
+        Get slice of the data, ranging between the given start and end points.
 
         Args:
-            start: start boundary for primary values of elements that should be included in the subset
-            end: end boundary for primary values of elements that should be included in the subset
+            start: Lower boundary of the subset.
+            end: Upper boundary of the subset.
 
         Returns:
-            Primary and Secondary Values of the subset in a tuple of the form
-            (x_values, y_values, height_values, width_values, labels)
+            Tuple of subsets for x-values, y-values, heights, widths and labels.
         """
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]
@@ -886,18 +892,13 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
 
 
 class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
-
     """
-    Sorted Buffer for Timestamp Markers.
+    Sorted buffer for a bar graph. Its contents are:
 
-    Content
-        Primary Value =     X Value
-
-        Secondary Values =  Y Value, Height
+    * **primary**: x-position; **secondary**: [color, label]
     """
 
     def reset(self):
-        """Reset the buffer"""
         super().reset()
         # X Value
         self._primary_values = np.empty(self._size)
@@ -909,42 +910,46 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
 
     @deprecated_param_alias(x_value="x")
     def add_entry(self, x: float, color: str, label: str):
-        """Append a single infinite line to the buffer
+        """
+        Add a single timestamp marker to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case
+        This method will also sort the buffer after insertion by the x-value. You must ensure that the
+        entered data is valid and can be drawn.
 
         Args:
-            x: x value that should be added to the buffer
-            color: line color that should be added to the buffer
-            label: label text that should be added to the buffer
+            x: x-value that should be added to the buffer.
+            color: Color of the corresponding infinite line.
+            label: Text displayed next to the corresponding infinite line.
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[color, label])
 
     @deprecated_param_alias(x_values="x")
     def add_list_of_entries(self, x: np.ndarray, colors: np.ndarray, labels: np.ndarray):
-        """Append a list of infinite lines
+        """
+        Add a list of timestamp markers to the buffer.
 
-        It is expected, that the passed data is valid. Make sure before calling,
-        this is the case.
+        This method will also sort the buffer after inserting the values by the x-value.
+        :obj:`~numpy.nan` are treated similarly to :func:`numpy.sort`, meaning they will be moved to the
+        end of the array. If :obj:`~numpy.nan` values are to be stored at the specific positions, use
+        :meth:`add_entry`.
 
         Args:
-            x: Array of x values that should be added to the buffer
-            colors: Array of colors that should be added to the buffer
-            labels: Array of label texts that should be added to the buffer
+            x: Array of x-values that should be added to the buffer.
+            colors: Array of colors for each corresponding infinite line.
+            labels: Array of text displayed next to each corresponding bar.
         """
         super().add_entries_to_buffer(primary_values=x, secondary_values_list=[colors, labels])
 
     def subset_for_primary_val_range(self, start: float, end: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """ Get Subset of a specific start and end point
+        """
+        Get slice of the data, ranging between the given start and end points.
 
         Args:
-            start: start boundary for primary values of elements that should be included in the subset
-            end: end boundary for primary values of elements that should be included in the subset
+            start: Lower boundary of the subset.
+            end: Upper boundary of the subset.
 
         Returns:
-            Primary and Secondary Values of the subset in a tuple of the form
-            (x_values, colors, labels)
+            Tuple of subsets for x-values, colors and labels.
         """
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]

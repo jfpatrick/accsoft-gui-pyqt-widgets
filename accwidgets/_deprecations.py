@@ -1,8 +1,3 @@
-"""
-Module containing general utility stuff which can be used throughout the
-whole project.
-"""
-
 import functools
 import warnings
 from typing import Dict, Any, Callable
