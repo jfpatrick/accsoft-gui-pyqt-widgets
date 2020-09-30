@@ -23,7 +23,7 @@ Quick links
 .. raw:: html
 
     <ul>
-        <li style="list-style: url('_images/thumbs-up.png'); margin-left: 50px; padding-top: -25px;">
+        <li style="list-style: url('_static/thumbs-up.png'); margin-left: 50px; padding-top: -25px;">
             <strong>Contributions are welcome!</strong>
             If you have a PyQt project and think that your widgets could be useful for everyone, see
             <a class="reference internal" href="contrib/index.html">For contributors</a>.
