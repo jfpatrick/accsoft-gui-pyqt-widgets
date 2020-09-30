@@ -70,12 +70,10 @@ class TimeSpan:
 
 class ExPlotWidgetConfig:
 
-    def __init__(
-        self,
-        time_span: Union[TimeSpan, float, int, None] = 60,
-        plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
-        time_progress_line: bool = False,
-    ):
+    def __init__(self,
+                 time_span: Union[TimeSpan, float, int, None] = 60,
+                 plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
+                 time_progress_line: bool = False):
         """Configuration for the PlotWidget
 
         The ExPlotWidget offers different types of data representation. This

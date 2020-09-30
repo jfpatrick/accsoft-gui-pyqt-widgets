@@ -1,4 +1,4 @@
-"""Module for time span of different live data plots"""
+"""Time spans of different live data plots."""
 
 import abc
 import numpy as np
@@ -7,18 +7,13 @@ from accwidgets.graph import TimeSpan
 
 class BasePlotTimeSpan(metaclass=abc.ABCMeta):
 
-    def __init__(
-            self,
-            time_span: TimeSpan,
-            start: float = 0.0,
-    ):
+    def __init__(self, time_span: TimeSpan, start: float = 0.0):
         """
         Base class for different plotting time spans.
 
         Args:
-            start: time span start
-            time_span: Time Span object representing the lower (left)
-                       and higher (right) relative time span
+            time_span: Time span object representing the lower (left) and higher (right) relative time span.
+            start: Starting time.
         """
         self._start: float = start
         self._end: float = start + time_span.size
@@ -29,28 +24,42 @@ class BasePlotTimeSpan(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def update(self, timestamp: float):
-        """update the information holden by the time span according to the passed timestamp."""
+        """
+        Update the inner state based on the given ``timestamp``.
+
+        Args:
+            timestamp: Input timestamp.
+        """
         pass
 
     def x_pos(self, timestamp: float) -> float:
-        """Get the x position of an timestamp. In most cases this will
-        be the timestamp itself, but for some time span implementations
-        this might not be the case."""
+        """
+        Get the x-position of a timestamp. In most cases this will
+        be the timestamp itself, but may differ for some implementations.
+
+        Args:
+            timestamp: Input timestamp to derive the x-position of.
+        """
         return timestamp
 
     @property
     def last_timestamp(self) -> float:
-        """The most recent time stamp known to the plot."""
+        """The most recent timestamp known to the plot."""
         return self._last_time_stamp
 
     @property
     @abc.abstractmethod
     def start(self) -> float:
+        """Right boundary of the time span."""
         pass
 
     @property
     @abc.abstractmethod
     def end(self) -> float:
+        """
+        Left boundary of the time span or negative infinite (:obj:`numpy.NINF`),
+        if no left boundary exists.
+        """
         pass
 
     def _validate(self):
@@ -62,10 +71,8 @@ class BasePlotTimeSpan(metaclass=abc.ABCMeta):
 
 
 class ScrollingPlotTimeSpan(BasePlotTimeSpan):
-
     """
-    Wrapper for time span related information in the scrolling plot
-    and convenience functions for specific time span related sizes
+    Wrapper for time-span-related information in the scrolling plot.
     """
 
     def update(self, timestamp: float):
@@ -75,7 +82,6 @@ class ScrollingPlotTimeSpan(BasePlotTimeSpan):
 
     @property
     def start(self) -> float:
-        """Right boundary for the time span."""
         if self.time_span.finite:
             return self._last_time_stamp - self.time_span.left_boundary_offset
         else:
@@ -83,9 +89,6 @@ class ScrollingPlotTimeSpan(BasePlotTimeSpan):
 
     @property
     def end(self) -> float:
-        """
-        Left boundary for the time span or negative infinite (numpy.NINF),
-        if no left boundary exists."""
         if self.time_span.finite:
             return self._last_time_stamp - self.time_span.right_boundary_offset
         else:
@@ -93,24 +96,19 @@ class ScrollingPlotTimeSpan(BasePlotTimeSpan):
 
 
 class CyclicPlotTimeSpan(BasePlotTimeSpan):
-    """
-    Wrapper for time span related information in the cyclic plot
-    curve and convenience functions for specific time span related sizes.
-    """
 
-    def __init__(
-            self,
-            time_span: TimeSpan,
-            start: float = 0.0,
-    ):
-        super().__init__(
-            start=start,
-            time_span=time_span,
-        )
+    def __init__(self, time_span: TimeSpan, start: float = 0.0):
+        """
+        Wrapper for time-span-related information in the cyclic plot.
+
+        Args:
+            time_span: Time span object representing the lower (left) and higher (right) relative time span.
+            start: Starting time.
+        """
+        super().__init__(start=start, time_span=time_span)
         self._cycle: float = 0.0
 
     def update(self, timestamp: float):
-        """Update time span area with the given current time as timestamp"""
         if not np.isnan(timestamp) and not np.isinf(timestamp):
             if timestamp is not None and not np.isnan(timestamp):
                 self._last_time_stamp = timestamp
@@ -121,12 +119,19 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
                 self._cycle = int(timestamp - self._start) // self.time_span.size
 
     def x_pos(self, timestamp: float) -> float:
-        """The positioning of time spans is always in the same x range."""
+        """
+        Get the x-position of a timestamp.
+
+        The positioning of time spans is always in the same x-range.
+
+        Args:
+            timestamp: Input timestamp to derive the x-position of.
+        """
         return timestamp - self.curr_offset
 
     @property
     def cycle(self) -> float:
-        """Counter how often we have been completed the cycle"""
+        """Counter of completed cycles."""
         return self._cycle
 
     @property
@@ -135,28 +140,27 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
 
     @property
     def end(self) -> float:
+        """Left boundary of the time span."""
         return self.start + self.time_span.size
 
     @property
     def prev_start(self) -> float:
-        """Earliest timestamp that is in the previous time span."""
+        """The earliest timestamp that is in the previous time span."""
         return self._start + (self._cycle - 1) * self.time_span.size
 
     @property
     def prev_end(self) -> float:
-        """Latest timestamp that is in the previous time span"""
+        """The latest timestamp that is in the previous time span."""
         return self._end + (self._cycle - 1) * self.time_span.size
 
     @property
     def curr_offset(self) -> float:
-        """Earliest timestamp that is in the previous time span"""
+        """The earliest timestamp that is in the current time span."""
         return self.time_span.size * self._cycle
 
     @property
     def prev_offset(self) -> float:
-        """The time difference between the last time span start and the first
-        timestamp in the first time span.
-        """
+        """Time difference between the start of the last time span and the start of the first time span."""
         return self.time_span.size * (self._cycle - 1)
 
     def _validate(self):

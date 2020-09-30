@@ -1,5 +1,5 @@
 """
-Base class for modified PlotItems that handle data displaying in the ExtendedPlotWidget
+Supporting classes for display in :class:`~accwidgets.graph.ExPlotWidget`.
 """
 
 import warnings
@@ -41,15 +41,22 @@ _STYLE_TO_TIMESPAN_MAPPING: Dict[int, Optional[Type[BasePlotTimeSpan]]] = {
 
 @dataclass
 class Range:
+    """Range with finite boundaries."""
+
     min: float
+    """Lower boundary of the range."""
+
     max: float
+    """Upper boundary of the range."""
 
     @classmethod
     def from_pg_range(cls, orig: Union[Tuple[float, float], List[float]]):
+        """Factory method to create a range object from the :mod:`pyqtgraph`'s notation."""
         return cls(min=orig[0], max=orig[1])
 
     @property
     def span(self) -> float:
+        """Size of the range."""
         return self.max - self.min
 
 
@@ -61,28 +68,29 @@ class ExPlotItem(pg.PlotItem):
     editable item. The signal will also be emitted, if the current selection
     has been moved around by dragging.
 
-    In general this signal will only be emitted in an editable plot
-    configuration.
+    This signal is only used in :class:`EditablePlotWidget`.
     """
 
     sig_plot_selected = Signal(bool)
     """
-    Signal informing about an entire plot being selected for editing.
+    Fired when selection is toggled for editing. Boolean argument stands for select/unselect.
+
+    This signal is only used in :class:`EditablePlotWidget`.
     """
 
-    def __init__(
-        self,
-        config: Optional[ExPlotWidgetConfig] = None,
-        timing_source: Optional[UpdateSource] = None,
-        axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-        **plotitem_kwargs,
-    ):
-        """PlotItem with additional functionality
+    def __init__(self,
+                 config: Optional[ExPlotWidgetConfig] = None,
+                 timing_source: Optional[UpdateSource] = None,
+                 axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                 **plotitem_kwargs):
+        """
+        Plot item with support for data models.
 
         Args:
-            config: Configuration for the new plotitem
-            timing_source: Source for timing updates
-            **plotitem_kwargs: Keyword Arguments that will be passed to PlotItem
+            config: Configuration for the new plot item.
+            timing_source: Source for timing updates.
+            axis_items: Mapping of any axes other than default, which are related to the plot item.
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
         # Pass modified axis for the multilayer movement to function properly
         config = config or ExPlotWidgetConfig()
@@ -101,11 +109,9 @@ class ExPlotItem(pg.PlotItem):
             orientation="top",
         ))
         viewbox = ExViewBox()
-        super().__init__(
-            axisItems=axis_items,
-            viewBox=viewbox,
-            **plotitem_kwargs,
-        )
+        super().__init__(axisItems=axis_items,
+                         viewBox=viewbox,
+                         **plotitem_kwargs)
         viewbox.sig_selection.connect(self.select)
         self._plot_config: ExPlotWidgetConfig = config
         self._time_span: Optional[BasePlotTimeSpan] = self._create_fitting_time_span()
@@ -135,35 +141,34 @@ class ExPlotItem(pg.PlotItem):
 
     # ~~~~~~~~~~~ Plotting Functions ~~~~~~~~~~~
 
-    def addCurve(
-        self,
-        c: Optional[pg.PlotDataItem] = None,
-        params: Optional[Dict[str, Any]] = None,
-        data_source: Optional[UpdateSource] = None,
-        layer: Optional["LayerIdentification"] = None,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-        **plotdataitem_kwargs,
-    ) -> pg.PlotDataItem:
-        """Add a new curve attached to a source for new data
+    def addCurve(self,
+                 c: Optional[pg.PlotDataItem] = None,
+                 params: Optional[Dict[str, Any]] = None,
+                 data_source: Optional[UpdateSource] = None,
+                 layer: Optional["LayerIdentification"] = None,
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 **plotdataitem_kwargs) -> pg.PlotDataItem:
+        """
+        Add a new curve attached to a source for receiving new data.
 
-        Create a curve fitting to the style of the plot and add it to the plot.
-        The new curve can be either either created from static data like
-        PlotItem.plot or from a data source that handles communication between
-        the curve and a source data is coming from. To create a curve attached
-        to f.e. live data, pass a fitting data source and to create a curve
-        from f.e. a static array, pass keyword arguments from the PlotDataItem.
+        The new curve can be either created from static data, such as
+        :meth:`pyqtgraph.PlotItem.plot`, or from a data source that handles communication
+        between the curve and a source data is coming from.
+
+        * To create a curve attached to *live data*, pass a matching ``data_source``
+        * To create a curve from a static data array, pass keyword arguments from the :class:`~pyqtgraph.PlotDataItem`
+          (as ``**plotdataitem_kwargs``)
 
         Args:
-            c: PlotDataItem instance that is added, for backwards compatibility to the original function
-            params: params for c, for backwards compatibility to the original function
-            data_source: source for new data that the curve should display
-            layer: identifier of the layer the new curve is supposed to be added to
-            buffer_size: maximum count of values the data model buffer should hold, used for live
-                         data displaying.
-            **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
+            c: :class:`~pyqtgraph.PlotDataItem` instance that is added (for backwards compatibility with the original method).
+            params: Parameters for ``c`` (for backwards compatibility with the original method) .
+            data_source: Source for the incoming data that the curve should represent.
+            layer: Identifier of the layer that the new curve belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
 
         Returns:
-            PlotDataItem or LivePlotCurve instance depending on the passed parameters
+            :class:`~pyqtgraph.PlotDataItem` or :class:`LivePlotCurve` instance, depending on the input arguments.
         """
         # Catch calls from superclasses deprecated addCurve() expecting a PlotDataItem
         if c and isinstance(c, pg.PlotDataItem):
@@ -180,31 +185,30 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addBarGraph(
-        self,
-        data_source: Optional[UpdateSource] = None,
-        layer: Optional["LayerIdentification"] = None,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-        **bargraph_kwargs,
-    ) -> LiveBarGraphItem:
-        """Add a new curve attached to a source for new data
+    def addBarGraph(self,
+                    data_source: Optional[UpdateSource] = None,
+                    layer: Optional["LayerIdentification"] = None,
+                    buffer_size: int = DEFAULT_BUFFER_SIZE,
+                    **bargraph_kwargs) -> LiveBarGraphItem:
+        """
+        Add a new bar graph attached to a source for receiving new data.
 
-        Create a bar graph fitting to the style of the plot and add it to the plot.
-        The new graph can be either either created from static data like
-        PlotItem.plot or from a data source that handles communication between
-        the graph and a source data is coming from. To create a bar graph attached
-        to f.e. live data, pass a fitting data source and to create a bar graph
-        from f.e. a static array, pass keyword arguments from the BarGraphItem.
+        The new bar graph can be either created from static data, such as
+        :meth:`pyqtgraph.PlotItem.plot`, or from a data source that handles communication
+        between the curve and a source data is coming from.
+
+        * To create a bar graph attached to *live data*, pass a matching ``data_source``
+        * To create a bar graph from a static data array, pass keyword arguments from the :class:`~pyqtgraph.BarGraphItem`
+          (as ``**bargraph_kwargs``)
 
         Args:
-            data_source (UpdateSource): Source emitting new data the graph should show
-            layer (Optional[str]): Layer Identifier the curve should be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
-            **bargraph_kwargs: keyword arguments for the BarGraphItem base class
+            data_source: Source for the incoming data that the bar graph should represent.
+            layer: Identifier of the layer that the new bar graph belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **bargraph_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
 
         Returns:
-            BarGraphItem or LiveBarGraphItem, depending on the passed parameters,
-            that was added to the plot.
+            :class:`~pyqtgraph.BarGraphItem` or :class:`LiveBarGraphItem` instance, depending on the input arguments.
         """
         new_plot = pg.BarGraphItem(**bargraph_kwargs) if data_source is None else \
             AbstractBaseBarGraphItem.from_plot_item(plot_item=self,
@@ -214,27 +218,25 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addInjectionBar(
-        self,
-        data_source: UpdateSource,
-        layer: Optional["LayerIdentification"] = None,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-        **errorbaritem_kwargs,
-    ) -> LiveInjectionBarGraphItem:
-        """Add a new injection bar graph
+    def addInjectionBar(self,
+                        data_source: UpdateSource,
+                        layer: Optional["LayerIdentification"] = None,
+                        buffer_size: int = DEFAULT_BUFFER_SIZE,
+                        **errorbaritem_kwargs) -> LiveInjectionBarGraphItem:
+        """
+        Add a new injection bar attached to a source for receiving new data.
 
-        The new injection bar graph is attached to a source for receiving data
-        updates. An injection bar is based on PyQtGraph's ErrorBarItem with the
-        ability to add Text Labels.
+        An injection bar is based on :class:`pyqtgraph.ErrorBarItem` with the additional
+        ability to add text labels.
 
         Args:
-            data_source (UpdateSource): Source for data related updates
-            layer (Optional[str]): Layer Identifier the curve should be added to
-            buffer_size: maximum count of values the data model buffer should hold
-            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the InjectionBars
+            data_source: Source for the incoming data that the injection bar should represent.
+            layer: Identifier of the layer that the new injection bar belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
 
         Returns:
-            LiveInjectionBarGraphItem that was added to the plot.
+            Injection bar item that was added to the plot.
         """
         new_plot = AbstractBaseInjectionBarGraphItem.from_plot_item(
             plot_item=self,
@@ -245,26 +247,25 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=layer, item=new_plot)
         return new_plot
 
-    def addTimestampMarker(
-        self,
-        *graphicsobjectargs,
-        data_source: UpdateSource,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
-    ) -> LiveTimestampMarker:
-        """Add a new timestamp marker sequence to the plot
+    def addTimestampMarker(self,
+                           *graphicsobjectargs,
+                           data_source: UpdateSource,
+                           buffer_size: int = DEFAULT_BUFFER_SIZE) -> LiveTimestampMarker:
+        """
+        Add a new timestamp marker attached to a source for receiving new data.
 
-        The new timestamp marker sequence is attached to a source for receiving
-        data updates. A timestamp marker is a vertical infinite line based on
-        PyQtGraph's InfiniteLine with a text label at the top. The color of each
-        line is controlled by the source for data.
+        A timestamp marker is a vertical infinite line based on
+        :class:`pyqtgraph.InfiniteLine` with a text label at the top. The color of each
+        line is controlled by the source of the data.
 
         Args:
-            data_source (UpdateSource): Source for data related updates,
-            buffer_size: maximum count of values the data model buffer should hold
-            *graphicsobjectargs: Arguments passed to the GraphicsObject base class
+            *graphicsobjectargs: Positional arguments for the :class:`~pyqtgraph.GraphicsObject` constructor
+                                 (the base class of the marker).
+            data_source: Source for the incoming data that the timestamp marker should represent.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
 
         Returns:
-            LiveTimestampMarker that was added to the plot.
+            Timestamp marker that was added to the plot.
         """
         new_plot: AbstractBaseTimestampMarker = AbstractBaseTimestampMarker.from_plot_item(
             *graphicsobjectargs,
@@ -275,25 +276,24 @@ class ExPlotItem(pg.PlotItem):
         self.addItem(layer=None, item=new_plot)
         return new_plot
 
-    def addItem(
-        self,
-        item: Union[pg.GraphicsObject, DataModelBasedItem],
-        layer: Optional["LayerIdentification"] = None,
-        ignoreBounds: bool = False,
-        **kwargs,
-    ):
+    def addItem(self,
+                item: Union[pg.GraphicsObject, DataModelBasedItem],
+                layer: Optional["LayerIdentification"] = None,
+                ignoreBounds: bool = False,
+                **kwargs):
         """
-        Add an item to the plot. If no layer is provided, the item
-        will be added to the default ViewBox of the PlotItem, if a layer
-        is provided, the item will be added to its ViewBox.
+        Add a generic item to the plot. If ``layer`` is provided, the item
+        will be added to the layer's :class:`~pyqtgraph.ViewBox`, otherwise - to the default
+        :class:`~pyqtgraph.ViewBox` of this object.
 
         Args:
-            item: Item that should be added to the plot
-            layer: Either a reference to the layer or its identifier in which's
-                   ViewBox the item should be added
-            ignoreBounds: should the bounding rectangle of the item be respected
-                          when auto ranging the plot
-            kwargs: Additional arguments in case the original PyQtGraph API changes
+            item: Item that should be added to the plot.
+            layer: Either a reference to the layer or its string identifier. :class:`~pyqtgraph.ViewBox` of the
+                   corresponding layer will be used to accommodate the item.
+            ignoreBounds: Identifies, whether the bounding rectangle of the item should be respected
+                          when auto-ranging the plot.
+            kwargs: Additional arguments for the original method (:meth:`~pyqtgraph.PlotItem.addItem`), in case the
+                    original API changes.
         """
         # Super implementation can be used if layer is not defined
         if self.is_standard_layer(layer=layer):
@@ -331,13 +331,13 @@ class ExPlotItem(pg.PlotItem):
 
     def clear(self, clear_decorators: bool = False):
         """
-        Clear the PlotItem but reinitialize items that are part of the plot.
-        These items contain f.e. the time line decorator.
+        Clear this plot item but reinitialize items that are part of the plot, e.g.
+        the timeline decorator.
 
         Args:
-            clear_decorators: If set to False, decorators that are part of
-                              the plot are reinitialized. If True, the plot
-                              will be completely empty after clearing.
+            clear_decorators: If set to :obj:`False`, decorators that are part of
+                              the plot are reinitialized. When :obj:`True`, the plot
+                              will become completely empty.
         """
         super().clear()
         if hasattr(self, "legend") and self.legend is not None:
@@ -349,12 +349,13 @@ class ExPlotItem(pg.PlotItem):
 
     def removeItem(self, item: pg.GraphicsObject):
         """
-        Extend the remove item operation to search for
-        the right viewbox in the PlotItem when removing
-        the item.
+        Remove an item from the internal :class:`~pyqtgraph.ViewBox`.
+
+        This overridden implementation ensures that the right view box is used to remove
+        the item, in :class:`ExPlotItem`'s multi-layer paradigm.
 
         Args:
-            item: item that will be removed from the plot
+            item: Item to be removed from the plot.
         """
         if item not in self.items:
             return
@@ -373,21 +374,19 @@ class ExPlotItem(pg.PlotItem):
             self.updateParamList()
 
     def plot(self, *args, clear: bool = False, params: Optional[Dict[str, Any]] = None) -> pg.PlotDataItem:
-        """ **Warning:** Avoid using this function
-
-        Plotting curves in the ExPlotItem should not be done with PlotItem.plot
-        since it is not consistent with the rest of our API, so try to avoid it.
-        For plotting curve either create a curve (PlotDataItem, LivePlotCurve...)
-        by hand and add it with ExPlotItem.addItem or use ExPlotItem.addCurve and
-        pass no UpdateSource but keyword arguments fitting to PyQtGraph's PlotDataItem.
-
+        """
         Add and return a new plot.
-        See :func:`PlotDataItem.__init__ <pyqtgraph.PlotDataItem.__init__>` for data arguments
+
+        .. warning:: **Avoid using this method!** Plotting curves in the :class:`ExPlotItem` should not be done
+                     with :meth:`~pyqtgraph.PlotItem.plot`, since it is not consistent with the rest of our API.
+                     For plotting an item, create it by hand, or use convenience APIs. E.g., for a curve, such a
+                     an API is :meth:`addCurve`, while instances created by hand could be
+                     :class:`~pyqtgraph.PlotDataItem` or :class:`LivePlotCurve` and are added via :meth:`addItem`.
 
         Args:
-            *args: arguments of the PlotDataItem constructor
-            clear: clear all plots before displaying new data
-            params: meta-parameters to associate with this data
+            *args: Positional arguments for the :class:`pyqtgraph.PlotDataItem` constructor.
+            clear: Clear all plots before displaying new data.
+            params: Meta-parameters to associate with this data.
         """
         warnings.warn("PlotItem.plot should not be used for plotting curves with "
                       "the ExPlotItem, please use the PlotDataItem and addItem "
@@ -396,10 +395,10 @@ class ExPlotItem(pg.PlotItem):
 
     def select(self, selection: QRectF):
         """
-        Select a data in a specific region in the current editable item.
+        Select data in a specific region of the current editable item.
 
         Args:
-            selection: selected region in scene coordintates
+            selection: Selected region in scene coordinates.
         """
         if self.editable:
             if self.current_editable is not None:
@@ -408,13 +407,15 @@ class ExPlotItem(pg.PlotItem):
             warnings.warn("Points can only be selected in an editable "
                           "configuration.")
 
-    def send_currents_editable_state(self) -> bool:
+    def send_currents_editable_state(self) -> bool:  # FIXME: Typo: currents
         """
-        Send the state of the current editable item back to the process it
-        received it from. If there was no state change, nothing is sent.
+        Commit performed changes on the current editable item
+        back into the :attr:`~EditableCurveDataModel.data_source`.
+
+        This method does nothing if there were no changes to commit.
 
         Returns:
-            True if something was sent back
+            Whether change was successfully committed.
         """
         if self.editable:
             if self.current_editable is not None:
@@ -424,13 +425,13 @@ class ExPlotItem(pg.PlotItem):
                           "and editable configuration.")
         return False
 
-    def send_all_editables_state(self) -> List[bool]:
+    def send_all_editables_state(self) -> List[bool]:  # FIXME: Typo: editables
         """
-        Send the states of all editable items to the processes they are
-        connected to.
+        Commit performed changes on the all editable items
+        back into their relevant :attr:`~EditableCurveDataModel.data_source`.
 
         Returns:
-            List of Trues, if the states of all items have been sent
+            List of indicators for each state, whether the change was successfully committed.
         """
         if self.editable:
             states_sent = []
@@ -442,21 +443,21 @@ class ExPlotItem(pg.PlotItem):
         return []
 
     def make_selectable(self, selectable: bool):
-        """Should the plot be selectable / deselectable?
+        """
+        Toggle plot selectable state.
 
         Args:
-            selectable: True if the plot should be selectable
+            selectable: :obj:`True` if the plot should be selectable.
         """
         self._plot_selectable = selectable
 
     def toggle_plot_selection(self, select: Optional[bool] = None) -> bool:
         """
-        Toggle the drawing of a border around the plot or set it to the passed
-        value
+        Toggle the drawing of a border around the plot or set it to the ``select``
+        value.
 
         Args:
-            select: True if the plot should be selected, if None, selection is
-                    toggled
+            select: :obj:`None` if the selection should be toggled, a boolean value for the specific state.
         """
         if select is None:
             select = not self._plot_selected
@@ -468,12 +469,12 @@ class ExPlotItem(pg.PlotItem):
 
     def paint(self, painter: QPainter, *args):
         """
-        Extend the PlotItem's paint function with the ability to
-        render a yellow border around it (for selecting a plot)
+        Extend the :meth:`QGraphicsWidget.paint` with the ability to
+        render a yellow border around it (for selecting a plot).
 
         Args:
-            painter: QPainter for painting the Plot
-            args: positional arguments for PlotItem's paint function
+            painter: :class:`QPainter` for painting the plot.
+            *args: Positional arguments for :meth:`QGraphicsWidget.paint`.
         """
         super().paint(painter, *args)
         if self._plot_selected and self._plot_selectable and self.editable:
@@ -481,37 +482,45 @@ class ExPlotItem(pg.PlotItem):
             painter.drawRect(self.boundingRect())
 
     def replace_selection(self, replacement: CurveData):
-        """Function to call if the current data selection was changed.
+        """
+        Replace the current selection with the ``replacement``.
+
+        After the replacement is completed, the selection will be unselected.
 
         Args:
-            replacement: The data to replace the indices with
+            replacement: Data which should replace the current selection.
         """
         if self.current_editable:
             self.current_editable.replace_selection(replacement=replacement)
 
     @property
     def current_selection_data(self) -> Optional[CurveData]:
-        """Get the selected data as a curve data."""
+        """Selected data in a curve representation."""
         if self.current_editable:
             return self.current_editable.selection_data
         return None
 
     @property
     def editable(self) -> bool:
-        """Is the plot item in editable plot widget style"""
+        """Flags whether the plot item has editable plot widget style."""
         return self.plot_config.plotting_style == PlotWidgetStyle.EDITABLE
 
     @property
     def data_model_items(self) -> List[DataModelBasedItem]:
-        """All data model based items added to the PlotItem. Pure PyQtGraph
-        components or other objects are filtered out.
+        """
+        All data model-based items that have been added to this plot item.
+
+        Pure PyQtGraph components or other objects are filtered out
+        (leaving only :class:`DataModelBasedItem` derivatives).
         """
         return [curve for curve in self.items if isinstance(curve, DataModelBasedItem)]
 
     @property
     def live_items(self) -> List[DataModelBasedItem]:
-        """All live data items added to the PlotItem. Pure PyQtGraph
-        components or other objects are filtered out.
+        """
+        All live data items that have been added to this plot item.
+
+        Pure PyQtGraph components or other objects are filtered out.
         """
         return [curve for curve in self.items if isinstance(curve, (
             LivePlotCurve,
@@ -522,17 +531,17 @@ class ExPlotItem(pg.PlotItem):
 
     @property
     def live_curves(self) -> List[LivePlotCurve]:
-        """All live data items added to the PlotItem."""
+        """All live curves that have been added to this plot item."""
         return [curve for curve in self.items if isinstance(curve, LivePlotCurve)]
 
     @property
     def live_bar_graphs(self) -> List[LiveBarGraphItem]:
-        """All live data bar graphs added to the PlotItem."""
+        """All live bar graphs that have been added to this plot item."""
         return [curve for curve in self.items if isinstance(curve, LiveBarGraphItem)]
 
     @property
     def live_injection_bars(self) -> List[LiveInjectionBarGraphItem]:
-        """All live data injection bars added to the PlotItem."""
+        """All live injection bars that have been added to this plot item."""
         return [
             curve
             for curve in self.items
@@ -541,23 +550,26 @@ class ExPlotItem(pg.PlotItem):
 
     @property
     def live_timestamp_markers(self) -> List[LiveTimestampMarker]:
-        """All live data infinite lines added to the PlotItem."""
+        """All live timestamp markers that have been added to this plot item."""
         return [curve for curve in self.items if isinstance(curve, LiveTimestampMarker)]
 
     @property
     def editable_items(self) -> List[EditablePlotCurve]:
-        """All editable items added to the PlotItem. """
+        """All editable items that have been added to this plot item."""
         return [i for i in self.items if isinstance(i, EditablePlotCurve)]
 
     @property
     def current_editable(self) -> Optional[EditablePlotCurve]:
-        """The item which is currently edited. If no item has yet been
-        selected, the last added editable item will be returned."""
-        editables = self.editable_items
-        if not editables:
+        """
+        Item that is currently being edited.
+
+        If no item has yet been selected, the last added editable item will be returned.
+        """
+        items = self.editable_items
+        if not items:
             return None
         if not self._current_editable:
-            return editables[-1]
+            return items[-1]
         else:
             return self._current_editable
 
@@ -578,17 +590,15 @@ class ExPlotItem(pg.PlotItem):
     @property
     def selection_mode(self) -> bool:
         """
-        If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
+        Marks whether selection mode is enabled.
+
+        In the selection mode, mouse drag events on the viewbox create selection
+        rectangles and do not move the view.
         """
         return self.getViewBox().selection_mode
 
     @selection_mode.setter
     def selection_mode(self, enable: bool):
-        """
-        If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
-        """
         if not enable and self.current_editable is not None:
             self.current_editable.unselect()
         self.getViewBox().selection_mode = enable
@@ -596,13 +606,14 @@ class ExPlotItem(pg.PlotItem):
     # ~~~~~~~~~~ Update handling ~~~~~~~~~
 
     def update_timestamp(self, timestamp: float):
-        """Handle an update provided by the timing source.
+        """
+        Handle an update provided by the timing source.
 
-        Handle initial drawing of decorators, redrawing of actual curves have
-        to be implemented in the specific subclass.
+        This implementation handles initial drawing of decorators. Re-drawing of actual curves and
+        other graphs has to be implemented in the subclasses.
 
         Args:
-            timestamp: Updated timestamp provided by the timing source
+            timestamp: Updated timestamp provided by the timing source.
         """
         if self._time_span:
             self._init_time_line_decorator(timestamp=timestamp)
@@ -610,10 +621,8 @@ class ExPlotItem(pg.PlotItem):
             if np.isnan(self.last_timestamp) or timestamp >= self.last_timestamp:
                 self._time_span.update(timestamp=timestamp)
                 self._handle_scrolling_plot_fixed_xrange_update()
-                self._update_time_line_decorator(
-                    timestamp=timestamp,
-                    position=self.time_span.x_pos(self.last_timestamp),
-                )
+                self._update_time_line_decorator(timestamp=timestamp,
+                                                 position=self.time_span.x_pos(self.last_timestamp))
             self._update_children_items_timing()
             self._draw_style_specific_objects()
 
@@ -624,15 +633,15 @@ class ExPlotItem(pg.PlotItem):
         """
         This slot exposes the possibility to draw data on a
         single data item in the plot. If this item does not yet exist,
-        it will be created automatically. If data gets appended or not
-        is controlled by the plot item's plotting style.
+        it will be created automatically. Whether the data gets appended or not
+        is controlled by this plot item's plotting style.
 
-        If the item type switches, the old item is replaced with the new one.
+        If the ``item_type`` switches, the old item is replaced with the new one.
 
         Args:
-            data: data to plot
-            item_type: Item type which should represent the data
-            styling_kwargs: Keyword arguments passed for styling purposes
+            data: Data to display.
+            item_type: Item type which should represent the data.
+            styling_kwargs: Keyword arguments passed for styling purposes.
         """
         if self.single_data_item_slot_source is None:
             self.single_data_item_slot_source = UpdateSource()
@@ -652,8 +661,13 @@ class ExPlotItem(pg.PlotItem):
     @staticmethod
     def is_standard_layer(layer: Optional["LayerIdentification"]) -> bool:
         """
-        Check if layer identifier is referencing the standard. Passing no layer
-        results in the layer being the standard layer.
+        Check if layer identifier is referencing the standard.
+
+        Args:
+            layer: Layer identifier. If :obj:`None` is given, the layer is assumed to be standard.
+
+        Returns:
+            Layer identifier refers to the standard layer.
         """
         if isinstance(layer, str):
             return layer in ("", PlotItemLayer.default_layer_id)
@@ -661,79 +675,69 @@ class ExPlotItem(pg.PlotItem):
             return layer.id in ("", PlotItemLayer.default_layer_id)
         return layer is None
 
-    def add_layer(
-        self,
-        layer_id: str,
-        y_range: Optional[Tuple[float, float]] = None,
-        y_range_padding: Optional[float] = None,
-        invert_y: bool = False,
-        pen: Optional[QPen] = None,
-        link_view: Optional[pg.ViewBox] = None,
-        max_tick_length: int = -5,
-        show_values: bool = True,
-        text: Optional[str] = None,
-        units: Optional[str] = None,
-        unit_prefix: Optional[str] = None,
-        **axis_label_css_kwargs,
-    ) -> "PlotItemLayer":
-        """Add a new layer to the plot
+    def add_layer(self,
+                  layer_id: str,
+                  y_range: Optional[Tuple[float, float]] = None,
+                  y_range_padding: Optional[float] = None,
+                  invert_y: bool = False,
+                  pen: Optional[QPen] = None,
+                  link_view: Optional[pg.ViewBox] = None,
+                  max_tick_length: int = -5,
+                  show_values: bool = True,
+                  text: Optional[str] = None,
+                  units: Optional[str] = None,
+                  unit_prefix: Optional[str] = None,
+                  **axis_label_css_kwargs) -> "PlotItemLayer":
+        """
+        Add a new layer to the plot.
 
-        Adding multiple layers to a plot allows to plot different items in
-        the same plot in different y ranges. Each layer comes per default
-        with a separate y-axis that will be appended on the right side of
-        the plot. An once added layer can always be retrieved by its string
-        identifier that is chosen when creating the layer. In some function
-        this string identifier will also be accepted as a keyword argument
-        for executing operations on a layer.
+        Adding multiple layers to the plot allows display of different items in
+        the same plot, but different y-ranges. Each layer comes with its own
+        y-axis by default. This axis is appended on the right hand side of
+        the plot. Once added, the layer can always be retrieved by its string
+        identifier that is chosen when creating the layer.
 
         Args:
-            layer_id: string identifier for the new layer, this one can later
-                      be used to reference the layer and can be chosen freely
-
-            y_range: set the view range of the new y axis on creation.
-                     This is equivalent to calling setYRange(layer=...)
-            y_range_padding: Padding to use when setting the y range
-            invert_y: Invert the y axis of the newly created layer. This
-                      is equivalent to calling invertY(layer=...)
-
-            max_tick_length: maximum length of ticks to draw. Negative values
+            layer_id: Unique string identifier for the new layer, which later can be
+                      used to reference this layer in other method calls.
+            y_range: Set the view range of the new y-axis on creation.
+                     This is equivalent to calling :meth:`setYRange` with the ``layer`` keyword.
+            y_range_padding: Padding to use when setting the y-range.
+            invert_y: Invert the y-axis of the newly created layer. This
+                      is equivalent to calling meth:`invertY` with the ``layer`` keyword.
+            max_tick_length: Maximum length of ticks to draw. Negative values
                              draw into the plot, positive values draw outward.
-            link_view: causes the range of values displayed in the axis
-                       to be linked to the visible range of a ViewBox.
-            show_values: Whether to display values adjacent to ticks
+            link_view: Causes the range of values displayed in the axis
+                       to be linked to the visible range of a :class:`~pyqtgraph.ViewBox`.
+            show_values: Whether to display values adjacent to ticks.
             pen: Pen used when drawing ticks.
-
             text: The text (excluding units) to display on the label for this
-                  axis
+                  axis.
             units: The units for this axis. Units should generally be given
-                   without any scaling prefix (eg, 'V' instead of 'mV'). The
+                   without any scaling prefix (e.g., ``V`` instead of ``mV``). The
                    scaling prefix will be automatically prepended based on the
                    range of data displayed.
-            unit_prefix: prefix used for units displayed on the axis
+            unit_prefix: Prefix used for units displayed on the axis.
             axis_label_css_kwargs: All extra keyword arguments become CSS style
-                                   options for the <span> tag which will surround
-                                   the axis label and units
+                                   options for the ``<span>`` tag, which will surround
+                                   the axis label and units.
 
         Returns:
-            New created layer instance
+            New created layer instance.
         """
         new_view_box = ExViewBox()
         new_y_axis_orientation = "right"
-        new_y_axis = ExAxisItem(
-            orientation=new_y_axis_orientation,
-            parent=self,
-            pen=pen,
-            linkView=link_view,
-            maxTickLength=max_tick_length,
-            showValues=show_values,
-        )
+        new_y_axis = ExAxisItem(orientation=new_y_axis_orientation,
+                                parent=self,
+                                pen=pen,
+                                linkView=link_view,
+                                maxTickLength=max_tick_length,
+                                showValues=show_values)
         new_y_axis_position = (2, 2 + len(self._layers))
         new_y_axis.setZValue(len(self._layers))
-        new_layer = PlotItemLayer(
-            layer_id=layer_id,
-            view_box=new_view_box,
-            axis_item=new_y_axis,
-        )
+        new_layer = PlotItemLayer(layer_id=layer_id,
+                                  view_box=new_view_box,
+                                  axis_item=new_y_axis)
         self._layers.add(new_layer)
         self.layout.addItem(new_y_axis, *new_y_axis_position)
         self.axes[layer_id] = {
@@ -743,20 +747,16 @@ class ExPlotItem(pg.PlotItem):
         self.scene().addItem(new_view_box)
         new_y_axis.linkToView(new_view_box)
         new_view_box.setXLink(self)
-        new_y_axis.setLabel(
-            text=text,
-            units=units,
-            unitPrefix=unit_prefix,
-            **axis_label_css_kwargs,
-        )
+        new_y_axis.setLabel(text=text,
+                            units=units,
+                            unitPrefix=unit_prefix,
+                            **axis_label_css_kwargs)
         new_view_box.sigStateChanged.connect(self.viewStateChanged)
         if y_range is not None:
-            self.setYRange(
-                min=y_range[0],
-                max=y_range[1],
-                padding=y_range_padding,
-                layer=new_layer,
-            )
+            self.setYRange(min=y_range[0],
+                           max=y_range[1],
+                           padding=y_range_padding,
+                           layer=new_layer)
         if invert_y:
             self.invertY(invert_y, layer=new_layer)
         return new_layer
@@ -767,16 +767,15 @@ class ExPlotItem(pg.PlotItem):
         given string identifier.
 
         Args:
-            layer: Either the layer by reference or by its identifier
+            layer: Either the layer reference or its string identifier.
 
         Returns:
-            True if the layer existed and was removed
+            :obj:`True` if the layer existed and was removed.
 
         Raises:
-            KeyError: If an identifier is passed, no layer with the identifier
-                      could be found
-            Value Error: An object was passed that could not be associated with
-                         any layer
+            KeyError: No layer with given string identifier could be found.
+            ValueError: Layer reference was passed but could not be associated with
+                        any existing layer.
         """
         if isinstance(layer, str) and layer != "":
             layer = self._layers.get(layer)
@@ -793,8 +792,14 @@ class ExPlotItem(pg.PlotItem):
 
     def layer(self, layer_id: Optional[str] = None) -> "PlotItemLayer":
         """
-        Get layer by its identifier. If no identifier is passed, the layer is
-        returned, that contains the default view box and y axis of the plot.
+        Retrieve layer by its string identifier.
+
+        Args:
+            layer_id: Layer's string identifier. If :obj:`None` is given, the layer owning the
+                      default viewbox and y-axis is returned.
+
+        Returns:
+            Related layer object.
         """
         if layer_id == "" or layer_id is None:
             layer_id = PlotItemLayer.default_layer_id
@@ -802,7 +807,7 @@ class ExPlotItem(pg.PlotItem):
 
     @property
     def view_boxes(self) -> List["ExViewBox"]:
-        """List of all ViewBoxes included in this layer-collection."""
+        """List of all viewboxes included in this plot item's layers."""
         return self._layers.view_boxes
 
     @property
@@ -813,24 +818,24 @@ class ExPlotItem(pg.PlotItem):
     @property
     def non_default_layers(self) -> List["PlotItemLayer"]:
         """
-        All layers added to this plot layer except of the layer
-        containing the standard PlotItem ViewBox.
+        All layers added to this plot except of the one owning the default viewbox and y-axis.
         """
         return self._layers.all_except_default
 
     # ~~~~~~~~~~ Plot Configuration ~~~~~~~~~
 
     def update_config(self, config: ExPlotWidgetConfig):
-        """Update the plot widgets configuration
+        """
+        Update plot's configuration.
 
         Items that are affected from the configuration change are recreated with
-        the new configuration and their old data models, so once displayed data is
-        not lost. Static items, mainly pure PyQtGraph items, that were added to
-        the plot, are not affected by this and will be kept unchanged in the plot.
+        the new configuration, preserving their original data models, so that once displayed data is
+        not lost. Static items (mainly pure PyQtGraph items) that were added to
+        the plot are not affected by this method.
 
         Args:
             config: The new configuration that should be used by the plot and all
-                    its (affected) items
+                    its (affected) items.
         """
         if hasattr(self, "_plot_config") and self._plot_config is not None:
             if (
@@ -858,22 +863,20 @@ class ExPlotItem(pg.PlotItem):
         self._prepare_scrolling_plot_fixed_xrange()
         self._handle_scrolling_plot_fixed_xrange_update()
 
-    def setRange(
-        self,
-        rect: Optional[QRectF] = None,
-        xRange: Optional[Tuple[float, float]] = None,
-        yRange: Optional[Tuple[float, float]] = None,
-        padding: Optional[float] = None,
-        update: bool = True,
-        disableAutoRange: bool = True,
-        **layer_y_ranges,
-    ):
+    def setRange(self,
+                 rect: Optional[QRectF] = None,
+                 xRange: Optional[Tuple[float, float]] = None,
+                 yRange: Optional[Tuple[float, float]] = None,
+                 padding: Optional[float] = None,
+                 update: bool = True,
+                 disableAutoRange: bool = True,
+                 **layer_y_ranges):
         """
-        Set the visible range of the view. Additionally to setting the x and y
-        range, the y range of additional layers of the plot can be set by passing
-        their identifier as an keyword argument with the desired range as the value.
-        Setting the view range of the layer "a" to 0 as the minimum and 1 as the
-        maximum value would be:  setRange(..., a=(0, 1))
+        Set the visible range of the view. Additionally to setting the x- and y-range,
+        the y-range of additional layers of the plot can be set by passing
+        their identifier as a keyword argument with the desired range as the value (specified by ``layer_y_ranges``).
+        Setting the view range of the layer ``a`` to ``0`` as the minimum and ``1`` as the
+        maximum value would be: ``setRange(..., a=(0, 1))``.
 
         Args:
             rect: The full range that should be visible in the view box.
@@ -881,159 +884,140 @@ class ExPlotItem(pg.PlotItem):
             yRange: The range that should be visible along the y-axis.
             padding: Expand the view by a fraction of the requested range.
                      By default, this value is set between 0.02 and 0.1 depending on
-                     the size of the ViewBox.
-            update: If True, update the range of the ViewBox immediately.
+                     the size of the viewbox.
+            update: If :obj:`True`, update the range of the viewbox immediately.
                     Otherwise, the update is deferred until before the next render.
-            disableAutoRange: If True, auto-ranging is disabled. Otherwise, it is left
+            disableAutoRange: If :obj:`True`, auto-ranging is disabled. Otherwise, it is left
                               unchanged.
-            **layer_y_ranges: Next to setting the xRange and yRange, the y-range of an
-                              added layer can be set by passing its identifier as key
-                              and a tuple of min and max as the value.
+            **layer_y_ranges: Next to setting the ``xRange`` and ``yRange``, the y-range of an
+                              additional layer can be set by passing its identifier as key
+                              and a tuple of ``(min, max)`` as the value.
         """
         if rect or xRange or yRange:
-            self.getViewBox().setRange(
-                rect=rect,
-                xRange=xRange,
-                yRange=yRange,
-                padding=padding,
-                update=update,
-                disableAutoRange=disableAutoRange,
-            )
+            self.getViewBox().setRange(rect=rect,
+                                       xRange=xRange,
+                                       yRange=yRange,
+                                       padding=padding,
+                                       update=update,
+                                       disableAutoRange=disableAutoRange)
         for layer_y_range in layer_y_ranges:
-            self.getViewBox(layer=layer_y_range).setRange(
-                yRange=layer_y_ranges[layer_y_range],
-                padding=padding,
-                update=update,
-                disableAutoRange=disableAutoRange,
-            )
+            self.getViewBox(layer=layer_y_range).setRange(yRange=layer_y_ranges[layer_y_range],
+                                                          padding=padding,
+                                                          update=update,
+                                                          disableAutoRange=disableAutoRange)
 
-    def setYRange(
-        self,
-        min: float,
-        max: float,
-        padding: Optional[float] = None,
-        update: bool = True,
-        layer: Optional["LayerIdentification"] = None,
-    ):
+    def setYRange(self,
+                  min: float,
+                  max: float,
+                  padding: Optional[float] = None,
+                  update: bool = True,
+                  layer: Optional["LayerIdentification"] = None):
         """
-        Set the visible Y range of the view. If no layer is passed,
-        the range of the default y axis will be moved (normally the
-        one on the left side of the plot). By passing a layer, the
-        range of the y axis of the layer will be moved.
+        Set the visible y-range of the view. If no ``layer`` is passed,
+        the range of the default y-axis will be affected (usually located
+        on the left hand side of the plot). By passing a ``layer``, the
+        range of the y-axis of that layer will be affected.
 
         Args:
-            min: smallest visible value
-            max: highest visible value
-            padding: padding around the visible range
-            update: should the ViewBox be updated immediately
-            layer: identifier or layer of which the
+            min: Smallest visible value.
+            max: Largest visible value.
+            padding: Padding around the visible range.
+            update: Flags whether the viewbox should be updated immediately.
+            layer: String identifier or the reference of the additional layer. Leave :obj:`None` to act on the
+                   default layer.
         """
-        self.getViewBox(layer=layer).setYRange(
-            min=min,
-            max=max,
-            padding=padding,
-            update=update,
-        )
+        self.getViewBox(layer=layer).setYRange(min=min,
+                                               max=max,
+                                               padding=padding,
+                                               update=update)
 
-    def invertY(
-        self,
-        b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
-        layer: Optional["LayerIdentification"] = None,
-    ):
+    def invertY(self,
+                b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
+                layer: Optional["LayerIdentification"] = None):
         """
-        Allows inverting a y-axis. If no layer is passed, the default y axis
-        will be inverted (normally the one on the left side of the plot). By
-        passing a layer, the y axis of the layer will be inverted.
+        Allows inverting a y-axis of the ``layer``. If :obj:`None` layer is passed, the default y-axis
+        will be inverted (usually located on the left hand side of the plot).
 
         Args:
-            b: if True, the axis will be inverted
-            layer: optional layer of which the y axis should be inverted
+            b: When :obj:`True`, the axis will be inverted.
+            layer: Layer reference or string identifier of the layer, whose y-axis should be inverted. If :obj:`None`,
+                   the standard y-axis will be affected.
         """
         self.getViewBox(layer=layer).invertY(b)
 
-    def setYLink(
-        self,
-        view: pg.ViewBox,
-        layer: Optional["LayerIdentification"] = None,
-    ):
+    def setYLink(self,
+                 view: pg.ViewBox,
+                 layer: Optional["LayerIdentification"] = None):
         """
-        Link the movement of a y axis to another ViewBox. If no layer is passed,
-        the default y axis' movement will be linked (normally the one on the left
-        side of the plot). By passing a layer, the the movement of the y-axis of
-        that layer will be linked.
+        Bind the movement of the y-axis of the given ``layer`` to the ``view`` viewbox.
+        If :obj:`None` layer is passed, the default y-axis will be bound (usually located
+        on the left hand side of the plot).
 
         Args:
-            view: View that the movements in y direction should
-                  be transferred to
-            layer: In which layer is the y axis which movement should be
-                   transferred. If empty, the standard y axis is used.
+            view: Viewbox where the movements in y-direction should be transferred to.
+            layer: Layer that holds the y-axis, capturing the movement. If :obj:`None`, the standard y-axis is used.
         """
         self.getViewBox(layer=layer).setYLink(view=view)
 
-    def enableAutoRange(
-            self,
-            axis: Union[int, str, None] = None,
-            enable: Union[bool, float] = True,
-            x: Union[bool, float, None] = None,
-            y: Union[bool, float, None] = None,
-            **layers_y,
-    ):
+    def enableAutoRange(self,
+                        axis: Union[int, str, None] = None,
+                        enable: Union[bool, float] = True,
+                        x: Union[bool, float, None] = None,
+                        y: Union[bool, float, None] = None,
+                        **layers_y):
         """
-        Extend the PlotItem's standard enableAutoRange for the y axes of
-        all layers. This function can be called in two different ways.The
-        first one is, to specify an axis and the enable parameter.
-        Additionally to enable autoRange for multiple axes, you can specify x
-        and y. Next to them you can pass layer identifier in the same way to
-        enable autoRange for y-axes of different layers.
+        Enable (or disable) auto-range for ``axis``.
 
-        If no axis information is passed at all, all available axes are auto
-        ranged enabled, including the y axes of all layers added to the plot.
+        This implementation extends the parent :meth:`~pyqtgraph.ViewBox.enableAutoRange` for the y-axes of
+        all layers. This method can be called in two different ways (which can be combined):
+
+        #. Specify the ``axis`` and the ``enable`` parameters
+        #. To enable auto-range for multiple axes, you can specify ``x`` and ``y``.
+        #. Pass layer identifiers (``**layers_y``) to enable auto-range for y-axes of different layers.
+
+        If no axis information is passed at all, auto-range is enabled on all available axes, including
+        the y-axes of all layers added to the plot.
 
         Args:
-            axis: Either an integer representing an axis (see f.e.
-                  pg.Viewbox.XAxis) or the identifier of an layer which y
-                  axis should be ranged automatically
-            enable: True / False or a float from 0.0 to 1.0 of what amount
-                    of the curve should be visible
-            x: Instead of axis & enable, you can pass the enable value directly
-               here, this allows auto ranging multiple axes with one call
-            y: Instead of axis & enable, you can pass the enable value directly
-               here, this allows auto ranging multiple axes with one call
-            layers_y: Keyword arguments to enable autoRange for the y axes
-                      of different layer, as key the layer's identifier is
-                      used. This works like the x and y parameter of this
-                      function
+            axis: Either an integer representing an axis (i.e. :attr:`ViewBox.XAxis <pyqtgraph.ViewBox.XAxis>`,
+                  :attr:`ViewBox.YAxis <pyqtgraph.ViewBox.YAxis>`, :attr:`ViewBox.XYAxes <pyqtgraph.ViewBox.XYAxes>`)
+                  or the string identifier of the layer, managing y-axis.
+            enable: Boolean to represent the enabling/disabling, or a float (0.0-1.0) to represent the
+                    fraction of the curve that should be visible.
+            x: Instead of ``axis`` and ``enable``, you can pass the ``enable`` value directly
+               here, which allows auto-ranging multiple axes at once.
+            y: Instead of ``axis`` and ``enable``, you can pass the ``enable`` value directly
+               here, which allows auto-ranging multiple axes at once.
+            **layers_y: Keyword arguments to enable auto-range for the y-axes
+                        of different layers, where the key us layer's string identifier and the value corresponds to
+                        ``enable`` format.
         """
         # enable auto range for the standard x and y axes
-        super().enableAutoRange(
-            axis=axis,
-            enable=enable,
-            x=x,
-            y=y,
-        )
+        super().enableAutoRange(axis=axis,
+                                enable=enable,
+                                x=x,
+                                y=y)
         if axis is None and x is None and y is None and not layers_y:
             layers_y = {layer.id: True for layer in self.non_default_layers}
         if layers_y is not None and layers_y:
             for key, value in layers_y.items():
-                self.getViewBox(layer=key).enableAutoRange(
-                    axis=pg.ViewBox.YAxis,
-                    enable=value,
-                )
+                self.getViewBox(layer=key).enableAutoRange(axis=pg.ViewBox.YAxis,
+                                                           enable=value)
 
-    def getViewBox(
-            self,
-            layer: Optional["LayerIdentification"] = None,
-    ) -> "ExViewBox":
+    def getViewBox(self, layer: Optional["LayerIdentification"] = None) -> "ExViewBox":
         """
-        Extend the PlotItem's getViewBox method to also return viewboxes
-        of layers if the layer or its identifier is provided.
+        Return contained viewbox instance.
+
+        This implementation extends parent :meth:`~pyqtgraph.PlotItem.getViewBox` to also return viewboxes
+        of additional layers, when the ``layer`` is provided.
 
         Args:
-            layer: Either a reference to the layer or its identifier of which
-                   the ViewBox should be looked up
+            layer: Either a layer reference or a string identifier of the layer, that is related
+                   to the viewbox being returned. If :obj:`None` is passed, the default viewbox is
+                   returned.
 
         Returns:
-            Default view box or the one associated with the passed layer.
+            Default viewbox or the one associated with the given layer.
         """
         if not layer:
             return super().getViewBox()
@@ -1043,9 +1027,10 @@ class ExPlotItem(pg.PlotItem):
 
     def updateButtons(self):
         """
-        Update the visibility of the auto button. This now also takes
-        the autoRange state of ViewBox into consideration, that were
-        added with additional layers.
+        Update the visibility of the "auto" button.
+
+        This implementation extends parent :meth:`~pyqtgraph.PlotItem.updateButtons` to also take
+        additional layers into consideration when identifying the auto-range state of the viewboxes.
         """
         try:
             show_button = (self._exportOpts is False
@@ -1060,25 +1045,23 @@ class ExPlotItem(pg.PlotItem):
         except RuntimeError:
             pass  # this can happen if the plot has been deleted.
 
-    def addLegend(
-            self,
-            size: Optional[Tuple[float, float]] = None,
-            offset: Tuple[float, float] = (30, 30),
-    ) -> ExLegendItem:
+    def addLegend(self,
+                  size: Optional[Tuple[float, float]] = None,
+                  offset: Tuple[float, float] = (30, 30)) -> ExLegendItem:
         """
-        Create a new LegendItem and anchor it over the internal ViewBox.
+        Create a new legend item and anchor it over the internal viewbox.
         Plots will be automatically displayed in the legend if they
-        are created with the 'name' argument.
+        are created with the ``name`` argument.
 
-        This overwritten version allows configuring text and background color.
+        This implementation extends :meth:`~pyqtgraph.PlotItem.addLegend` to
+        allow configuring text and background color.
 
         Args:
-            size: Fixed size for the LegendItem
-            offset: Static offset for the LegendItem
+            size: Fixed size for the legend item (width, height).
+            offset: Static offset for the legend item (x, y).
 
         Returns:
-            ExLegendItem instance which was added to the PlotItem's default
-            ViewBox
+            Legend item instance that was added to the plot item's default viewbox.
         """
         self.legend: Optional[ExLegendItem] = ExLegendItem(size=size, offset=offset)
         self.legend.setParentItem(self.getViewBox())
@@ -1087,30 +1070,31 @@ class ExPlotItem(pg.PlotItem):
     @property
     def timing_source_compatible(self) -> bool:
         """
-        Can the plot in the current configuration work with timing sources? This is the case in:
-            - Scrolling Live Data Plots
-            - Cyclic Live Data Plots
+        Identifies whether the plot in the current configuration can work with timing sources. This is the case for:
+
+        * Scrolling live plots
+        * Cyclic live plots
         """
         return _STYLE_TO_TIMESPAN_MAPPING.get(self.plot_config.plotting_style) is not None
 
     @property
     def timing_source_attached(self) -> bool:
-        """True, if the plot is attached to a timing source."""
+        """Specifies whether the plot is attached to a timing source."""
         return self._timing_source_attached
 
     @property
     def last_timestamp(self) -> float:
-        """Latest timestamp that is known to the plot."""
+        """The most recent timestamp known to the plot."""
         return self.time_span.last_timestamp
 
     @property
     def plot_config(self) -> ExPlotWidgetConfig:
-        """Configuration of time span and other plot related parameters"""
+        """Configuration of the time span and other plot-related parameters."""
         return self._plot_config
 
     @property
     def time_span(self) -> BasePlotTimeSpan:
-        """Time span for the current plot"""
+        """Time span for the current plot."""
         if self._time_span is None:
             raise ValueError("The plot does not have a time span in this configuration.", RuntimeWarning)
         return self._time_span
@@ -1145,17 +1129,15 @@ class ExPlotItem(pg.PlotItem):
                 labelOpts=label_opts,
             )
 
-    def _update_time_line_decorator(
-            self,
-            timestamp: float,
-            position: Optional[float] = None,
-    ):
+    def _update_time_line_decorator(self,
+                                    timestamp: float,
+                                    position: Optional[float] = None):
         """Move the vertical line representing the current time to a new position
 
         Redraw the timing line according to a passed timestamp. Alternatively
         the line can also be drawn at a custom position by providing the
         position parameter, if the position is different from the provided
-        timestamp (f.e. for the cyclic plot)
+        timestamp (e.g. for the cyclic plot)
 
         Args:
             timestamp: Timestamp of the time that the line represents
@@ -1170,11 +1152,9 @@ class ExPlotItem(pg.PlotItem):
                 self._time_line.label.setText(datetime.fromtimestamp(timestamp).strftime("%H:%M:%S"))
 
     def _config_contains_scrolling_style_with_fixed_xrange(self) -> bool:
-        return(
-            self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT
-            and self._scrolling_fixed_xrange_activated
-            and self._plot_config.time_span.finite
-        )
+        return (self._plot_config.plotting_style == PlotWidgetStyle.SCROLLING_PLOT
+                and self._scrolling_fixed_xrange_activated
+                and self._plot_config.time_span.finite)
 
     def _handle_scrolling_plot_fixed_xrange_update(self):
         """Set the viewboxes x range to the desired range if the start and end point are defined"""
@@ -1218,12 +1198,10 @@ class ExPlotItem(pg.PlotItem):
             if not visible:
                 new_axis.hide()
 
-    def _create_fitting_axis_item(
-            self,
-            config_style: PlotWidgetStyle,
-            orientation: str = "bottom",
-            parent: Optional["ExPlotItem"] = None,
-    ) -> pg.AxisItem:
+    def _create_fitting_axis_item(self,
+                                  config_style: PlotWidgetStyle,
+                                  orientation: str = "bottom",
+                                  parent: Optional["ExPlotItem"] = None) -> pg.AxisItem:
         """Create an axis that fits the given plotting style
 
         Create instance of the axis associated to the given plotting style in
@@ -1263,15 +1241,13 @@ class ExPlotItem(pg.PlotItem):
         return ts
 
     def _draw_style_specific_objects(self):
-        """Draw objects f.e. lines that are part of a specific plotting style
+        """Draw objects e.g. lines that are part of a specific plotting style
 
         - **CyclicPlotWidget**: Line at the time span start and end
         """
-        if (
-            self._plot_config.plotting_style == PlotWidgetStyle.CYCLIC_PLOT
-            and not np.isnan(self.last_timestamp)
-            and not self._style_specific_objects_already_drawn
-        ):
+        if (self._plot_config.plotting_style == PlotWidgetStyle.CYCLIC_PLOT
+                and not np.isnan(self.last_timestamp)
+                and not self._style_specific_objects_already_drawn):
             start = self.time_span._start
             end = self.time_span._end
             self._time_span_start_boundary = self.addLine(x=start, pen=pg.mkPen(128, 128, 128))
@@ -1331,11 +1307,9 @@ class ExPlotItem(pg.PlotItem):
     def _prepare_layers(self):
         """Initialize everything needed for multiple layers"""
         self._layers = PlotItemLayerCollection(self)
-        self._layers.add(PlotItemLayer(
-            view_box=self.vb,
-            axis_item=self.getAxis("left"),
-            layer_id=PlotItemLayer.default_layer_id,
-        ))
+        self._layers.add(PlotItemLayer(view_box=self.vb,
+                                       axis_item=self.getAxis("left"),
+                                       layer_id=PlotItemLayer.default_layer_id))
         self.vb.sigResized.connect(self._update_layers)
         if isinstance(self.vb, ExViewBox):
             self.vb.layers = self._layers
@@ -1459,9 +1433,7 @@ class ExPlotItem(pg.PlotItem):
         """
         for item in items_to_recreate:
             try:
-                new_item = cast(LivePlotCurve, item).clone(
-                    object_to_create_from=cast(LivePlotCurve, item),
-                )
+                new_item = cast(LivePlotCurve, item).clone(object_to_create_from=cast(LivePlotCurve, item))
                 layer = item.layer_id
                 self.addItem(layer=layer, item=new_item)
                 self.removeItem(item)
@@ -1469,7 +1441,7 @@ class ExPlotItem(pg.PlotItem):
                 pass
 
     def _update_decorators(self):
-        """Update the decorators f.e. line representing current timestamp, time span boundaries"""
+        """Update the decorators e.g. line representing current timestamp, time span boundaries"""
         if not np.isnan(self.last_timestamp):
             self._style_specific_objects_already_drawn = False
             self._draw_style_specific_objects()
@@ -1481,28 +1453,23 @@ class PlotItemLayer:
 
     default_layer_id = "plot_item_layer"
     """
-    Since all layers must have an identifier, this is the one of the default
-    layer that is created on the plot creation.
+    Identifier for the default layer, that is implicitly created at plot widget's creation.
     """
 
-    def __init__(
-        self,
-        view_box: "ExViewBox",
-        axis_item: pg.AxisItem,
-        layer_id: str = default_layer_id,
-    ):
+    def __init__(self, view_box: "ExViewBox", axis_item: pg.AxisItem, layer_id: str = default_layer_id):
         """
-        Every item in a plot is drawn in a ViewBox, which's view range is represented
-        by an axis item that is connected to update on every view range change in the
-        ViewBox. Because of this, adding a new y-axis requires adding an additional
-        ViewBox. This ViewBox and the belonging axis is collected in a so called layer.
+        Layer is an abstraction binding :class:`~pyqtgraph.ViewBox` to :class:`~pyqtgraph.AxisItem` instances.
+
+        Every primitive in a plot is drawn in a :class:`~pyqtgraph.ViewBox`. The view range of each viewbox
+        is represented by axis items, which update with every view range change. To enable multiple y-axis (with
+        separate y-scales), careful management of additional :class:`~pyqtgraph.ViewBox` instances is needed and
+        is covered by layers.
 
         Args:
-            view_box: ViewBox this layer is referring to
-            axis_item: AxisItem this layer is referring to
-            layer_id: Name of the layer, which is used to retrieve it from the collection
-                      This name can be freely chosen, as long as there does not exist a
-                      layer with the same name
+            view_box: Viewbox that this layer should be linked to.
+            axis_item: Axis item this layer should be linked to.
+            layer_id: Unique string identifier of the layer. String identifiers are used in multiple
+                      methods to refer to the desired layer or its components.
         """
         self._layer_id: str = layer_id
         self._axis_item: pg.AxisItem = axis_item
@@ -1515,17 +1482,17 @@ class PlotItemLayer:
 
     @property
     def id(self) -> str:
-        """String identifier for the layer."""
+        """String identifier of the layer."""
         return self._layer_id
 
     @property
     def view_box(self) -> "ExViewBox":
-        """ViewBox of the layer."""
+        """Viewbox of the layer."""
         return self._view_box
 
     @property
     def axis_item(self) -> pg.AxisItem:
-        """ViewBox of the layer."""
+        """Axis item of the layer."""
         return self._axis_item
 
     def __eq__(self, other: Any) -> bool:
@@ -1547,11 +1514,10 @@ class PlotItemLayerCollection:
 
     def __init__(self, plot_item: pg.PlotItem):
         """
-        Collection for PlotItemLayers added to a PlotItem identified by a
-        unique string identifier.
+        Collection for :class:`PlotItemLayer` instances that belongs to a plot item.
 
         Args:
-            plot_item: PlotItem in which the layers in these collection are located
+            plot_item: Plot item that contains the layers from this collection.
         """
         self._plot_item = plot_item
         self._vb_ref_ranges: Dict[str, Range] = {}
@@ -1571,9 +1537,9 @@ class PlotItemLayerCollection:
         Get layer by its identifier.
 
         Args:
-            identifier: Identifier of the layer that should be searched. ``None`` or an empty string will
+            identifier: String identifier of the layer that should be searched. :obj:`None` or an empty string will
                         result in the layer containing the standard y-axis and viewbox of the
-                        :class:`pyqtgraph.PlotItem`.
+                        :class:`~pyqtgraph.PlotItem`.
 
         Returns:
             Layer object that is associated with the identifier or the default layer.
@@ -1590,16 +1556,14 @@ class PlotItemLayerCollection:
     def add(self, layer: PlotItemLayer):
         """
         Add layer object to this collection to keep track of it. This does not automatically add the
-        layer to the view box.
+        layer to the viewbox.
 
         Args:
-            layer: Layer to be added.
+            layer: Layer object to be added.
 
         Raises:
-            KeyError: A layer with the passed identifier does already exist
-                      in the collection.
-            ValueError: The passed layer can not be added since it is no
-                        valid layer
+            KeyError: A layer with the same identifier does already exist in the collection.
+            ValueError: The provided layer is invalid.
         """
         if layer is None or not layer.id:
             # TODO: Assume layer is never None (as per api)?
@@ -1617,13 +1581,13 @@ class PlotItemLayerCollection:
         Remove a layer from the collection.
 
         Args:
-            layer: Layer instance or identifier to delete.
+            layer: Layer instance or string identifier to delete. :obj:`None` argument has no effect.
 
         Returns:
-            ``True`` if the layer was in collection.
+            :obj:`True` if the layer has been in the collection and is now removed.
 
         Raises:
-            KeyError: No layer with the passed identifier could be found
+            KeyError: No layer with the passed identifier could be found.
         """
         if isinstance(layer, str):
             layer = self.get(layer)
@@ -1640,20 +1604,24 @@ class PlotItemLayerCollection:
 
     def couple_layers(self, link: bool):
         """
-        Link movements in all layers in Y-ranges.
+        Link movements in all layers in y-direction.
 
-        Scale and translate all layers as if they were one, when transformed
-        by interaction with the mouse (except if performed on a specific axis)
-        When moving the layers each will keep its range relative to the made
+        Mouse interactions, such as zooming, panning, are synchronized in all layers, when linked,
+        as if they were a single layer. This synchronization is active only when interacting with the main
+        view area, while acting on specific y-axes will affect only related viewboxes.
+
+        Layers always share x-axis, meaning that the movement in x-direction is always coupled.
+
+        When acting on coupled layers, each will keep its range relative to the performed
         transformation. For example:
 
-        * Layer *L1* with the Y-range (0, 1)
-        * Layer *L2* with the Y-range (-2, 2)
+        * Layer *L1* with the y-range ``(0, 1)``
+        * Layer *L2* with the y-range ``(-2, 2)``
 
-        Moving *L1* to (1, 2) will translate *L2*'s range to (0, 4).
+        Moving *L1* to ``(1, 2)`` will translate *L2*'s range to ``(0, 4)``.
 
         Args:
-            link: ``True`` if layers should be moved together.
+            link: :obj:`True` if layers should be moved together.
         """
         layer = self.get()
         if link:
@@ -1687,7 +1655,7 @@ class PlotItemLayerCollection:
 
     @property
     def view_boxes(self) -> List["ExViewBox"]:
-        """All viewboxes contained in this collection's layers."""
+        """All viewboxes of all layers in this collection."""
         return [layer.view_box for layer in self]
 
     def _update_view_box_geometries(self, plot_item: pg.PlotItem):
@@ -1697,11 +1665,9 @@ class PlotItemLayerCollection:
                 layer.view_box.setGeometry(plot_item.vb.sceneBoundingRect())
                 layer.view_box.linkedViewChanged(plot_item.vb, layer.view_box.XAxis)
 
-    def _set_range_change_forwarding(
-            self,
-            change_is_manual: Optional[bool] = None,
-            mouse_event_valid: Optional[bool] = None,
-    ):
+    def _set_range_change_forwarding(self,
+                                     change_is_manual: Optional[bool] = None,
+                                     mouse_event_valid: Optional[bool] = None):
         """
         With passing True, a manual range change of the ViewBox of a layer will be applied
         accordingly to all other layers. When passing false, we can prevent manual range
@@ -1772,15 +1738,13 @@ class PlotItemLayerCollection:
                 moved_layer=layer,
             )
         self._reset_range_change_forwarding()
-        # Update saved range even if not caused by manual update (f.e. by "View All")
+        # Update saved range even if not caused by manual update (e.g. by "View All")
         self._vb_ref_ranges[layer.id] = Range.from_pg_range(layer.axis_item.range)
 
-    def _apply_range_change_to_other_layers(
-            self,
-            moved_viewbox: pg.ViewBox,
-            new_range: Range,
-            moved_layer: PlotItemLayer,
-    ):
+    def _apply_range_change_to_other_layers(self,
+                                            moved_viewbox: pg.ViewBox,
+                                            new_range: Range,
+                                            moved_layer: PlotItemLayer):
         """Update the y ranges of all layers
 
         If a fitting manual movement has been detected, we move the viewboxes of all
@@ -1810,22 +1774,28 @@ class ExViewBox(pg.ViewBox):
 
     sig_selection = Signal(QRectF)
     """
-    If the view box is in selection mode, a mouse drag produces a selection
+    If the viewbox is in selection mode, a mouse drag produces a selection
     rectangle for selecting points. This signal will publish this rectangle
-    as soon as its completed (the mouse button from the drag is released).
-    The selection boundaries is represented in scene coordinates and not
+    as soon as it is completed (the mouse button from the drag is released).
+    The selection boundaries are represented in scene coordinates and not
     device coordinates.
     """
 
     sig_xrange_changed = Signal()
-    """This is a replacement for sigRangeChangedManually to disable auto-scrolling only when dragging and zooming in a particular way"""
+    """
+    This is a replacement for :attr:`~pyqtgraph.ViewBox.sigRangeChangedManually` to disable auto-scrolling
+    only when dragging and zooming in a particular way.
+    """
 
     def __init__(self, **viewbox_kwargs):
         """
-        ViewBox with extra functionality for the multi-y-axis plotting.
+        Viewbox is a visible area that renders the primitives on the plot.
+
+        Each plot has at least one default viewbox, but more viewboxes may be added by
+        introducing additional layers (to support multiple y-axes functionality).
 
         Args:
-            **viewbox_kwargs: Keyword arguments for the base class ViewBox
+            **viewbox_kwargs: Keyword arguments for the :class:`~pyqtgraph.ViewBox` constructor.
         """
         super().__init__(**viewbox_kwargs)
         # point selection box
@@ -1842,26 +1812,25 @@ class ExViewBox(pg.ViewBox):
         self.layers: Optional[PlotItemLayerCollection] = None
         """Collection of layers that are included in this viewbox."""
 
-    def autoRange(
-        self,
-        padding: Optional[float] = None,
-        items: Optional[List[pg.GraphicsItem]] = None,
-        auto_range_x_axis: bool = True,
-        **kwargs,
-    ):
-        """ Overwritten auto range
+    def autoRange(self,
+                  padding: Optional[float] = None,
+                  items: Optional[List[pg.GraphicsItem]] = None,
+                  auto_range_x_axis: bool = True,
+                  **kwargs):
+        """
+        Set the range of the viewbox to make all children visible.
+        Note that this is not the same as :meth:`enableAutoRange`, which causes the view to
+        automatically auto-range whenever its contents are changed.
 
-        Overwrite standard ViewBox auto-range to automatically set the
-        range for the ViewBoxes of all layers. This allows to to view all
-        items in the plot without changing their positions to each other that the
-        user might have arranged by hand.
+        This implementation extends parent :meth:`~pyqtgraph.ViewBox.autoRange` to automatically set the
+        range for the viewboxes of all layers. This allows to view all items in the plot without changing
+        their positions relative to each other that the user might have arranged by hand.
 
         Args:
-            padding: padding to use for the auto-range
-            items: items to use for the auto ranging
-            auto_range_x_axis: should the x axis also be set to automatically?
-            **kwargs: Additional Keyword arguments. These won't be used and are only for
-                      swallowing f.e. deprecated parameters.
+            padding: Offset between visible items and the edges of the visible area.
+            items: Items to consider for auto-ranging.
+            auto_range_x_axis: Flags whether the x-axis also be set automatically.
+            **kwargs: Additional keyword arguments for compatibility, e.g. swallowing deprecated parameters.
         """
         item = kwargs.get("item")  # deprecated param from superclass
         if item and not items:
@@ -1888,13 +1857,16 @@ class ExViewBox(pg.ViewBox):
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
-        Overwritten because we want to make sure the manual range
+        Event capturing mouse wheel rotation.
+
+        This overwritten implementation makes sure that the manual range
         change signal comes first. To make sure no flags are set anymore
-        from the event we emit a range change signal with unmodified range.
+        from the event, we emit a range change signal with unmodified range.
 
         Args:
-            ev: Wheel event that was detected
-            axis: integer representing an axis, 0 -> x, 1 -> y, None -> both
+            ev: Wheel event that was detected.
+            axis: Integer representing an axis (:attr:`ViewBox.XAxis <pyqtgraph.ViewBox.XAxis>` for x-axis,
+                  :attr:`ViewBox.YAxis <pyqtgraph.ViewBox.YAxis>` for y-axis, :obj:`None` for both).
         """
         if axis != 1:
             self.sig_xrange_changed.emit()
@@ -1904,13 +1876,16 @@ class ExViewBox(pg.ViewBox):
 
     def mouseDragEvent(self, ev: MouseDragEvent, axis: Optional[int] = None):
         """
-        Overwritten because we want to make sure the manual range
+        Event capturing drag action with a mouse.
+
+        This overwritten implementation makes sure that the manual range
         change signal comes first. To make sure no flags are set anymore
-        from the event we emit a range change signal with unmodified range.
+        from the event, we emit a range change signal with unmodified range.
 
         Args:
-            ev: Mouse Drag event that was detected
-            axis: integer representing an axis, 0 -> x, 1 -> y
+            ev: Mouse drag event that was detected.
+            axis: Integer representing an axis (:attr:`ViewBox.XAxis <pyqtgraph.ViewBox.XAxis>` for x-axis,
+                  :attr:`ViewBox.YAxis <pyqtgraph.ViewBox.YAxis>` for y-axis, :obj:`None` for both).
         """
         if self.selection_mode:
             self._selection_mouse_drag_event(ev=ev)
@@ -1920,6 +1895,24 @@ class ExViewBox(pg.ViewBox):
             self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
             super().mouseDragEvent(ev=ev, axis=axis)
             self.sigRangeChanged.emit(self, self.state["viewRange"])
+
+    def set_range_manually(self, **kwargs):
+        """
+        Set range manually.
+
+        This is similar to :meth:`setRange`, but emit a signal for manual range change
+        to trigger all other layers to be moved simultaneously.
+
+        Args:
+            **kwargs: Keyword arguments that :meth:`setRange` accepts.
+        """
+        if not kwargs.get("padding"):
+            kwargs["padding"] = 0.0
+        if self.layers is not None:
+            # If we call this explicitly we do not care about prior set flags for range changes
+            self.layers._reset_range_change_forwarding()
+        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
+        self.setRange(**kwargs)
 
     def _selection_mouse_drag_event(self, ev: MouseDragEvent):
         """
@@ -1944,28 +1937,9 @@ class ExViewBox(pg.ViewBox):
             else:
                 self._update_selection_box(ev.buttonDownPos(), ev.pos())
 
-    def set_range_manually(self, **kwargs):
-        """ Set range manually
-
-        Set range, but emit a signal for manual range change to
-        to trigger all other layers to be moved simultaneous.
-
-        Args:
-            **kwargs: Keyword arguments that ViewBox.setRange accepts
-        """
-        if not kwargs.get("padding"):
-            kwargs["padding"] = 0.0
-        if self.layers is not None:
-            # If we call this explicitly we do not care about prior set flags for range changes
-            self.layers._reset_range_change_forwarding()
-        self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
-        self.setRange(**kwargs)
-
-    def _bounding_rect_from(
-            self,
-            another_vb: "ExViewBox",
-            items: Optional[List[pg.GraphicsItem]],
-    ) -> QRectF:
+    def _bounding_rect_from(self,
+                            another_vb: "ExViewBox",
+                            items: Optional[List[pg.GraphicsItem]]) -> QRectF:
         """
         Map a view box bounding rectangle to the coordinates of an other one.
         It is expected that both ViewBoxes have synchronized x ranges, so the

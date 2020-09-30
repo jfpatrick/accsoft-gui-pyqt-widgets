@@ -1,3 +1,8 @@
+"""
+Qt Designer Plugin extensions that are available for the graph components. These include any additional dialogs
+that can be opened via custom Task Menu extensions.
+"""
+
 import json
 import warnings
 from sys import float_info
@@ -14,21 +19,31 @@ from accwidgets.qt import (AbstractTableModel, TableViewColumnResizer, AbstractT
 
 @dataclass
 class LayerTableRow:
-    """View model class for the Plot layer table."""
+    """Row view model for the :class:`PlotLayerTableModel`."""
     axis_id: str
+    """ID of the axis ("x", "y" - for standard axes, anything else for custom ones)."""
+
     axis_label: Optional[str] = None
+    """Label that is displayed on widget's :class:`~pyqtgraph.AxisItem`."""
+
     auto_range: bool = True
+    """Auto-scale Y-axes to accommodate visible data."""
+
     min_range: Optional[float] = None
+    """Lower boundary of the visible range, when :attr:`auto_range` is :obj:`False`."""
+
     max_range: Optional[float] = None
+    """Upper boundary of the visible range, when :attr:`auto_range` is :obj:`False`."""
 
 
 class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
 
     DEFAULT_VIEW_RANGE: Tuple[float, float] = (0.0, 1.0)
+    """Default range to pre-select when manual range is selected and no boundaries have been yet entered."""
 
     def __init__(self, data: List[LayerTableRow], parent: Optional[QObject] = None):
         """
-        Model for layer editor dialog.
+        Table model for the :class:`PlotLayerEditingDialog`.
 
         Args:
             data: Initial data.
@@ -123,7 +138,14 @@ class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
             super().notify_change(start=start, end=end, action_type=action_type)
 
     def validate(self):
-        """Note! This method has a side effect of filling in ranges, when they are set default and not modified"""
+        """
+        Validate entered data in the model.
+
+        **Note!** This method has a side effect of filling in ranges, when they are set default and not modified.
+
+        Raises:
+            ValueError: Whenever a problem is detected with the data model.
+        """
         used_ids = set()
         for idx, item in enumerate(self._data):
             if not item.axis_id:
@@ -143,7 +165,7 @@ class PlotLayerTableModel(AbstractTableModel[LayerTableRow]):
 
 
 class RangeColumnDelegate(QStyledItemDelegate):
-    """Delegate to allow editing ranges with decimal values that can go down to 1e-6."""
+    """Delegate to allow editing ranges with decimal values that can go down to ``1e-6``."""
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         editor = QDoubleSpinBox(parent)
@@ -169,7 +191,10 @@ class RangeColumnDelegate(QStyledItemDelegate):
 class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableModel]):
 
     DEFAULT_AXES: List[str] = ["x", "y"]
+    """Identifiers of default axes to be fixed in a table (that cannot be removed)."""
+
     AXIS_AUTO_RANGE_KEY = "auto"
+    """Value that is written into axis, which was set up for auto-range."""
 
     def __init__(self, plot: ExPlotWidget, parent: QObject = None):
         """
@@ -268,20 +293,18 @@ class PlotLayerExtension(WidgetsExtension):
 
     def __init__(self, widget: ExPlotWidget):
         """
-        Task Menu Extension for Editing a Plots Layer through a dialog.
+        Task menu extension for editing plot's layers in a dedicated dialog.
 
         Args:
-            widget: Plot Widget the extension is associated with
+            widget: Plot widget to be associated with the extension.
         """
         super().__init__(widget)
         self.edit_layer_action = QAction("Edit Axes...", self.widget)
-        self.edit_layer_action.triggered.connect(self.edit_curves)
-
-    def edit_curves(self, _):
-        """Creates a new PlotLayerEditingDialog and starts its event loop."""
-        dialog = PlotLayerEditingDialog(self.widget, parent=self.widget)
-        dialog.exec_()
+        self.edit_layer_action.triggered.connect(self._edit_curves)
 
     def actions(self):
-        """Actions associated with this extension."""
         return [self.edit_layer_action]
+
+    def _edit_curves(self, _):
+        dialog = PlotLayerEditingDialog(self.widget, parent=self.widget)
+        dialog.exec_()

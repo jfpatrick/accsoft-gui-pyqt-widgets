@@ -1,5 +1,5 @@
 """
-Extended Widget for custom plotting with simple configuration wrappers
+Widgets and supporting classes to actually be placed inside Qt windows/widgets.
 """
 
 import json
@@ -22,12 +22,25 @@ from accwidgets.graph import (UpdateSource, PlottingItemDataFactory, ExPlotWidge
 
 
 class SymbolOptions:
+    """Symbols that are being rendered as the data points."""
+
     NoSymbol = 0
+    """No symbol is rendered. This is useful to show a continuous curve."""
+
     Circle = 1
+    """Non-filled circle is shown."""
+
     Square = 2
+    """Non-filled square rectangle is shown."""
+
     Triangle = 3
+    """Non-filled triangle is shown."""
+
     Diamond = 4
+    """Non-filled diamong is shown."""
+
     Plus = 5
+    """Cross (or plus) sign is shown."""
 
 
 @dataclass
@@ -40,6 +53,7 @@ class SlotItemStylingOpts:
     symbol: int = SymbolOptions.NoSymbol
 
 
+# TODO: Metaclass abstract?
 class ExPlotWidget(pg.PlotWidget):
 
     Q_ENUM(SymbolOptions)
@@ -47,16 +61,17 @@ class ExPlotWidget(pg.PlotWidget):
     sig_selection_changed = Signal()
     """
     Signal informing about any changes to the current selection of the current
-    editable item. If the emitted data is empty, the current selection was
-    unselected. The signal will also be emitted, if the current selection has
-    been moved around by dragging.
+    editable item. The signal will also be emitted, if the current selection
+    has been moved around by dragging.
 
-    In general this signal will only be emitted in a editable configuration.
+    This signal is only used in :class:`EditablePlotWidget`.
     """
 
     sig_plot_selected = Signal(bool)
     """
-    Signal informing about an entire plot being selected for editing.
+    Fired when selection is toggled for editing. Boolean argument stands for select/unselect.
+
+    This signal is only used in :class:`EditablePlotWidget`.
     """
 
     def __init__(self,
@@ -66,34 +81,31 @@ class ExPlotWidget(pg.PlotWidget):
                  axis_items: Optional[Dict[str, ExAxisItem]] = None,
                  timing_source: Optional[UpdateSource] = None,
                  **plotitem_kwargs):
-        """Extended PlotWidget
+        """
+        Base class for all the plot widgets.
 
-        Extended version of PyQtGraphs PlotWidget with additional functionality
-        like adding multiple y-axes as well as convenient live data plotting
-        capabilities. Derived from this there exist more specified versions of
-        this class that are suitable for specific type of plotting. For example
-        the ScrollingPlotWidget which is suitable for displaying arriving data
-        in a scrolling plot. This baseclass unifies all these capabilities into
-        one widget that is customizable by defining and passing an configuration
-        object.
+        This implementation extends :class:`pyqtgraph.PlotWidget` with additional functionality,
+        such as support for multiple y-axes, convenient live data plotting
+        capabilities. This class is not intended to be used standalone. Instead,
+        consider using specialized subclasses, such as :class:`ScrollingPlotWidget`,
+        :class:`StaticPlotWidget`, :class:`CyclicPlotWidget` or :class:`EditablePlotWidget`.
 
-        Note:
-        By default some properties the ExPlotWidget offers, are not designable, since
-        they only make sense with a single plotting style. In subclasses for designer,
-        where they are used, set designable explicitly to True to make them appear in
-        the property sheet.
+        .. note:: By default some properties that this class offers are not designable (not appearing
+                  in Qt Designer), since they are relevant only for specific plotting styles. As such,
+                  subclasses must override those properties to mark them as designable, if needed.
 
         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
             config: Configuration object that defines any parameter that influences the
                     visual representation and the amount of data the plot should show.
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
             timing_source: Mainly for live data plotting. This timing source allows
-                           to receive timing updates decoupled from any received
-                           data.
-            **plotitem_kwargs: Params passed to the plot item
+                           receiving timing updates decoupled from any received data.
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
         super().__init__(parent=parent, background=background)
         config = config or ExPlotWidgetConfig()
@@ -103,307 +115,291 @@ class ExPlotWidget(pg.PlotWidget):
         axis_items = axis_items or {}
         # From base class
         self.plotItem: ExPlotItem
-        self._init_ex_plot_item(
-            axis_items=axis_items,
-            config=config,
-            timing_source=timing_source,
-            **plotitem_kwargs,
-        )
+        self._init_ex_plot_item(axis_items=axis_items,
+                                config=config,
+                                timing_source=timing_source,
+                                **plotitem_kwargs)
         self._wrap_plotitem_functions()
         self._slot_item_styling_opts = SlotItemStylingOpts()
 
-    def addCurve(
-            self,
-            c: Optional[pg.PlotDataItem] = None,
-            params: Optional[Any] = None,
-            data_source: Optional[UpdateSource] = None,
-            layer: Optional[LayerIdentification] = None,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **plotdataitem_kwargs,
-    ) -> pg.PlotDataItem:
-        """Add a new curve attached to a source for new data
+    def addCurve(self,
+                 c: Optional[pg.PlotDataItem] = None,
+                 params: Optional[Any] = None,
+                 data_source: Optional[UpdateSource] = None,
+                 layer: Optional[LayerIdentification] = None,
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 **plotdataitem_kwargs) -> pg.PlotDataItem:
+        """
+        Add a new curve attached to a source for receiving new data.
 
-        Create a curve fitting to the style of the plot and add it to the plot.
-        The new curve can be either either created from static data like
-        PlotItem.plot or from a data source that handles communication between
-        the curve and a source data is coming from. To create a curve attached
-        to e.g. live data, pass a fitting data source and to create a curve
-        from e.g. a static array, pass keyword arguments from the PlotDataItem.
+        The new curve can be either created from static data, such as
+        :meth:`pyqtgraph.PlotItem.plot`, or from a data source that handles communication
+        between the curve and a source data is coming from.
+
+        * To create a curve attached to *live data*, pass a matching ``data_source``
+        * To create a curve from a static data array, pass keyword arguments from the :class:`~pyqtgraph.PlotDataItem`
+          (as ``**plotdataitem_kwargs``)
 
         Args:
-
-            data_source: source for new data that the curve should display
-            layer: identifier of the layer the new curve is supposed to be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
-
-            c: PlotDataItem instance that is added, for backwards compatibility
-               to the original function
-            params: params for c, for backwards compatibility to the original
-                    function
-
-            **plotdataitem_kwargs: Parameters for creating a pure pyqtgraph PlotDataItem
+            c: :class:`~pyqtgraph.PlotDataItem` instance that is added (for backwards compatibility with the original method).
+            params: Parameters for ``c`` (for backwards compatibility with the original method) .
+            data_source: Source for the incoming data that the curve should represent.
+            layer: Identifier of the layer that the new curve belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
 
         Returns:
-            PlotDataItem or LivePlotCurve instance depending on the passed parameters
+            :class:`~pyqtgraph.PlotDataItem` or :class:`LivePlotCurve` instance, depending on the input arguments.
         """
-        return self.plotItem.addCurve(
-            c=c,
-            params=params,
-            data_source=data_source,
-            layer=layer,
-            buffer_size=buffer_size,
-            **plotdataitem_kwargs,
-        )
+        return self.plotItem.addCurve(c=c,
+                                      params=params,
+                                      data_source=data_source,
+                                      layer=layer,
+                                      buffer_size=buffer_size,
+                                      **plotdataitem_kwargs)
 
-    def addBarGraph(
-            self,
-            data_source: Optional[UpdateSource] = None,
-            layer: Optional[LayerIdentification] = None,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **bargraph_kwargs,
-    ) -> LiveBarGraphItem:
-        """Add a new curve attached to a source for new data
+    def addBarGraph(self,
+                    data_source: Optional[UpdateSource] = None,
+                    layer: Optional[LayerIdentification] = None,
+                    buffer_size: int = DEFAULT_BUFFER_SIZE,
+                    **bargraph_kwargs) -> LiveBarGraphItem:
+        """
+        Add a new bar graph attached to a source for receiving new data.
 
-        Create a bar graph fitting to the style of the plot and add it to the plot.
-        The new graph can be either either created from static data like
-        PlotItem.plot or from a data source that handles communication between
-        the graph and a source data is coming from. To create a bar graph attached
-        to e.g. live data, pass a fitting data source and to create a bar graph
-        from e.g. a static array, pass keyword arguments from the BarGraphItem.
+        The new bar graph can be either created from static data, such as
+        :meth:`pyqtgraph.PlotItem.plot`, or from a data source that handles communication
+        between the curve and a source data is coming from.
+
+        * To create a bar graph attached to *live data*, pass a matching ``data_source``
+        * To create a bar graph from a static data array, pass keyword arguments from the :class:`~pyqtgraph.BarGraphItem`
+          (as ``**bargraph_kwargs``)
 
         Args:
-            data_source: Source emitting new data the graph should show
-            layer: Layer Identifier the curve should be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
-            **bargraph_kwargs: keyword arguments for the BarGraphItem base class
+            data_source: Source for the incoming data that the bar graph should represent.
+            layer: Identifier of the layer that the new bar graph belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **bargraph_kwargs: Keyword arguments for the :class:`~pyqtgraph.BarGraphItem` constructor.
 
         Returns:
-            BarGraphItem or LiveBarGraphItem, depending on the passed parameters,
-            that was added to the plot.
+            :class:`~pyqtgraph.BarGraphItem` or :class:`LiveBarGraphItem` instance, depending on the input arguments.
         """
-        return self.plotItem.addBarGraph(
-            data_source=data_source,
-            layer=layer,
-            buffer_size=buffer_size,
-            **bargraph_kwargs,
-        )
+        return self.plotItem.addBarGraph(data_source=data_source,
+                                         layer=layer,
+                                         buffer_size=buffer_size,
+                                         **bargraph_kwargs)
 
-    def addInjectionBar(
-            self,
-            data_source: UpdateSource,
-            layer: Optional[LayerIdentification] = None,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **errorbaritem_kwargs,
-    ) -> LiveInjectionBarGraphItem:
-        """Add a new injection bar graph
+    def addInjectionBar(self,
+                        data_source: UpdateSource,
+                        layer: Optional[LayerIdentification] = None,
+                        buffer_size: int = DEFAULT_BUFFER_SIZE,
+                        **errorbaritem_kwargs) -> LiveInjectionBarGraphItem:
+        """
+        Add a new injection bar attached to a source for receiving new data.
 
-        The new injection bar graph is attached to a source for receiving data
-        updates. An injection bar is based on PyQtGraph's ErrorBarItem with the
-        ability to add Text Labels.
+        An injection bar is based on :class:`pyqtgraph.ErrorBarItem` with the additional
+        ability to add text labels.
 
         Args:
-            data_source: Source for data related updates
-            layer: Layer Identifier the curve should be added to
-            buffer_size: maximum count of values the datamodel buffer should hold
-            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItems used in the Injectionbars
+            data_source: Source for the incoming data that the injection bar should represent.
+            layer: Identifier of the layer that the new injection bar belongs to.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
 
         Returns:
-            LiveInjectionBarGraphItem that was added to the plot.
+            Injection bar item that was added to the plot.
         """
-        return self.plotItem.addInjectionBar(
-            data_source=data_source,
-            layer=layer,
-            buffer_size=buffer_size,
-            **errorbaritem_kwargs,
-        )
+        return self.plotItem.addInjectionBar(data_source=data_source,
+                                             layer=layer,
+                                             buffer_size=buffer_size,
+                                             **errorbaritem_kwargs)
 
-    def addTimestampMarker(
-            self,
-            *graphicsobjectargs,
-            data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-    ) -> LiveTimestampMarker:
-        """Add a new timestamp marker sequence to the plot
+    def addTimestampMarker(self,
+                           *graphicsobjectargs,
+                           data_source: UpdateSource,
+                           buffer_size: int = DEFAULT_BUFFER_SIZE) -> LiveTimestampMarker:
+        """
+        Add a new timestamp marker attached to a source for receiving new data.
 
-        The new timestamp marker sequence is attached to a source for receiving
-        data updates. A timestamp marker is a vertical infinite line based on
-        PyQtGraph's InfiniteLine with a text label at the top. The color of each
-        line is controlled by the source for data.
+        A timestamp marker is a vertical infinite line based on
+        :class:`pyqtgraph.InfiniteLine` with a text label at the top. The color of each
+        line is controlled by the source of the data.
 
         Args:
-            data_source: Source for data related updates,
-            buffer_size: maximum count of values the datamodel buffer should hold
-            *graphicsobjectargs: Arguments passed to the GraphicsObject base class
+            *graphicsobjectargs: Positional arguments for the :class:`~pyqtgraph.GraphicsObject` constructor
+                                 (the base class of the marker).
+            data_source: Source for the incoming data that the timestamp marker should represent.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
 
         Returns:
-            LiveTimestampMarker that was added to the plot.
+            Timestamp marker that was added to the plot.
         """
-        return self.plotItem.addTimestampMarker(
-            *graphicsobjectargs,
-            data_source=data_source,
-            buffer_size=buffer_size,
-        )
+        return self.plotItem.addTimestampMarker(*graphicsobjectargs,
+                                                data_source=data_source,
+                                                buffer_size=buffer_size)
 
-    def add_layer(
-            self,
-            layer_id: str,
-            y_range: Optional[Tuple[float, float]] = None,
-            y_range_padding: Optional[float] = None,
-            invert_y: bool = False,
-            pen: Optional[QPen] = None,
-            link_view: Optional[pg.ViewBox] = None,
-            max_tick_length: int = -5,
-            show_values: bool = True,
-            text: Optional[str] = None,
-            units: Optional[str] = None,
-            unit_prefix: Optional[str] = None,
-            **axis_label_css_kwargs,
-    ) -> "PlotItemLayer":
-        """Add a new layer to the plot.
+    def add_layer(self,
+                  layer_id: str,
+                  y_range: Optional[Tuple[float, float]] = None,
+                  y_range_padding: Optional[float] = None,
+                  invert_y: bool = False,
+                  pen: Optional[QPen] = None,
+                  link_view: Optional[pg.ViewBox] = None,
+                  max_tick_length: int = -5,
+                  show_values: bool = True,
+                  text: Optional[str] = None,
+                  units: Optional[str] = None,
+                  unit_prefix: Optional[str] = None,
+                  **axis_label_css_kwargs) -> "PlotItemLayer":
+        """
+        Add a new layer to the plot.
 
-        Adding multiple layers to a plot allows to plot different items in
-        the same plot in different y ranges. Each layer comes per default
-        with a separate y-axis that will be appended on the right side of
-        the plot. An once added layer can always be retrieved by its string
-        identifier that is chosen when creating the layer. This identifier
-        can also be used when setting the view range or other operations on
-        the layer.
+        Adding multiple layers to the plot allows display of different items in
+        the same plot, but different y-ranges. Each layer comes with its own
+        y-axis by default. This axis is appended on the right hand side of
+        the plot. Once added, the layer can always be retrieved by its string
+        identifier that is chosen when creating the layer.
 
         Args:
-            layer_id: string identifier for the new layer, this one can later
-                      be used to reference the layer and can be chosen freely
-
-            y_range: set the view range of the new y axis on creation.
-                     This is equivalent to calling setYRange(layer=...)
-            y_range_padding: Padding to use when setting the y range
-            invert_y: Invert the y axis of the newly created layer. This
-                      is equivalent to calling invertY(layer=...)
-
-            max_tick_length: maximum length of ticks to draw. Negative values
+            layer_id: Unique string identifier for the new layer, which later can be
+                      used to reference this layer in other method calls.
+            y_range: Set the view range of the new y-axis on creation.
+                     This is equivalent to calling :meth:`setYRange` with the ``layer`` keyword.
+            y_range_padding: Padding to use when setting the y-range.
+            invert_y: Invert the y-axis of the newly created layer. This
+                      is equivalent to calling meth:`invertY` with the ``layer`` keyword.
+            max_tick_length: Maximum length of ticks to draw. Negative values
                              draw into the plot, positive values draw outward.
-            link_view: causes the range of values displayed in the axis
-                       to be linked to the visible range of a ViewBox.
-            show_values: Whether to display values adjacent to ticks
+            link_view: Causes the range of values displayed in the axis
+                       to be linked to the visible range of a :class:`~pyqtgraph.ViewBox`.
+            show_values: Whether to display values adjacent to ticks.
             pen: Pen used when drawing ticks.
-
             text: The text (excluding units) to display on the label for this
-                  axis
+                  axis.
             units: The units for this axis. Units should generally be given
-                   without any scaling prefix (eg, 'V' instead of 'mV'). The
+                   without any scaling prefix (e.g., ``V`` instead of ``mV``). The
                    scaling prefix will be automatically prepended based on the
                    range of data displayed.
-            unit_prefix: prefix used for units displayed on the axis
+            unit_prefix: Prefix used for units displayed on the axis.
             axis_label_css_kwargs: All extra keyword arguments become CSS style
-                                   options for the <span> tag which will surround
-                                   the axis label and units
+                                   options for the ``<span>`` tag, which will surround
+                                   the axis label and units.
 
         Returns:
-            New created layer
+            New created layer instance.
         """
-        return self.plotItem.add_layer(
-            layer_id=layer_id,
-            y_range=y_range,
-            y_range_padding=y_range_padding,
-            invert_y=invert_y,
-            pen=pen,
-            link_view=link_view,
-            max_tick_length=max_tick_length,
-            show_values=show_values,
-            text=text,
-            units=units,
-            unit_prefix=unit_prefix,
-            **axis_label_css_kwargs,
-        )
+        return self.plotItem.add_layer(layer_id=layer_id,
+                                       y_range=y_range,
+                                       y_range_padding=y_range_padding,
+                                       invert_y=invert_y,
+                                       pen=pen,
+                                       link_view=link_view,
+                                       max_tick_length=max_tick_length,
+                                       show_values=show_values,
+                                       text=text,
+                                       units=units,
+                                       unit_prefix=unit_prefix,
+                                       **axis_label_css_kwargs)
 
     def update_config(self, config: ExPlotWidgetConfig):
-        """Update the plot widgets configuration
+        """
+        Update plot's configuration.
 
         Items that are affected from the configuration change are recreated with
-        the new configuration and their old datamodels, so once displayed data is
-        not lost. Static items, mainly pure PyQtGraph items, that were added to
-        the plot, are not affected by this and will be kept unchanged in the plot.
+        the new configuration, preserving their original data models, so that once displayed data is
+        not lost. Static items (mainly pure PyQtGraph items) that were added to
+        the plot are not affected by this method.
 
         Args:
             config: The new configuration that should be used by the plot and all
-                    its (affected) items
+                    its (affected) items.
         """
         self.plotItem.update_config(config=config)
 
-    # ~~~~~~~~~~~~~~~~~~ Functionality for editble plots ~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~ Functionality for editable plots ~~~~~~~~~~~~~~~~~~~~~~
 
     def mouseDoubleClickEvent(self, ev: QMouseEvent):
         """
-        When double clicking a PlotItem, it can be selected as the plot item
-        which should be edited. To inform e.g. and editable button bar about
-        a selection, a fitting signal is emitted.
+        When double clicking a :class:`~pyqtgraph.PlotItem`, it can be selected as the plot item
+        that should be edited. To inform e.g. an editable button bar about the selection, a matching
+        signal is emitted.
 
         Args:
-            ev: Event
+            ev: Double click event.
         """
         super().mouseDoubleClickEvent(ev)
         self.plotItem.toggle_plot_selection()
 
     def replace_selection(self, replacement: CurveData):
-        """Function to call if the current data selection was changed.
+        """
+        Replace the current selection with the ``replacement``.
+
+        After the replacement is completed, the selection will be unselected.
 
         Args:
-            replacement: The data to replace the indices with
+            replacement: Data which should replace the current selection.
         """
         self.plotItem.replace_selection(replacement=replacement)
 
     @property
     def current_selection_data(self) -> Optional[CurveData]:
-        """Get the selected data as a curve data."""
+        """Selected data in a curve representation."""
         return self.plotItem.current_selection_data
 
     @property
     def selection_mode(self) -> bool:
         """
-        If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
+        Marks whether selection mode is enabled.
+
+        In the selection mode, mouse drag events on the viewbox create selection
+        rectangles and do not move the view.
         """
         return self.plotItem.selection_mode
 
     @Slot(bool)
     def set_selection_mode(self, enable: bool):
         """
+        Slot to toggle the :attr:`selection_mode`.
+
         If the selection mode is enabled, mouse drag events on the view
-        box create selection rectangles and do not move the view
+        box create selection rectangles and do not pan the view.
+
+        Args:
+            enable: Enable selection mode.
         """
         self.plotItem.selection_mode = enable
 
     @Slot()
     def send_currents_editable_state(self) -> bool:
         """
-        Send the state of the current editable item back to the process it
-        received it from. If there was no state change, nothing is sent.
+        Commit performed changes on the current editable item
+        back into the :attr:`~EditableCurveDataModel.data_source`.
+
+        This method does nothing if there were no changes to commit.
 
         Returns:
-            True if something was sent back
+            Whether change was successfully committed.
         """
         return self.plotItem.send_currents_editable_state()
 
     @Slot()
     def send_all_editables_state(self) -> List[bool]:
         """
-        Send the states of all editable items to the processes they are
-        connected to.
+        Commit performed changes on the all editable items
+        back into their relevant :attr:`~EditableCurveDataModel.data_source`.
 
         Returns:
-            List of Trues, if the states of all items have been sent
+            List of indicators for each state, whether the change was successfully committed.
         """
         return self.plotItem.send_all_editables_state()
 
     # ~~~~~~~~~~ Properties ~~~~~~~~~
 
     def _get_plot_title(self) -> str:
-        """QtDesigner getter function for the PlotItems title"""
         if self.plotItem.titleLabel.isVisible():
             return self.plotItem.titleLabel.text
         return ""
 
     def _set_plot_title(self, new_val: str):
-        """QtDesigner setter function for the PlotItems title"""
         if new_val != self.plotItem.titleLabel.text:
             new_val = new_val.strip()
             if new_val:
@@ -413,14 +409,12 @@ class ExPlotWidget(pg.PlotWidget):
                 self.plotItem.setTitle(None)
 
     plotTitle: str = Property(str, _get_plot_title, _set_plot_title)
-    """Title shown at the top of the plot"""
+    """Title shown at the top of the plot."""
 
     def _get_show_time_line(self) -> bool:
-        """QtDesigner getter function for the PlotItems flag for showing the current timestamp with a line"""
         return self.plotItem.plot_config.time_progress_line
 
     def _set_show_time_line(self, new_val: bool):
-        """QtDesigner setter function for the PlotItems flag for showing the current timestamp with a line"""
         if new_val != self.plotItem.plot_config.time_progress_line:
             new_config = deepcopy(self.plotItem.plot_config)
             new_config.time_progress_line = new_val
@@ -429,14 +423,12 @@ class ExPlotWidget(pg.PlotWidget):
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
     showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line)
-    """Vertical Line displaying the current time stamp"""
+    """Show vertical line indicating the current timestamp."""
 
     def _get_right_time_span_boundary(self) -> float:
-        """QtDesigner getter function for the PlotItems time span size"""
         return self.plotItem.plot_config.time_span.right_boundary_offset
 
     def _set_right_time_span_boundary(self, new_val: float):
-        """QtDesigner setter function for the PlotItems time span size"""
         if new_val != self.plotItem.plot_config.time_span.right_boundary_offset:
             new_config = deepcopy(self.plotItem.plot_config)
             new_config.time_span.right_boundary_offset = new_val
@@ -446,25 +438,13 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    rightTimeBoundary: float = Property(
-        float,
-        _get_right_time_span_boundary,
-        _set_right_time_span_boundary,
-        designable=False,
-    )
-    """Value of the Left / Lower boundary for the Plot's timestamp"""
+    rightTimeBoundary: float = Property(float,
+                                        fget=_get_right_time_span_boundary,
+                                        fset=_set_right_time_span_boundary,
+                                        designable=False)
+    """Value of the right (upper) boundary of the plot's time span."""
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
-        """
-        QtDesigner getter function for the PlotItems time span size. When called
-        from designer, nan and inf are masked, when called from code, they will
-        return the nan and inf values. This is done since inf and nan are not
-        displayed very well in the QtDesigner property sheet.
-
-        Args:
-            hide_nans: Returns the last not nan value instead of nan / inf, since
-                       nan / inf in the property fields is displayed as gibberish
-        """
         potential = self.plotItem.plot_config.time_span.left_boundary_offset
         if not designer_check.is_designer():
             hide_nans = False
@@ -476,7 +456,6 @@ class ExPlotWidget(pg.PlotWidget):
         return potential
 
     def _set_left_time_span_boundary(self, new_val: float):
-        """QtDesigner setter function for the PlotItems time span size"""
         if new_val != self._get_left_time_span_boundary(hide_nans=False):
             new_config = deepcopy(self.plotItem.plot_config)
             new_config.time_span.left_boundary_offset = new_val
@@ -486,20 +465,16 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    leftTimeBoundary: float = Property(
-        float,
-        _get_left_time_span_boundary,
-        _set_left_time_span_boundary,
-        designable=False,
-    )
-    """Value of the Left / Lower boundary for the Plot's timestamp"""
+    leftTimeBoundary: float = Property(float,
+                                       fget=_get_left_time_span_boundary,
+                                       fset=_set_left_time_span_boundary,
+                                       designable=False)
+    """Value of the left (lower) boundary of the plot's time span."""
 
     def _get_left_time_span_boundary_bool(self) -> bool:
-        """QtDesigner getter function for the PlotItems time span size"""
         return not np.isinf(self._get_left_time_span_boundary(hide_nans=False))
 
     def _set_left_time_span_boundary_bool(self, new_val: bool):
-        """QtDesigner setter function for the PlotItems time span size"""
         if not new_val:
             potential = self.plotItem.plot_config.time_span.left_boundary_offset
             if potential and not np.isinf(potential):
@@ -514,13 +489,15 @@ class ExPlotWidget(pg.PlotWidget):
             except NameError:
                 self._set_left_time_span_boundary(new_val=60.0)
 
-    leftTimeBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
+    """
+    Toggle for the left (lower) boundary of the plot's time span.
+
+    This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
+    """
 
     # ~~~~~~~~~~~~~~~~~ Styling Opts for Slot Items ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -573,13 +550,11 @@ class ExPlotWidget(pg.PlotWidget):
         style = self._get_slot_item_pen_style()
         return pg.mkPen(color=color, width=width, style=style)
 
-    def _init_ex_plot_item(
-            self,
-            config: Optional[ExPlotWidgetConfig] = None,
-            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-            timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs,
-    ):
+    def _init_ex_plot_item(self,
+                           config: Optional[ExPlotWidgetConfig] = None,
+                           axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                           timing_source: Optional[UpdateSource] = None,
+                           **plotitem_kwargs):
         """
         Replace the plot item created by the base class with an instance
         of the extended plot item.
@@ -619,43 +594,95 @@ class ExPlotWidget(pg.PlotWidget):
 
 
 class GridOrientationOptions:
+    """Enum for grid orientation configuration."""
+
     Hidden = 0
+    """Do not display grid."""
+
     X = 1
+    """Display horizontal lines of the grid."""
+
     Y = 2
+    """Display vertical lines of the grid."""
+
     Both = 3
+    """Display all lines of the grid."""
 
 
 class XAxisSideOptions:
+    """Enum for the x-axis side configuration."""
+
     Hidden = 0
+    """No x-axis should be displayed."""
+
     Top = 1
+    """x-axis should be placed above the plot."""
+
     Bottom = 2
+    """x-axis should be placed beneath the plot."""
+
     Both = 3
+    """x-axis should be mirrored both above and beneath the plot."""
 
 
 class DefaultYAxisSideOptions:
+    """Enum for the default y-axis side configuration."""
+
     Hidden = 0
+    """No y-axis should be displayed."""
+
     Left = 1
+    """y-axis should be placed on the left from the plot."""
+
     Right = 2
+    """y-axis should be placed on the right from the plot."""
+
     Both = 3
+    """x-axis should be mirrored both on the left and right from the plot."""
 
 
 class LegendXAlignmentOptions:
+    """Enum for the horizontal alignment of the legend."""
     Left = 0
+    """Align left."""
+
     Right = 1
+    """Align right."""
+
     Center = 2
+    """Align in the center."""
 
 
 class LegendYAlignmentOptions:
+    """Enum for the vertical alignment of the legend."""
     Top = 0
+    """Align top."""
+
     Bottom = 1
+    """Align bottom."""
+
     Center = 2
+    """Align in the center."""
 
 
+# TODO: Metaclass abc? To enforce subclassing?
 class ExPlotWidgetProperties(XAxisSideOptions,
                              DefaultYAxisSideOptions,
                              GridOrientationOptions,
                              LegendXAlignmentOptions,
                              LegendYAlignmentOptions):
+    """
+    Collection of properties for the :class:`ExPlotWidget` derivatives.
+
+    .. note:: Use this class only to inject properties into custom subclasses, such as:
+
+              .. code-block:: python
+
+                 class SuperPlotWidgetClass(ExPlotWidgetProperties, ExPlotWidget):
+
+              All ``self.<attr>`` calls are resolved to the fields in :class:`ExPlotWidget` in this case.
+              If you use this class in any other context, the resolutions will fail.
+    """
 
     Q_ENUM(XAxisSideOptions)
     Q_ENUM(DefaultYAxisSideOptions)
@@ -669,18 +696,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     LegendXAlignmentOptions = LegendXAlignmentOptions
     LegendYAlignmentOptions = LegendYAlignmentOptions
 
-    """
-    Do not use this class except as a base class to inject properties in the following
-    context:
-
-    SuperPlotWidgetClass(ExPlotWidgetProperties, ExPlotWidget)
-
-    All self.xyz calls are resolved to the fields in ExPlotWidget in this context.
-    If you use this class in any other context, these resolutions will fail.
-    """
-
     def _get_show_x_axis(self) -> int:
-        """Where is the X Axis of the plot displayed"""
         top = self.getAxis("top").isVisible()  # type: ignore[attr-defined]
         bottom = self.getAxis("bottom").isVisible()  # type: ignore[attr-defined]
         if top and bottom:
@@ -692,7 +708,6 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         return XAxisSideOptions.Hidden
 
     def _set_show_x_axis(self, new_val: int):
-        """Where is the X Axis of the plot displayed"""
         if new_val != self._get_show_x_axis():  # type: ignore[has-type]
             if new_val == XAxisSideOptions.Both:
                 cast(ExPlotWidget, self).showAxis("top")
@@ -709,8 +724,11 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # Update labels through property
             self.axisLabels = self.axisLabels
 
-    xAxisSide: int = Property(XAxisSideOptions, _get_show_x_axis, _set_show_x_axis)
-    """Where should the x axis be displayed?"""
+    xAxisSide: int = Property(XAxisSideOptions, fget=_get_show_x_axis, fset=_set_show_x_axis)
+    """
+    Indicates the side where the x-axis should be placed. Possible values are :attr:`XAxisSideOptions.Top`,
+    :attr:`XAxisSideOptions.Bottom`, :attr:`XAxisSideOptions.Both` and :attr:`XAxisSideOptions.Hidden`.
+    """
 
     def _get_show_y_axis(self) -> int:
         """Where is the Y Axis of the plot displayed"""
@@ -742,11 +760,14 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # Update labels through property
             self.axisLabels = self.axisLabels
 
-    defaultYAxisSide: int = Property(DefaultYAxisSideOptions, _get_show_y_axis, _set_show_y_axis)
-    """Where should the y axis be displayed?"""
+    defaultYAxisSide: int = Property(DefaultYAxisSideOptions, fget=_get_show_y_axis, fset=_set_show_y_axis)
+    """
+    Indicates the side where the default y-axis should be placed. Possible values are
+    :attr:`DefaultYAxisSideOptions.Left`, :attr:`DefaultYAxisSideOptions.Right`, :attr:`DefaultYAxisSideOptions.Both`
+    and :attr:`XAxisSideOptions.Hidden`.
+    """
 
     def _get_show_grid(self) -> int:
-        """What Axis Grid should be displayed"""
         x_grid = cast(ExPlotWidget, self).plotItem.ctrl.xGridCheck.isChecked()
         y_grid = cast(ExPlotWidget, self).plotItem.ctrl.yGridCheck.isChecked()
         if x_grid and y_grid:
@@ -758,7 +779,6 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         return GridOrientationOptions.Hidden
 
     def _set_show_grid(self, new_val: int):
-        """What Axis Grid should be displayed"""
         if new_val != self._get_show_grid():
             if new_val == GridOrientationOptions.Both:
                 cast(ExPlotWidget, self).plotItem.showGrid(x=True)
@@ -773,8 +793,11 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                 cast(ExPlotWidget, self).plotItem.showGrid(x=False)
                 cast(ExPlotWidget, self).plotItem.showGrid(y=False)
 
-    gridOrientation: int = Property(GridOrientationOptions, _get_show_grid, _set_show_grid)
-    """Which Axis' Grid should be displayed"""
+    gridOrientation: int = Property(GridOrientationOptions, fget=_get_show_grid, fset=_set_show_grid)
+    """
+    Indicates the direction of the visible grid lines. Possible values are :attr:`GridOrientationOptions.X`,
+    :attr:`GridOrientationOptions.Y`, :attr:`GridOrientationOptions.Both` and :attr:`GridOrientationOptions.Hidden`.
+    """
 
     def _get_show_legend(self) -> bool:
         """Does the plot show a legend."""
@@ -800,18 +823,10 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                     curr_legend.setVisible(False)
             cast(ExPlotWidget, self).update()
 
-    showLegend: bool = Property(bool, _get_show_legend, _set_show_legend)
-    """Does the plot show a legend which displays the contained items."""
+    showLegend: bool = Property(bool, fget=_get_show_legend, fset=_set_show_legend)
+    """Flags whether the legend should be shown."""
 
     def _get_legend_position(self) -> Tuple[int, int]:
-        """
-        Get the legends position in the passed dimension.
-
-        Args:
-            index: 0 for X / Horizontal Alignment, 1 for Y / Vertical Alignment
-
-        Returns: position of the axis in the given dimension
-        """
         try:
             return self._legend_position_cache
         except (AttributeError, NameError):
@@ -874,8 +889,11 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _set_legend_x_position(self, new_val: int):
         self._set_legend_position(x_alignment=new_val)
 
-    legendXAlignment: int = Property(LegendXAlignmentOptions, _get_legend_x_position, _set_legend_x_position)
-    """Which position has the top left corner in the x dimension. Is 0, if no legend is displayed."""
+    legendXAlignment: int = Property(LegendXAlignmentOptions, fget=_get_legend_x_position, fset=_set_legend_x_position)
+    """
+    Indicates the horizontal alignment of the legend. Possible values are :attr:`LegendXAlignmentOptions.Left`,
+    :attr:`LegendXAlignmentOptions.Right` and :attr:`LegendXAlignmentOptions.Center`.
+    """
 
     def _get_legend_y_position(self) -> int:
         return self._get_legend_position()[1]
@@ -883,8 +901,11 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _set_legend_y_position(self, new_val: int):
         self._set_legend_position(y_alignment=new_val)
 
-    legendYAlignment: int = Property(LegendYAlignmentOptions, _get_legend_y_position, _set_legend_y_position)
-    """Which position has the top left corner in the y dimension. Is 0, if no legend is displayed."""
+    legendYAlignment: int = Property(LegendYAlignmentOptions, fget=_get_legend_y_position, fset=_set_legend_y_position)
+    """
+    Indicates the vertical alignment of the legend. Possible values are :attr:`LegendYAlignmentOptions.Top`,
+    :attr:`LegendYAlignmentOptions.Bottom` and :attr:`LegendYAlignmentOptions.Center`.
+    """
 
     # ~~~~~~~~~~ QtDesigner Properties ~~~~~~~~~~
 
@@ -922,8 +943,8 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         # Update changed identifiers
         self._update_layers(layers)
 
-    layerIDs: List[str] = Property("QStringList", _get_layer_ids, _set_layer_ids, designable=False)
-    """List of strings with the additional layer's identifiers"""
+    layerIDs: List[str] = Property("QStringList", fget=_get_layer_ids, fset=_set_layer_ids, designable=False)
+    """List of string identifiers of the additional layer."""
 
     def _get_axis_labels(self) -> str:
         """QtDesigner getter function for the PlotItems axis labels"""
@@ -959,8 +980,8 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # TypeError for len() operation on entries that do not support it
             pass
 
-    axisLabels: str = Property(str, _get_axis_labels, _set_axis_labels, designable=False)
-    """JSON string with mappings of axis positions and layers to a label text"""
+    axisLabels: str = Property(str, fget=_get_axis_labels, fset=_set_axis_labels, designable=False)
+    """JSON representation of mappings of axis positions and layers to a label text."""
 
     def _get_axis_ranges(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
@@ -1002,8 +1023,8 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # TypeError for len() operation on entries that do not support it
             pass
 
-    axisRanges: str = Property(str, _get_axis_ranges, _set_axis_ranges, designable=False)
-    """JSON string with mappings of x, y and layers to a view range"""
+    axisRanges: str = Property(str, fget=_get_axis_ranges, fset=_set_axis_ranges, designable=False)
+    """JSON representation of mappings of x, y and layers to a view range."""
 
     def _update_layers(self, new: List[str]):
         """
@@ -1067,111 +1088,90 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
 
     SymbolOptions = SymbolOptions
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            time_span: Union[TimeSpan, float, None] = 60.0,
-            time_progress_line: bool = False,
-            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-            timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 time_span: Union[TimeSpan, float, None] = 60.0,
+                 time_progress_line: bool = False,
+                 axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                 timing_source: Optional[UpdateSource] = None,
+                 **plotitem_kwargs):
         """
-        The ScrollingPlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the scrolling plot style. Additionally some
-        properties are offered that are specific to this plotting style.
-        When switching the ExPlotWidget, passing a fitting configuration
-        can achieve the same results as using these properties.
+        This class displays live data that in real time. This data can be represented in multiple ways,
+        e.g. as lines, bar graph, injection marks, etc. Data can either contain a timestamp to be
+        precise about timing, or such timestamp will be created whenever the widget receives the data.
+        It appends data on one side, thus scrolling the view port through time series.
 
         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
-            time_span: data from which time span should be displayed in the plot.
-                       The default time span is 60.0 seconds.
-            time_progress_line: If true, the current timestamp will represented as a
-                                vertical line in the plot
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
+            time_span: Amount of seconds after which the data is clipped from the plot.
+            time_progress_line: If :obj:`True`, the current timestamp will be marked by a vertical line.
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
-            timing_source: Mainly for live data plotting. This timing source allows
-                           to receive timing updates decoupled from any received
+            timing_source: This timing source allows receiving timing updates decoupled from any received
                            data.
-            **plotitem_kwargs: Params passed to the plot item
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
-        config = ExPlotWidgetConfig(
-            plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
-            time_span=time_span,
-            time_progress_line=time_progress_line,
-        )
+        config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
+                                    time_span=time_span,
+                                    time_progress_line=time_progress_line)
         ExPlotWidgetProperties.__init__(self)
-        ExPlotWidget.__init__(
-            self,
-            parent=parent,
-            background=background,
-            config=config,
-            axis_items=axis_items,
-            timing_source=timing_source,
-            **plotitem_kwargs,
-        )
+        ExPlotWidget.__init__(self,
+                              parent=parent,
+                              background=background,
+                              config=config,
+                              axis_items=axis_items,
+                              timing_source=timing_source,
+                              **plotitem_kwargs)
 
-    rightTimeBoundary: float = Property(
-        float,
-        ExPlotWidget._get_right_time_span_boundary,
-        ExPlotWidget._set_right_time_span_boundary,
-    )
-    """Value of the Left / Lower boundary for the Plot's timestamp"""
+    rightTimeBoundary: float = Property(float,
+                                        fget=ExPlotWidget._get_right_time_span_boundary,
+                                        fset=ExPlotWidget._set_right_time_span_boundary)
+    """Value of the right (upper) boundary of the plot's time span."""
 
-    leftTimeBoundary: float = Property(
-        float,
-        ExPlotWidget._get_left_time_span_boundary,
-        ExPlotWidget._set_left_time_span_boundary,
-    )
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    leftTimeBoundary: float = Property(float,
+                                       fget=ExPlotWidget._get_left_time_span_boundary,
+                                       fset=ExPlotWidget._set_left_time_span_boundary)
+    """Value of the left (lower) boundary of the plot's time span."""
 
-    leftTimeBoundaryEnabled: bool = Property(
-        bool,
-        ExPlotWidget._get_left_time_span_boundary_bool,
-        ExPlotWidget._set_left_time_span_boundary_bool,
-        doc="This is a test",
-    )
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=ExPlotWidget._get_left_time_span_boundary_bool,
+                                             fset=ExPlotWidget._set_left_time_span_boundary_bool)
+    """
+    Toggle for the left (lower) boundary of the plot's time span.
+
+    This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
+    """
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    pushDataItemPenColor: QColor = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_pen_color,
-        ExPlotWidget._set_slot_item_pen_color,
-    )
-    """Pen color for the item displaying data through the 'pushData' slot"""
+    pushDataItemPenColor: QColor = Property(QColor,
+                                            fget=ExPlotWidget._get_slot_item_pen_color,
+                                            fset=ExPlotWidget._set_slot_item_pen_color)
+    """Pen color for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemPenWidth: int = Property(
-        int,
-        ExPlotWidget._get_slot_item_pen_width,
-        ExPlotWidget._set_slot_item_pen_width,
-    )
-    """Pen width for the item displaying data through the 'pushData' slot"""
+    pushDataItemPenWidth: int = Property(int,
+                                         fget=ExPlotWidget._get_slot_item_pen_width,
+                                         fset=ExPlotWidget._set_slot_item_pen_width)
+    """Pen width for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemPenStyle: Qt.PenStyle = Property(
-        Qt.PenStyle,
-        ExPlotWidget._get_slot_item_pen_style,
-        ExPlotWidget._set_slot_item_pen_style,
-    )
-    """Pen line style for the item displaying data through 'pushData' the slot"""
+    pushDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
+                                                 fget=ExPlotWidget._get_slot_item_pen_style,
+                                                 fset=ExPlotWidget._set_slot_item_pen_style)
+    """Pen line style for the item displaying data through :meth:`pushData` slot."""
 
-    pushDataItemBrushColor: str = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_brush_color,
-        ExPlotWidget._set_slot_item_brush_color,
-    )
-    """Brush color for the item displaying data through the 'pushData' slot"""
+    pushDataItemBrushColor: str = Property(QColor,
+                                           fget=ExPlotWidget._get_slot_item_brush_color,
+                                           fset=ExPlotWidget._set_slot_item_brush_color)
+    """Brush color for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemSymbol: int = Property(
-        SymbolOptions,
-        ExPlotWidget._get_slot_item_symbol,
-        ExPlotWidget._set_slot_item_symbol,
-    )
-    """Symbol for the item displaying data through 'pushData' the slot"""
+    pushDataItemSymbol: int = Property(SymbolOptions,
+                                       fget=ExPlotWidget._get_slot_item_symbol,
+                                       fset=ExPlotWidget._set_slot_item_symbol)
+    """Symbol for the item displaying data through :meth:`pushData` slot."""
 
     @Slot(float)
     @Slot(int)
@@ -1179,33 +1179,28 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
     @Slot(list)
     @Slot(np.ndarray)
     @Slot(PointData)
-    def pushData(self,
-                 data: Union[int, float, Sequence[float], PointData]):
+    def pushData(self, data: Union[int, float, Sequence[float], PointData]):
         """
         This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn. Further calls with other data will append it
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will append new data
         to the existing one.
 
-        This slot will accept single integer and float values
-        and draw them at the timestamp of their arrival.
-
-        To propagate an additional x value, put it in second position in an
-        array: [y, x]
+        Args:
+            data: :obj:`int` or :obj:`float` values to represent a value that will be bound to the
+                  timestamp of their arrival. :class:`PointData` type will specify both x- and y-value.
+                  Sequence of floats can be used to specify x-value as well, by passing ``[y, x]`` list.
         """
         if not isinstance(data, PointData):
-            data = cast(PointData,
-                        PlottingItemDataFactory.transform(PointData, data))  # type: ignore
-        self.plotItem.plot_data_on_single_data_item(
-            data=data,
-            # ignore, bc mypy wants concrete class
-            item_type=AbstractBasePlotCurve,  # type: ignore
-            pen=self._get_slot_item_pen(),
-            symbolPen=self._get_slot_item_pen(),
-            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
-            symbol=self._get_slot_item_symbol_string(),
-        )
+            data = cast(PointData, PlottingItemDataFactory.transform(PointData, data))  # type: ignore
+        self.plotItem.plot_data_on_single_data_item(data=data,
+                                                    # ignore, bc mypy wants concrete class
+                                                    item_type=AbstractBasePlotCurve,  # type: ignore
+                                                    pen=self._get_slot_item_pen(),
+                                                    symbolPen=self._get_slot_item_pen(),
+                                                    symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+                                                    symbol=self._get_slot_item_symbol_string())
 
 
 class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
@@ -1219,42 +1214,38 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     SymbolOptions = SymbolOptions
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            time_span: Union[TimeSpan, float, None] = 60.0,
-            time_progress_line: bool = False,
-            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-            timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 time_span: Union[TimeSpan, float, None] = 60.0,
+                 time_progress_line: bool = False,
+                 axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                 timing_source: Optional[UpdateSource] = None,
+                 **plotitem_kwargs):
         """
-        The ScrollingPlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the cylic plot style. Additionally some
-        properties are offered that are specific to this plotting style.
-        When switching the ExPlotWidget, passing a fitting configuration
-        can achieve the same results as using these properties.
+        This class is meant to scroll through the same cycle, updating the previous display,
+        similar to how heart monitors do it. It is useful for displaying data in the context
+        of a cycle of the injector / accelerator.
+
+        Data gets appended at first, until filling up the entire time frame. After it’s full,
+        data will be inserted from the beginning.
 
         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
-            time_span: data from which time span should be displayed in the plot.
-                       The default time span is 60.0 seconds.
-            time_progress_line: If true, the current timestamp will represented as a
-                                vertical line in the plot
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
+            time_span: Lenght of the cycle in seconds.
+            time_progress_line: If :obj:`True`, the current timestamp will be marked by a vertical line.
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
-            timing_source: Mainly for live data plotting. This timing source allows
-                           to receive timing updates decoupled from any received
+            timing_source: This timing source allows receiving timing updates decoupled from any received
                            data.
-            **plotitem_kwargs: Params passed to the plot item
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
-        config = ExPlotWidgetConfig(
-            plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
-            time_span=time_span,
-            time_progress_line=time_progress_line,
-        )
+        config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
+                                    time_span=time_span,
+                                    time_progress_line=time_progress_line)
         ExPlotWidgetProperties.__init__(self)
         ExPlotWidget.__init__(self,
                               parent=parent,
@@ -1267,7 +1258,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     leftTimeBoundary: float = Property(float,
                                        fget=ExPlotWidget._get_left_time_span_boundary,
                                        fset=ExPlotWidget._set_left_time_span_boundary)
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    """Value of the left (lower) boundary of the plot's time span."""
 
     def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
         if not designer_check.is_designer():
@@ -1284,44 +1275,36 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                                              fget=_get_left_time_span_boundary_bool,
                                              fset=_set_left_time_span_boundary_bool,
                                              designable=False)
-    """DO NOT USE WITH A CYCLIC PLOT."""
+    """
+    .. warning:: Do not use this in a cyclic plot.
+    """
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    pushDataItemPenColor: QColor = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_pen_color,
-        ExPlotWidget._set_slot_item_pen_color,
-    )
-    """Pen color for the item displaying data through the 'pushData' slot"""
+    pushDataItemPenColor: QColor = Property(QColor,
+                                            fget=ExPlotWidget._get_slot_item_pen_color,
+                                            fset=ExPlotWidget._set_slot_item_pen_color)
+    """Pen color for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemPenWidth: int = Property(
-        int,
-        ExPlotWidget._get_slot_item_pen_width,
-        ExPlotWidget._set_slot_item_pen_width,
-    )
-    """Pen width for the item displaying data through the 'pushData' slot"""
+    pushDataItemPenWidth: int = Property(int,
+                                         fget=ExPlotWidget._get_slot_item_pen_width,
+                                         fset=ExPlotWidget._set_slot_item_pen_width)
+    """Pen width for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemPenStyle: Qt.PenStyle = Property(
-        Qt.PenStyle,
-        ExPlotWidget._get_slot_item_pen_style,
-        ExPlotWidget._set_slot_item_pen_style,
-    )
-    """Pen line style for the item displaying data through the 'pushData' slot"""
+    pushDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
+                                                 fget=ExPlotWidget._get_slot_item_pen_style,
+                                                 fset=ExPlotWidget._set_slot_item_pen_style)
+    """Pen line style for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemBrushColor: str = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_brush_color,
-        ExPlotWidget._set_slot_item_brush_color,
-    )
-    """Brush color for the item displaying data through the 'pushData' slot"""
+    pushDataItemBrushColor: str = Property(QColor,
+                                           fget=ExPlotWidget._get_slot_item_brush_color,
+                                           fset=ExPlotWidget._set_slot_item_brush_color)
+    """Brush color for the item displaying data through the :meth:`pushData` slot."""
 
-    pushDataItemSymbol: int = Property(
-        SymbolOptions,
-        ExPlotWidget._get_slot_item_symbol,
-        ExPlotWidget._set_slot_item_symbol,
-    )
-    """Symbol for the item displaying data through the 'pushData' slot"""
+    pushDataItemSymbol: int = Property(SymbolOptions,
+                                       fget=ExPlotWidget._get_slot_item_symbol,
+                                       fset=ExPlotWidget._set_slot_item_symbol)
+    """Symbol for the item displaying data through the the :meth:`pushData` slot."""
 
     @Slot(float)
     @Slot(int)
@@ -1329,32 +1312,28 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     @Slot(list)
     @Slot(np.ndarray)
     @Slot(PointData)
-    def pushData(self,
-                 data: Union[int, float, Tuple, List, np.ndarray, PointData]):
+    def pushData(self, data: Union[int, float, Tuple, List, np.ndarray, PointData]):
         """
         This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn. Further calls with other data will append it
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will append new data
         to the existing one.
 
-        This slot will accept single integer and float values
-        and draw them at the timestamp of their arrival.
-
-        To propagate an additional x value, put it in second position in an
-        array: [y, x]
+        Args:
+            data: :obj:`int` or :obj:`float` values to represent a value that will be bound to the
+                  timestamp of their arrival. :class:`PointData` type will specify both x- and y-value.
+                  Sequence of floats can be used to specify x-value as well, by passing ``[y, x]`` list.
         """
         if not isinstance(data, PointData):
             data = PlottingItemDataFactory.transform(PointData, data)  # type: ignore
-        self.plotItem.plot_data_on_single_data_item(
-            data=data,
-            # ignore, bc mypy wants concrete class
-            item_type=AbstractBasePlotCurve,  # type: ignore
-            pen=self._get_slot_item_pen(),
-            symbolPen=self._get_slot_item_pen(),
-            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
-            symbol=self._get_slot_item_symbol_string(),
-        )
+        self.plotItem.plot_data_on_single_data_item(data=data,
+                                                    # ignore, bc mypy wants concrete class
+                                                    item_type=AbstractBasePlotCurve,  # type: ignore
+                                                    pen=self._get_slot_item_pen(),
+                                                    symbolPen=self._get_slot_item_pen(),
+                                                    symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+                                                    symbol=self._get_slot_item_symbol_string())
 
 
 class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
@@ -1366,38 +1345,33 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     Q_ENUM(LegendXAlignmentOptions)
     Q_ENUM(LegendYAlignmentOptions)
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                 **plotitem_kwargs):
         """
-        The StaticPlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the static plot style. Properties that do
-        not have any effect on the ExPlotWidget in this plotting style, are
-        explicitly hidden in Qt Designer.
+        This type of plot is not moving with time and allows replacing the entire contents of the graph,
+        rather than appending points to the existing data set. This makes it perfect for displaying
+        waveforms, frequencies, or simply graphs that are recalculated on every tick.
 
-         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
+        Args:
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
-            **plotitem_kwargs: Params passed to the plot item
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
-        config = ExPlotWidgetConfig(
-            plotting_style=PlotWidgetStyle.STATIC_PLOT,
-        )
+        config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.STATIC_PLOT)
         ExPlotWidgetProperties.__init__(self)
-        ExPlotWidget.__init__(
-            self,
-            parent=parent,
-            background=background,
-            config=config,
-            axis_items=axis_items,
-            **plotitem_kwargs,
-        )
+        ExPlotWidget.__init__(self,
+                              parent=parent,
+                              background=background,
+                              config=config,
+                              axis_items=axis_items,
+                              **plotitem_kwargs)
 
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
@@ -1411,7 +1385,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
     showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
-    """Vertical Line displaying the current time stamp, not supported by the static plotting style"""
+    """Show vertical line indicating the current timestamp."""
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
@@ -1428,7 +1402,9 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                                         fget=_get_right_time_span_boundary,
                                         fset=_set_right_time_span_boundary,
                                         designable=False)
-    """Value of the Left / Lower boundary for the Plot's timestamp"""
+    """
+    .. warning:: Do not use this in a static plot.
+    """
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
@@ -1445,7 +1421,9 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                                        fget=_get_left_time_span_boundary,
                                        fset=_set_left_time_span_boundary,
                                        designable=False)
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    """
+    .. warning:: Do not use this in a static plot.
+    """
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         if not designer_check.is_designer():
@@ -1462,101 +1440,109 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                                              fget=_get_left_time_span_boundary_bool,
                                              fset=_set_left_time_span_boundary_bool,
                                              designable=False)
+    """
+    .. warning:: Do not use this in a static plot.
+    """
 
     # ~~~~~~~~~~~~ replaceData ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    replaceDataItemPenColor: QColor = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_pen_color,
-        ExPlotWidget._set_slot_item_pen_color,
-    )
-    """Pen color for the item displaying data through the 'replaceData' slot"""
+    replaceDataItemPenColor: QColor = Property(QColor,
+                                               fget=ExPlotWidget._get_slot_item_pen_color,
+                                               fset=ExPlotWidget._set_slot_item_pen_color)
+    """
+    Pen color for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
-    replaceDataItemPenWidth: int = Property(
-        int,
-        ExPlotWidget._get_slot_item_pen_width,
-        ExPlotWidget._set_slot_item_pen_width,
-    )
-    """Pen width for the item displaying data through the 'replaceData' slot"""
+    replaceDataItemPenWidth: int = Property(int,
+                                            fget=ExPlotWidget._get_slot_item_pen_width,
+                                            fset=ExPlotWidget._set_slot_item_pen_width)
+    """
+    Pen width for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
-    replaceDataItemPenStyle: Qt.PenStyle = Property(
-        Qt.PenStyle,
-        ExPlotWidget._get_slot_item_pen_style,
-        ExPlotWidget._set_slot_item_pen_style,
-    )
-    """Pen line style for the item displaying data through 'replaceData' the slot"""
+    replaceDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
+                                                    fget=ExPlotWidget._get_slot_item_pen_style,
+                                                    fset=ExPlotWidget._set_slot_item_pen_style)
+    """
+    Pen line style for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
-    replaceDataItemBrushColor: str = Property(
-        QColor,
-        ExPlotWidget._get_slot_item_brush_color,
-        ExPlotWidget._set_slot_item_brush_color,
-    )
+    replaceDataItemBrushColor: str = Property(QColor,
+                                              fget=ExPlotWidget._get_slot_item_brush_color,
+                                              fset=ExPlotWidget._set_slot_item_brush_color)
+    """
+    Brush color for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
-    """Brush color for the item displaying data through the 'replaceData' slot"""
-
-    replaceDataItemSymbol: int = Property(
-        SymbolOptions,
-        ExPlotWidget._get_slot_item_symbol,
-        ExPlotWidget._set_slot_item_symbol,
-    )
-    """Symbol for the item displaying data through 'replaceData' the slot"""
+    replaceDataItemSymbol: int = Property(SymbolOptions,
+                                          fget=ExPlotWidget._get_slot_item_symbol,
+                                          fset=ExPlotWidget._set_slot_item_symbol)
+    """
+    Symbol for the item displaying data through the :meth:`replaceDataAsCurve`,
+    :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+    """
 
     @Slot(np.ndarray)
     @Slot(CurveData)
-    def replaceDataAsCurve(self,
-                           data: Union[Sequence[float], CurveData]):
+    def replaceDataAsCurve(self, data: Union[Sequence[float], CurveData]):
         """
         This slot exposes the possibility to draw data on a
-        single curve in the plot. If this curve does not yet exist,
-        it will be created automatically . The data will be collected by
-        the curve and drawn.
-        A full curve is expected as either a 2D numpy array or a CurveData
-        object. The curve will replace all data shown prior to its arrival.
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Curve object or a sequence of values representing the curve that will be evenly distributed.
         """
         if not isinstance(data, CurveData):
-            data = cast(CurveData,
-                        PlottingItemDataFactory.transform(CurveData, data))  # type: ignore
-        self.plotItem.plot_data_on_single_data_item(
-            data=data,
-            # ignore, bc mypy wants concrete class
-            item_type=AbstractBasePlotCurve,  # type: ignore
-            pen=self._get_slot_item_pen(),
-            symbolPen=self._get_slot_item_pen(),
-            symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
-            symbol=self._get_slot_item_symbol_string(),
-        )
+            data = cast(CurveData, PlottingItemDataFactory.transform(CurveData, data))  # type: ignore
+        self.plotItem.plot_data_on_single_data_item(data=data,
+                                                    # ignore, bc mypy wants concrete class
+                                                    item_type=AbstractBasePlotCurve,  # type: ignore
+                                                    pen=self._get_slot_item_pen(),
+                                                    symbolPen=self._get_slot_item_pen(),
+                                                    symbolBrush=pg.mkBrush(self._get_slot_item_brush_color()),
+                                                    symbol=self._get_slot_item_symbol_string())
 
     @Slot(BarCollectionData)
     def replaceDataAsBarGraph(self, data: BarCollectionData):
         """
         This slot exposes the possibility to draw data on a
-        single bar graph in the plot. If this bar_graph does not yet exist,
-        it will be created automatically. The data will be collected by
-        the bar graph and drawn.
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Collection of bar graphs.
         """
-        self.plotItem.plot_data_on_single_data_item(
-            data=data,
-            # ignore, bc mypy wants concrete class
-            item_type=AbstractBaseBarGraphItem,  # type: ignore
-            pen=self._get_slot_item_pen(),
-            brush=pg.mkBrush(self._get_slot_item_brush_color()),
-        )
+        self.plotItem.plot_data_on_single_data_item(data=data,
+                                                    # ignore, bc mypy wants concrete class
+                                                    item_type=AbstractBaseBarGraphItem,  # type: ignore
+                                                    pen=self._get_slot_item_pen(),
+                                                    brush=pg.mkBrush(self._get_slot_item_brush_color()))
 
     @Slot(InjectionBarCollectionData)
-    def replaceDataAsInjectionBars(self,
-                                   data: InjectionBarCollectionData):
+    def replaceDataAsInjectionBars(self, data: InjectionBarCollectionData):
         """
-        This slot exposes the possibility to draw data on a single injection
-        bar graph in the plot. If this graph does not yet exist, it will be
-        created automatically. The data will be collected by the graph and
-        drawn.
+        This slot exposes the possibility to draw data on a
+        single curve in the plot by using conventional PyQt signal-slot connection,
+        instead of using an :class:`UpdateSource`. If this plot item does not yet exist,
+        it will be created automatically. Further calls will replace the existing data with
+        the new one.
+
+        Args:
+            data: Collection of injection bars.
         """
-        self.plotItem.plot_data_on_single_data_item(
-            data=data,
-            # ignore, bc mypy wants concrete class
-            item_type=AbstractBaseInjectionBarGraphItem,  # type: ignore
-            pen=self._get_slot_item_pen(),
-        )
+        self.plotItem.plot_data_on_single_data_item(data=data,
+                                                    # ignore, bc mypy wants concrete class
+                                                    item_type=AbstractBaseInjectionBarGraphItem,  # type: ignore
+                                                    pen=self._get_slot_item_pen())
 
 
 class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
@@ -1568,38 +1554,33 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
     Q_ENUM(LegendXAlignmentOptions)
     Q_ENUM(LegendYAlignmentOptions)
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            axis_items: Optional[Dict[str, pg.AxisItem]] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 axis_items: Optional[Dict[str, pg.AxisItem]] = None,
+                 **plotitem_kwargs):
         """
-        The EditablePlotWidget is equivalent to an ExPlotWidget which's
-        configuration contains the editable plot style. Properties that do
-        not have any effect on the ExPlotWidget in this plotting style, are
-        explicitly hidden in Qt Designer.
+        Editable plot is a static, non-live plot that allows modifying data in an
+        interactive way, by dragging individual points or sets of points and
+        applying transformations to them via :class:`EditableToolbar`.
 
-         Args:
-            parent: parent item for this widget, will only be passed to base class
-            background: background for the widget, will only be passed to base class
+        Args:
+            parent: Owning object.
+            background: Background color configuration for the widget. This can be any single argument accepted by
+                        :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
+                        ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.
-            **plotitem_kwargs: Params passed to the plot item
+            **plotitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotItem` constructor.
         """
-        config = ExPlotWidgetConfig(
-            plotting_style=PlotWidgetStyle.EDITABLE,
-        )
+        config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.EDITABLE)
         ExPlotWidgetProperties.__init__(self)
-        ExPlotWidget.__init__(
-            self,
-            parent=parent,
-            background=background,
-            config=config,
-            axis_items=axis_items,
-            **plotitem_kwargs,
-        )
+        ExPlotWidget.__init__(self,
+                              parent=parent,
+                              background=background,
+                              config=config,
+                              axis_items=axis_items,
+                              **plotitem_kwargs)
 
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
@@ -1614,7 +1595,7 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
 
     showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
     """
-    .. warning:: Do not use this in a static plot.
+    .. warning:: Do not use this in an editable plot.
     """
 
     def _get_right_time_span_boundary(self) -> float:
@@ -1632,7 +1613,9 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                                         fget=_get_right_time_span_boundary,
                                         fset=_set_right_time_span_boundary,
                                         designable=False)
-    """Value of the Left / Lower boundary for the Plot's timestamp"""
+    """
+    .. warning:: Do not use this in an editable plot.
+    """
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
@@ -1649,7 +1632,9 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                                        fget=_get_left_time_span_boundary,
                                        fset=_set_left_time_span_boundary,
                                        designable=False)
-    """Toggle for the Left / Lower boundary for the Plot's timestamp"""
+    """
+    .. warning:: Do not use this in an editable plot.
+    """
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         if not designer_check.is_designer():
@@ -1666,3 +1651,6 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                                              fget=_get_left_time_span_boundary_bool,
                                              fset=_set_left_time_span_boundary_bool,
                                              designable=False)
+    """
+    .. warning:: Do not use this in an editable plot.
+    """

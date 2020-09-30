@@ -78,7 +78,7 @@ class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=Abstr
                        buffer_size: int = DEFAULT_BUFFER_SIZE,
                        **plotdataitem_kwargs) -> "AbstractBasePlotCurve":
         """
-        Factory method for creating curve object fitting the given plot item.
+        Factory method for creating curve object matching the given plot item.
 
         This function allows easier creation of proper items by using the right type.
         It only initializes the item but does not yet add it to the plot item.

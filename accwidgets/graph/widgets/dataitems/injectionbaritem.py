@@ -23,71 +23,60 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
                                         pg.ErrorBarItem,
                                         metaclass=AbstractQGraphicsItemMeta):
 
-    def __init__(
-        self,
-        data_model: AbstractBaseDataModel,
-        plot_item: "ExPlotItem",
-        **errorbaritem_kwargs,
-    ):
-        """Base class for different live bar graph plots.
+    def __init__(self,
+                 data_model: AbstractBaseDataModel,
+                 plot_item: "ExPlotItem",
+                 **errorbaritem_kwargs):
+        """
+        Base class for injection bar plots.
 
         Args:
-            data_model: Data model for the curve which holds the
-            plot_item: plot_item the item should fit in style
-            **errorbaritem_kwargs: keyword arguments for the base class
+            data_model: Data model serving the item.
+            plot_item: Parent plot item.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
         """
         errorbaritem_kwargs = LiveInjectionBarGraphItem._prepare_error_bar_item_params(**errorbaritem_kwargs)
         pg.ErrorBarItem.__init__(self, **errorbaritem_kwargs)
-        DataModelBasedItem.__init__(
-            self,
-            data_model=data_model,
-            parent_plot_item=plot_item,
-        )
+        DataModelBasedItem.__init__(self,
+                                    data_model=data_model,
+                                    parent_plot_item=plot_item)
         # TextItems for the labels of the injection-bars
         self._text_labels: List[pg.TextItem] = []
 
     @classmethod
-    def from_plot_item(
-            cls,
-            plot_item: "ExPlotItem",
-            data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **errorbaritem_kwargs,
-    ) -> "AbstractBaseInjectionBarGraphItem":
-        """Factory method for creating curve object fitting to the given plot item.
+    def from_plot_item(cls,
+                       plot_item: "ExPlotItem",
+                       data_source: UpdateSource,
+                       buffer_size: int = DEFAULT_BUFFER_SIZE,
+                       **errorbaritem_kwargs) -> "AbstractBaseInjectionBarGraphItem":
+        """
+        Factory method for creating injection bar objects matching the given plot item.
 
-        This function allows easier creation of the right object instead of creating
-        the right object that fits to the plotting style of the plot item by hand. This
-        function only initializes the item but does not yet add it to the plot item.
+        This function allows easier creation of proper items by using the right type.
+        It only initializes the item but does not yet add it to the plot item.
 
         Args:
-            plot_item: plot item the item should fit to
-            data_source: source the item receives data from
-            buffer_size: count of values the item's data model's buffer should hold at max
-            **errorbaritem_kwargs: keyword arguments for the items base class
+            plot_item: Plot item the item should fit to.
+            data_source: Source the item receives data from.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
 
         Returns:
-            the created item
+            A new injection bar which receives data from the given data source.
         """
         subclass = cls.get_subclass_fitting_plotting_style(plot_item=plot_item)
-        data_model = subclass.data_model_type(
-            data_source=data_source,
-            buffer_size=buffer_size,
-        )
-        return subclass(
-            plot_item=plot_item,
-            data_model=data_model,
-            **errorbaritem_kwargs,
-        )
+        data_model = subclass.data_model_type(data_source=data_source,
+                                              buffer_size=buffer_size)
+        return subclass(plot_item=plot_item,
+                        data_model=data_model,
+                        **errorbaritem_kwargs)
 
-    def _set_data(
-            self,
-            curve_x: np.ndarray,
-            curve_y: np.ndarray,
-            height: np.ndarray,
-            width: np.ndarray,
-            labels: np.ndarray,
-    ):
+    def _set_data(self,
+                  curve_x: np.ndarray,
+                  curve_y: np.ndarray,
+                  height: np.ndarray,
+                  width: np.ndarray,
+                  labels: np.ndarray):
         """
         Set data to the injection bar graph.
 
@@ -105,13 +94,11 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
         if curve_x.size == curve_y.size and curve_x.size > 0:
             # beam = self.opts.get("beam") or height.max() * 0.1
             beam = self.opts.get("beam", 0.0) or 0.0
-            self.setData(
-                x=curve_x,
-                y=curve_y,
-                height=height,
-                width=width,
-                beam=beam,
-            )
+            self.setData(x=curve_x,
+                         y=curve_y,
+                         height=height,
+                         width=width,
+                         beam=beam)
             self._draw_injector_bar_labels(label_texts, label_y_positions)
 
     def _draw_injector_bar_labels(self, texts: np.ndarray, y_values: np.ndarray):
@@ -129,10 +116,8 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
                 color = pg.mkPen(self.opts.get("pen", "w") or "w").color()
             except ValueError:
                 color = "w"
-            label = pg.TextItem(
-                text=text,
-                color=color,
-            )
+            label = pg.TextItem(text=text,
+                                color=color)
             label.setPos(x, y)
             self._text_labels.append(label)
             label.setParentItem(self)
@@ -149,41 +134,55 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
     data_model_type = LiveInjectionBarDataModel
 
     @deprecated_param_alias(data_source="data_model")
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: Union[LiveInjectionBarDataModel, UpdateSource],
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **errorbaritem_kwargs,
-    ):
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: Union[LiveInjectionBarDataModel, UpdateSource],
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 **errorbaritem_kwargs):
         """
-        Live Injection Bar Graph Item, abstract base class for all live
-        data injection bar graphs like the scrolling injection bar graph.
-        Either Data Source of data model have to be set.
+        Base class for live injection bar plots.
 
         Args:
-            plot_item: Plot Item the curve is created for
-            data_model: Either an Update Source or a already initialized data
-                        model
-            buffer_size: Buffer size, which will be passed to the data model,
-                         will only be used if the data_model is only an Update
-                         Source.
-            **errorbaritem_kwargs: Further Keyword Arguments for the ErrorBarItem
+            plot_item: Parent plot item.
+            data_model: Either an update source or an already intialized data model.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
         """
         if isinstance(data_model, UpdateSource):
-            data_model = LiveInjectionBarDataModel(
-                data_source=data_model,
-                buffer_size=buffer_size,
-            )
+            data_model = LiveInjectionBarDataModel(data_source=data_model,
+                                                   buffer_size=buffer_size)
         if data_model is not None:
-            super().__init__(
-                plot_item=plot_item,
-                data_model=data_model,
-                **errorbaritem_kwargs,
-            )
+            super().__init__(plot_item=plot_item,
+                             data_model=data_model,
+                             **errorbaritem_kwargs)
         else:
             raise TypeError("Need either data source or data model to create "
                             f"a {type(self).__name__} instance")
+
+    @classmethod
+    def clone(cls: Type["LiveInjectionBarGraphItem"],
+              object_to_create_from: "LiveInjectionBarGraphItem",
+              **errorbaritem_kwargs) -> "LiveInjectionBarGraphItem":
+        """
+        Clone graph item from an existing one. The data model is shared, but the new graph item
+        is relying on the style of the old graph's parent plot item. If this style has changed
+        since the creation of the old graph item, the new graph item will also have the new style.
+
+        Args:
+            object_to_create_from: Source object.
+            **errorbaritem_kwargs: Keyword arguments for the :class:`~pyqtgraph.ErrorBarItem` constructor.
+
+        Returns:
+            New live injection bar with the data model from the old one.
+        """
+        item_class = LiveInjectionBarGraphItem.get_subclass_fitting_plotting_style(
+            plot_item=object_to_create_from._parent_plot_item)
+        # Take opts from old item except ones passed explicitly
+        kwargs = copy(object_to_create_from.opts)
+        kwargs.update(errorbaritem_kwargs)
+        return cast(Type[LiveInjectionBarGraphItem], item_class)(plot_item=object_to_create_from._parent_plot_item,
+                                                                 data_model=object_to_create_from._data_model,
+                                                                 **kwargs)
 
     @staticmethod
     def _prepare_error_bar_item_params(**errorbaritem_kwargs):
@@ -202,61 +201,22 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
             errorbaritem_kwargs["width"] = 0.0
         return errorbaritem_kwargs
 
-    @classmethod
-    def clone(
-            cls: Type["LiveInjectionBarGraphItem"],
-            object_to_create_from: "LiveInjectionBarGraphItem",
-            **errorbaritem_kwargs,
-    ) -> "LiveInjectionBarGraphItem":
-        """
-        Recreate graph item from existing one. The datamodel is shared, but the new graph item
-        is fitted to the old graph item's parent plot item's style. If this one has changed
-        since the creation of the old graph item, the new graph item will have the new style.
-
-        Args:
-            object_to_create_from: object which e.g. datamodel should be taken from
-            **errorbaritem_kwargs: Keyword arguments for the ErrorBarItem base class
-
-        Returns:
-            New live data injection bar with the datamodel from the old passed one
-        """
-        item_class = LiveInjectionBarGraphItem.get_subclass_fitting_plotting_style(
-            plot_item=object_to_create_from._parent_plot_item)
-        # Take opts from old item except ones passed explicitly
-        kwargs = copy(object_to_create_from.opts)
-        kwargs.update(errorbaritem_kwargs)
-        return cast(Type[LiveInjectionBarGraphItem], item_class)(
-            plot_item=object_to_create_from._parent_plot_item,
-            data_model=object_to_create_from._data_model,
-            **kwargs,
-        )
-
 
 class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
-
-    """Scrolling Injection Bar Graph"""
+    """Injection bar to display live data in a :class:`ScrollingPlotWidget`."""
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
     def update_item(self):
-        """Update item based on the plot items time span information"""
-        self._set_data(*self._data_model.subset_for_xrange(
-            start=self._parent_plot_item.time_span.start,
-            end=self._parent_plot_item.time_span.end,
-        ))
+        self._set_data(*self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
+                                                           end=self._parent_plot_item.time_span.end))
 
 
 class StaticInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
-
-    """
-    Static Injection Bar Graph. Injection Bars are based on ErrorBars
-    with the addition of labels. New arriving data will replace the old
-    one entirely.
-    """
+    """Injection bar to display static data in a :class:`StaticPlotWidget`."""
 
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticInjectionBarDataModel
 
     def update_item(self):
-        """Update item based on the plot items time span information"""
         self._set_data(*self._data_model.full_data_buffer)

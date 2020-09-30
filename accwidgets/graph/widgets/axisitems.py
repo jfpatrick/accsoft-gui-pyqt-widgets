@@ -1,6 +1,8 @@
 """
-Different AxisItem implementations for Timestamp based plotting for better readability
+Axis items are graphical elements that represent x- and y-axes.
+This module implements subclasses that are designed for timestamp-based plotting and better readability.
 """
+
 from datetime import datetime
 from typing import List, Iterable
 from pyqtgraph import AxisItem
@@ -10,44 +12,46 @@ from qtpy.QtWidgets import QGraphicsSceneWheelEvent
 
 
 class ExAxisItem(AxisItem):
-
-    """AxisItem with some required extra functions"""
+    """Axis item that notifies about wheel events through a dedicated signal."""
 
     sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
-    """Signal that the mouse event was executed on the axis (and not the ViewBox)"""
+    """Mouse event was executed on this axis (and not the :class:`~pyqtgraph.ViewBox`)."""
 
     def mouseDragEvent(self, event: MouseDragEvent):
-        """Make the mouse drag event on the axis distinguishable from the ViewBox one
+        """
+        Event handler for the mouse drag action.
 
         Args:
-            event: Mouse drag event executed on the axis
+            ev: Mouse drag event executed on the axis.
         """
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().mouseDragEvent(event)
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent):
-        """Make the mouse click event on the axis distinguishable from the ViewBox one
+        """
+        Event handler for the mouse wheel rotation.
 
         Args:
-            ev: Wheel event executed on the axis
+            ev: Wheel event executed on the axis.
         """
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().wheelEvent(ev)
 
 
 class TimeAxisItem(AxisItem):
-    """Axis Item that shows timestamps as strings in format HH:MM:SS"""
+    """Axis item that shows timestamps as strings in format ``HH:MM:SS``."""
 
     def tickStrings(self, values: List[float], scale: float, spacing: float) -> List[str]:
-        """Translate timestamps to human readable times formatted HH:MM:SS
+        """
+        Translate timestamps to human readable format ``HH:MM:SS``.
 
         Args:
-            values: Positions from the axis that are supposed to be labeled
-            scale: See AxisItem Documentation
-            spacing: See AxisItem Documentation
+            values: Positions on the axis that are supposed to be labeled.
+            scale: See :class:`~pyqtgraph.AxisItem` documentation.
+            spacing: See :class:`~pyqtgraph.AxisItem` documentation.
 
         Returns:
-            A list of human readable times
+            A list of formatted strings for tick labels.
         """
         try:
             return [
@@ -64,31 +68,34 @@ class TimeAxisItem(AxisItem):
 class RelativeTimeAxisItem(AxisItem):
 
     def __init__(self, *args, **kwargs):
-        """Relative-Time Axis-Item
+        """
+        Relative time axis item
 
-        Axis Item that displays timestamps as difference in seconds to an given
-        start time. Example: start-time 01:00:00 and tick is 01:00:10 -> "+10s" will
-        be displayed at the position of the tick.
+        Axis item that displays timestamps as offset from the given start time (:attr:`~RelativeTimeAxisItem.start`)
+        in seconds. E.g.:
+
+        * start-time ``01:00:00``
+        * tick is ``01:00:10``
+        * label becomes ``+10s``
 
         Args:
-            *args: Arguments for base class AxisItem
-            **kwargs: Arguments for base class AxisItem
+            *args: Arguments for base class :class:`~pyqtgraph.AxisItem`.
+            **kwargs: Arguments for base class :class:`~pyqtgraph.AxisItem`.
         """
         super().__init__(*args, **kwargs)
         self._start = 0.0
 
     def tickStrings(self, values: Iterable[float], scale: float, spacing: float) -> List[str]:
-        """Translate timestamp differences from a point in time to the
-        start-time to readable strings in seconds.
+        """
+        Translate timestamps to offsets from the given start time (:attr:`~RelativeTimeAxisItem.start`) in seconds.
 
         Args:
-            values: Positions on the axis that are supposed to be labeled
-            scale: See AxisItem Documentation
-            spacing: See AxisItem Documentation
+            values: Positions on the axis that are supposed to be labeled.
+            scale: See :class:`~pyqtgraph.AxisItem` documentation.
+            spacing: See :class:`~pyqtgraph.AxisItem` documentation.
 
         Returns:
-            A list of formatted strings that represents the distance in time
-            from the time span start
+            A list of formatted strings for tick labels.
         """
         return [
             ("+" if (value - self.start) > 0 else "")
@@ -98,18 +105,11 @@ class RelativeTimeAxisItem(AxisItem):
 
     @property
     def start(self) -> float:
-        """Start time on which the relative timestamps should be calculated from."""
+        """Time point to calculate offsets for relative timestamps."""
         return self._start
 
     @start.setter
     def start(self, timestamp: float):
-        """Sets the start time on which the relative timestamps should be
-        calculated from. This has to be done either by hand or as soon as
-        the first timestamp get's available.
-
-        Args:
-            timestamp: Timestamp that represents the start time
-        """
         self._start = timestamp
 
     @staticmethod

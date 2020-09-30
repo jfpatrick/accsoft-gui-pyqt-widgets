@@ -1,3 +1,7 @@
+"""
+This module exposes toolbar that accommodates transformation functions and common controls
+for the editable charts.
+"""
 
 import warnings
 import numpy as np
@@ -14,25 +18,27 @@ from accwidgets.graph import CurveData, ExPlotWidget
 
 
 TransformationFunction = Callable[[CurveData], CurveData]
-"""Type definition for Transformation functions"""
+"""
+Transformation function is used by editing charts to convert an input curve points into
+another set of output points. The size of the input and output curves is not necessarily the same.
+"""
 
 
 class StandardTransformations:
-
-    """Some standard transformations used by the EditingToolBar"""
+    """Collection of standard transformation functions."""
 
     @staticmethod
     def aligned(curve: CurveData, value: Optional[int] = None) -> CurveData:
         """
-        Align the passed curve to the given value. If the value is None,
-        a Dialog is presented which allows choosing the value.
+        Align the passed curve to the given value. If the ``value`` is :obj:`None`,
+        a dialog is shown to choose the value.
 
         Args:
-            curve: data which should be aligned
-            value: value each y-value of the curve should be set to
+            curve: Data which should be aligned.
+            value: Value that each y-value of the curve should be set to.
 
         Returns:
-            Aligned curve with all points' y-value being the passed value
+            Aligned curve with y-value of each point being set to the passed ``value``.
         """
         curve = deepcopy(curve)
         if value is None:
@@ -41,8 +47,8 @@ class StandardTransformations:
             dialog.setWindowTitle("Align selected values")
             dialog.setLayout(QGridLayout())
             button_bar = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            explaination = "Set selected points y value to:"
-            dialog.layout().addWidget(QLabel(explaination), 1, 1, 1, 2)
+            explanation = "Set selected points y value to:"
+            dialog.layout().addWidget(QLabel(explanation), 1, 1, 1, 2)
             dialog.layout().addWidget(QLabel("New Value: "), 2, 1)
             dialog.layout().addWidget(spin_box, 2, 2)
             dialog.layout().addWidget(button_bar, 3, 1, 1, 2)
@@ -65,10 +71,10 @@ class StandardTransformations:
         Fit a line into the passed curve.
 
         Args:
-            curve: original points
+            curve: Original points.
 
         Returns:
-            curve, whose y-values are positioned on the fitted line
+            Curve, whose y-values are positioned on the fitted line.
         """
         curve = deepcopy(curve)
 
@@ -85,11 +91,10 @@ class StandardTransformations:
         Fit a polynomial of the given degree into the curve's points.
 
         Args:
-            curve: input curve, whose points the polynomial should be fitted
-                   into
+            curve: Input curve that is used to fit the polynomial into.
 
         Return:
-            curve, whose points are positioned on the fitted polynomial
+            Curve whose points are positioned on the fitted polynomial.
         """
         curve = deepcopy(curve)
         if degree is None:
@@ -103,9 +108,9 @@ class StandardTransformations:
             dialog.setWindowTitle("Fit Polynomial to Selection")
             dialog.setLayout(QGridLayout())
             button_bar = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            explaination = "Fit a Polynomial of the given degree to the " \
-                           "given selection."
-            dialog.layout().addWidget(QLabel(explaination), 1, 1, 1, 2)
+            explanation = "Fit a Polynomial of the given degree to the " \
+                          "given selection."
+            dialog.layout().addWidget(QLabel(explanation), 1, 1, 1, 2)
             dialog.layout().addWidget(QLabel("Degree: "), 2, 1)
             dialog.layout().addWidget(spinbox, 2, 2)
             dialog.layout().addWidget(button_bar, 3, 1, 1, 2)
@@ -128,16 +133,17 @@ class StandardTransformations:
                              start_index: Optional[int] = None,
                              n: Optional[int] = None) -> CurveData:
         """
-        Reduce curve to every nth point. The results equal calling
-        a[start_index::n] on a numpy array.
+        Reduce curve to every n-th point.
+
+        The results is equal to calling ``a[start_index::n]`` on a :class:`numpy.ndarray`.
 
         Args:
-            curve: input curve which should be reduced
-            start_index: index from which the slicing should start
-            n: every n'th point will be returned starting from the start_index
+            curve: Input curve which should be reduced.
+            start_index: Index from which the slicing should start.
+            n: Every n-th point will be returned starting from the ``start_index``.
 
         Returns:
-            Reduced Curve
+            Reduced curve.
         """
         curve = deepcopy(curve)
         if start_index is None and n is None:
@@ -152,9 +158,9 @@ class StandardTransformations:
             dialog.setLayout(QGridLayout())
             dialog.setWindowTitle("Reduce to every n-th point")
             button_bar = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            explaination = "Reduce the selection to every nth point \n" \
-                           "starting from the given starting index."
-            dialog.layout().addWidget(QLabel(explaination), 1, 1, 1, 2)
+            explanation = "Reduce the selection to every nth point \n" \
+                          "starting from the given starting index."
+            dialog.layout().addWidget(QLabel(explanation), 1, 1, 1, 2)
             dialog.layout().addWidget(QLabel("Start Index"), 2, 1)
             dialog.layout().addWidget(start_spinbox, 2, 2)
             dialog.layout().addWidget(QLabel("N"), 3, 1)
@@ -177,28 +183,29 @@ class StandardTransformations:
 
     @staticmethod
     def cleared(curve: CurveData) -> CurveData:
-        """Delete the selected points.
+        """
+        Delete the selected points.
 
         Args:
-            curve: curve which should be deleted
+            curve: Curve which should be deleted
 
         Returns:
-            empty curve
+            Empty curve.
         """
+        _ = curve
         return CurveData([], [], check_validity=False)
 
     @staticmethod
-    def moved(curve: CurveData,
-              dy: Optional[float] = None) -> CurveData:
+    def moved(curve: CurveData, dy: Optional[float] = None) -> CurveData:
         """
         Move the curve in y-direction by the given delta.
 
         Args:
-            curve: curve whose y-values should be moved by dy
-            dy: offset for the y values
+            curve: Curve whose y-values should be moved by ``dy``.
+            dy: Offset for the y-values.
 
         Returns:
-            Moved curve
+            Moved curve.
         """
         curve = deepcopy(curve)
         if dy is None:
@@ -209,8 +216,8 @@ class StandardTransformations:
             dialog.setWindowTitle("Move Points in Y direction")
             dialog.setLayout(QGridLayout())
             button_bar = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            explaination = "Move the curve in y-direction by the given delta."
-            dialog.layout().addWidget(QLabel(explaination), 1, 1, 1, 2)
+            explanation = "Move the curve in y-direction by the given delta."
+            dialog.layout().addWidget(QLabel(explanation), 1, 1, 1, 2)
             dialog.layout().addWidget(QLabel("Delta Y"), 2, 1)
             dialog.layout().addWidget(dy_spinbox, 2, 2)
             dialog.layout().addWidget(button_bar, 3, 1, 1, 2)
@@ -231,15 +238,16 @@ class StandardTransformations:
     def smoothed(curve: CurveData,
                  window_length: Optional[int] = None,
                  poly_order: Optional[int] = None) -> CurveData:
-        """Smooth the curve by using the Savitzky-Golay filter.
+        """
+        Smoothen the curve by using the *Savitzky-Golay filter*.
 
         Args:
-            curve: curve which should be smoothed using the filter
-            window_length: window length for the filter function
-            poly_order: polynomial order for the filter function
+            curve: Curve which should be smoothened using the filter.
+            window_length: Window length for the filter function.
+            poly_order: Polynomial order for the filter function.
 
         Returns:
-            Smoothed curve
+            Smoothened curve.
         """
         curve = deepcopy(curve)
         if poly_order is None or window_length is None:
@@ -247,36 +255,36 @@ class StandardTransformations:
             dialog.setWindowTitle("Smooth selected curve")
             dialog.setLayout(QGridLayout())
             buttonBar = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            polyorder_spinbox = pg.SpinBox()
-            windowlength_spinbox = pg.SpinBox()
+            poly_order_spinbox = pg.SpinBox()
+            window_length_spinbox = pg.SpinBox()
             window_length_upper_bound = len(curve.x) if len(curve.x) % 2 == 1 else len(curve.x) - 1
 
-            windowlength_spinbox.setMaximum(window_length_upper_bound)
-            windowlength_spinbox.setValue(1)
-            windowlength_spinbox.setOpts(int=True, step=2)
-            windowlength_spinbox.setMinimum(1)
+            window_length_spinbox.setMaximum(window_length_upper_bound)
+            window_length_spinbox.setValue(1)
+            window_length_spinbox.setOpts(int=True, step=2)
+            window_length_spinbox.setMinimum(1)
 
-            polyorder_spinbox.setValue(0)
-            polyorder_spinbox.setOpts(int=True, step=1)
-            polyorder_spinbox.setMaximum(window_length_upper_bound - 1)
-            polyorder_spinbox.setMinimum(0)
+            poly_order_spinbox.setValue(0)
+            poly_order_spinbox.setOpts(int=True, step=1)
+            poly_order_spinbox.setMaximum(window_length_upper_bound - 1)
+            poly_order_spinbox.setMinimum(0)
 
-            explaination = "Smooth the curve using the Savitzky-Golay-Filter.\n" \
-                           "Window Length has to be an odd integer.\n" \
-                           "Polynomial Order must be less than Window Length."
+            explanation = "Smooth the curve using the Savitzky-Golay-Filter.\n" \
+                          "Window Length has to be an odd integer.\n" \
+                          "Polynomial Order must be less than Window Length."
 
-            dialog.layout().addWidget(QLabel(explaination), 1, 1, 1, 2)
+            dialog.layout().addWidget(QLabel(explanation), 1, 1, 1, 2)
             dialog.layout().addWidget(QLabel("Window Length"), 2, 1)
             dialog.layout().addWidget(QLabel("Polynomial Order"), 3, 1)
-            dialog.layout().addWidget(windowlength_spinbox, 2, 2)
-            dialog.layout().addWidget(polyorder_spinbox, 3, 2)
+            dialog.layout().addWidget(window_length_spinbox, 2, 2)
+            dialog.layout().addWidget(poly_order_spinbox, 3, 2)
             dialog.layout().addWidget(buttonBar, 4, 1, 1, 2)
 
             def accept():
                 nonlocal poly_order, window_length
-                poly_order = polyorder_spinbox.value()
+                poly_order = poly_order_spinbox.value()
                 # window length has to be an odd integer
-                spv = windowlength_spinbox.value()
+                spv = window_length_spinbox.value()
                 window_length = spv if spv % 2 == 1 else spv + 1
                 dialog.close()
 
@@ -293,10 +301,7 @@ class StandardTransformations:
 class EditingToolBar(QToolBar):
 
     sig_enable_selection_mode = Signal(bool)
-    """
-    Signal that will be emitted to enable or disable the selection mode
-    in an editable plot widget.
-    """
+    """Emits the command to toggle the selection mode in an :class:`EditablePlotWidget`."""
 
     standard_functions: List[Tuple[Tuple[str, str], Callable[[CurveData], CurveData], int]] = [
         (("mdi.ray-start-end", "Align"), StandardTransformations.aligned, 1),
@@ -307,20 +312,20 @@ class EditingToolBar(QToolBar):
         (("mdi.box-cutter", "Reduce Points"), StandardTransformations.reduced_to_nth_point, 1),
         (("mdi.trash-can", "Delete"), StandardTransformations.cleared, 1),
     ]
-    """Standard Transformation functions added to the editing toolbar"""
+    """Mapping of the default transformation functions added to the editing toolbar and their button appearance."""
 
     def __init__(self,
                  title: Optional[str] = None,
                  parent: Optional[QWidget] = None):
         """
-        Bar containing buttons for interacting with an editable plot widget.
-        To connect a widget, use the connect function, which will set up all
-        necessary connections between the bar and the plot for you.
+        Toolbar for interaction with :class:`EditablePlotWidget`.
+        To connect a widget, use the :meth:`connect` method, which will set up all
+        necessary signals-slot attachments with the plot widget.
 
         Args:
-            title: The given window title identifies the toolbar and is shown
-                   in the context menu provided by QMainWindow.
-            parent: parent widget of the toolbar
+            title: The given window ``title`` identifies the toolbar and is shown
+                   in the context menu provided by :class:`QMainWindow`.
+            parent: Parent widget of the toolbar.
         """
         super().__init__(title, parent)
         # Standard button definition
@@ -344,13 +349,12 @@ class EditingToolBar(QToolBar):
         Connect an editable plot widget to the bar. This includes the following
         functionality:
 
-        - enable / disable selection mode for the plot
-        - send state of the plot to the connected source
-        - apply transformations on the selection in the currently edited plot
+        * Toggling selection mode of the plot widget
+        * Committing changes made on the plot to the connected :class:`UpdateSource`
+        * Apply transformations on the selection in the currently edited plot
 
         Args:
-            plot: The plot we want to control through the bar or a list of
-                  plots
+            plot: The plot widget or widgets that should be controlled via the bar actions.
         """
         if not isinstance(plot, list):
             plot = [plot]
@@ -359,16 +363,12 @@ class EditingToolBar(QToolBar):
 
     def disconnect(self, plot: Union[ExPlotWidget, List[ExPlotWidget]]):
         """
-        Disconnect an editable plot widget to the bar. This includes the
-        following functionality:
+        Disconnect an editable plot widget to the bar.
 
-        - enable / disable selection mode for the plot
-        - send state of the plot to the connected source
-        - apply transformations on the selection in the currently edited plot
+        This method does the opposite of :meth:`connect`.
 
         Args:
-            plot: The plot we do not want anymore to be controlled through the
-                  bar or a list of plots
+            plot: The plot widget or widgets that should be no longer controlled via the bar actions.
         """
         if not isinstance(plot, list):
             plot = [plot]
@@ -380,19 +380,22 @@ class EditingToolBar(QToolBar):
                            transformation: TransformationFunction,
                            min_points_needed: int = 1):
         """
-        Add action and a transformation, which should be called on the action
-        being triggered to the toolbar. The connection between action and
-        transformation will be set up, so the passed transformation is always
-        called with a **copy** of the selected data of the currently selected
-        plot (if more than one plot is connected).
+        Add a transformation function that should be triggered by the related action when
+        triggered from the toolbar.
+
+        This method takes care of wiring up connections between the action and the
+        transformation function. The transformation function will always receive a **copy**
+        of the selected data. The input to the transformation function is selected
+        part of the data (at the time of execution) from currently selected plot widget
+        (if more than one is connected to the toolbar).
 
         Args:
-            action: Action to add to the toolbar
-            transformation: Transformation which should be called when the
-                            action is triggered
+            action: Action to add to the toolbar.
+            transformation: Transformation function which should be called when the
+                            action is triggered.
             min_points_needed: The minimum amount of points needed for the
                                transformation. If less are selected, the action
-                               will be displayed as disabled
+                               will be disabled.
         """
         self._transformation_actions.append(action)
         self._transformation_actions_min_selection[action] = min_points_needed
@@ -402,27 +405,27 @@ class EditingToolBar(QToolBar):
 
     def remove_transformation(self, action: QAction):
         """
-        Remove an action and the attached transformation from the toolbar.
+        Remove an action and the attached transformation from the toolbar that was
+        previously added via :meth:`add_transformation`.
 
         Args:
-            action: action to remove from the toolbar
+            action: Action to remove from the toolbar.
         """
         self._transformation_actions.remove(action)
         self.removeAction(action)
 
     def transform(self, transformation: TransformationFunction):
         """
-        Transform the current selection with the passed transformation
-        function. The result of the transformation will be applied
-        to the current selection in the currently selected plot.
+        Transform the current selection with the given ``transformation``
+        function. The result of the transformation will overwrite
+        the current selection in the currently selected plot.
 
-        The transformation function will always be given a **copy** of the
-        selected data. The altered data has to be returned from the
-        transformation.
+        The transformation function will always receive a **copy**
+        of the selected data.
 
         Args:
             transformation: Function which should be applied to the current
-                            selection
+                            selection.
         """
         curve = self.current_plots_selection
         if curve:
@@ -436,40 +439,40 @@ class EditingToolBar(QToolBar):
 
     def enable_selection_mode(self, enable: bool):
         """
-        Enables the selection mode on all the connected plot widgets. This
-        function is the equivalent of pressing the selection mode toggle
+        Toggles the selection mode on all the connected plot widgets. This
+        method is the equivalent to pressing the selection mode toggle
         button in the toolbar GUI.
 
         Args:
-            enable: If true, the selection mode will be enabled
+            enable: If :obj:`True`, the selection mode will be enabled.
         """
         self.edit_action.setChecked(enable)
         self.sig_enable_selection_mode.emit(enable)
 
     def send(self, *_):
         """
-        Send the current states for all the connected plot widgets back to
-        the source they are connected to.
+        Commit the current changes for all the connected plot widgets back to
+        the :class:`UpdateSource` that they are connected to.
         """
         if self.selected_plot:
             self.selected_plot.send_all_editables_state()
         self._update_buttons_enable_state()
 
     def undo(self, *_: Any):
-        """Undo the last change for the currently selected plot"""
+        """Undo the last change for the currently selected plot."""
         if self.selected_plot and self.selected_plot.plotItem.current_editable:
             self.selected_plot.plotItem.current_editable.undo()
 
     def redo(self, *_: Any):
-        """Undo the last change for the currently selected plot"""
+        """Redo the next change for the currently selected plot."""
         if self.selected_plot and self.selected_plot.plotItem.current_editable:
             self.selected_plot.plotItem.current_editable.redo()
 
     @property
     def selected_plot(self) -> Optional[ExPlotWidget]:
         """
-        The currently selected plot. If only one plot is connected, it will
-        always be the selected one. If no plot is connected, None.
+        Currently selected plot. If only one plot is connected, it will always be returned.
+        When no plot is connected, :obj:`None` is returned.
         """
         if len(self._connected_plots) == 1:
             return self._connected_plots[0]
@@ -478,8 +481,8 @@ class EditingToolBar(QToolBar):
     @property
     def current_plots_selection(self) -> Optional[CurveData]:
         """
-        Data Selection of the currently selected plot. If no data is selected
-        or the selected plot is None, None will be returned.
+        Data selection of the currently selected plot. If no data is selected
+        or the :attr:`selected_plot` is :obj:`None`, :obj:`None` is returned.
         """
         if self.selected_plot:
             data = self.selected_plot.current_selection_data
@@ -500,16 +503,16 @@ class EditingToolBar(QToolBar):
     @Slot(bool)
     def handle_plot_selection_changed(self, selected: bool):
         """
-        Handle the selected plot changed. If a plot is selected, all other
-        plots are deselected. If the current plot is unselected, it will
-        be selected again to make sure that one plot of the connected ones
-        is always selected.
+        Handle the plot selection change. If one plot gets selected, all other
+        plots are deselected. If the currently selected plot is unselected,
+        it will be selected again to make sure that one plot of the managed
+        plots is always selected.
 
-        The plot the selection was executed on is the sender of the signal,
-        which is responsible for this slot being called.
+        The sender of the signal is expected to be the plot, where the selection
+        was toggled.
 
         Args:
-            selected: is the sender currently selected
+            selected: Marks whether the sender plot is currently selected.
         """
         plot: ExPlotWidget = self.sender()
         if selected:
