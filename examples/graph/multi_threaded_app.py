@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         self.resize(800, 600)
         self.setCentralWidget(self.plot)
 
-    def closeEvent(self, a0) -> None:
+    def closeEvent(self, a0):
         """
         When we close the window, we want to stop the infinite loop
         running in our separate thread to cleanly quit the app.

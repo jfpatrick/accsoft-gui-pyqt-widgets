@@ -2,24 +2,15 @@
 Tests for widget properties used by the designer plugin.
 """
 
-from typing import Union
 import pytest
 import json
 import numpy as np
+from typing import Union
 from qtpy import QtGui, QtCore
-from accwidgets.graph import (
-    XAxisSideOptions,
-    DefaultYAxisSideOptions,
-    GridOrientationOptions,
-    StaticPlotWidget,
-    ScrollingPlotWidget,
-    SymbolOptions,
-    CyclicPlotWidget,
-    PointData,
-    CurveData,
-    BarCollectionData,
-    InjectionBarCollectionData,
-)
+from accwidgets.graph import (StaticPlotWidget, ScrollingPlotWidget, CyclicPlotWidget, PointData, CurveData,
+                              BarCollectionData, InjectionBarCollectionData)
+from accwidgets.graph.widgets.plotwidget import (XAxisSideOptions, DefaultYAxisSideOptions, SymbolOptions,
+                                                 GridOrientationOptions)
 from .mock_utils.widget_test_window import MinimalTestWindow
 
 

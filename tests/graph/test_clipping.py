@@ -1,8 +1,6 @@
-from typing import List
-
 import numpy as np
 import pytest
-
+from typing import List
 from accwidgets.graph import CurveData, PointData
 import accwidgets.graph.datamodel.datamodelclipping as clipping
 

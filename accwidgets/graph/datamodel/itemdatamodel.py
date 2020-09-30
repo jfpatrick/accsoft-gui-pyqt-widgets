@@ -2,42 +2,16 @@
 
 import abc
 import warnings
-from typing import Optional, Tuple, Union, cast
-
 import numpy as np
+from typing import Optional, Tuple, Union, cast
 from qtpy.QtCore import QObject, Signal, Slot
 
 from accwidgets.qt import AbstractQObjectMeta
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.datamodelbuffer import (
-    DEFAULT_BUFFER_SIZE,
-    SortedBarGraphDataBuffer,
-    SortedCurveDataBuffer,
-    BaseSortedDataBuffer,
-    SortedTimestampMarkerDataBuffer,
-    SortedInjectionBarsDataBuffer,
-)
-from accwidgets.graph.datamodel.datastructures import (
-    BarCollectionData,
-    BarData,
-    CurveData,
-    TimestampMarkerCollectionData,
-    TimestampMarkerData,
-    InjectionBarCollectionData,
-    InjectionBarData,
-    PointData,
-    PlottingItemData,
-)
-from accwidgets.graph.common import History
-
-
-class WrongDataType(Warning):
-    """
-    Warning for an invalid Data Structure. PlottingItemData should emit
-    this if they are invalid, which means that they can not be drawn
-    in their fitting graph-type.
-    """
-    pass
+from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, SortedBarGraphDataBuffer, SortedCurveDataBuffer,
+                              BaseSortedDataBuffer, SortedTimestampMarkerDataBuffer, SortedInjectionBarsDataBuffer,
+                              BarCollectionData, BarData, CurveData, TimestampMarkerCollectionData, TimestampMarkerData,
+                              InjectionBarCollectionData, InjectionBarData, PointData, PlottingItemData)
+from .history import History
 
 
 class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
@@ -46,7 +20,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     """
     General purpose signal informing that any changed happened to the data
     stored by the data model. Emitting this change means that the change did not
-    come from the view (f.e. if it is in editing mode), but from the update
+    come from the view (e.g. if it is in editing mode), but from the update
     update source.
     """
 
@@ -84,7 +58,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         self._data_source = data_source
         self._connect_to_data_source()
 
-    def replace_data_source(self, data_source: UpdateSource) -> None:
+    def replace_data_source(self, data_source: UpdateSource):
         """
         Disconnect the data model from the old data source and connect to a new
         one. If replacing the data source should lead to the deletion of all up
@@ -112,7 +86,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         """
         pass
 
-    def _connect_to_data_source(self) -> None:
+    def _connect_to_data_source(self):
         """
         Build the connection between the data model and the update source by wiring
         all update signals to the fitting handler slots in both ways.
@@ -120,7 +94,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
         self._data_source.sig_new_data.connect(self._handle_data_update_signal)
         self.sig_data_model_edited.connect(self._data_source.handle_data_model_edit)
 
-    def _disconnect_from_data_source(self) -> None:
+    def _disconnect_from_data_source(self):
         """
         Disconnect all wiring between the update source and the data model. After
         calling, none of both will receive any updates from the other anymore.
@@ -140,7 +114,7 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     @Slot(InjectionBarCollectionData)
     @Slot(TimestampMarkerData)
     @Slot(TimestampMarkerCollectionData)
-    def _handle_data_update_signal(self, data: PlottingItemData) -> None:
+    def _handle_data_update_signal(self, data: PlottingItemData):
         """Handle arriving data"""
         pass
 
@@ -273,7 +247,7 @@ class LiveCurveDataModel(AbstractLiveDataModel):
 
     @Slot(PointData)
     @Slot(CurveData)
-    def _handle_data_update_signal(self, data: Union[PointData, CurveData]) -> None:
+    def _handle_data_update_signal(self, data: Union[PointData, CurveData]):
         """Handle data emitted by the data source.
 
         Data that does not have the right type will just be ignored.
@@ -319,7 +293,7 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
 
     @Slot(BarData)
     @Slot(BarCollectionData)
-    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         """Handle data emitted by the data source.
 
         Data that does not have the right type will just be ignored.
@@ -356,7 +330,7 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
 
     @Slot(InjectionBarData)
     @Slot(InjectionBarData)
-    def _handle_data_update_signal(self, data: Union[InjectionBarData, InjectionBarCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[InjectionBarData, InjectionBarCollectionData]):
         """Handle data emitted by the data source.
 
         Data that does not have the right type will just be ignored.
@@ -402,7 +376,7 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
 
     @Slot(TimestampMarkerData)
     @Slot(TimestampMarkerCollectionData)
-    def _handle_data_update_signal(self, data: Union[TimestampMarkerData, TimestampMarkerCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[TimestampMarkerData, TimestampMarkerCollectionData]):
         """Handle data emitted by the data source.
 
         Data that does not have the right type will just be ignored.
@@ -454,7 +428,7 @@ class StaticCurveDataModel(AbstractBaseDataModel):
             cast(AbstractLiveDataModel, self).non_fitting_data_info_printed = True
         return False
 
-    def _handle_data_update_signal(self, data: CurveData) -> None:
+    def _handle_data_update_signal(self, data: CurveData):
         if self._set_data(data=data):
             self.sig_data_model_changed.emit()
 
@@ -488,7 +462,7 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
         self._y_values: np.ndarray = np.array([])
         self._heights: np.ndarray = np.array([])
 
-    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, BarData) and data.is_valid():
             self._x_values = np.array([data.x])
             self._y_values = np.array([data.y])
@@ -537,7 +511,7 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
         self._widths: np.ndarray = np.array([])
         self._labels: np.ndarray = np.array([])
 
-    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, InjectionBarData) and data.is_valid():
             self._x_values = np.array([data.x])
             self._y_values = np.array([data.y])
@@ -588,7 +562,7 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
         self._colors: np.ndarray = np.array([])
         self._labels: np.ndarray = np.array([])
 
-    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]) -> None:
+    def _handle_data_update_signal(self, data: Union[BarData, BarCollectionData]):
         if isinstance(data, TimestampMarkerData) and data.is_valid():
             self._x_values = np.array([data.x])
             self._colors = np.array([data.color])
@@ -633,7 +607,7 @@ class EditableCurveDataModel(StaticCurveDataModel):
         StaticCurveDataModel.__init__(self, data_source=data_source, **kwargs)
         self._history = History[CurveData]()
 
-    def _handle_data_update_signal(self, data: CurveData) -> None:
+    def _handle_data_update_signal(self, data: CurveData):
         """
         Extend the static data models update handler with appending the state
         to the local history.
@@ -645,7 +619,7 @@ class EditableCurveDataModel(StaticCurveDataModel):
         self._history.save_state(data)
 
     @Slot(CurveData)
-    def handle_editing(self, data: CurveData) -> None:
+    def handle_editing(self, data: CurveData):
         """
         Receives a change from e.g. a view which allows editing, saves it
         in the data model. This does not yet send it through the update source.

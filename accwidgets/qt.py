@@ -5,11 +5,11 @@ from typing import Optional, Set, List, TypeVar, Generic, Any, cast
 from abc import abstractmethod, ABCMeta
 from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog,
                             QDialogButtonBox, QStyledItemDelegate, QStyleOptionViewItem, QSpacerItem, QSizePolicy,
-                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView)
+                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant, QEvent,
                          QPersistentModelIndex, QLocale, Signal)
 from qtpy.uic import loadUi
-from accwidgets._generics import GenericQObjectMeta
+from accwidgets._generics import GenericQtMeta
 
 
 class AbstractQObjectMeta(type(QObject), ABCMeta):  # type: ignore
@@ -17,6 +17,19 @@ class AbstractQObjectMeta(type(QObject), ABCMeta):  # type: ignore
     Metaclass for abstract classes based on :class:`QObject`.
 
     A class inheriting from :class:`QObject` with :class:`ABCMeta` as metaclass will lead to
+    an metaclass conflict:
+
+    ``TypeError: metaclass conflict: the metaclass of a derived class must be
+    a (non-strict) subclass of the meta-classes of all its bases``
+    """
+    pass
+
+
+class AbstractQGraphicsItemMeta(type(QGraphicsItem), ABCMeta):  # type: ignore
+    """
+    Metaclass for abstract classes based on :class:`QGraphicsItem`.
+
+    A class inheriting from :class:`QGraphicsItem` with :class:`~abc.ABCMeta` as metaclass will lead to
     an metaclass conflict:
 
     ``TypeError: metaclass conflict: the metaclass of a derived class must be
@@ -285,7 +298,7 @@ LI = TypeVar("LI")
 """Generic List Item for the list-based models."""
 
 
-class AbstractListModel(Generic[LI], metaclass=GenericQObjectMeta):
+class AbstractListModel(Generic[LI], metaclass=GenericQtMeta):
 
     class ChangeType(IntEnum):
         """Circumstances when dataChanged signal is about to be called"""
@@ -411,7 +424,7 @@ class AbstractListModel(Generic[LI], metaclass=GenericQObjectMeta):
         return self._data
 
 
-class AbstractTableModel(AbstractListModel[LI], QAbstractTableModel, Generic[LI], metaclass=GenericQObjectMeta):
+class AbstractTableModel(AbstractListModel[LI], QAbstractTableModel, Generic[LI], metaclass=GenericQtMeta):
 
     def __init__(self, data: List[LI], parent: Optional[QObject] = None):
         """
@@ -532,7 +545,7 @@ DM = TypeVar("DM", bound=AbstractTableModel)
 """Generic Table model used in :class:`AbstractTableDialog`."""
 
 
-class AbstractTableDialog(QDialog, Generic[LI, DM], metaclass=GenericQObjectMeta):
+class AbstractTableDialog(QDialog, Generic[LI, DM], metaclass=GenericQtMeta):
 
     def __init__(self, table_model: DM, file_path: Optional[Path] = None, parent: Optional[QObject] = None):
         """

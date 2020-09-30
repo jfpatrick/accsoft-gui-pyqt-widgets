@@ -1,10 +1,8 @@
 """
 Different AxisItem implementations for Timestamp based plotting for better readability
 """
-
 from datetime import datetime
 from typing import List, Iterable
-
 from pyqtgraph import AxisItem
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal
@@ -18,7 +16,7 @@ class ExAxisItem(AxisItem):
     sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
     """Signal that the mouse event was executed on the axis (and not the ViewBox)"""
 
-    def mouseDragEvent(self, event: MouseDragEvent) -> None:
+    def mouseDragEvent(self, event: MouseDragEvent):
         """Make the mouse drag event on the axis distinguishable from the ViewBox one
 
         Args:
@@ -27,7 +25,7 @@ class ExAxisItem(AxisItem):
         self.sig_vb_mouse_event_triggered_by_axis.emit(True)
         super().mouseDragEvent(event)
 
-    def wheelEvent(self, ev: QGraphicsSceneWheelEvent) -> None:
+    def wheelEvent(self, ev: QGraphicsSceneWheelEvent):
         """Make the mouse click event on the axis distinguishable from the ViewBox one
 
         Args:
@@ -104,7 +102,7 @@ class RelativeTimeAxisItem(AxisItem):
         return self._start
 
     @start.setter
-    def start(self, timestamp: float) -> None:
+    def start(self, timestamp: float):
         """Sets the start time on which the relative timestamps should be
         calculated from. This has to be done either by hand or as soon as
         the first timestamp get's available.

@@ -5,9 +5,9 @@ TODO: remove when switching to pyqtgraph 0.11.0, since these
       issues have been addresses there.
 """
 
+import pyqtgraph as pg
 from typing import Tuple, Optional
 from qtpy.QtGui import QPainter, QPen, QBrush
-import pyqtgraph as pg
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
 
@@ -53,7 +53,7 @@ class ExLegendItem(pg.LegendItem):
         """Pen used to draw the text labels."""
         return self._drawing_tools.get("border")
 
-    def addItem(self, item: pg.GraphicsItem, name: str) -> None:
+    def addItem(self, item: pg.GraphicsItem, name: str):
         """ Add a new entry to the legend.
 
         Replace addItem with a version with stronger white label for
@@ -108,7 +108,7 @@ class ExLegendItem(pg.LegendItem):
         label.close()
         self.updateSize()                       # redraq box
 
-    def paint(self, p: QPainter, *args) -> None:
+    def paint(self, p: QPainter, *args):
         """Paint function for the Legend Item.
 
         Args:

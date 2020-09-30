@@ -1,19 +1,18 @@
+import pytest
+import numpy as np
 from freezegun import freeze_time
 from datetime import datetime
 from dateutil.tz import tzoffset
-
-import pytest
-import numpy as np
-
-import accwidgets.graph as accgraph
-
+from accwidgets.graph import (PlottingItemDataFactory, InvalidDataStructureWarning, PointData, BarData,
+                              InjectionBarData, TimestampMarkerData, CurveData, BarCollectionData,
+                              InjectionBarCollectionData, TimestampMarkerCollectionData)
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to
 # take the current timezone which lets tests fail
 TZ = tzoffset("UTC+0", 0)
 STATIC_TIME = datetime(year=2020, day=1, month=1, tzinfo=TZ)
 HEADER_TIME = datetime(year=2019, day=1, month=1, tzinfo=TZ)
-ACQ_TS_FIELD = accgraph.PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD
+ACQ_TS_FIELD = PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD
 HEADER_INFO = {ACQ_TS_FIELD: HEADER_TIME}
 
 
@@ -39,7 +38,7 @@ _INVALID_DATA_STRUCTURE_WARNING_MSG = r"is not valid and can't be drawn for " \
 def test_point_data_from_value(input_val,
                                expected_x,
                                expected_y):
-    actual = accgraph.PlottingItemDataFactory._to_point(*input_val)
+    actual = PlottingItemDataFactory._to_point(*input_val)
     assert actual.x == expected_x
     assert actual.y == expected_y
 
@@ -62,7 +61,7 @@ def test_bar_data_from_value(input_val,
                              expected_height,
                              expected_x,
                              expected_y):
-    actual = accgraph.PlottingItemDataFactory._to_bar(*input_val)
+    actual = PlottingItemDataFactory._to_bar(*input_val)
     assert actual.height == expected_height
     assert actual.x == expected_x
     assert actual.y == expected_y
@@ -99,11 +98,11 @@ def test_injection_bar_data_from_value(input_values,
                                        expected_label,
                                        raises_warning):
     if raises_warning:
-        with pytest.warns(accgraph.InvalidDataStructureWarning,
+        with pytest.warns(InvalidDataStructureWarning,
                           match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
-            actual = accgraph.PlottingItemDataFactory._to_injection_bar(*input_values)
+            actual = PlottingItemDataFactory._to_injection_bar(*input_values)
     else:
-        actual = accgraph.PlottingItemDataFactory._to_injection_bar(*input_values)
+        actual = PlottingItemDataFactory._to_injection_bar(*input_values)
     assert actual.x == expected_x
     assert actual.y == expected_y or all(np.isnan([actual.y, expected_y]))
     assert actual.height == expected_height
@@ -131,7 +130,7 @@ def test_timestampmarker_data_from_value(input_value,
                                          expected_label,
                                          expected_color,
                                          expected_x):
-    actual = accgraph.PlottingItemDataFactory._to_ts_marker(*input_value)
+    actual = PlottingItemDataFactory._to_ts_marker(*input_value)
     assert actual.x == expected_x
     assert actual.color == expected_color
     assert actual.label == expected_label
@@ -156,7 +155,7 @@ def test_timestampmarker_data_from_value(input_value,
 def test_curve_data_from_value(input_values,
                                expected_x,
                                expected_y):
-    actual = accgraph.PlottingItemDataFactory._to_curve(*input_values)
+    actual = PlottingItemDataFactory._to_curve(*input_values)
     assert np.array_equal(actual.x, expected_x)
     assert np.array_equal(actual.y, expected_y)
 
@@ -179,7 +178,7 @@ def test_bar_collection_data_from_value(input_values,
                                         expected_x,
                                         expected_y):
     # Wrap values into array since we it is a collection
-    actual = accgraph.PlottingItemDataFactory._to_bar_collection(*input_values)
+    actual = PlottingItemDataFactory._to_bar_collection(*input_values)
     assert np.array_equal(actual.x, expected_x)
     assert np.array_equal(actual.y, expected_y)
     assert np.array_equal(actual.heights, expected_height)
@@ -218,11 +217,11 @@ def test_injection_bar_collection_data_from_value(input_values,
                                                   raises_warning):
     # Wrap values into array since we it is a collection
     if raises_warning:
-        with pytest.warns(accgraph.InvalidDataStructureWarning,
+        with pytest.warns(InvalidDataStructureWarning,
                           match=_INVALID_DATA_STRUCTURE_WARNING_MSG):
-            actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*input_values)
+            actual = PlottingItemDataFactory._to_injection_bar_collection(*input_values)
     else:
-        actual = accgraph.PlottingItemDataFactory._to_injection_bar_collection(*input_values)
+        actual = PlottingItemDataFactory._to_injection_bar_collection(*input_values)
     assert np.array_equal(actual.x, expected_x)
     assert (
         np.array_equal(actual.y, expected_y)
@@ -257,49 +256,48 @@ def test_timestampmarker_collection_data_from_value(input_values,
                                                     expected_x,
                                                     expected_color,
                                                     expected_labels):
-    actual = accgraph.PlottingItemDataFactory._to_ts_marker_collection(*input_values)
+    actual = PlottingItemDataFactory._to_ts_marker_collection(*input_values)
     assert np.array_equal(actual.x, expected_x)
     assert np.array_equal(actual.colors, expected_color)
     assert np.array_equal(actual.labels, expected_labels)
 
 
 @pytest.mark.parametrize("expected, args", [
-    (accgraph.PointData, [0.0]),
-    (accgraph.BarData, [0.0]),
-    (accgraph.InjectionBarData, [0.0, 1.0, 2.0, 3.0]),
-    (accgraph.TimestampMarkerData, [0.0]),
-    (accgraph.CurveData, [[0.0]]),
-    (accgraph.BarCollectionData, [[0.0]]),
-    (accgraph.InjectionBarCollectionData, [[0.0], [1.0], [2.0], [3.0]]),
-    (accgraph.TimestampMarkerCollectionData, [[0.0]]),
+    (PointData, [0.0]),
+    (BarData, [0.0]),
+    (InjectionBarData, [0.0, 1.0, 2.0, 3.0]),
+    (TimestampMarkerData, [0.0]),
+    (CurveData, [[0.0]]),
+    (BarCollectionData, [[0.0]]),
+    (InjectionBarCollectionData, [[0.0], [1.0], [2.0], [3.0]]),
+    (TimestampMarkerCollectionData, [[0.0]]),
 ])
 def test_default_transform_function_lookup(expected, args):
-    actual = accgraph.PlottingItemDataFactory.get_transformation(data_type=expected)(*args)
+    actual = PlottingItemDataFactory.get_transformation(data_type=expected)(*args)
     assert isinstance(actual, expected)
 
 
 @pytest.mark.parametrize("dtype, data, should_unwrap", [
-    (accgraph.PointData, 0, False),
-    (accgraph.BarData, 0, False),
-    (accgraph.InjectionBarData, 0, False),
-    (accgraph.TimestampMarkerData, 0, False),
-    (accgraph.PointData, [0], True),
-    (accgraph.BarData, [0], True),
-    (accgraph.InjectionBarData, [0], True),
-    (accgraph.TimestampMarkerData, [0], True),
+    (PointData, 0, False),
+    (BarData, 0, False),
+    (InjectionBarData, 0, False),
+    (TimestampMarkerData, 0, False),
+    (PointData, [0], True),
+    (BarData, [0], True),
+    (InjectionBarData, [0], True),
+    (TimestampMarkerData, [0], True),
     # Collections
-    (accgraph.CurveData, [0], False),
-    (accgraph.BarCollectionData, [0], False),
-    (accgraph.InjectionBarCollectionData, [0], False),
-    (accgraph.TimestampMarkerCollectionData, [0], False),
-    (accgraph.CurveData, [[0], [0]], True),
-    (accgraph.BarCollectionData, [[0], [0]], True),
-    (accgraph.InjectionBarCollectionData, [[0], [0]], True),
-    (accgraph.TimestampMarkerCollectionData, [[0], [0]], True),
+    (CurveData, [0], False),
+    (BarCollectionData, [0], False),
+    (InjectionBarCollectionData, [0], False),
+    (TimestampMarkerCollectionData, [0], False),
+    (CurveData, [[0], [0]], True),
+    (BarCollectionData, [[0], [0]], True),
+    (InjectionBarCollectionData, [[0], [0]], True),
+    (TimestampMarkerCollectionData, [[0], [0]], True),
 ])
 def test_should_unwrap(dtype, data, should_unwrap):
-    actual = accgraph.PlottingItemDataFactory.should_unwrap(data,
-                                                            dtype=dtype)
+    actual = PlottingItemDataFactory.should_unwrap(data, dtype=dtype)
     assert actual == should_unwrap
 
 
@@ -310,6 +308,6 @@ def test_should_unwrap(dtype, data, should_unwrap):
     ([], [], None),
 ])
 def test_header_extraction(input, args, header):
-    a_args, a_header = accgraph.PlottingItemDataFactory._extract_header(input)
+    a_args, a_header = PlottingItemDataFactory._extract_header(input)
     assert a_args == args
     assert a_header == header

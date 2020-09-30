@@ -2,49 +2,23 @@
 Extended Widget for custom plotting with simple configuration wrappers
 """
 
-from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
-from copy import deepcopy
 import json
 import warnings
-from dataclasses import dataclass
-
 import numpy as np
 import pyqtgraph as pg
+from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
+from copy import deepcopy
+from dataclasses import dataclass
 from qtpy.QtCore import Signal, Slot, Property, Q_ENUM, Qt
 from qtpy.QtWidgets import QWidget
 from qtpy.QtGui import QPen, QMouseEvent, QColor
-
-from accwidgets.graph.datamodel.connection import UpdateSource, PlottingItemDataFactory
-from accwidgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
-    PlotWidgetStyle,
-    TimeSpan,
-)
-from accwidgets.graph.widgets.plotitem import (
-    ExPlotItem,
-    PlotItemLayer,
-    LayerIdentification,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.dataitems.plotdataitem import AbstractBasePlotCurve
-from accwidgets.graph.widgets.dataitems.bargraphitem import (
-    LiveBarGraphItem,
-    AbstractBaseBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.injectionbaritem import (
-    LiveInjectionBarGraphItem,
-    AbstractBaseInjectionBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.timestampmarker import LiveTimestampMarker
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import DataModelBasedItem
-from accwidgets.graph.widgets.axisitems import ExAxisItem
-from accwidgets.graph.datamodel.datastructures import (
-    PointData,
-    CurveData,
-    BarCollectionData,
-    InjectionBarCollectionData,
-)
 from accwidgets import designer_check
+from accwidgets.graph import (UpdateSource, PlottingItemDataFactory, ExPlotWidgetConfig, PlotWidgetStyle, TimeSpan,
+                              ExPlotItem, PlotItemLayer, LayerIdentification, DEFAULT_BUFFER_SIZE,
+                              AbstractBasePlotCurve, LiveBarGraphItem, AbstractBaseBarGraphItem,
+                              LiveInjectionBarGraphItem, AbstractBaseInjectionBarGraphItem, LiveTimestampMarker,
+                              DataModelBasedItem, ExAxisItem, PointData, CurveData, BarCollectionData,
+                              InjectionBarCollectionData)
 
 
 class SymbolOptions:
@@ -85,15 +59,13 @@ class ExPlotWidget(pg.PlotWidget):
     Signal informing about an entire plot being selected for editing.
     """
 
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            background: str = "default",
-            config: Optional[ExPlotWidgetConfig] = None,
-            axis_items: Optional[Dict[str, ExAxisItem]] = None,
-            timing_source: Optional[UpdateSource] = None,
-            **plotitem_kwargs,
-    ):
+    def __init__(self,
+                 parent: Optional[QWidget] = None,
+                 background: str = "default",
+                 config: Optional[ExPlotWidgetConfig] = None,
+                 axis_items: Optional[Dict[str, ExAxisItem]] = None,
+                 timing_source: Optional[UpdateSource] = None,
+                 **plotitem_kwargs):
         """Extended PlotWidget
 
         Extended version of PyQtGraphs PlotWidget with additional functionality
@@ -155,8 +127,8 @@ class ExPlotWidget(pg.PlotWidget):
         The new curve can be either either created from static data like
         PlotItem.plot or from a data source that handles communication between
         the curve and a source data is coming from. To create a curve attached
-        to f.e. live data, pass a fitting data source and to create a curve
-        from f.e. a static array, pass keyword arguments from the PlotDataItem.
+        to e.g. live data, pass a fitting data source and to create a curve
+        from e.g. a static array, pass keyword arguments from the PlotDataItem.
 
         Args:
 
@@ -196,8 +168,8 @@ class ExPlotWidget(pg.PlotWidget):
         The new graph can be either either created from static data like
         PlotItem.plot or from a data source that handles communication between
         the graph and a source data is coming from. To create a bar graph attached
-        to f.e. live data, pass a fitting data source and to create a bar graph
-        from f.e. a static array, pass keyword arguments from the BarGraphItem.
+        to e.g. live data, pass a fitting data source and to create a bar graph
+        from e.g. a static array, pass keyword arguments from the BarGraphItem.
 
         Args:
             data_source: Source emitting new data the graph should show
@@ -343,7 +315,7 @@ class ExPlotWidget(pg.PlotWidget):
             **axis_label_css_kwargs,
         )
 
-    def update_config(self, config: ExPlotWidgetConfig) -> None:
+    def update_config(self, config: ExPlotWidgetConfig):
         """Update the plot widgets configuration
 
         Items that are affected from the configuration change are recreated with
@@ -359,10 +331,10 @@ class ExPlotWidget(pg.PlotWidget):
 
     # ~~~~~~~~~~~~~~~~~~ Functionality for editble plots ~~~~~~~~~~~~~~~~~~~~~~
 
-    def mouseDoubleClickEvent(self, ev: QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, ev: QMouseEvent):
         """
         When double clicking a PlotItem, it can be selected as the plot item
-        which should be edited. To inform f.e. and editable button bar about
+        which should be edited. To inform e.g. and editable button bar about
         a selection, a fitting signal is emitted.
 
         Args:
@@ -371,7 +343,7 @@ class ExPlotWidget(pg.PlotWidget):
         super().mouseDoubleClickEvent(ev)
         self.plotItem.toggle_plot_selection()
 
-    def replace_selection(self, replacement: CurveData) -> None:
+    def replace_selection(self, replacement: CurveData):
         """Function to call if the current data selection was changed.
 
         Args:
@@ -393,7 +365,7 @@ class ExPlotWidget(pg.PlotWidget):
         return self.plotItem.selection_mode
 
     @Slot(bool)
-    def set_selection_mode(self, enable: bool) -> None:
+    def set_selection_mode(self, enable: bool):
         """
         If the selection mode is enabled, mouse drag events on the view
         box create selection rectangles and do not move the view
@@ -430,7 +402,7 @@ class ExPlotWidget(pg.PlotWidget):
             return self.plotItem.titleLabel.text
         return ""
 
-    def _set_plot_title(self, new_val: str) -> None:
+    def _set_plot_title(self, new_val: str):
         """QtDesigner setter function for the PlotItems title"""
         if new_val != self.plotItem.titleLabel.text:
             new_val = new_val.strip()
@@ -447,7 +419,7 @@ class ExPlotWidget(pg.PlotWidget):
         """QtDesigner getter function for the PlotItems flag for showing the current timestamp with a line"""
         return self.plotItem.plot_config.time_progress_line
 
-    def _set_show_time_line(self, new_val: bool) -> None:
+    def _set_show_time_line(self, new_val: bool):
         """QtDesigner setter function for the PlotItems flag for showing the current timestamp with a line"""
         if new_val != self.plotItem.plot_config.time_progress_line:
             new_config = deepcopy(self.plotItem.plot_config)
@@ -456,14 +428,14 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line)
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line)
     """Vertical Line displaying the current time stamp"""
 
     def _get_right_time_span_boundary(self) -> float:
         """QtDesigner getter function for the PlotItems time span size"""
         return self.plotItem.plot_config.time_span.right_boundary_offset
 
-    def _set_right_time_span_boundary(self, new_val: float) -> None:
+    def _set_right_time_span_boundary(self, new_val: float):
         """QtDesigner setter function for the PlotItems time span size"""
         if new_val != self.plotItem.plot_config.time_span.right_boundary_offset:
             new_config = deepcopy(self.plotItem.plot_config)
@@ -503,7 +475,7 @@ class ExPlotWidget(pg.PlotWidget):
                 potential = 60.0
         return potential
 
-    def _set_left_time_span_boundary(self, new_val: float) -> None:
+    def _set_left_time_span_boundary(self, new_val: float):
         """QtDesigner setter function for the PlotItems time span size"""
         if new_val != self._get_left_time_span_boundary(hide_nans=False):
             new_config = deepcopy(self.plotItem.plot_config)
@@ -526,7 +498,7 @@ class ExPlotWidget(pg.PlotWidget):
         """QtDesigner getter function for the PlotItems time span size"""
         return not np.isinf(self._get_left_time_span_boundary(hide_nans=False))
 
-    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+    def _set_left_time_span_boundary_bool(self, new_val: bool):
         """QtDesigner setter function for the PlotItems time span size"""
         if not new_val:
             potential = self.plotItem.plot_config.time_span.left_boundary_offset
@@ -555,19 +527,19 @@ class ExPlotWidget(pg.PlotWidget):
     def _get_slot_item_pen_color(self) -> QColor:
         return self._slot_item_styling_opts.pen_color
 
-    def _set_slot_item_pen_color(self, color: QColor) -> None:
+    def _set_slot_item_pen_color(self, color: QColor):
         self._slot_item_styling_opts.pen_color = color
 
     def _get_slot_item_pen_width(self) -> int:
         return self._slot_item_styling_opts.pen_width
 
-    def _set_slot_item_pen_width(self, width: int) -> None:
+    def _set_slot_item_pen_width(self, width: int):
         self._slot_item_styling_opts.pen_width = width
 
     def _get_slot_item_pen_style(self) -> Qt.PenStyle:
         return self._slot_item_styling_opts.pen_style
 
-    def _set_slot_item_pen_style(self, style: Qt.PenStyle) -> None:
+    def _set_slot_item_pen_style(self, style: Qt.PenStyle):
         self._slot_item_styling_opts.pen_style = style
 
     def _get_slot_item_symbol(self) -> int:
@@ -584,13 +556,13 @@ class ExPlotWidget(pg.PlotWidget):
         }
         return symbol_string[self._get_slot_item_symbol()]
 
-    def _set_slot_item_symbol(self, symbol: int) -> None:
+    def _set_slot_item_symbol(self, symbol: int):
         self._slot_item_styling_opts.symbol = symbol
 
     def _get_slot_item_brush_color(self) -> QColor:
         return self._slot_item_styling_opts.brush_color
 
-    def _set_slot_item_brush_color(self, color: QColor) -> None:
+    def _set_slot_item_brush_color(self, color: QColor):
         self._slot_item_styling_opts.brush_color = color
 
     # ~~~~~~~~~~ Private ~~~~~~~~~
@@ -627,7 +599,7 @@ class ExPlotWidget(pg.PlotWidget):
         self.plotItem.sig_plot_selected.connect(self.sig_plot_selected.emit)
         del old_plot_item
 
-    def _wrap_plotitem_functions(self) -> None:
+    def _wrap_plotitem_functions(self):
         """
         For convenience the PlotWidget wraps some functions of the PlotItem
         Since we replace the inner `self.plotItem` we have to change the wrapped
@@ -719,7 +691,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             return XAxisSideOptions.Bottom
         return XAxisSideOptions.Hidden
 
-    def _set_show_x_axis(self, new_val: int) -> None:
+    def _set_show_x_axis(self, new_val: int):
         """Where is the X Axis of the plot displayed"""
         if new_val != self._get_show_x_axis():  # type: ignore[has-type]
             if new_val == XAxisSideOptions.Both:
@@ -752,7 +724,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             return DefaultYAxisSideOptions.Right
         return DefaultYAxisSideOptions.Hidden
 
-    def _set_show_y_axis(self, new_val: int) -> None:
+    def _set_show_y_axis(self, new_val: int):
         """Where is the Y Axis of the plot displayed"""
         if new_val != self._get_show_y_axis():  # type: ignore[has-type]
             if new_val == DefaultYAxisSideOptions.Both:
@@ -785,7 +757,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             return GridOrientationOptions.Y
         return GridOrientationOptions.Hidden
 
-    def _set_show_grid(self, new_val: int) -> None:
+    def _set_show_grid(self, new_val: int):
         """What Axis Grid should be displayed"""
         if new_val != self._get_show_grid():
             if new_val == GridOrientationOptions.Both:
@@ -809,7 +781,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         legend = cast(Optional[pg.LegendItem], cast(ExPlotWidget, self).plotItem.legend)
         return legend is not None and legend.isVisible()
 
-    def _set_show_legend(self, new_val: bool) -> None:
+    def _set_show_legend(self, new_val: bool):
         """If true, the plot shows a legend."""
         if new_val != self._get_show_legend():  # type: ignore[has-type]
             curr_legend = cast(Optional[pg.LegendItem], cast(ExPlotWidget, self).plotItem.legend)
@@ -848,7 +820,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                 self._set_legend_position(x_alignment=d[0], y_alignment=d[1])
             return d
 
-    def _set_legend_position(self, x_alignment: int = -1, y_alignment: int = -1, offset: float = 10.0) -> None:
+    def _set_legend_position(self, x_alignment: int = -1, y_alignment: int = -1, offset: float = 10.0):
         """
         Set the legends position in the ViewBox. Values smaller 0 are not accepted.
         Values that move the Legend out of the viewable area are not accepted.
@@ -899,7 +871,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _get_legend_x_position(self) -> int:
         return self._get_legend_position()[0]
 
-    def _set_legend_x_position(self, new_val: int) -> None:
+    def _set_legend_x_position(self, new_val: int):
         self._set_legend_position(x_alignment=new_val)
 
     legendXAlignment: int = Property(LegendXAlignmentOptions, _get_legend_x_position, _set_legend_x_position)
@@ -908,7 +880,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _get_legend_y_position(self) -> int:
         return self._get_legend_position()[1]
 
-    def _set_legend_y_position(self, new_val: int) -> None:
+    def _set_legend_y_position(self, new_val: int):
         self._set_legend_position(y_alignment=new_val)
 
     legendYAlignment: int = Property(LegendYAlignmentOptions, _get_legend_y_position, _set_legend_y_position)
@@ -930,7 +902,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         """
         return [layer.id for layer in cast(ExPlotWidget, self).plotItem.non_default_layers]
 
-    def _set_layer_ids(self, layers: "QStringList") -> None:  # type: ignore # noqa
+    def _set_layer_ids(self, layers: "QStringList"):  # type: ignore # noqa
         """
         QtDesigner setter function for the PlotItems time span
 
@@ -962,7 +934,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             labels[layer.id] = layer.axis_item.labelText
         return json.dumps(labels)
 
-    def _set_axis_labels(self, new_val: str) -> None:
+    def _set_axis_labels(self, new_val: str):
         """QtDesigner setter function for the PlotItems axis labels"""
         try:
             axis_labels: Dict[str, str] = json.loads(new_val)
@@ -1002,7 +974,7 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             auto_ranges_dict[layer.id] = "auto" if vb.autoRangeEnabled()[1] else vb.targetRange()[1]
         return json.dumps(auto_ranges_dict)
 
-    def _set_axis_ranges(self, new_val: str) -> None:
+    def _set_axis_ranges(self, new_val: str):
         """QtDesigner setter function for the PlotItems axis ranges"""
         try:
             axis_ranges: Dict[str, Tuple[float, float]] = json.loads(new_val)
@@ -1033,15 +1005,15 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     axisRanges: str = Property(str, _get_axis_ranges, _set_axis_ranges, designable=False)
     """JSON string with mappings of x, y and layers to a view range"""
 
-    def _update_layers(self, new: List[str]) -> None:
+    def _update_layers(self, new: List[str]):
         """
         This function removes old layers and adds new ones according to the list
         of passed layers. To make sure items are not dangling in the air without
         an existing parent item, we have to remove them first from the deleted
         layers and then add them to the new ones. We try to make sure items land
-        in the correct layer, if the layer f.e. has been renamed, but this
+        in the correct layer, if the layer e.g. has been renamed, but this
         comes with some caveats, since it is not clear how the new list was
-        created from the old one (f.e. has a layer been renamed or was it
+        created from the old one (e.g. has a layer been renamed or was it
         replaced by a entirely new one?). If a layer id exist in both the current
         and the new layer set, it is seen as the same one, even if its position
         has changed.
@@ -1082,10 +1054,6 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         # Catch all items that could not be assigned and add them to the default layer
         for item in items_to_move:
             cast(ExPlotWidget, self).plotItem.getViewBox().addItem(item)
-
-    @staticmethod
-    def diff(list1, list2):
-        return list(set(list1).symmetric_difference(set(list2)))
 
 
 class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # type: ignore[misc]
@@ -1212,7 +1180,7 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
     @Slot(np.ndarray)
     @Slot(PointData)
     def pushData(self,
-                 data: Union[int, float, Sequence[float], PointData]) -> None:
+                 data: Union[int, float, Sequence[float], PointData]):
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot. If this curve does not yet exist,
@@ -1288,40 +1256,34 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             time_progress_line=time_progress_line,
         )
         ExPlotWidgetProperties.__init__(self)
-        ExPlotWidget.__init__(
-            self,
-            parent=parent,
-            background=background,
-            config=config,
-            axis_items=axis_items,
-            timing_source=timing_source,
-            **plotitem_kwargs,
-        )
+        ExPlotWidget.__init__(self,
+                              parent=parent,
+                              background=background,
+                              config=config,
+                              axis_items=axis_items,
+                              timing_source=timing_source,
+                              **plotitem_kwargs)
 
-    leftBoundary: float = Property(
-        float,
-        ExPlotWidget._get_left_time_span_boundary,
-        ExPlotWidget._set_left_time_span_boundary,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=ExPlotWidget._get_left_time_span_boundary,
+                                       fset=ExPlotWidget._set_left_time_span_boundary)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at cyclic plot, "
                           "since a cyclic plot can not be drawn without both boundaries defined.")
         return False
 
-    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+    def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at cyclic plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at cyclic plot, "
                           "since a cyclic plot can not be drawn without both boundaries defined.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
     """DO NOT USE WITH A CYCLIC PLOT."""
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1368,7 +1330,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     @Slot(np.ndarray)
     @Slot(PointData)
     def pushData(self,
-                 data: Union[int, float, Tuple, List, np.ndarray, PointData]) -> None:
+                 data: Union[int, float, Tuple, List, np.ndarray, PointData]):
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot. If this curve does not yet exist,
@@ -1439,87 +1401,67 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     def _get_show_time_line(self) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return False
 
-    def _set_show_time_line(self, new_val: bool) -> None:
+    def _set_show_time_line(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'setShowTimeLine' is not supposed to be used with at static plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
     """Vertical Line displaying the current time stamp, not supported by the static plotting style"""
-
-    def _get_time_span(self) -> float:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-        return 0.0
-
-    def _set_time_span(self, new_val: float) -> None:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at static plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-
-    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
-    """Range from which the plot displays data, not supported by the static plotting style"""
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
-    def _set_right_time_span_boundary(self, new_val: float) -> None:
+    def _set_right_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    rightBoundary: float = Property(
-        float,
-        _get_right_time_span_boundary,
-        _set_right_time_span_boundary,
-        designable=False,
-    )
+    rightTimeBoundary: float = Property(float,
+                                        fget=_get_right_time_span_boundary,
+                                        fset=_set_right_time_span_boundary,
+                                        designable=False)
     """Value of the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
-    def _set_left_time_span_boundary(self, new_val: float) -> None:
+    def _set_left_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftBoundary: float = Property(
-        float,
-        _get_left_time_span_boundary,
-        _set_left_time_span_boundary,
-        designable=False,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=_get_left_time_span_boundary,
+                                       fset=_set_left_time_span_boundary,
+                                       designable=False)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
         return False
 
-    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+    def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at static plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)
 
     # ~~~~~~~~~~~~ replaceData ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1562,7 +1504,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     @Slot(np.ndarray)
     @Slot(CurveData)
     def replaceDataAsCurve(self,
-                           data: Union[Sequence[float], CurveData]) -> None:
+                           data: Union[Sequence[float], CurveData]):
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot. If this curve does not yet exist,
@@ -1585,7 +1527,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
         )
 
     @Slot(BarCollectionData)
-    def replaceDataAsBarGraph(self, data: BarCollectionData) -> None:
+    def replaceDataAsBarGraph(self, data: BarCollectionData):
         """
         This slot exposes the possibility to draw data on a
         single bar graph in the plot. If this bar_graph does not yet exist,
@@ -1602,7 +1544,7 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
 
     @Slot(InjectionBarCollectionData)
     def replaceDataAsInjectionBars(self,
-                                   data: InjectionBarCollectionData) -> None:
+                                   data: InjectionBarCollectionData):
         """
         This slot exposes the possibility to draw data on a single injection
         bar graph in the plot. If this graph does not yet exist, it will be
@@ -1665,64 +1607,48 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
         return False
 
-    def _set_show_time_line(self, new_val: bool) -> None:
+    def _set_show_time_line(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'showTimeProgressLine is not supposed to be used with at editable plot. "
+            warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at editable plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
-    showTimeProgressLine: bool = Property(bool, _get_show_time_line, _set_show_time_line, designable=False)
-    """Vertical Line displaying the current time stamp, not supported by the editable plotting style"""
-
-    def _get_time_span(self) -> float:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-        return 0.0
-
-    def _set_time_span(self, new_val: float) -> None:
-        if not designer_check.is_designer():
-            warnings.warn("Property 'timeSpan' is not supposed to be used with at editable plot. "
-                          "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
-
-    timeSpan: float = Property(float, _get_time_span, _set_time_span, designable=False)
-    """Range from which the plot displays data, not supported by the editable plotting style"""
+    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
+    """
+    .. warning:: Do not use this in a static plot.
+    """
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
         return False
 
-    def _set_right_time_span_boundary(self, new_val: float) -> None:
+    def _set_right_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'rightBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    rightBoundary: float = Property(
-        float,
-        _get_right_time_span_boundary,
-        _set_right_time_span_boundary,
-        designable=False,
-    )
+    rightTimeBoundary: float = Property(float,
+                                        fget=_get_right_time_span_boundary,
+                                        fset=_set_right_time_span_boundary,
+                                        designable=False)
     """Value of the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
         return False
 
-    def _set_left_time_span_boundary(self, new_val: float) -> None:
+    def _set_left_time_span_boundary(self, new_val: float):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundary' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    leftBoundary: float = Property(
-        float,
-        _get_left_time_span_boundary,
-        _set_left_time_span_boundary,
-        designable=False,
-    )
+    leftTimeBoundary: float = Property(float,
+                                       fget=_get_left_time_span_boundary,
+                                       fset=_set_left_time_span_boundary,
+                                       designable=False)
     """Toggle for the Left / Lower boundary for the Plot's timestamp"""
 
     def _get_left_time_span_boundary_bool(self) -> bool:
@@ -1731,14 +1657,12 @@ class EditablePlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  
                           "since it does not use any time span.")
         return False
 
-    def _set_left_time_span_boundary_bool(self, new_val: bool) -> None:
+    def _set_left_time_span_boundary_bool(self, new_val: bool):
         if not designer_check.is_designer():
-            warnings.warn("Property 'leftBoundaryEnabled' is not supposed to be used with at editable plot, "
+            warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at editable plot, "
                           "since it does not use any time span.")
 
-    leftBoundaryEnabled: bool = Property(
-        bool,
-        _get_left_time_span_boundary_bool,
-        _set_left_time_span_boundary_bool,
-        designable=False,
-    )
+    leftTimeBoundaryEnabled: bool = Property(bool,
+                                             fget=_get_left_time_span_boundary_bool,
+                                             fset=_set_left_time_span_boundary_bool,
+                                             designable=False)

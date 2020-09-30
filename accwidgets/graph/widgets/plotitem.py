@@ -3,55 +3,23 @@ Base class for modified PlotItems that handle data displaying in the ExtendedPlo
 """
 
 import warnings
+import numpy as np
+import pyqtgraph as pg
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union, Type, cast
-
-import numpy as np
-import pyqtgraph as pg
 from pyqtgraph.GraphicsScene.mouseEvents import MouseDragEvent
 from qtpy.QtCore import Signal, QRectF, QPointF, Qt
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent, QGraphicsRectItem
 from qtpy.QtGui import QPen, QPainter
 
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.axisitems import (
-    ExAxisItem,
-    RelativeTimeAxisItem,
-    TimeAxisItem,
-)
-from accwidgets.graph.widgets.legenditem import ExLegendItem
-from accwidgets.graph.widgets.dataitems.bargraphitem import (
-    LiveBarGraphItem,
-    AbstractBaseBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-)
-from accwidgets.graph.widgets.dataitems.timestampmarker import (
-    AbstractBaseTimestampMarker,
-    LiveTimestampMarker,
-)
-from accwidgets.graph.widgets.dataitems.injectionbaritem import (
-    AbstractBaseInjectionBarGraphItem,
-    LiveInjectionBarGraphItem,
-)
-from accwidgets.graph.widgets.dataitems.plotdataitem import (
-    LivePlotCurve,
-    AbstractBasePlotCurve,
-    EditablePlotCurve,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    ExPlotWidgetConfig,
-    PlotWidgetStyle,
-)
-from accwidgets.graph.datamodel.datastructures import CurveData, PlottingItemData
-from accwidgets.graph.widgets.plottimespan import (
-    ScrollingPlotTimeSpan,
-    CyclicPlotTimeSpan,
-    BasePlotTimeSpan,
-)
+from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, ExAxisItem, RelativeTimeAxisItem, TimeAxisItem,
+                              ExLegendItem, LiveBarGraphItem, AbstractBaseBarGraphItem, DataModelBasedItem,
+                              AbstractBaseTimestampMarker, LiveTimestampMarker, AbstractBaseInjectionBarGraphItem,
+                              LiveInjectionBarGraphItem, LivePlotCurve, AbstractBasePlotCurve, EditablePlotCurve,
+                              ExPlotWidgetConfig, PlotWidgetStyle, CurveData, PlottingItemData, ScrollingPlotTimeSpan,
+                              CyclicPlotTimeSpan, BasePlotTimeSpan)
+
 
 # Mapping of plotting styles to a fitting axis style
 _STYLE_TO_AXIS_MAPPING: Dict[int, Type[pg.AxisItem]] = {

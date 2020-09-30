@@ -4,7 +4,7 @@ Module containing QtDesigner plugin for different type of graphs.
 
 from pathlib import Path
 from accwidgets.graph import ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget
-from accwidgets.graph.designer import designer_extensions
+from accwidgets.graph.designer import PlotLayerExtension
 from accwidgets._designer_base import create_plugin, WidgetBoxGroup
 
 
@@ -16,7 +16,7 @@ _ICON_BASE_PATH = Path(__file__).parent.absolute()
 
 
 ScrollingPlotWidgetPlugin = create_plugin(widget_class=ScrollingPlotWidget,
-                                          extensions=[designer_extensions.PlotLayerExtension],
+                                          extensions=[PlotLayerExtension],
                                           group=WidgetBoxGroup.CHARTS,
                                           tooltip=_TOOLTIP,
                                           whats_this=_WHATS_THIS,
@@ -24,7 +24,7 @@ ScrollingPlotWidgetPlugin = create_plugin(widget_class=ScrollingPlotWidget,
 
 
 CyclicPlotWidgetPlugin = create_plugin(widget_class=CyclicPlotWidget,
-                                       extensions=[designer_extensions.PlotLayerExtension],
+                                       extensions=[PlotLayerExtension],
                                        group=WidgetBoxGroup.CHARTS,
                                        tooltip=_TOOLTIP,
                                        whats_this=_WHATS_THIS,
@@ -32,7 +32,7 @@ CyclicPlotWidgetPlugin = create_plugin(widget_class=CyclicPlotWidget,
 
 
 StaticPlotWidgetPlugin = create_plugin(widget_class=StaticPlotWidget,
-                                       extensions=[designer_extensions.PlotLayerExtension],
+                                       extensions=[PlotLayerExtension],
                                        group=WidgetBoxGroup.CHARTS,
                                        tooltip=_TOOLTIP,
                                        whats_this=_WHATS_THIS,

@@ -188,7 +188,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         # Will be set in initialize
         self.manager: Optional[QExtensionManager] = None
 
-    def initialize(self, core: QDesignerFormEditorInterface) -> None:
+    def initialize(self, core: QDesignerFormEditorInterface):
         """
         Implemented from interface, for initializing the plugin exactly once.
         """

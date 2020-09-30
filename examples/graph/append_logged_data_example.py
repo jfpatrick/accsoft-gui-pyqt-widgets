@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.plot)
 
 
-def run() -> None:
+def run():
     """Run Application"""
     app = QApplication(sys.argv)
     _ = MainWindow()

@@ -3,19 +3,9 @@ Window with Extended PlotWidget for Testing purposes
 """
 
 from typing import Optional, Type, Union, Dict
-
 from qtpy.QtWidgets import QMainWindow, QWidget, QGridLayout
-
-from accwidgets.graph import (
-    AbstractBasePlotCurve,
-    AbstractBaseBarGraphItem,
-    AbstractBaseInjectionBarGraphItem,
-    AbstractBaseTimestampMarker,
-    ExPlotWidget,
-    ExPlotWidgetConfig,
-    DataModelBasedItem,
-)
-
+from accwidgets.graph import (AbstractBasePlotCurve, AbstractBaseBarGraphItem, AbstractBaseInjectionBarGraphItem,
+                              AbstractBaseTimestampMarker, ExPlotWidget, ExPlotWidgetConfig, DataModelBasedItem)
 from .mock_data_source import MockDataSource
 from .mock_timing_source import MockTimingSource
 

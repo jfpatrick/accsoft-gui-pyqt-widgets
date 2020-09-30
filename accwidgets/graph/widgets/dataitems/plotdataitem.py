@@ -2,36 +2,24 @@
 Module contains different curves that can be added to a PlotItem based on PyQtGraph's PlotDataItem.
 """
 
-from typing import Tuple, Dict, cast, Type, Union, Optional, List
 from copy import copy
 from enum import IntEnum, Flag, auto
+from typing import Tuple, Dict, cast, Type, Union, Optional, List, TYPE_CHECKING
 
 import numpy as np
 import pyqtgraph as pg
+from accwidgets._deprecations import deprecated_param_alias
+from accwidgets.graph import (UpdateSource, LiveCurveDataModel, StaticCurveDataModel, EditableCurveDataModel,
+                              DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem, AbstractBaseDataModel,
+                              CurveData, PlotWidgetStyle, CyclicPlotTimeSpan)
+from accwidgets.qt import AbstractQGraphicsItemMeta
 from qtpy.QtCore import QRectF, Signal, Qt, QPointF
-from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 from qtpy.QtGui import QColor, QPen, QBrush
+from qtpy.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveCurveDataModel,
-    StaticCurveDataModel,
-    EditableCurveDataModel,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractBaseDataModel,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.datamodel.datastructures import CurveData
-from accwidgets.graph.widgets.plotconfiguration import PlotWidgetStyle
-from accwidgets.graph.widgets.plottimespan import CyclicPlotTimeSpan
-from accwidgets.graph.util import deprecated_param_alias
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
+
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [
@@ -56,32 +44,26 @@ _PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
 ]
 
 
-class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractDataModelBasedItemMeta):
+class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractQGraphicsItemMeta):
 
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: AbstractBaseDataModel,
-            pen=DEFAULT_COLOR,
-            **plotdataitem_kwargs,
-    ):
-        """Base class for different live data curves.
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: AbstractBaseDataModel,
+                 pen=DEFAULT_COLOR,
+                 **plotdataitem_kwargs):
+        """
+        Base class for all curve items.
 
         Args:
-            plot_item: plot item the curve should fit to
-            data_model: Data Model the curve is based on
-            pen: pen the curve should be drawn with, is part of the PlotDataItem
-                 base class parameters
-            **plotdataitem_kwargs: keyword arguments fo the base class
-
-        Raises:
-            ValueError: The passes data source is not usable as a source for data
+            plot_item: Plot item the curve should fit to.
+            data_model: Data model the curve is based on.
+            pen: Pen the curve should be drawn with (it is a part of the :class:`~pyqtgraph.PlotDataItem`
+                 base class arguments).
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
         """
-        DataModelBasedItem.__init__(
-            self,
-            data_model=data_model,
-            parent_plot_item=plot_item,
-        )
+        DataModelBasedItem.__init__(self,
+                                    data_model=data_model,
+                                    parent_plot_item=plot_item)
         pg.PlotDataItem.__init__(self, pen=pen, **plotdataitem_kwargs)
         self.opts["connect"] = "finite"
         # Save drawn data for testing purposes
@@ -90,41 +72,32 @@ class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=Abstr
             self.setPen(pen)
 
     @classmethod
-    def from_plot_item(
-            cls,
-            plot_item: "ExPlotItem",
-            data_source: UpdateSource,
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            **plotdataitem_kwargs,
-    ) -> "AbstractBasePlotCurve":
-        """Factory method for creating curve object fitting to the given plot item.
+    def from_plot_item(cls,
+                       plot_item: "ExPlotItem",
+                       data_source: UpdateSource,
+                       buffer_size: int = DEFAULT_BUFFER_SIZE,
+                       **plotdataitem_kwargs) -> "AbstractBasePlotCurve":
+        """
+        Factory method for creating curve object fitting the given plot item.
 
-        This function allows easier creation of the right object instead of creating
-        the right object that fits to the plotting style of the plot item by hand. This
-        function only initializes the item but does not yet add it to the plot item.
+        This function allows easier creation of proper items by using the right type.
+        It only initializes the item but does not yet add it to the plot item.
 
         Args:
-            plot_item: plot item the item should fit to
-            data_source: source the item receives data from
-            buffer_size: count of values the item's data model's buffer should hold at max
-            **plotdataitem_kwargs: keyword arguments for the items base class
+            plot_item: Plot item the item should fit to.
+            data_source: Source the item receives data from.
+            buffer_size: Amount of values that data model's buffer is able to accommodate.
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
 
         Returns:
-            A new Curve which receives data from the passed data source.
+            A new curve which receives data from the given data source.
 
         Raises:
             ValueError: The item does not fit the passed plot item's plotting style.
         """
         subclass = cls.get_subclass_fitting_plotting_style(plot_item=plot_item)
-        data_model = subclass.data_model_type(
-            data_source=data_source,
-            buffer_size=buffer_size,
-        )
-        return subclass(
-            plot_item=plot_item,
-            data_model=data_model,
-            **plotdataitem_kwargs,
-        )
+        data_model = subclass.data_model_type(data_source=data_source, buffer_size=buffer_size)
+        return subclass(plot_item=plot_item, data_model=data_model, **plotdataitem_kwargs)
 
 
 class LivePlotCurve(AbstractBasePlotCurve):
@@ -132,61 +105,54 @@ class LivePlotCurve(AbstractBasePlotCurve):
     data_model_type = LiveCurveDataModel
 
     @deprecated_param_alias(data_source="data_model")
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: Union[UpdateSource, LiveCurveDataModel],
-            buffer_size: int = DEFAULT_BUFFER_SIZE,
-            pen=DEFAULT_COLOR,
-            **plotdataitem_kwargs,
-    ):
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: Union[UpdateSource, LiveCurveDataModel],
+                 buffer_size: int = DEFAULT_BUFFER_SIZE,
+                 pen=DEFAULT_COLOR,
+                 **plotdataitem_kwargs):
         """
-        Live Plot Curve, abstract base class for all live data curves like
-        the scrolling and cyclic curve. Either Data Source of data model have
-        to be set.
+        Abstract base class for all curves receiving live data, such as scrolling or cyclic plot curves.
 
         Args:
-            plot_item: Plot Item the curve is created for
-            data_model: Either an Update Source or a already initialized data
-                        model
-            buffer_size: Buffer size, which will be passed to the data model,
-                         will only be used if the data_model is only an Update
-                         Source.
-            **plotdataitem_kwargs: Further Keyword Arguments for the PlotDataItem
+            plot_item: Plot item the curve is created for.
+            data_model: Either an :class:`UpdateSource` or an already initialized data model.
+            buffer_size: Amount of values that data model's buffer is able to accommodate. It used only
+                         when ``data_model`` argument is a :class:`UpdateSource` and thus a new data model
+                         object is initialized.
+            pen: Pen the curve should be drawn with (it is a part of the :class:`~pyqtgraph.PlotDataItem`
+                 base class arguments).
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
+
+        Raises:
+            TypeError: ``data_model`` is neither :class:`UpdateSource`, nor a data model object.
         """
         if isinstance(data_model, UpdateSource):
-            data_model = LiveCurveDataModel(
-                data_source=data_model,
-                buffer_size=buffer_size,
-            )
+            data_model = LiveCurveDataModel(data_source=data_model,
+                                            buffer_size=buffer_size)
         if data_model is not None:
-            super().__init__(
-                plot_item=plot_item,
-                data_model=data_model,
-                pen=pen,
-                **plotdataitem_kwargs,
-            )
+            super().__init__(plot_item=plot_item,
+                             data_model=data_model,
+                             pen=pen,
+                             **plotdataitem_kwargs)
         else:
-            raise TypeError("Need either data source or data model to create "
-                            f"a {type(self).__name__} instance")
+            raise TypeError(f"Need either data source or data model to create a {type(self).__name__} instance")
 
     @classmethod
-    def clone(
-            cls: Type["LivePlotCurve"],
-            object_to_create_from: "LivePlotCurve",
-            **plotdataitem_kwargs,
-    ) -> "LivePlotCurve":
+    def clone(cls: Type["LivePlotCurve"],
+              object_to_create_from: "LivePlotCurve",
+              **plotdataitem_kwargs) -> "LivePlotCurve":
         """
-        Clone graph item from existing one. The data model is shared, but the new graph item
-        is fitted to the old graph item's parent plot item's style. If this one has changed
-        since the creation of the old graph item, the new graph item will have the new style.
+        Clone graph item from an existing one. The data model is shared, but the new graph item
+        is relying on the style of the old graph's parent plot item. If this style has changed
+        since the creation of the old graph item, the new graph item will also have the new style.
 
         Args:
-            object_to_create_from: object which f.e. data model should be taken from
-            **plotdataitem_kwargs: Keyword arguments for the PlotDataItem base class
+            object_to_create_from: Source object.
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
 
         Returns:
-            New live data curve with the data model from the old passed one
+            New live data curve with the data model from the old one.
         """
         item_class = LivePlotCurve.get_subclass_fitting_plotting_style(
             plot_item=object_to_create_from._parent_plot_item)
@@ -203,7 +169,7 @@ class LivePlotCurve(AbstractBasePlotCurve):
         """Last timestamp received by the curve."""
         return self._parent_plot_item.last_timestamp
 
-    def _set_data(self, x: np.ndarray, y: np.ndarray) -> None:
+    def _set_data(self, x: np.ndarray, y: np.ndarray):
         """ Set data of the inner curve and scatter plot
 
         PyQtGraph prints RuntimeWarning when the data that is passed to the
@@ -278,37 +244,29 @@ class CyclicPlotCurve(LivePlotCurve):
                  pen=DEFAULT_COLOR,
                  **plotdataitem_kwargs):
         """
-        PlotDataItem extension for the Cyclic Plotting Style
+        Curve item for the :class:`CyclicPlotWidget`.
 
-        Displays data as a cyclic plot widget similar to a heart rate
-        monitor. The graph itself stays fixed in position and has a fixed length
-        that it does not exceed. As soon as the drawing reaches the end, the graph
-        gets redrawn beginning from the start. The old curve gets incrementally
+        Displays data as a cyclic plot widget similar to a heart rate monitor. The graph itself
+        stays fixed in position and has a fixed length. As soon as the drawing reaches the end,
+        the graph gets redrawn from the left hand side. The old curve gets incrementally
         overwritten by the new values. The x-values of all lines in the graph will
-        be shifted backwards according to the time span length (like x % time_span_length)
-        so the area with the curve does not move.
+        be adjusted so the visible curve does not move.
 
         Args:
-            plot_item: plot item the curve should fit to
-            data_model: Either an Update Source or a already initialized data
-                        model
-            buffer_size: Buffer size, which will be passed to the data model,
-                         will only be used if the data_model is only an Update
-                         Source.
-            pen: pen the curve should be drawn with, is part of the PlotDataItem
-                 base class parameters
-            **plotdataitem_kwargs: keyword arguments fo the base class
-
-        Raises:
-            ValueError: The passes data source is not usable as a source for data
+            plot_item: Plot item the curve should fit to.
+            data_model: Either an :class:`UpdateSource` or an already initialized data model.
+            buffer_size: Amount of values that data model's buffer is able to accommodate. It used only
+                         when ``data_model`` argument is a :class:`UpdateSource` and thus a new data model
+                         object is initialized.
+            pen: Pen the curve should be drawn with (it is a part of the :class:`~pyqtgraph.PlotDataItem`
+                 base class arguments).
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
         """
-        super().__init__(
-            plot_item=plot_item,
-            data_model=data_model,
-            buffer_size=buffer_size,
-            pen=pen,
-            **plotdataitem_kwargs,
-        )
+        super().__init__(plot_item=plot_item,
+                         data_model=data_model,
+                         buffer_size=buffer_size,
+                         pen=pen,
+                         **plotdataitem_kwargs)
         # Curves after clipping (data actually drawn)
         self._clipped_curve_old: CurveData = CurveData(np.array([]),
                                                        np.array([]),
@@ -317,14 +275,13 @@ class CyclicPlotCurve(LivePlotCurve):
                                                        np.array([]),
                                                        check_validity=False)
 
-    def update_item(self) -> None:
-        """Update item based on the plot items time span information"""
+    def update_item(self):
         self._update_new_curve_data_item()
         if cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).cycle > 0:
             self._update_old_curve_data_item()
         self._redraw_curve()
 
-    def _redraw_curve(self) -> None:
+    def _redraw_curve(self):
         """ Redraw the curve with the current data
 
         For drawing the new and old curve a single PlotCurveItem is used.
@@ -353,12 +310,12 @@ class CyclicPlotCurve(LivePlotCurve):
             self.clear()
             self._set_data(x=data_x, y=data_y)
 
-    def _update_new_curve_data_item(self) -> None:
+    def _update_new_curve_data_item(self):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
         point will be added if the the new point exceeds the current time
-        (because of f.e. inaccurate timestamp)
+        (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.time_span.start
         end = self._parent_plot_item.last_timestamp
@@ -369,12 +326,12 @@ class CyclicPlotCurve(LivePlotCurve):
             check_validity=False,
         )
 
-    def _update_old_curve_data_item(self) -> None:
+    def _update_old_curve_data_item(self):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
         point will be added if the the new point exceeds the current time
-        (because of f.e. inaccurate timestamp)
+        (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.time_span.size
         end = cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_end
@@ -387,16 +344,16 @@ class CyclicPlotCurve(LivePlotCurve):
 
 
 class ScrollingPlotCurve(LivePlotCurve):
-    """ Scrolling Plot Curve
+    """
+    Curve item for the :class:`ScrollingPlotWidget`.
 
-    A single curve scrolling towards newer timestamps as new values arrive.
-    The shown range has always the same length.
+    This curves acts as a FIFO queue, rendering new data points on the right hand side and
+    removing them from the left, as soon as they reach the capacity of the data model's buffer.
     """
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
-        """Update item based on the plot items time span information"""
+    def update_item(self):
         if self.opts.get("pen", None) is not None:
             # Subset for curve is clipped
             curve_x, curve_y = self._data_model.subset_for_xrange(
@@ -415,25 +372,22 @@ class ScrollingPlotCurve(LivePlotCurve):
 
 
 class StaticPlotCurve(AbstractBasePlotCurve):
-
     """
-    Curve Item for displaying static data, where new arriving data replaces
-    the old one entirely.
+    Curve item for the :class:`StaticPlotWidget`.
 
-    One example use case would be displaying waveform plots.
+    Static curves always have their entire buffer overwritten instead of appending it from any side.
+    It is useful for rendering waveform plots.
     """
 
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticCurveDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
 
 
 class EditablePlotCurve(AbstractBasePlotCurve):
-
-    """Curve Item for displaying editable data."""
 
     supported_plotting_style = PlotWidgetStyle.EDITABLE
     data_model_type = EditableCurveDataModel
@@ -441,28 +395,26 @@ class EditablePlotCurve(AbstractBasePlotCurve):
     sig_selection_changed = Signal()
     """
     Signal informing about any changes to the current selection. If the emitted
-    data is empty, the current selection was unselected. The signal will also
+    data is empty, the current selection is considered unselected. The signal will also
     be emitted, if the current selection has been moved around by dragging.
     """
 
-    def __init__(
-            self,
-            plot_item: "ExPlotItem",
-            data_model: AbstractBaseDataModel,
-            pen=DEFAULT_COLOR,
-            **plotdataitem_kwargs,
-    ):
-        """Base class for different live data curves.
+    def __init__(self,
+                 plot_item: "ExPlotItem",
+                 data_model: AbstractBaseDataModel,
+                 pen=DEFAULT_COLOR,
+                 **plotdataitem_kwargs):
+        """
+        Curve item for the :class:`EditablePlotWidget`.
+
+        This curve is not updating live, but rather allows to see a static data set and edit it by hand.
 
         Args:
-            plot_item: plot item the curve should fit to
-            data_model: Data Model the curve is based on
-            pen: pen the curve should be drawn with, is part of the PlotDataItem
-                 base class parameters
-            **plotdataitem_kwargs: keyword arguments fo the base class
-
-        Raises:
-            ValueError: The passes data source is not usable as a source for data
+            plot_item: Plot item the curve should fit to.
+            data_model: Data model the curve is based on.
+            pen: Pen the curve should be drawn with (it is a part of the :class:`~pyqtgraph.PlotDataItem`
+                 base class arguments).
+            **plotdataitem_kwargs: Keyword arguments for the :class:`~pyqtgraph.PlotDataItem` constructor.
         """
         AbstractBasePlotCurve.__init__(self,
                                        plot_item=plot_item,
@@ -475,13 +427,13 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         self._selection.setParentItem(self)
         self._selected_indices: Optional[np.ndarray] = None
 
-    def select(self, selection: QRectF) -> None:
+    def select(self, selection: QRectF):
         """
         Select data from the curve using the passed rectangle. The rectangle
         coordinates are given in scene coordinates.
 
         Args:
-            selection: rectangle for selecting new points
+            selection: Rectangle for selecting new points.
         """
         self._update_selected_indices(selection)
         if not self._selection_indices_empty:
@@ -495,15 +447,15 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         else:
             self.unselect()
 
-    def unselect(self) -> None:
-        """Unselect prior done selections."""
+    def unselect(self):
+        """Remove selections done previously via :meth:`select`."""
         self._update_selected_indices(None)
         # Inform about point being unselected
         self._disconnect_from_selection()
         self._selection.setData([], [])
         self.sig_selection_changed.emit()
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
         self.sig_selection_changed.emit()
@@ -520,15 +472,14 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             return self._selection.curve_data
         return None
 
-    def replace_selection(self, replacement: CurveData) -> None:
+    def replace_selection(self, replacement: CurveData):
         """
-        Replace the current selection with the passed replacement.
-        To select data from the plot, use select(). After the replacement is
+        Replace the current selection with the ``replacement``.
+        To select data from the plot, use :meth:`select`. After the replacement is
         completed, the selection will be unselected.
 
         Args:
-            replacement: Replacement data which should replace the current
-                         selection
+            replacement: Data which should replace the current selection.
         """
         indices = np.nonzero(self._selected_indices)
         self._editable_model.replace_selection(indices, replacement)
@@ -537,41 +488,44 @@ class EditablePlotCurve(AbstractBasePlotCurve):
     # ~~~~~~~~~~~~~~~ Wrapped from data model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def send_current_state(self) -> bool:
-        """Send the state back through the update source.
+        """
+        Commit performed changes into the :attr:`~EditableCurveDataModel.data_source`.
 
         Returns:
-            True if there was a state to send
+            Whether change was successfully committed.
         """
         return self._editable_model.send_current_state()
 
     @property
     def sendable_state_exists(self) -> bool:
-        """Check if there is a state to send."""
+        """
+        Check whether there are any changes that can be committed into the :attr:`~EditableCurveDataModel.data_source`.
+        """
         return self._editable_model.sendable_state_exists
 
     @property
     def undoable(self) -> bool:
-        """Is there an older state we can roll back to?"""
+        """Check whether there is an older state that can be rolled back to."""
         return self._editable_model.undoable
 
     @property
     def redoable(self) -> bool:
-        """Is there a newer state we can jump to?"""
+        """Check whether there is a newer state that can be transitioned to."""
         return self._editable_model.redoable
 
-    def undo(self) -> None:
-        """Jump to the next older state."""
+    def undo(self):
+        """Roll back to the next older state."""
         if self._editable_model.undo():
             self.unselect()
 
-    def redo(self) -> None:
-        """Jump to the next newer state."""
+    def redo(self):
+        """Transition to the next newer state."""
         if self._editable_model.redo():
             self.unselect()
 
     # ~~~~~~~~~~~~~~~~~~~~ Private ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def _update_selected_indices(self, selection: Optional[QRectF]) -> None:
+    def _update_selected_indices(self, selection: Optional[QRectF]):
         """
         Update the selection of the data selection marker with a given
         selection rectangle
@@ -593,7 +547,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             sel = np.zeros_like(x_data, dtype=bool)
         self._selected_indices = sel
 
-    def _stylize_selection_marker(self) -> None:
+    def _stylize_selection_marker(self):
         """
         Style the selected points with different colors so they are easily
         visible.
@@ -626,7 +580,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         marker_pen.setWidth(3)
         self._selection.setPen(marker_pen)
 
-    def _selection_moved(self, data: np.ndarray) -> None:
+    def _selection_moved(self, data: np.ndarray):
         """React to a change from the DataSelectionMarker, which is
         currently in progress. To fully accept the editing (with data model,
         history etc.), _selection_edited has to be called.
@@ -642,7 +596,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             y[i] = data[1][j]
         self.setData(x, y)
 
-    def _selection_edited(self, data: np.ndarray) -> None:
+    def _selection_edited(self, data: np.ndarray):
         """Apply the editing of the DataSelectionMarker to the this curve
 
         Compared to the _selection_moved function, this function will forward
@@ -696,20 +650,28 @@ class EditablePlotCurve(AbstractBasePlotCurve):
 
 class DragDirection(Flag):
     """
-    Enumeration for defining in the direction in which points in a
-    DataSelectionMarker should be draggable.
+    Flags for defining the direction in which points in a
+    :class:`DataSelectionMarker` should be draggable.
     """
     X = auto()
+    "Horizontal direction."
+
     Y = auto()
+    "Vertical direction."
 
 
 class PointLabelOptions(IntEnum):
     """
-    Options for labelling the points.
+    Enumeration to specify when labels should be displayed for points on the graph.
     """
     NEVER = auto()
+    """Never display labels."""
+
     HOVER = auto()
+    """Display labels when hovering over the related point."""
+
     ALWAYS = auto()
+    """Always display labels."""
 
 
 class DataSelectionMarker(pg.ScatterPlotItem):
@@ -732,13 +694,13 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                  *args,
                  **kwargs):
         """
-        Data selection markers are scatter plots, that can be moved around.
+        Data selection markers are points (derived from scatter plots) that can be moved around.
 
         Args:
-            direction: In which direction should the points be draggable
-            label_points: Labelling options for the plot
-            args: Positional arguments for the ScatterPlotItem
-            kwargs: Keyword arguments for the ScatterPlotItem
+            direction: In which direction should the points be draggable.
+            label_points: Labelling options for the plot.
+            args: Positional arguments for the :class:`~pyqtgraph.ScatterPlotItem` constructor.
+            kwargs: Keyword arguments for the :class:`~pyqtgraph.ScatterPlotItem` constructor.
         """
         self._point_labels: List[pg.TestItem] = []
         if isinstance(label_points, bool):
@@ -754,13 +716,12 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         self._drag_orig_hover: Optional[pg.Point] = None
         self.setAcceptHoverEvents(True)
 
-    def hoverMoveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
-        """Update the labels shown on the selected points based on the
-        passed over event, if the curve is configured to label points
-        that are hovered over.
+    def hoverMoveEvent(self, ev: QGraphicsSceneHoverEvent):
+        """
+        Triggers label rendering for points if the mode is :attr:`PointLabelOptions.HOVER`.
 
         Args:
-            ev: Hover Event for the Selection Marker
+            ev: Hover event over the marker.
         """
         super().hoverMoveEvent(ev)
         if self._points_labeled != PointLabelOptions.HOVER:
@@ -774,12 +735,12 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             self._remove_labels()
         ev.accept()
 
-    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
-        """Remove all labels based for points, that were shown because a
-        mouse hovered over them.
+    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent):
+        """
+        Triggers label rendering for points if the mode is :attr:`PointLabelOptions.HOVER`.
 
         Args:
-            ev: Hover Event for the Selection Marker
+            ev: Hover event over the marker.
         """
         super().hoverMoveEvent(ev)
         if self._points_labeled == PointLabelOptions.HOVER:
@@ -788,12 +749,13 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             ev.accept()
 
     def mouseDragEvent(self, ev: QGraphicsSceneMouseEvent):
-        """Custom mouse drag event for moving the selection around.
+        """
+        Custom mouse drag event for moving the selection around.
         If there are no points under the drag events starting position, it
         will be ignored.
 
         Args:
-            ev: mouse drag event to move the selection
+            ev: Mouse drag event to move the selection.
         """
         if ev.button() != Qt.LeftButton:
             ev.ignore()
@@ -843,11 +805,12 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                 data: Optional[List[object]] = None,
                 antialias: Optional[bool] = None,
                 name: Optional[str] = None,
-                **kwargs) -> None:
-        """Extend setData with setting labels for each point
+                **kwargs):
+        """
+        Extends :meth:`pyqtgraph.ScatterPlotItem.setData` with setting labels for each point.
 
-        If there is only one unnamed argument, it will be interpreted like the 'spots' argument.
-        If there are two unnamed arguments, they will be interpreted as sequences of x and y values.
+        If there is only one positional argument, it will be interpreted as ``spots`` keyword argument.
+        If there are two positional arguments, they will be interpreted as arrays of ``x`` and ``y`` values.
 
         Args:
             spots: Optional list of dicts. Each dict specifies parameters for a single spot:
@@ -906,25 +869,58 @@ class DataSelectionMarker(pg.ScatterPlotItem):
 
     @property
     def points_labeled(self) -> PointLabelOptions:
-        """How will the selected points be labelled"""
+        """Indicates how the selected points are labelled."""
         return self._points_labeled
 
     @points_labeled.setter
-    def points_labeled(self, label_points: PointLabelOptions) -> None:
-        """Is each selected points position decorated with and label"""
+    def points_labeled(self, label_points: PointLabelOptions):
         self._points_labeled = label_points
 
     @property
     def drag_direction(self) -> DragDirection:
-        """In which direction should the points be draggable"""
+        """Indicates in which direction the points can be dragged."""
         return self._drag_direction
 
     @drag_direction.setter
     def drag_direction(self, direction: DragDirection):
-        """In which direction should the points be draggable"""
         self._drag_direction = direction
 
-    def _add_labels(self) -> None:
+    @staticmethod
+    def complementary(color: QColor, plot_background: Optional[QColor] = None) -> QColor:
+        """
+        Get the complementary color to a given ``color``. For white, grey and black
+        colors, red is returned as the complementary color. If the color does
+        not provide enough contrast compared to the plot's background (when it is
+        passed), we will lighten / darken it accordingly.
+
+        Args:
+            color: Color whose complementary color should be calculated.
+            plot_background: Background color that is used to lighten / darken
+                             the complementary color to offer enough contrast
+                             to be visible.
+        """
+        rgb = [color.red(), color.green(), color.blue()]
+        # Color is somewhat greyish -> we take red as the complementary
+        if max(rgb) - min(rgb) < 10:
+            return pg.mkColor("r")
+        compl = QColor(
+            255 - color.red(),
+            255 - color.green(),
+            255 - color.blue(),
+            color.alpha(),
+        )
+        if plot_background:
+            if DataSelectionMarker._contrast_ratio(plot_background, compl) < 4.0:
+                if DataSelectionMarker._relative_luminance(plot_background) >= 0.5:
+                    # We have a light background
+                    lightness = compl.lightness() * 0.5
+                else:
+                    # We have a dark background
+                    lightness = min(compl.lightness() * 2, 230)
+                compl.setHsl(compl.hue(), compl.saturation(), int(round(lightness)))
+        return compl
+
+    def _add_labels(self):
         """
         For each point, add a label showing the position of the point in the
         direction it can be dragged in.
@@ -973,7 +969,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                 y_anker += 2
         return y_anker
 
-    def _remove_labels(self) -> None:
+    def _remove_labels(self):
         """Remove all point labels"""
         for label in self._point_labels:
             label.setParentItem(None)
@@ -993,41 +989,6 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         if self._drag_direction & DragDirection.Y or self._points_labeled == PointLabelOptions.HOVER:
             label.append("y: {:.3}".format(y))
         return "\n".join(label)
-
-    @staticmethod
-    def complementary(color: QColor, plot_background: Optional[QColor] = None) -> QColor:
-        """
-        Get the complementary QColor to a given color. For white, grey and black
-        colors, red is returned as the complementary color. If the color does
-        not provide enough contrast compared to the plots background (if it is
-        passed), we will lighten / darken it accordingly.
-
-        Args:
-            color: color which complementary color should be calculated
-            plot_background: Background Color that is used to lighten / darken
-                             the complementary color to offer enough contrast
-                             to be visible
-        """
-        rgb = [color.red(), color.green(), color.blue()]
-        # Color is somewhat greyish -> we take red as the complementary
-        if max(rgb) - min(rgb) < 10:
-            return pg.mkColor("r")
-        compl = QColor(
-            255 - color.red(),
-            255 - color.green(),
-            255 - color.blue(),
-            color.alpha(),
-        )
-        if plot_background:
-            if DataSelectionMarker._contrast_ratio(plot_background, compl) < 4.0:
-                if DataSelectionMarker._relative_luminance(plot_background) >= 0.5:
-                    # We have a light background
-                    lightness = compl.lightness() * 0.5
-                else:
-                    # We have a dark background
-                    lightness = min(compl.lightness() * 2, 230)
-                compl.setHsl(compl.hue(), compl.saturation(), int(round(lightness)))
-        return compl
 
     @staticmethod
     def _contrast_ratio(color_1: QColor, color_2: QColor) -> float:

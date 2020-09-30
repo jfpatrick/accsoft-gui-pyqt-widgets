@@ -1,30 +1,25 @@
 """Module with base classes for attaching pyqtgraph based items to a datamodel"""
 
-import abc
 import warnings
-from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
-
 import numpy as np
-import pyqtgraph as pg
-
-from accwidgets.graph.datamodel.itemdatamodel import AbstractBaseDataModel
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.plotconfiguration import ExPlotWidgetConfig, PlotWidgetStyle
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Type, cast, TypeVar, List, Union
+from accwidgets.graph import (AbstractBaseDataModel, UpdateSource, DEFAULT_BUFFER_SIZE, ExPlotWidgetConfig,
+                              PlotWidgetStyle)
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
 
 
 _T = TypeVar("_T", bound="DataModelBasedItem")
 
 
-class DataModelBasedItem(metaclass=abc.ABCMeta):
+class DataModelBasedItem(ABC):
 
     supported_plotting_style: PlotWidgetStyle = None  # type: ignore
-    """Which plotting style does this item support?"""
+    """Compatible widget plot type."""
 
     data_model_type: Type[AbstractBaseDataModel] = None  # type: ignore
-    """Which is the default data model type for this item."""
+    """Compatible data model class."""
 
     def __init__(
         self,
@@ -51,7 +46,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         self._layer_id: str = ""
 
     @classmethod
-    @abc.abstractmethod
+    @abstractmethod
     def from_plot_item(
             cls,
             plot_item: "ExPlotItem",
@@ -118,16 +113,16 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
                 subclasses.append(c)
         return subclasses
 
-    @abc.abstractmethod
-    def update_item(self) -> None:
-        """Update item based on the plot items time span information"""
+    @abstractmethod
+    def update_item(self):
+        """Update item based on the plot item's time span."""
         pass
 
     @staticmethod
     def check_plotting_style_support(
             plot_config: ExPlotWidgetConfig,
             supported_styles: List[PlotWidgetStyle],
-    ) -> None:
+    ):
         """ Check an items plotting style compatibility
 
         Check if the requested plotting style is supported by this item.
@@ -158,11 +153,11 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         return self._layer_id
 
     @layer_id.setter
-    def layer_id(self, layer_id: str) -> None:
+    def layer_id(self, layer_id: str):
         """Set the identifier of the layer the item was added to"""
         self._layer_id = layer_id
 
-    def _handle_data_model_change(self) -> None:
+    def _handle_data_model_change(self):
         """ Handle change in the data model
 
         If the PlotItem that contains this item is attached to a timing source,
@@ -179,17 +174,3 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         elif not plot.timing_source_compatible or \
                 (plot.timing_source_attached and plot.last_timestamp != -1.0):
             self.update_item()
-
-
-class AbstractDataModelBasedItemMeta(type(pg.GraphicsObject), type(DataModelBasedItem)):  # type: ignore
-
-    """ Metaclass to avoid metaclass conflicts
-
-    By creating a Metaclass that derives from GraphicsObject and our DataModelBasedItem
-    (which uses ABCMeta as metaclass) we can avoid the following metaclass conflict:
-
-    TypeError: metaclass conflict: the metaclass of a derived class must be
-    a (non-strict) subclass of the metaclasses of all its bases
-    """
-
-    pass

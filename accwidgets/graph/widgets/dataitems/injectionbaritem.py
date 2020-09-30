@@ -1,30 +1,17 @@
 """Scrolling Bar Chart for live-data plotting"""
 
-from typing import List, Type, Union, cast
-from copy import copy
-
 import pyqtgraph as pg
 import numpy as np
-
-from accwidgets.graph.datamodel.connection import UpdateSource
-from accwidgets.graph.datamodel.itemdatamodel import (
-    LiveInjectionBarDataModel,
-    StaticInjectionBarDataModel,
-    AbstractBaseDataModel,
-)
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.datamodel.datastructures import DEFAULT_COLOR
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    PlotWidgetStyle,
-)
-from accwidgets.graph.util import deprecated_param_alias
-from typing import TYPE_CHECKING
+from typing import List, Type, Union, cast, TYPE_CHECKING
+from copy import copy
+from accwidgets.graph import (UpdateSource, LiveInjectionBarDataModel, StaticInjectionBarDataModel,
+                              AbstractBaseDataModel, DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem,
+                              PlotWidgetStyle)
+from accwidgets.qt import AbstractQGraphicsItemMeta
+from accwidgets._deprecations import deprecated_param_alias
 if TYPE_CHECKING:
-    from accwidgets.graph.widgets.plotitem import ExPlotItem
+    from accwidgets.graph import ExPlotItem
+
 
 _PLOTTING_STYLE_TO_CLASS_MAPPING = {
     PlotWidgetStyle.SCROLLING_PLOT: "ScrollingInjectionBarGraphItem",
@@ -34,7 +21,7 @@ _PLOTTING_STYLE_TO_CLASS_MAPPING = {
 
 class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
                                         pg.ErrorBarItem,
-                                        metaclass=AbstractDataModelBasedItemMeta):
+                                        metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(
         self,
@@ -100,7 +87,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             height: np.ndarray,
             width: np.ndarray,
             labels: np.ndarray,
-    ) -> None:
+    ):
         """
         Set data to the injection bar graph.
 
@@ -127,7 +114,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             )
             self._draw_injector_bar_labels(label_texts, label_y_positions)
 
-    def _draw_injector_bar_labels(self, texts: np.ndarray, y_values: np.ndarray) -> None:
+    def _draw_injector_bar_labels(self, texts: np.ndarray, y_values: np.ndarray):
         """
         Draw a specified label at a specific position.
 
@@ -150,7 +137,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             self._text_labels.append(label)
             label.setParentItem(self)
 
-    def _clear_labels(self) -> None:
+    def _clear_labels(self):
         """Remove all labels from the ViewBox."""
         for label in self._text_labels:
             self.getViewBox().removeItem(label)
@@ -227,7 +214,7 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
         since the creation of the old graph item, the new graph item will have the new style.
 
         Args:
-            object_to_create_from: object which f.e. datamodel should be taken from
+            object_to_create_from: object which e.g. datamodel should be taken from
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItem base class
 
         Returns:
@@ -251,7 +238,7 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         self._set_data(*self._data_model.subset_for_xrange(
             start=self._parent_plot_item.time_span.start,
@@ -270,6 +257,6 @@ class StaticInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticInjectionBarDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         self._set_data(*self._data_model.full_data_buffer)

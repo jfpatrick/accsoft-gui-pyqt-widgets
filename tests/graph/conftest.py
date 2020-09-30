@@ -2,7 +2,6 @@
 
 
 import pytest
-
 from accwidgets.graph import ExPlotWidgetConfig, EditablePlotWidget
 from tests.graph.mock_utils.widget_test_window import MinimalTestWindow
 

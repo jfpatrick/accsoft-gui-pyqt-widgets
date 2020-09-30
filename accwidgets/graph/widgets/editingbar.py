@@ -1,27 +1,16 @@
-from typing import Optional, List, Callable, cast, Union, Any, Tuple, Dict
-from collections import defaultdict
-import warnings
-from copy import deepcopy
 
-from qtpy.QtWidgets import (
-    QSpinBox,
-    QLabel,
-    QGridLayout,
-    QDialog,
-    QDialogButtonBox,
-    QToolBar,
-    QAction,
-    QWidget,
-)
-from qtpy.QtCore import Signal, Slot
+import warnings
+import numpy as np
 import pyqtgraph as pg
 import qtawesome as qta
+from typing import Optional, List, Callable, cast, Union, Any, Tuple, Dict
+from collections import defaultdict
+from copy import deepcopy
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
-import numpy as np
-
-from accwidgets.graph.datamodel.datastructures import CurveData
-from accwidgets.graph.widgets.plotwidget import ExPlotWidget
+from qtpy.QtWidgets import QSpinBox, QLabel, QGridLayout, QDialog, QDialogButtonBox, QToolBar, QAction, QWidget
+from qtpy.QtCore import Signal, Slot
+from accwidgets.graph import CurveData, ExPlotWidget
 
 
 TransformationFunction = Callable[[CurveData], CurveData]
@@ -350,7 +339,7 @@ class EditingToolBar(QToolBar):
         # Setting up actions
         self._setup_actions()
 
-    def connect(self, plot: Union[ExPlotWidget, List[ExPlotWidget]]) -> None:
+    def connect(self, plot: Union[ExPlotWidget, List[ExPlotWidget]]):
         """
         Connect an editable plot widget to the bar. This includes the following
         functionality:
@@ -368,7 +357,7 @@ class EditingToolBar(QToolBar):
         for p in plot:
             self._connect(p)
 
-    def disconnect(self, plot: Union[ExPlotWidget, List[ExPlotWidget]]) -> None:
+    def disconnect(self, plot: Union[ExPlotWidget, List[ExPlotWidget]]):
         """
         Disconnect an editable plot widget to the bar. This includes the
         following functionality:
@@ -389,7 +378,7 @@ class EditingToolBar(QToolBar):
     def add_transformation(self,
                            action: QAction,
                            transformation: TransformationFunction,
-                           min_points_needed: int = 1) -> None:
+                           min_points_needed: int = 1):
         """
         Add action and a transformation, which should be called on the action
         being triggered to the toolbar. The connection between action and
@@ -411,7 +400,7 @@ class EditingToolBar(QToolBar):
         self.addAction(action)
         self._update_buttons_enable_state()
 
-    def remove_transformation(self, action: QAction) -> None:
+    def remove_transformation(self, action: QAction):
         """
         Remove an action and the attached transformation from the toolbar.
 
@@ -421,7 +410,7 @@ class EditingToolBar(QToolBar):
         self._transformation_actions.remove(action)
         self.removeAction(action)
 
-    def transform(self, transformation: TransformationFunction) -> None:
+    def transform(self, transformation: TransformationFunction):
         """
         Transform the current selection with the passed transformation
         function. The result of the transformation will be applied
@@ -445,7 +434,7 @@ class EditingToolBar(QToolBar):
                 warnings.warn(f"Transformation failed because a "
                               f"{type(e).__name__} was risen:\n{str(e)}")
 
-    def enable_selection_mode(self, enable: bool) -> None:
+    def enable_selection_mode(self, enable: bool):
         """
         Enables the selection mode on all the connected plot widgets. This
         function is the equivalent of pressing the selection mode toggle
@@ -457,7 +446,7 @@ class EditingToolBar(QToolBar):
         self.edit_action.setChecked(enable)
         self.sig_enable_selection_mode.emit(enable)
 
-    def send(self, *_) -> None:
+    def send(self, *_):
         """
         Send the current states for all the connected plot widgets back to
         the source they are connected to.
@@ -466,12 +455,12 @@ class EditingToolBar(QToolBar):
             self.selected_plot.send_all_editables_state()
         self._update_buttons_enable_state()
 
-    def undo(self, *_: Any) -> None:
+    def undo(self, *_: Any):
         """Undo the last change for the currently selected plot"""
         if self.selected_plot and self.selected_plot.plotItem.current_editable:
             self.selected_plot.plotItem.current_editable.undo()
 
-    def redo(self, *_: Any) -> None:
+    def redo(self, *_: Any):
         """Undo the last change for the currently selected plot"""
         if self.selected_plot and self.selected_plot.plotItem.current_editable:
             self.selected_plot.plotItem.current_editable.redo()
@@ -509,7 +498,7 @@ class EditingToolBar(QToolBar):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ Slots ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     @Slot(bool)
-    def handle_plot_selection_changed(self, selected: bool) -> None:
+    def handle_plot_selection_changed(self, selected: bool):
         """
         Handle the selected plot changed. If a plot is selected, all other
         plots are deselected. If the current plot is unselected, it will
@@ -535,7 +524,7 @@ class EditingToolBar(QToolBar):
 
     # ~~~~~~~~~~~~~~~~~ Private Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def _connect(self, plot: ExPlotWidget) -> None:
+    def _connect(self, plot: ExPlotWidget):
         """Connect a single plot"""
         self.sig_enable_selection_mode.connect(plot.set_selection_mode)
         plot.sig_plot_selected.connect(self.handle_plot_selection_changed)
@@ -548,7 +537,7 @@ class EditingToolBar(QToolBar):
             self.connected_plots[0].toggle_plot_selection(True)
         self._update_buttons_enable_state()
 
-    def _disconnect(self, plot: ExPlotWidget) -> None:
+    def _disconnect(self, plot: ExPlotWidget):
         """Disconnect a single plot"""
         try:
             self.sig_enable_selection_mode.disconnect(plot.set_selection_mode)
@@ -557,7 +546,7 @@ class EditingToolBar(QToolBar):
                           '"set_selection_mode" was not properly connected')
         self._update_plots_selectable()
 
-    def _update_plots_selectable(self) -> None:
+    def _update_plots_selectable(self):
         """
         Activate the plot selection if more than two plots are connected.
         If only one plot is connected, the plot will be made non selectable.
@@ -566,21 +555,21 @@ class EditingToolBar(QToolBar):
         for plot in self._connected_plots:
             plot.plotItem.make_selectable(activated)
 
-    def _update_buttons_enable_state(self) -> None:
+    def _update_buttons_enable_state(self):
         """Update, if buttons are enabled/disabled."""
         self._update_function_actions()
         self._update_send_button()
         self._update_undo_button()
         self._update_redo_button()
 
-    def _update_function_actions(self) -> None:
+    def _update_function_actions(self):
         """Update actions being enabled / disabled by the current selection."""
         selection = self.current_plots_selection
         for action in self._transformation_actions:
             minimum = self._transformation_actions_min_selection[action]
             action.setEnabled(selection is not None and len(selection.x) >= minimum)
 
-    def _update_send_button(self) -> None:
+    def _update_send_button(self):
         """Update if the send button is enabled or not."""
         enable = (
             self.selected_plot is not None
@@ -589,7 +578,7 @@ class EditingToolBar(QToolBar):
         )
         self.send_action.setEnabled(enable)
 
-    def _update_undo_button(self) -> None:
+    def _update_undo_button(self):
         """Update if the send button is enabled or not."""
         enable = (
             self.selected_plot is not None
@@ -598,7 +587,7 @@ class EditingToolBar(QToolBar):
         )
         self.undo_action.setEnabled(enable)
 
-    def _update_redo_button(self) -> None:
+    def _update_redo_button(self):
         """Update if the send button is enabled or not."""
         enable = (
             self.selected_plot is not None
@@ -607,7 +596,7 @@ class EditingToolBar(QToolBar):
         )
         self.redo_action.setEnabled(enable)
 
-    def _setup_actions(self) -> None:
+    def _setup_actions(self):
         """Setup Actions for the Editing-Bar including the standard functions"""
         self._add_standard_actions()
         self._connect_standard_actions()
@@ -618,7 +607,7 @@ class EditingToolBar(QToolBar):
                                     cast(TransformationFunction, transformation),
                                     minimum)
 
-    def _add_standard_actions(self) -> None:
+    def _add_standard_actions(self):
         """Add all standard buttons to the bar's layout"""
         actions = (self.edit_action,
                    self.undo_action,
@@ -627,7 +616,7 @@ class EditingToolBar(QToolBar):
         for action in actions:
             self.addAction(action)
 
-    def _connect_standard_actions(self) -> None:
+    def _connect_standard_actions(self):
         """Connect standard buttons' click signal to slots."""
         self.edit_action.toggled.connect(self.enable_selection_mode)
         self.undo_action.triggered.connect(self.undo)

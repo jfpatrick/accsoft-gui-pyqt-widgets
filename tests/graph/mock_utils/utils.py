@@ -1,13 +1,12 @@
 """General Purpose Utility functions."""
 
 import functools
-from typing import Optional, Type, Callable, Tuple
 import warnings
+from typing import Optional, Type, Callable, Tuple
 from unittest.mock import MagicMock
-
 from qtpy.QtGui import QPen, QBrush, QColor
 from qtpy.QtCore import Qt, QPointF
-import accwidgets.graph as accgraph
+from accwidgets.graph import DataSelectionMarker
 
 
 def warn_always(warning_type: Optional[Type[Warning]] = None) -> Callable:
@@ -32,7 +31,7 @@ def warn_always(warning_type: Optional[Type[Warning]] = None) -> Callable:
     return deco
 
 
-def sim_selection_moved(marker: accgraph.DataSelectionMarker,
+def sim_selection_moved(marker: DataSelectionMarker,
                         start: Tuple[float, float],
                         end: Tuple[float, float]):
     """

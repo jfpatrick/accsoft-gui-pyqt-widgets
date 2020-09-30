@@ -1,15 +1,14 @@
-from unittest.mock import patch
-from typing import List
 
-from scipy.signal import savgol_filter
 import pytest
 import numpy as np
-from qtpy import QtWidgets, QtCore
-# qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
-from PyQt5 import QtTest
 import qtawesome as qta
-
-import accwidgets.graph as accgraph
+from typing import List
+from unittest.mock import patch
+from scipy.signal import savgol_filter
+from qtpy import QtWidgets, QtCore
+from PyQt5 import QtTest  # qtpy.QTest incomplete: https://github.com/spyder-ide/qtpy/issues/197
+from accwidgets.graph import (EditingToolBar, EditablePlotWidget, EditablePlotCurve, CurveData, UpdateSource,
+                              ExPlotWidget, StandardTransformations)
 from .mock_utils.utils import sim_selection_moved
 
 
@@ -18,7 +17,7 @@ def test_bar_toggle_editable_mode(qtbot, empty_testing_window):
     Test if the right signals are emitted on an edit button press
     """
     qtbot.add_widget(empty_testing_window)
-    bar = accgraph.EditingToolBar()
+    bar = EditingToolBar()
     empty_testing_window.cw_layout.addWidget(bar)
 
     spy = QtTest.QSignalSpy(bar.sig_enable_selection_mode)
@@ -64,23 +63,23 @@ def test_bar_send(qtbot,
                   curve_2_edit):
     """Test if send button is enabled /disabled properly"""
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    plot_2 = accgraph.EditablePlotWidget()
+    plot_1 = EditablePlotWidget()
+    plot_2 = EditablePlotWidget()
     plots = [plot_1, plot_2]
-    bar = accgraph.EditingToolBar()
+    bar = EditingToolBar()
     bar.connect(plots)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot_1)
     empty_testing_window.cw_layout.addWidget(plot_2)
 
-    source_1 = accgraph.UpdateSource()
-    source_2 = accgraph.UpdateSource()
+    source_1 = UpdateSource()
+    source_2 = UpdateSource()
     with patch.object(source_1, "handle_data_model_edit") as handler_1:
         with patch.object(source_2, "handle_data_model_edit") as handler_2:
-            curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
-            curve_2: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-            source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-            source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+            curve_1: EditablePlotCurve = plot_1.addCurve(data_source=source_1)
+            curve_2: EditablePlotCurve = plot_2.addCurve(data_source=source_2)
+            source_1.send_data(CurveData([0, 1, 2], [0, 1, 2]))
+            source_2.send_data(CurveData([0, 1, 2], [2, 1, 0]))
 
             plots[selected_plot].plotItem.toggle_plot_selection(True)
             assert bar.selected_plot == plots[selected_plot]
@@ -117,21 +116,21 @@ def test_send_action_plot_switch(qtbot,
     """Send Button disabled when switching to plot without changes and enabled
     again when switching back"""
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    plot_2 = accgraph.EditablePlotWidget()
+    plot_1 = EditablePlotWidget()
+    plot_2 = EditablePlotWidget()
     plots = [plot_1, plot_2]
-    bar = accgraph.EditingToolBar()
+    bar = EditingToolBar()
     bar.connect(plots)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot_1)
     empty_testing_window.cw_layout.addWidget(plot_2)
 
-    source_1 = accgraph.UpdateSource()
-    source_2 = accgraph.UpdateSource()
-    curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
-    _: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-    source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+    source_1 = UpdateSource()
+    source_2 = UpdateSource()
+    curve_1: EditablePlotCurve = plot_1.addCurve(data_source=source_1)
+    _: EditablePlotCurve = plot_2.addCurve(data_source=source_2)
+    source_1.send_data(CurveData([0, 1, 2], [0, 1, 2]))
+    source_2.send_data(CurveData([0, 1, 2], [2, 1, 0]))
 
     plots[0].plotItem.toggle_plot_selection(True)
     curve_1.select(QtCore.QRectF(0, 1.5, 2, 1))
@@ -148,15 +147,15 @@ def test_send_enabled_after_data_unselect(qtbot,
                                           empty_testing_window):
     """Send button should still be enabled even when deselected the edited data"""
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot_1 = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect(plot_1)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot_1)
 
-    source_1 = accgraph.UpdateSource()
-    curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
-    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source_1 = UpdateSource()
+    curve_1: EditablePlotCurve = plot_1.addCurve(data_source=source_1)
+    source_1.send_data(CurveData([0, 1, 2], [0, 1, 2]))
 
     plot_1.plotItem.toggle_plot_selection(True)
     curve_1.select(QtCore.QRectF(0, 1.5, 2, 1))
@@ -184,20 +183,20 @@ def test_function_buttons_enabled(qtbot,
                                   data_selections,
                                   enabled):
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    plot_2 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot_1 = EditablePlotWidget()
+    plot_2 = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect([plot_1, plot_2])
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot_1)
     empty_testing_window.cw_layout.addWidget(plot_2)
 
-    source_1 = accgraph.UpdateSource()
-    source_2 = accgraph.UpdateSource()
-    curve_1: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source_1)
-    curve_2: accgraph.EditablePlotCurve = plot_2.addCurve(data_source=source_2)
-    source_1.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
-    source_2.send_data(accgraph.CurveData([0, 1, 2], [2, 1, 0]))
+    source_1 = UpdateSource()
+    source_2 = UpdateSource()
+    curve_1: EditablePlotCurve = plot_1.addCurve(data_source=source_1)
+    curve_2: EditablePlotCurve = plot_2.addCurve(data_source=source_2)
+    source_1.send_data(CurveData([0, 1, 2], [0, 1, 2]))
+    source_2.send_data(CurveData([0, 1, 2], [2, 1, 0]))
 
     for plot, sp in zip([plot_1, plot_2], selected_plots):
         plot.plotItem.toggle_plot_selection(sp)
@@ -223,14 +222,14 @@ def test_function_buttons_with_multiple_point_min_selection(
     disabled_count,
 ):
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot_1 = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect(plot_1)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot_1)
-    source = accgraph.UpdateSource()
-    curve: accgraph.EditablePlotCurve = plot_1.addCurve(data_source=source)
-    source.send_data(accgraph.CurveData([0, 1, 2], [0, 1, 2]))
+    source = UpdateSource()
+    curve: EditablePlotCurve = plot_1.addCurve(data_source=source)
+    source.send_data(CurveData([0, 1, 2], [0, 1, 2]))
     # Only two points will be selected
     curve.select(selection)
 
@@ -253,12 +252,12 @@ def test_plot_connection(qtbot,
     Check if the editable toggle button press is properly forwarded
     to the connected plots.
     """
-    with patch.object(accgraph.ExPlotWidget, "set_selection_mode") as selection_mock:
+    with patch.object(ExPlotWidget, "set_selection_mode") as selection_mock:
         qtbot.add_widget(empty_testing_window)
-        bar = accgraph.EditingToolBar()
-        plots: List[accgraph.ExPlotWidget] = []
+        bar = EditingToolBar()
+        plots: List[ExPlotWidget] = []
         for _ in range(plot_count):
-            plot = accgraph.EditablePlotWidget()
+            plot = EditablePlotWidget()
             plots.append(plot)
             empty_testing_window.cw_layout.addWidget(plot)
         bar.connect(plots)
@@ -281,11 +280,11 @@ def test_disconnect(qtbot, empty_testing_window):
     """
     Check if disconnecting a single plot is possible without any side effects
     """
-    with patch.object(accgraph.ExPlotWidget, "set_selection_mode") as selection_mock:
-        plots = [accgraph.EditablePlotWidget(),
-                 accgraph.EditablePlotWidget()]
+    with patch.object(ExPlotWidget, "set_selection_mode") as selection_mock:
+        plots = [EditablePlotWidget(),
+                 EditablePlotWidget()]
         qtbot.add_widget(empty_testing_window)
-        bar = accgraph.EditingToolBar()
+        bar = EditingToolBar()
         empty_testing_window.addToolBar(bar)
         empty_testing_window.cw_layout.addWidget(plots[0])
         empty_testing_window.cw_layout.addWidget(plots[1])
@@ -319,10 +318,10 @@ def test_plot_item_selection(qtbot,
                              pl2_sel,
                              selected):
     qtbot.add_widget(empty_testing_window)
-    plot_1 = accgraph.EditablePlotWidget()
-    plot_2 = accgraph.EditablePlotWidget()
+    plot_1 = EditablePlotWidget()
+    plot_2 = EditablePlotWidget()
     plots = [plot_1, plot_2]
-    bar = accgraph.EditingToolBar()
+    bar = EditingToolBar()
     bar.connect(plots)
     for w in plots + [bar]:
         empty_testing_window.cw_layout.addWidget(w)
@@ -359,10 +358,10 @@ def test_change_plot_item_selection_sequence(qtbot,
                                              selections,
                                              selected):
     qtbot.add_widget(empty_testing_window)
-    pl1 = accgraph.EditablePlotWidget()
-    pl2 = accgraph.EditablePlotWidget()
+    pl1 = EditablePlotWidget()
+    pl2 = EditablePlotWidget()
     plots = [pl1, pl2]
-    bar = accgraph.EditingToolBar()
+    bar = EditingToolBar()
     empty_testing_window.cw_layout.addWidget(pl1)
     empty_testing_window.cw_layout.addWidget(pl2)
     empty_testing_window.addToolBar(bar)
@@ -377,8 +376,8 @@ def test_change_plot_item_selection_sequence(qtbot,
 def test_single_connected_plot_not_selectable(qtbot, empty_testing_window):
     """Plot selecting should be disabled if only a single plot is connected."""
     qtbot.add_widget(empty_testing_window)
-    pl1 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    pl1 = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect(pl1)
     empty_testing_window.cw_layout.addWidget(pl1)
     empty_testing_window.addToolBar(bar)
@@ -396,8 +395,8 @@ def test_disconnect_selected_plot(qtbot, empty_testing_window):
     qtbot.add_widget(empty_testing_window)
     plots = []
     for _ in range(3):
-        plots.append(accgraph.EditablePlotWidget())
-    bar = accgraph.EditingToolBar()
+        plots.append(EditablePlotWidget())
+    bar = EditingToolBar()
     bar.connect(plots)
     empty_testing_window.addToolBar(bar)
     for plot in plots:
@@ -414,9 +413,9 @@ def test_disconnect_selected_plot(qtbot, empty_testing_window):
 
 
 @pytest.mark.parametrize("pl1_sel, pl2_sel, active_plot, selection", [
-    (QtCore.QRectF(0, 2.5, 4, 1), QtCore.QRectF(0, 2.5, 4, 1), 0, accgraph.CurveData([0, 4], [3, 3])),
-    (None, QtCore.QRectF(0, 2.5, 4, 1), 1, accgraph.CurveData([2], [3])),
-    (QtCore.QRectF(0, 2.5, 4, 1), QtCore.QRectF(0, 2.5, 4, 1), 1, accgraph.CurveData([2], [3])),
+    (QtCore.QRectF(0, 2.5, 4, 1), QtCore.QRectF(0, 2.5, 4, 1), 0, CurveData([0, 4], [3, 3])),
+    (None, QtCore.QRectF(0, 2.5, 4, 1), 1, CurveData([2], [3])),
+    (QtCore.QRectF(0, 2.5, 4, 1), QtCore.QRectF(0, 2.5, 4, 1), 1, CurveData([2], [3])),
 ])
 def test_selection_of_current_plotitem(qtbot,
                                        empty_testing_window,
@@ -425,22 +424,22 @@ def test_selection_of_current_plotitem(qtbot,
                                        active_plot,
                                        selection):
     qtbot.add_widget(empty_testing_window)
-    pl1 = accgraph.EditablePlotWidget()
-    pl2 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    pl1 = EditablePlotWidget()
+    pl2 = EditablePlotWidget()
+    bar = EditingToolBar()
     plots = [pl1, pl2]
 
     for w in [pl1, pl2, bar]:
         empty_testing_window.cw_layout.addWidget(w)
     bar.connect(plots)
 
-    s1: accgraph.UpdateSource = accgraph.UpdateSource()
-    c1: accgraph.EditablePlotCurve = pl1.addCurve(data_source=s1)
-    s1.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    s1: UpdateSource = UpdateSource()
+    c1: EditablePlotCurve = pl1.addCurve(data_source=s1)
+    s1.send_data(CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
 
-    s2: accgraph.UpdateSource = accgraph.UpdateSource()
-    c2: accgraph.EditablePlotCurve = pl2.addCurve(data_source=s2)
-    s2.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[1, 2, 3, 2, 1]))
+    s2: UpdateSource = UpdateSource()
+    c2: EditablePlotCurve = pl2.addCurve(data_source=s2)
+    s2.send_data(CurveData(x=[0, 1, 2, 3, 4], y=[1, 2, 3, 2, 1]))
 
     if pl1_sel:
         c1.select(selection=pl1_sel)
@@ -462,24 +461,24 @@ def test_selection_of_current_plotitem(qtbot,
 def test_add_action_to_toolbar(qtbot,
                                empty_testing_window):
     qtbot.add_widget(empty_testing_window)
-    plot = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect(plot)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot)
 
-    source: accgraph.UpdateSource = accgraph.UpdateSource()
-    curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.send_data(accgraph.CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
+    source: UpdateSource = UpdateSource()
+    curve: EditablePlotCurve = plot.addCurve(data_source=source)
+    source.send_data(CurveData(x=[0, 1, 2, 3, 4], y=[3, 2, 1, 2, 3]))
     curve.select(selection=QtCore.QRectF(0, 1.5, 4, 2))
 
     action = QtWidgets.QAction(qta.icon("fa5b.reddit-alien"), "My Transformation")
     transformation_calls = 0
 
-    def transformation(curve: accgraph.CurveData):
+    def transformation(curve: CurveData):
         nonlocal transformation_calls
         transformation_calls += 1
-        assert curve == accgraph.CurveData(x=[0, 1, 3, 4], y=[3, 2, 2, 3])
+        assert curve == CurveData(x=[0, 1, 3, 4], y=[3, 2, 2, 3])
         curve.y *= 2
         return curve
 
@@ -498,8 +497,8 @@ def test_add_action_to_toolbar(qtbot,
 def test_remove_action_from_toolbar(qtbot,
                                     empty_testing_window):
     qtbot.add_widget(empty_testing_window)
-    plot = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect(plot)
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot)
@@ -520,9 +519,9 @@ def test_remove_action_from_toolbar(qtbot,
 def test_redo_undo_button_enabled(qtbot, empty_testing_window):
     """Check if the undo button gets properly enabled / disabled"""
     qtbot.add_widget(empty_testing_window)
-    plot = accgraph.EditablePlotWidget()
-    plot_2 = accgraph.EditablePlotWidget()
-    bar = accgraph.EditingToolBar()
+    plot = EditablePlotWidget()
+    plot_2 = EditablePlotWidget()
+    bar = EditingToolBar()
     bar.connect([plot, plot_2])
     empty_testing_window.addToolBar(bar)
     empty_testing_window.cw_layout.addWidget(plot)
@@ -533,11 +532,11 @@ def test_redo_undo_button_enabled(qtbot, empty_testing_window):
     assert not bar.undo_action.isEnabled()
     assert not bar.redo_action.isEnabled()
 
-    source = accgraph.UpdateSource()
-    curve: accgraph.EditablePlotCurve = plot.addCurve(data_source=source)
-    source.send_data(accgraph.CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
+    source = UpdateSource()
+    curve: EditablePlotCurve = plot.addCurve(data_source=source)
+    source.send_data(CurveData([0, 1, 2, 3, 4], [3, 2, 1, 2, 3]))
     curve.select(QtCore.QRectF(-0.25, 1.75, 1.5, 1.5))
-    curve.replace_selection(accgraph.CurveData([0, 1], [6, 4]))
+    curve.replace_selection(CurveData([0, 1], [6, 4]))
 
     # Selection replaces -> undoable & sendable
     assert bar.undo_action.isEnabled()
@@ -607,67 +606,67 @@ def test_redo_undo_button_enabled(qtbot, empty_testing_window):
 
 
 @pytest.mark.parametrize("input_val, param, output_val", [
-    (accgraph.CurveData([], []), 0, accgraph.CurveData([], [])),
-    (accgraph.CurveData([1], [1]), 0, accgraph.CurveData([1], [0])),
-    (accgraph.CurveData([0, 1], [1, 2]), 0, accgraph.CurveData([0, 1], [0, 0])),
+    (CurveData([], []), 0, CurveData([], [])),
+    (CurveData([1], [1]), 0, CurveData([1], [0])),
+    (CurveData([0, 1], [1, 2]), 0, CurveData([0, 1], [0, 0])),
 ])
 def test_func_align(input_val, param, output_val):
-    assert accgraph.StandardTransformations.aligned(input_val, param) == output_val
+    assert StandardTransformations.aligned(input_val, param) == output_val
 
 
 @pytest.mark.parametrize("input_val, output_val", [
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), accgraph.CurveData([0, 1, 2], [0, 1, 2])),
-    (accgraph.CurveData([0, 1, 2, 3], [1, 0, 1, 2]), accgraph.CurveData([0, 1, 2, 3], [0.4, 0.8, 1.2, 1.6])),
+    (CurveData([0, 1, 2], [0, 1, 2]), CurveData([0, 1, 2], [0, 1, 2])),
+    (CurveData([0, 1, 2, 3], [1, 0, 1, 2]), CurveData([0, 1, 2, 3], [0.4, 0.8, 1.2, 1.6])),
 ])
 def test_func_linfit(input_val, output_val):
-    assert accgraph.StandardTransformations.lin_fitted(input_val) == output_val
+    assert StandardTransformations.lin_fitted(input_val) == output_val
 
 
 @pytest.mark.parametrize("input_val, degree", [
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), 1),
-    (accgraph.CurveData([0, 1, 2, 3], [1, 0, 1, 2]), 2),
+    (CurveData([0, 1, 2], [0, 1, 2]), 1),
+    (CurveData([0, 1, 2, 3], [1, 0, 1, 2]), 2),
 ])
 def test_func_polyfit(input_val, degree):
     coefficients = np.polyfit(input_val.x, input_val.y, degree)
     output_val = np.poly1d(coefficients)(input_val.y)
-    actual = accgraph.StandardTransformations.poly_fitted(input_val, degree)
+    actual = StandardTransformations.poly_fitted(input_val, degree)
     assert np.allclose(actual.y, output_val)
     assert np.array_equal(actual.x, input_val.x)
 
 
 @pytest.mark.parametrize("input_val, params, output_val", [
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), (0, 1), accgraph.CurveData([0, 1, 2], [0, 1, 2])),
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), (1, 1), accgraph.CurveData([1, 2], [1, 2])),
-    (accgraph.CurveData([0, 1, 2, 3], [0, 1, 2, 3]), (0, 2), accgraph.CurveData([0, 2], [0, 2])),
-    (accgraph.CurveData([0, 1, 2, 3], [0, 1, 2, 3]), (1, 2), accgraph.CurveData([1, 3], [1, 3])),
+    (CurveData([0, 1, 2], [0, 1, 2]), (0, 1), CurveData([0, 1, 2], [0, 1, 2])),
+    (CurveData([0, 1, 2], [0, 1, 2]), (1, 1), CurveData([1, 2], [1, 2])),
+    (CurveData([0, 1, 2, 3], [0, 1, 2, 3]), (0, 2), CurveData([0, 2], [0, 2])),
+    (CurveData([0, 1, 2, 3], [0, 1, 2, 3]), (1, 2), CurveData([1, 3], [1, 3])),
 ])
 def test_func_reduce_to_nth_point(input_val, params, output_val):
-    assert accgraph.StandardTransformations.reduced_to_nth_point(input_val, *params) == output_val
+    assert StandardTransformations.reduced_to_nth_point(input_val, *params) == output_val
 
 
 @pytest.mark.parametrize("input_val, output_val", [
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), accgraph.CurveData([], [])),
+    (CurveData([0, 1, 2], [0, 1, 2]), CurveData([], [])),
 ])
 def test_func_delete(input_val, output_val):
-    assert accgraph.StandardTransformations.cleared(input_val) == output_val
+    assert StandardTransformations.cleared(input_val) == output_val
 
 
 @pytest.mark.parametrize("input_val, param, output_val", [
-    (accgraph.CurveData([], []), 1, accgraph.CurveData([], [])),
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), 1, accgraph.CurveData([0, 1, 2], [1, 2, 3])),
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), 0.1, accgraph.CurveData([0, 1, 2], [0.1, 1.1, 2.1])),
-    (accgraph.CurveData([0, 1, 2], [0, 1, 2]), -1, accgraph.CurveData([0, 1, 2], [-1, 0, 1])),
+    (CurveData([], []), 1, CurveData([], [])),
+    (CurveData([0, 1, 2], [0, 1, 2]), 1, CurveData([0, 1, 2], [1, 2, 3])),
+    (CurveData([0, 1, 2], [0, 1, 2]), 0.1, CurveData([0, 1, 2], [0.1, 1.1, 2.1])),
+    (CurveData([0, 1, 2], [0, 1, 2]), -1, CurveData([0, 1, 2], [-1, 0, 1])),
 ])
 def test_func_move(input_val, param, output_val):
-    assert accgraph.StandardTransformations.moved(input_val, param) == output_val
+    assert StandardTransformations.moved(input_val, param) == output_val
 
 
 @pytest.mark.parametrize("input_val, params, output_val", [
-    (accgraph.CurveData([0, 1, 2, 3], [0, 1, 2, 4]),
+    (CurveData([0, 1, 2, 3], [0, 1, 2, 4]),
      (3, 2),
-     accgraph.CurveData([0, 1, 2, 3], savgol_filter([0, 1, 2, 4],
-                                                    window_length=3,
-                                                    polyorder=2))),
+     CurveData([0, 1, 2, 3], savgol_filter([0, 1, 2, 4],
+                                           window_length=3,
+                                           polyorder=2))),
 ])
 def test_func_smooth_curve(input_val, params, output_val):
-    assert accgraph.StandardTransformations.smoothed(input_val, *params) == output_val
+    assert StandardTransformations.smoothed(input_val, *params) == output_val

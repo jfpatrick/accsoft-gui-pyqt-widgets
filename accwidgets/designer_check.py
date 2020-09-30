@@ -17,7 +17,7 @@ def is_designer() -> bool:
     return _IS_DESIGNER
 
 
-def set_designer() -> None:
+def set_designer():
     """Call to set flag, that code has been run from designer"""
     global _IS_DESIGNER
     _IS_DESIGNER = True

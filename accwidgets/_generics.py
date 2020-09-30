@@ -11,9 +11,10 @@ else:
     from abc import ABCMeta as GenericMeta
 
 
-class GenericQObjectMeta(GenericMeta, wrappertype):
+class GenericQtMeta(GenericMeta, wrappertype):
     """
-    Metaclass for classes that want to subclass :class:`typing.Generic` class and are :class:`QObject` subclasses.
+    Metaclass for classes that want to subclass :class:`typing.Generic` class and are also PyQt subclasses
+    (e.g. :class:`QObject` or :class:`QGraphicsItem`).
     """
 
     def __init__(self, *args, **kwargs):
