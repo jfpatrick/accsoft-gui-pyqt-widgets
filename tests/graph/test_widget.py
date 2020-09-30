@@ -76,7 +76,7 @@ def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
 def test_static_plot_widget_creation(
         qtbot,
         item_to_add: Type[DataModelBasedItem],
-) -> None:
+):
     window = PlotWidgetTestWindow(
         plot_config=ExPlotWidgetConfig(
             plotting_style=PlotWidgetStyle.STATIC_PLOT,

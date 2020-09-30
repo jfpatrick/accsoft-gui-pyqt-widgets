@@ -3,21 +3,21 @@ Data buffers for the data model for different items
 that are able to safe different types and amount of data
 """
 
-import abc
+
 import math
 import warnings
-from typing import Optional, Tuple, List, Union
-
 import numpy as np
-
-from accwidgets.graph.datamodel.datamodelclipping import calc_intersection
-from accwidgets.graph.datamodel.datastructures import PointData
+from typing import Optional, Tuple, List, Union
+from abc import ABC, abstractmethod
 from accwidgets.graph.util import deprecated_param_alias
+from .datamodelclipping import calc_intersection
+from .datastructures import PointData
+
 
 DEFAULT_BUFFER_SIZE: int = 100000
 
 
-class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
+class BaseSortedDataBuffer(ABC):
 
     def __init__(self, size: int = DEFAULT_BUFFER_SIZE):
         """
@@ -63,7 +63,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         # This is needed for initialization
         self.reset()
 
-    @abc.abstractmethod
+    @abstractmethod
     def subset_for_primary_val_range(self, start: float, end: float) -> Tuple[np.ndarray, ...]:
         """ Get Subset of a specific start and end point
 
@@ -76,7 +76,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         """
         pass
 
-    def add_entry_to_buffer(self, primary_value: float, secondary_values: List[Union[float, str]]) -> None:
+    def add_entry_to_buffer(self, primary_value: float, secondary_values: List[Union[float, str]]):
         """Append a new entry to the buffer
 
         Add a single entry into the buffer and sort it in at the right position.
@@ -97,7 +97,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
         ]:
             self._sort_in_point(primary_value=primary_value, secondary_values=secondary_values)
 
-    def add_entries_to_buffer(self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]) -> None:
+    def add_entries_to_buffer(self, primary_values: np.ndarray, secondary_values_list: List[np.ndarray]):
         """Append a list of entries
 
         Entries that are passed will be ordered according to their primary value.
@@ -123,7 +123,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 sec_values.append(secondary_values_entry[index])
             self._sort_in_point(primary_value=p_val, secondary_values=sec_values)
 
-    def reset(self) -> None:
+    def reset(self):
         """ Clear all saved fields and intialize them again
 
         Clear the buffer by initializing primary and secondary values again.
@@ -217,7 +217,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
 
     @property
     def index_of_last_valid(self) -> int:
-        """The newest primary value (f.e. x value) that is a number and not NaN."""
+        """The newest primary value (e.g. x value) that is a number and not NaN."""
         next_free_index = self.occupied_size
         last_non_free_and_not_none_index = next_free_index - 1
         while last_non_free_and_not_none_index > 0 and np.isnan(self._primary_values[last_non_free_and_not_none_index]):
@@ -236,7 +236,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
 
     # ~~~~~~~~~~ Private ~~~~~~~~~~
 
-    def _sort_in_point(self, primary_value: float, secondary_values: List[Union[float, str]]) -> None:
+    def _sort_in_point(self, primary_value: float, secondary_values: List[Union[float, str]]):
         """ Sort in a single point by its primary value
 
         This function does not prepare anything for storing the points.
@@ -415,7 +415,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
                 count_points_that_have_to_be_cut_from_the_front += 1
         return count_points_that_have_to_be_cut_from_the_front, spaces_to_shift
 
-    def _shift_buffer_to_the_left(self, spaces_to_shift: int) -> None:
+    def _shift_buffer_to_the_left(self, spaces_to_shift: int):
         """Shift the buffer by a given number of places to the left."""
         self._primary_values = np.pad(
             self._primary_values[spaces_to_shift:],
@@ -446,7 +446,7 @@ class BaseSortedDataBuffer(metaclass=abc.ABCMeta):
             or np.isnan(self._primary_values[last_non_free_and_not_none_index])
         )
 
-    def _update_space_left(self) -> None:
+    def _update_space_left(self):
         """Update the space that is left in this buffer"""
         self._space_left = self._size - self._next_free_slot
 
@@ -512,7 +512,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         Secondary Values =  Y Value
     """
 
-    def reset(self) -> None:
+    def reset(self):
         """ Reset the buffer"""
         super().reset()
         # X Value
@@ -523,7 +523,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists[0].fill(np.nan)
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def add_entry(self, x: float, y: float) -> None:
+    def add_entry(self, x: float, y: float):
         """Append a single point to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -536,7 +536,7 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y])
 
     @deprecated_param_alias(x_values="x", y_values="y")
-    def add_list_of_entries(self, x: np.ndarray, y: np.ndarray) -> None:
+    def add_list_of_entries(self, x: np.ndarray, y: np.ndarray):
         """Append a list of points to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -696,7 +696,7 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         Secondary Values =  Y Value, Height
     """
 
-    def reset(self) -> None:
+    def reset(self):
         """Reset the buffer"""
         super().reset()
         # X Value
@@ -710,7 +710,7 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists[1].fill(np.nan)
 
     @deprecated_param_alias(x_value="x", y_value="y")
-    def add_entry(self, x: float, y: float, height: float) -> None:
+    def add_entry(self, x: float, y: float, height: float):
         """Append a single bar to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -724,7 +724,7 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y, height])
 
     @deprecated_param_alias(x_values="x", y_values="y")
-    def add_list_of_entries(self, x: np.ndarray, y: np.ndarray, heights: np.ndarray) -> None:
+    def add_list_of_entries(self, x: np.ndarray, y: np.ndarray, heights: np.ndarray):
         """Append a list of bars to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -776,7 +776,7 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         Secondary Values =  Y Value, Height, Width, Label
     """
 
-    def reset(self) -> None:
+    def reset(self):
         """Reset the buffer"""
         super().reset()
         # X Value
@@ -802,7 +802,7 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         height: float,
         width: float,
         label: str,
-    ) -> None:
+    ):
         """Append an injection bar to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -828,7 +828,7 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         heights: np.ndarray,
         widths: np.ndarray,
         labels: np.ndarray,
-    ) -> None:
+    ):
         """Append a list of injection bars to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -896,7 +896,7 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         Secondary Values =  Y Value, Height
     """
 
-    def reset(self) -> None:
+    def reset(self):
         """Reset the buffer"""
         super().reset()
         # X Value
@@ -908,7 +908,7 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
     @deprecated_param_alias(x_value="x")
-    def add_entry(self, x: float, color: str, label: str) -> None:
+    def add_entry(self, x: float, color: str, label: str):
         """Append a single infinite line to the buffer
 
         It is expected, that the passed data is valid. Make sure before calling,
@@ -922,7 +922,7 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         super().add_entry_to_buffer(primary_value=x, secondary_values=[color, label])
 
     @deprecated_param_alias(x_values="x")
-    def add_list_of_entries(self, x: np.ndarray, colors: np.ndarray, labels: np.ndarray) -> None:
+    def add_list_of_entries(self, x: np.ndarray, colors: np.ndarray, labels: np.ndarray):
         """Append a list of infinite lines
 
         It is expected, that the passed data is valid. Make sure before calling,

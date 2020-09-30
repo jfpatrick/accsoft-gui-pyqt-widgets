@@ -13,14 +13,7 @@ from accwidgets.graph.datamodel.itemdatamodel import (
     StaticTimestampMarkerDataModel,
     AbstractBaseDataModel,
 )
-from accwidgets.graph.datamodel.datamodelbuffer import DEFAULT_BUFFER_SIZE
-from accwidgets.graph.widgets.dataitems.datamodelbaseditem import (
-    DataModelBasedItem,
-    AbstractDataModelBasedItemMeta,
-)
-from accwidgets.graph.widgets.plotconfiguration import (
-    PlotWidgetStyle,
-)
+from accwidgets.graph import DEFAULT_BUFFER_SIZE, DataModelBasedItem, AbstractDataModelBasedItemMeta, PlotWidgetStyle
 from accwidgets.graph.util import deprecated_param_alias
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -101,7 +94,7 @@ class AbstractBaseTimestampMarker(DataModelBasedItem, pg.GraphicsObject, metacla
         """
         return QGraphicsItem.ItemHasNoContents
 
-    def paint(self, p: QPainter, *args) -> None:
+    def paint(self, p: QPainter, *args):
         """
         Overrides base's paint().
         paint function has to be implemented but this component only
@@ -206,7 +199,7 @@ class LiveTimestampMarker(AbstractBaseTimestampMarker):
 
         Args:
             *graphicsobjectargs: Positional arguments for the GraphicsObject base class
-            object_to_create_from: object which f.e. datamodel should be taken from
+            object_to_create_from: object which e.g. datamodel should be taken from
 
         Returns:
             New live data curve with the datamodel from the old passed one
@@ -230,7 +223,7 @@ class ScrollingTimestampMarker(LiveTimestampMarker):
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         curve_x, colors, labels = self._data_model.subset_for_xrange(
             start=self._parent_plot_item.time_span.start,
@@ -252,7 +245,7 @@ class StaticTimestampMarker(AbstractBaseTimestampMarker):
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticTimestampMarkerDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item with the entire saved in the data model."""
         curve_x, colors, labels = self._data_model.full_data_buffer
         if curve_x.size == colors.size == labels.size and curve_x.size > 0:

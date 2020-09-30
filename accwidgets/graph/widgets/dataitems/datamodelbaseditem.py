@@ -119,7 +119,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         return subclasses
 
     @abc.abstractmethod
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         pass
 
@@ -127,7 +127,7 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
     def check_plotting_style_support(
             plot_config: ExPlotWidgetConfig,
             supported_styles: List[PlotWidgetStyle],
-    ) -> None:
+    ):
         """ Check an items plotting style compatibility
 
         Check if the requested plotting style is supported by this item.
@@ -158,11 +158,11 @@ class DataModelBasedItem(metaclass=abc.ABCMeta):
         return self._layer_id
 
     @layer_id.setter
-    def layer_id(self, layer_id: str) -> None:
+    def layer_id(self, layer_id: str):
         """Set the identifier of the layer the item was added to"""
         self._layer_id = layer_id
 
-    def _handle_data_model_change(self) -> None:
+    def _handle_data_model_change(self):
         """ Handle change in the data model
 
         If the PlotItem that contains this item is attached to a timing source,

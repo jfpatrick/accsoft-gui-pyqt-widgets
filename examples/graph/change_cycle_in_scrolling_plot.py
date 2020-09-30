@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
             self,
             main_layout: QGridLayout,
             time_span: float,
-    ) -> None:
+    ):
         """
         To change the plots configuration for the time span, we add
         some

@@ -1,21 +1,12 @@
 """ Clipping functionality for linegraph datamodel """
 
 import warnings
-from typing import Dict, List, Union
-
 import numpy as np
-
-from accwidgets.graph.datamodel.datastructures import (
-    CurveData,
-    CurveDataWithTime,
-    PointData,
-)
+from typing import Dict, List, Union
+from .datastructures import CurveData, PointData
 
 
-def intersect(
-    graph_points: Union[CurveDataWithTime, CurveData],
-    vertical_line_x_position: float,
-) -> Dict[str, Union[PointData, int]]:
+def intersect(graph_points: CurveData, vertical_line_x_position: float) -> Dict[str, Union[PointData, int]]:
     """Intersect a plot line with a vertical line, for example a boundary
     defined by a x-value.
 

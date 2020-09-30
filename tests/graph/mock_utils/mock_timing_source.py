@@ -11,7 +11,7 @@ class MockTimingSource(UpdateSource):
     timer based solutions.
     """
 
-    def create_new_value(self, timestamp: float) -> None:
+    def create_new_value(self, timestamp: float):
         """Manually emit timestamp
 
         Args:

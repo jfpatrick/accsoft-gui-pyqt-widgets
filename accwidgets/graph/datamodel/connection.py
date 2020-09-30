@@ -1,85 +1,66 @@
-"""Module for signal based updates for the graph and implementation"""
+"""Implementation of the signal-based updates to the graph."""
 
 import warnings
-from typing import (
-    Optional,
-    Callable,
-    cast,
-    Type,
-    Sequence,
-    Union,
-    Any,
-    Tuple,
-    List,
-    Dict,
-)
-from datetime import datetime
-import numpy as np
 import collections
-
+import numpy as np
+from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict
+from datetime import datetime
 from qtpy.QtCore import QObject, Signal, Slot
-from accwidgets.graph.datamodel.datastructures import (
-    DEFAULT_COLOR,
-    BarCollectionData,
-    BarData,
-    CurveData,
-    TimestampMarkerCollectionData,
-    TimestampMarkerData,
-    InjectionBarCollectionData,
-    InjectionBarData,
-    PointData,
-    PlottingItemData,
-)
+from accwidgets.graph.datamodel.datastructures import (DEFAULT_COLOR, BarCollectionData, BarData, CurveData,
+                                                       TimestampMarkerCollectionData, TimestampMarkerData,
+                                                       InjectionBarCollectionData, InjectionBarData,
+                                                       PointData, PlottingItemData)
 
 
 class UpdateSource(QObject):
-
     """
-    Update Source is the connection between the actual source where the data
-    comes from which we want to display without being dependent on where the
-    data comes from. This is achieved by defining signals that can be used to
-    publish any changes related to the displayed data. These signals can then
-    be connected to slots, that handle to the change in the data. When using
-    f.e. addCurve on the ExPlotWidget, this connection will automatically be
-    set up when passing an instance of this class.
+    This class is a proxy of the actual source of data. It declares signals
+    that can be used to publish any changes related to the displayed data.
+    Convenience functions, such as
+    :meth:`~accwidgets.graph.widgets.plotwidget.ExPlotWidget.addCurve` of
+    :class:`~accwidgets.graph.widgets.plotwidget.ExPlotWidget`,
+    setup these connections automatically to receive the data from the UpdateSource.
 
-    Additionally the update source can be used to publish other updates to a
-    plot, f.e. timestamps that are used by the plot as the current time.
+    Additionally, UpdateSource can be used to publish supplemental information to the
+    plot, e.g. timestamps that are used by the plot as the current time.
 
-    To use update source for editable charts, just implement the
-    handle_data_model_edit slot.
+    Finally, UpdateSource can be utilized in editable charts to propagate user changes
+    to the control system. This requires re-implementing :meth:`handle_data_model_edit`
+    slot.
     """
 
     # TODO: Range Change Signal not used yet.
     #       Change dict to fitting type when integrated.
     # sig_new_time_span = Signal(dict)
     sig_new_timestamp = Signal(float)
+    """Publishes new actual time to the receiver."""
+
     sig_new_data = Signal("PyQt_PyObject")
+    """Publishes a new data sample wrapped in an appropriate data structure."""
 
     @Slot(CurveData)
     def handle_data_model_edit(data: CurveData):
         """
-        Handler function for changes made to the data model from the view.
-        This handler is normally used to send back an edited data set to the
-        source the data originally originated from.
+        Handler for changes made to the data model from the view. It is meant
+        to propagate data edited by user to the source, where the data originally came from.
 
         Args:
-            data: Entire data after editing
+            data: Complete data set containing user changes.
         """
         pass
 
-    def new_data(self, data: PlottingItemData) -> None:
-        """Deprecated, use UpdateSource.send_data instead."""
+    def new_data(self, data: PlottingItemData):
+        """Deprecated, use :meth:`send_data` instead."""
         warnings.warn("UpdateSource.new_data is deprecated. "
                       "Use UpdateSource.send_data instead.",
                       DeprecationWarning)
         self.send_data(data)
 
-    def send_data(self, data: PlottingItemData) -> None:
-        """Convenience function for sending data through sig_new_data
+    def send_data(self, data: PlottingItemData):
+        """Convenience function for sending data through :attr:`sig_new_data`
 
         Args:
-            data: Data which should be sent through the signal
+            data: Data which should be sent through the signal.
         """
         self.sig_new_data.emit(data)
 
@@ -95,22 +76,19 @@ class SignalBoundDataSource(UpdateSource):
             ] = None,
     ):
         """
-        Convenience class for creating Update Sources for a signal
-        for a specific data-type. The idea is, that this update source
-        attaches to a passed signal, transforms the data either through
-        a default transformation or a passed transformation function and
-        emit the resulting data to a data visualization item (curve,
-        bar graph etc...).
+        Convenience subclass of :class:`UpdateSource` for a signal
+        with a specific data-type. Instances of this source
+        will listen to the provided signal, and package the data to be sent further
+        through either the default transformation function, or a user-defined one, if given.
 
-        More details about the default transformation functions can be seen
-        in this classes _to_xyz() functions.
+        Details about default transformations can be found in :meth:`PlottingItemDataFactory.get_transformation`.
 
         Args:
-            sig: Signal where the new value is coming from
-            data_type: Data Type, which should be emitted by this data source
-                       The data type can be None only if a transformation
-                       function is given
-            transformation: Optional Transformation function, which translates
+            sig: Signal where the new values are coming from.
+            data_type: Output type, which also influences the default transformation to be applied to
+                       incoming data, when no ``transformation`` is given. It can be omitted, when
+                       ``transformation`` is provided.
+            transformation: Optional transformation function to be applied to the incoming data.
         """
         super().__init__(parent=None)
         data_type_specified = data_type is not None
@@ -137,21 +115,30 @@ class SignalBoundDataSource(UpdateSource):
 
 
 class PlottingItemDataFactory:
-
     """
-    Class which offers factory methods for transforming f.e. simple float
-    values into PlottingItemData data structures. To get the right
-    transformation function by using the static method get_transformation().
+    Collection of factory methods for transforming data inside :class:`UpdateSource`
+    instances. E.g. it can repackage :obj:`float` values into
+    :class:`~accwidgets.graph.datamodel.datastructures.PlottingItemData` objects.
     """
 
     TIMESTAMP_HEADER_FIELD = "acqStamp"
+    """Name of the timestamp meta-field inside JAPC/RDA packets."""
 
     @staticmethod
     def transform(
         dtype: Type[PlottingItemData],
         *values: Union[float, str, Sequence[float], Sequence[str]],
     ) -> PlottingItemData:
-        """Transform the given values to the given data type."""
+        """
+        Transform the values into the given type.
+
+        Args:
+            dtype: Desired output type.
+            *values: Variable amount of incoming values.
+
+        Returns:
+             Packaged data structure.
+        """
         transform_func = PlottingItemDataFactory.get_transformation(dtype)
         if (
             PlottingItemDataFactory.should_unwrap(values[0], dtype)
@@ -164,17 +151,16 @@ class PlottingItemDataFactory:
     @staticmethod
     def should_unwrap(value: Any, dtype: Type[PlottingItemData]) -> bool:
         """
-        Check if the value should be unwrapped for the transformation function.
-        This is the case if the value is a list of multiple value which each
-        being a separate parameter for the transformation function.
+        Check if the value should be unwrapped before handed over to the transformation function.
+        Incoming argument lists maybe either timestamp-value pairs or simply value as a collection
+        of primitives.
 
         Args:
-            value: value that will be passed to the transformation function
-            dtype: Data Type in which the value should be transformed
+            value: Value that will be passed to the transformation function.
+            dtype: Data type into which the value should be transformed.
 
         Returns:
-            True, if the values should be passed to the transform function
-            unwrapped
+            Whether the values should be unwrapped.
         """
         seqs = (collections.Sequence, np.ndarray)
         if isinstance(value, seqs) and not isinstance(value, str):
@@ -184,17 +170,18 @@ class PlottingItemDataFactory:
         return False
 
     @staticmethod
-    def get_transformation(
-            data_type: Optional[Type[PlottingItemData]],
-    ) -> Callable[[], PlottingItemData]:
+    def get_transformation(data_type: Optional[Type[PlottingItemData]]) -> Callable[[], PlottingItemData]:
         """
-        Try to transform the given *args to the desired data structure.
-        This allows easier transformation between raw values coming from
-        the signal and a data structure which can be interpreted by the
-        graphs.
+        Selects the best fitting transformation function fo the given data type.
+
+        Args:
+            data_type: Desired target data type.
+
+        Returns:
+            Function pointer of the transformation function.
 
         Raises:
-            IndexError: Not enough arguments were passed for the data type.
+            TypeError: Unsupported data type.
         """
         if data_type is not None:
             if issubclass(data_type, PointData):

@@ -304,7 +304,7 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
         since the creation of the old graph item, the new graph item will have the new style.
 
         Args:
-            object_to_create_from: object which f.e. datamodel should be taken from
+            object_to_create_from: object which e.g. datamodel should be taken from
             **bargraph_kwargs: Keyword arguments for the bargraph base class
 
         Returns:
@@ -342,7 +342,7 @@ class ScrollingBarGraphItem(LiveBarGraphItem):
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         if self._fixed_bar_width == np.nan:
             smallest_distance = self._data_model.min_dx
@@ -368,7 +368,7 @@ class StaticBarGraphItem(AbstractBaseBarGraphItem):
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticBarGraphDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update the item with the data saved in the data model."""
         width = self._fixed_bar_width
         curve_x, curve_y, height = self._data_model.full_data_buffer

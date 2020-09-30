@@ -38,7 +38,7 @@ class History(Generic[_STATE]):
         """Is a redo currently possible?"""
         return self._current < len(self._states) - 1
 
-    def save_state(self, state: _STATE) -> None:
+    def save_state(self, state: _STATE):
         """
         Save the given state to the history. States that have been undone
         before this state will be thrown away.
@@ -75,7 +75,7 @@ class History(Generic[_STATE]):
         self._current += 1
         return self.current_state
 
-    def clear(self) -> None:
+    def clear(self):
         """Clear all states and put the history in its original state."""
         self._states.clear()
         self._current = -1

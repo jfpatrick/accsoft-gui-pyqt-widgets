@@ -762,7 +762,7 @@ def check_range(
         actual_range: List[List[float]],
         expected_range: List[List[float]],
         tolerance_factor: float = 0.0025,
-) -> None:
+):
     """
     Compare a viewboxes range with an expected range
 

@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(line)
 
-    def change_plot_config(self, *_) -> None:
+    def change_plot_config(self, *_):
         """Change the plot's configuration with the values from the inputs"""
         ts_left = self.time_span_input_left.value()
         ts_right = self.time_span_input_right.value()

@@ -100,7 +100,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             height: np.ndarray,
             width: np.ndarray,
             labels: np.ndarray,
-    ) -> None:
+    ):
         """
         Set data to the injection bar graph.
 
@@ -127,7 +127,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             )
             self._draw_injector_bar_labels(label_texts, label_y_positions)
 
-    def _draw_injector_bar_labels(self, texts: np.ndarray, y_values: np.ndarray) -> None:
+    def _draw_injector_bar_labels(self, texts: np.ndarray, y_values: np.ndarray):
         """
         Draw a specified label at a specific position.
 
@@ -150,7 +150,7 @@ class AbstractBaseInjectionBarGraphItem(DataModelBasedItem,
             self._text_labels.append(label)
             label.setParentItem(self)
 
-    def _clear_labels(self) -> None:
+    def _clear_labels(self):
         """Remove all labels from the ViewBox."""
         for label in self._text_labels:
             self.getViewBox().removeItem(label)
@@ -227,7 +227,7 @@ class LiveInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
         since the creation of the old graph item, the new graph item will have the new style.
 
         Args:
-            object_to_create_from: object which f.e. datamodel should be taken from
+            object_to_create_from: object which e.g. datamodel should be taken from
             **errorbaritem_kwargs: Keyword arguments for the ErrorBarItem base class
 
         Returns:
@@ -251,7 +251,7 @@ class ScrollingInjectionBarGraphItem(LiveInjectionBarGraphItem):
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         self._set_data(*self._data_model.subset_for_xrange(
             start=self._parent_plot_item.time_span.start,
@@ -270,6 +270,6 @@ class StaticInjectionBarGraphItem(AbstractBaseInjectionBarGraphItem):
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticInjectionBarDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         self._set_data(*self._data_model.full_data_buffer)

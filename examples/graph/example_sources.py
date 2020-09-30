@@ -61,12 +61,12 @@ class SinusCurveSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_values)
         self.timer.start(1000 / updates_per_second)
 
-    def _create_new_values(self) -> None:
+    def _create_new_values(self):
         """Create new values fitting to all requested value types"""
         for emit_type in self.types_to_emit:
             self._create_new_value(emit_type)
 
-    def _create_new_value(self, emit_type: SinusCurveSourceEmitTypes) -> None:
+    def _create_new_value(self, emit_type: SinusCurveSourceEmitTypes):
         if emit_type == SinusCurveSourceEmitTypes.POINT:
             new_data = accgraph.PointData(
                 x=datetime.now().timestamp() + self.x_offset,
@@ -153,7 +153,7 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_value)
         self.timer.start(self.timer_diff)
 
-    def _update_data(self) -> None:
+    def _update_data(self):
         last_timestamp = (
             self.x_values_live[-1] if self.x_values_live else datetime.now().timestamp()
         )
@@ -173,7 +173,7 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
             for index, value in enumerate(self.y_values_live)
         ]
 
-    def _create_new_value(self) -> None:
+    def _create_new_value(self):
         if self.current_index < self.data_length:
             self._emit_next_live_point()
             self.current_index += 1
@@ -183,7 +183,7 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
             self.current_index = 0
             self._update_data()
 
-    def _emit_next_live_point(self) -> None:
+    def _emit_next_live_point(self):
         new_data = accgraph.PointData(
             x=self.x_values_live[self.current_index],
             y=self.y_values_live[self.current_index],
@@ -191,13 +191,13 @@ class LoggingCurveDataSource(accgraph.UpdateSource):
         )
         self.send_data(new_data)
 
-    def _emit_separator(self) -> None:
+    def _emit_separator(self):
         separator = accgraph.PointData(x=np.nan,
                                        y=np.nan,
                                        check_validity=False)
         self.sig_new_data[accgraph.PointData].emit(separator)
 
-    def _emit_data_from_logging_system(self) -> None:
+    def _emit_data_from_logging_system(self):
         curve = accgraph.CurveData(
             x=np.array(self.x_values_logging),
             y=np.array(self.y_values_logging),
@@ -224,7 +224,7 @@ class WaveformSinusSource(accgraph.UpdateSource):
 
         X values will stay the same each time
 
-        This source can be f.e. used in Waveform Plots.
+        This source can be e.g. used in Waveform Plots.
 
         Args:
             curve_length: Amount of x and y values
@@ -345,6 +345,6 @@ class LocalTimerTimingSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_value)
         self.timer.start(1000 / 60)
 
-    def _create_new_value(self) -> None:
+    def _create_new_value(self):
         """Emit new timestamp."""
         self.sig_new_timestamp.emit(datetime.now().timestamp() + self.offset)

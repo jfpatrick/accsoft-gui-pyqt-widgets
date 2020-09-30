@@ -28,7 +28,7 @@ def deprecated_param_alias(**aliases: str) -> Callable:
 
 def _rename_kwargs(func_name: str,
                    kwargs: Dict[str, Any],
-                   aliases: Dict[str, Any]) -> None:
+                   aliases: Dict[str, Any]):
     """
     Rename received keyword arguments.
 

@@ -77,7 +77,7 @@ class RandomDataSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self.emit)
         self.timer.start(update_freq)
 
-    def emit(self) -> None:
+    def emit(self):
         """Emit new float value"""
         self.send_data(accgraph.PointData(
             x=datetime.now().timestamp(),

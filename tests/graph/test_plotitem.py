@@ -44,7 +44,7 @@ class TransformRangeOperation(Enum):
     transform_y = 3
 
 
-def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: ResumeRangeOperation) -> None:
+def _resume_to_orig_range(plot_item: accgraph.ExPlotItem, reset_operation: ResumeRangeOperation):
     """Reset the view range of a plot item"""
     if reset_operation == ResumeRangeOperation.auto_button:
         plot_item.autoBtn.mouseClickEvent(ev=None)

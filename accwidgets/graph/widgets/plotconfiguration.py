@@ -147,7 +147,7 @@ class ExPlotWidgetConfig:
         return self._plotting_style
 
     @plotting_style.setter
-    def plotting_style(self, plotting_style: PlotWidgetStyle) -> None:
+    def plotting_style(self, plotting_style: PlotWidgetStyle):
         """Style for the plot describing the way to display data."""
         self._plotting_style = plotting_style
 
@@ -157,7 +157,7 @@ class ExPlotWidgetConfig:
         return self._time_span
 
     @time_span.setter
-    def time_span(self, time_span: Union[TimeSpan, float, int, None]) -> None:
+    def time_span(self, time_span: Union[TimeSpan, float, int, None]):
         """How many seconds of data the plot should show."""
         self._time_span = ExPlotWidgetConfig._to_time_span(time_span=time_span)
 
@@ -179,6 +179,6 @@ class ExPlotWidgetConfig:
         return False
 
     @time_progress_line.setter
-    def time_progress_line(self, time_progress_line: bool) -> None:
+    def time_progress_line(self, time_progress_line: bool):
         """Should a vertical line represent the most recent received time stamp?"""
         self._time_progress_line = time_progress_line

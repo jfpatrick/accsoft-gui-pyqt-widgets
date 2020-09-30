@@ -33,7 +33,7 @@ class RoughSinusSource(accgraph.UpdateSource):
         self.timer.timeout.connect(self._create_new_values)
         self.timer.start(1000 / 60)
 
-    def _create_new_values(self) -> None:
+    def _create_new_values(self):
         """Simulate some sinus values with some offset."""
         new_data = accgraph.PointData(
             x=datetime.now().timestamp(),

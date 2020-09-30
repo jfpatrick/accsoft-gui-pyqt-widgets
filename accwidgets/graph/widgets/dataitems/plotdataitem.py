@@ -182,7 +182,7 @@ class LivePlotCurve(AbstractBasePlotCurve):
         since the creation of the old graph item, the new graph item will have the new style.
 
         Args:
-            object_to_create_from: object which f.e. data model should be taken from
+            object_to_create_from: object which e.g. data model should be taken from
             **plotdataitem_kwargs: Keyword arguments for the PlotDataItem base class
 
         Returns:
@@ -203,7 +203,7 @@ class LivePlotCurve(AbstractBasePlotCurve):
         """Last timestamp received by the curve."""
         return self._parent_plot_item.last_timestamp
 
-    def _set_data(self, x: np.ndarray, y: np.ndarray) -> None:
+    def _set_data(self, x: np.ndarray, y: np.ndarray):
         """ Set data of the inner curve and scatter plot
 
         PyQtGraph prints RuntimeWarning when the data that is passed to the
@@ -317,14 +317,14 @@ class CyclicPlotCurve(LivePlotCurve):
                                                        np.array([]),
                                                        check_validity=False)
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         self._update_new_curve_data_item()
         if cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).cycle > 0:
             self._update_old_curve_data_item()
         self._redraw_curve()
 
-    def _redraw_curve(self) -> None:
+    def _redraw_curve(self):
         """ Redraw the curve with the current data
 
         For drawing the new and old curve a single PlotCurveItem is used.
@@ -353,12 +353,12 @@ class CyclicPlotCurve(LivePlotCurve):
             self.clear()
             self._set_data(x=data_x, y=data_y)
 
-    def _update_new_curve_data_item(self) -> None:
+    def _update_new_curve_data_item(self):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
         point will be added if the the new point exceeds the current time
-        (because of f.e. inaccurate timestamp)
+        (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.time_span.start
         end = self._parent_plot_item.last_timestamp
@@ -369,12 +369,12 @@ class CyclicPlotCurve(LivePlotCurve):
             check_validity=False,
         )
 
-    def _update_old_curve_data_item(self) -> None:
+    def _update_old_curve_data_item(self):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
         point will be added if the the new point exceeds the current time
-        (because of f.e. inaccurate timestamp)
+        (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.time_span.size
         end = cast(CyclicPlotTimeSpan, self._parent_plot_item.time_span).prev_end
@@ -395,7 +395,7 @@ class ScrollingPlotCurve(LivePlotCurve):
 
     supported_plotting_style = PlotWidgetStyle.SCROLLING_PLOT
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Update item based on the plot items time span information"""
         if self.opts.get("pen", None) is not None:
             # Subset for curve is clipped
@@ -426,7 +426,7 @@ class StaticPlotCurve(AbstractBasePlotCurve):
     supported_plotting_style = PlotWidgetStyle.STATIC_PLOT
     data_model_type = StaticCurveDataModel
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
 
@@ -475,7 +475,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         self._selection.setParentItem(self)
         self._selected_indices: Optional[np.ndarray] = None
 
-    def select(self, selection: QRectF) -> None:
+    def select(self, selection: QRectF):
         """
         Select data from the curve using the passed rectangle. The rectangle
         coordinates are given in scene coordinates.
@@ -495,7 +495,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         else:
             self.unselect()
 
-    def unselect(self) -> None:
+    def unselect(self):
         """Unselect prior done selections."""
         self._update_selected_indices(None)
         # Inform about point being unselected
@@ -503,7 +503,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         self._selection.setData([], [])
         self.sig_selection_changed.emit()
 
-    def update_item(self) -> None:
+    def update_item(self):
         """Get the full data of the data buffer and display it."""
         self.setData(*self._data_model.full_data_buffer)
         self.sig_selection_changed.emit()
@@ -520,7 +520,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             return self._selection.curve_data
         return None
 
-    def replace_selection(self, replacement: CurveData) -> None:
+    def replace_selection(self, replacement: CurveData):
         """
         Replace the current selection with the passed replacement.
         To select data from the plot, use select(). After the replacement is
@@ -559,19 +559,19 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         """Is there a newer state we can jump to?"""
         return self._editable_model.redoable
 
-    def undo(self) -> None:
+    def undo(self):
         """Jump to the next older state."""
         if self._editable_model.undo():
             self.unselect()
 
-    def redo(self) -> None:
+    def redo(self):
         """Jump to the next newer state."""
         if self._editable_model.redo():
             self.unselect()
 
     # ~~~~~~~~~~~~~~~~~~~~ Private ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def _update_selected_indices(self, selection: Optional[QRectF]) -> None:
+    def _update_selected_indices(self, selection: Optional[QRectF]):
         """
         Update the selection of the data selection marker with a given
         selection rectangle
@@ -593,7 +593,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             sel = np.zeros_like(x_data, dtype=bool)
         self._selected_indices = sel
 
-    def _stylize_selection_marker(self) -> None:
+    def _stylize_selection_marker(self):
         """
         Style the selected points with different colors so they are easily
         visible.
@@ -626,7 +626,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         marker_pen.setWidth(3)
         self._selection.setPen(marker_pen)
 
-    def _selection_moved(self, data: np.ndarray) -> None:
+    def _selection_moved(self, data: np.ndarray):
         """React to a change from the DataSelectionMarker, which is
         currently in progress. To fully accept the editing (with data model,
         history etc.), _selection_edited has to be called.
@@ -642,7 +642,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
             y[i] = data[1][j]
         self.setData(x, y)
 
-    def _selection_edited(self, data: np.ndarray) -> None:
+    def _selection_edited(self, data: np.ndarray):
         """Apply the editing of the DataSelectionMarker to the this curve
 
         Compared to the _selection_moved function, this function will forward
@@ -754,7 +754,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         self._drag_orig_hover: Optional[pg.Point] = None
         self.setAcceptHoverEvents(True)
 
-    def hoverMoveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
+    def hoverMoveEvent(self, ev: QGraphicsSceneHoverEvent):
         """Update the labels shown on the selected points based on the
         passed over event, if the curve is configured to label points
         that are hovered over.
@@ -774,7 +774,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             self._remove_labels()
         ev.accept()
 
-    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
+    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent):
         """Remove all labels based for points, that were shown because a
         mouse hovered over them.
 
@@ -843,7 +843,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                 data: Optional[List[object]] = None,
                 antialias: Optional[bool] = None,
                 name: Optional[str] = None,
-                **kwargs) -> None:
+                **kwargs):
         """Extend setData with setting labels for each point
 
         If there is only one unnamed argument, it will be interpreted like the 'spots' argument.
@@ -910,7 +910,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         return self._points_labeled
 
     @points_labeled.setter
-    def points_labeled(self, label_points: PointLabelOptions) -> None:
+    def points_labeled(self, label_points: PointLabelOptions):
         """Is each selected points position decorated with and label"""
         self._points_labeled = label_points
 
@@ -924,7 +924,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         """In which direction should the points be draggable"""
         self._drag_direction = direction
 
-    def _add_labels(self) -> None:
+    def _add_labels(self):
         """
         For each point, add a label showing the position of the point in the
         direction it can be dragged in.
@@ -973,7 +973,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                 y_anker += 2
         return y_anker
 
-    def _remove_labels(self) -> None:
+    def _remove_labels(self):
         """Remove all point labels"""
         for label in self._point_labels:
             label.setParentItem(None)

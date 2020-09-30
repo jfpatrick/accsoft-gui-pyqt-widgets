@@ -28,7 +28,7 @@ class BasePlotTimeSpan(metaclass=abc.ABCMeta):
         self._validate()
 
     @abc.abstractmethod
-    def update(self, timestamp: float) -> None:
+    def update(self, timestamp: float):
         """update the information holden by the time span according to the passed timestamp."""
         pass
 
@@ -68,7 +68,7 @@ class ScrollingPlotTimeSpan(BasePlotTimeSpan):
     and convenience functions for specific time span related sizes
     """
 
-    def update(self, timestamp: float) -> None:
+    def update(self, timestamp: float):
         self._last_time_stamp = timestamp
         # We will keep this for the
         self._start = self.start
@@ -109,7 +109,7 @@ class CyclicPlotTimeSpan(BasePlotTimeSpan):
         )
         self._cycle: float = 0.0
 
-    def update(self, timestamp: float) -> None:
+    def update(self, timestamp: float):
         """Update time span area with the given current time as timestamp"""
         if not np.isnan(timestamp) and not np.isinf(timestamp):
             if timestamp is not None and not np.isnan(timestamp):
