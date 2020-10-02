@@ -21,7 +21,7 @@ from accwidgets import __version__
 # -- Project information -----------------------------------------------------
 
 project = "accwidgets"
-copyright = f"{datetime.now().year}, CERN"
+copyright = f"{datetime.now().year}, BE-CO, CERN"
 author = "Ivan Sinkarenko, Fabian Sorn"
 
 
