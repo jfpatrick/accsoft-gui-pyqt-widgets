@@ -12,7 +12,7 @@ from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
 from qtpy.QtWidgets import QAction, QWidget, QDoubleSpinBox, QStyleOptionViewItem, QStyledItemDelegate
 from accwidgets.graph import ExPlotWidget
 from accwidgets.graph.widgets.plotwidget import ExPlotWidgetProperties
-from accwidgets._designer_base import WidgetsExtension, get_designer_cursor
+from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableModel, TableViewColumnResizer, AbstractTableDialog,
                            BooleanPropertyColumnDelegate)
 
@@ -289,7 +289,7 @@ class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableMo
         return res
 
 
-class PlotLayerExtension(WidgetsExtension):
+class PlotLayerExtension(WidgetsTaskMenuExtension):
 
     def __init__(self, widget: ExPlotWidget):
         """

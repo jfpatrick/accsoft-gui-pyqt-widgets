@@ -1,15 +1,19 @@
 import warnings
-from abc import ABCMeta, abstractmethod
+from codecs import decode
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Type, Optional, List, TypeVar, Union
+from typing import Type, Optional, List, TypeVar, Union, Dict
 from qtpy.QtWidgets import QWidget, QAction
 from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtCore import QObject, QMetaMethod, QByteArray
 from qtpy.QtDesigner import (
     QDesignerFormEditorInterface,
     QPyDesignerCustomWidgetPlugin,
     QExtensionFactory,
     QPyDesignerTaskMenuExtension,
+    QPyDesignerMemberSheetExtension,
     QExtensionManager,
     QDesignerFormWindowCursorInterface,
     QDesignerFormWindowInterface,
@@ -34,15 +38,19 @@ class WidgetBoxGroup(Enum):
 # |                              Extensions                                   |
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class WidgetsExtension(metaclass=ABCMeta):
+
+class WidgetsTaskMenuExtension(ABC):
 
     def __init__(self, widget: QWidget):
         """
-        Base Wrapper Class for Widgets Extension.
+        Base Wrapper Class for Widgets Task menu Extension.
 
         Note: The extension classes are not derived from PyDM classes but compatible
         with them, which makes it much easier to register WidgetsExtensions in
         ComRAD, since both offer the same functions.
+
+        Args:
+            widget: Related widget.
         """
         self.widget = widget
 
@@ -55,7 +63,254 @@ class WidgetsExtension(metaclass=ABCMeta):
         pass
 
 
-class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
+class WidgetsMemberSheetExtension(QPyDesignerMemberSheetExtension):  # Cannot inherit multiple classes, because low-level PyQt breaks
+
+    @dataclass
+    class Info:
+        """Auxiliary storage class for cached modifications."""
+
+        group: str
+        """Group name of the member."""
+
+        visible: bool = True
+        """Is member visible in the Qt Designer."""
+
+    def __init__(self, widget: QWidget, parent: QWidget):
+        """
+        This is a re-implementation of Qt Designer's standard member sheet extension class,
+        to allow minor modifications without rewriting everything (because all
+        :class:`QPyDesignerMemberSheetExtension` methods are abstract).
+        Reference implementation of C++ class from Qt Designer is in
+        qt5/qttools/src/designer/src/lib/shared/qdesigner_membersheet_p.h,
+        qt5/qttools/src/designer/src/lib/shared/qdesigner_membersheet.cpp,
+
+        Args:
+            widget: Widget the extension is added to.
+            parent: Owning object.
+        """
+        super().__init__(parent)
+        self.meta = widget.metaObject()
+        self.info_hash: Dict[int, WidgetsMemberSheetExtension.Info] = {}
+
+    def count(self) -> int:
+        """
+        Returns the extension's number of member functions.
+
+        Returns:
+            Number of member functions.
+        """
+        return self.meta.methodCount()
+
+    def declaredInClass(self, index: int) -> str:
+        """
+        Returns the name of the class in which the member function with the given index is declared.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Name of the declaring class.
+        """
+        member = self.meta.method(index).methodSignature()
+        meta = self.meta
+
+        while True:
+            tmp = meta.superClass()
+            if not tmp:
+                break
+            if tmp.indexOfMethod(member) == -1:
+                break
+            meta = tmp
+        return meta.className()
+
+    def indexOf(self, name: str) -> int:
+        """
+        Returns the index of the member function specified by the given name.
+
+        Args:
+            name: Name of the member function.
+
+        Returns:
+            Index of the member function.
+        """
+        return self.meta.indexOfMethod(name)
+
+    def inheritedFromWidget(self, index: int) -> bool:
+        """
+        Returns :obj:`True` if the member function with the given index is inherited from :class:`QWidget`,
+        otherwise :obj:`False`.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Whether the function is inherited from :class:`QWidget`.
+        """
+        class_name = self.declaredInClass(index)
+        return class_name == QWidget.__name__ or class_name == QObject.__name__
+
+    def isSignal(self, index: int) -> bool:
+        """
+        Returns :obj:`True` if the member function with the given index is a signal, otherwise :obj:`False`.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Whether the function is a signal.
+        """
+        return self.meta.method(index).methodType() == QMetaMethod.Signal
+
+    def isSlot(self, index: int) -> bool:
+        """
+        Returns :obj:`True` if the member function with the given index is a slot, otherwise :obj:`False`.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Whether the function is a slot.
+        """
+        return self.meta.method(index).methodType() == QMetaMethod.Slot
+
+    def isVisible(self, index: int) -> bool:
+        """
+        Returns :obj:`True` if the member function with the given index is visible in Qt Designer's signal
+        and slot editor, otherwise :obj:`False`.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Whether the function should be visible in Qt Designer.
+        """
+        try:
+            return self.info_hash[index].visible
+        except KeyError:
+            pass
+
+        method = self.meta.method(index)
+        return method.methodType() == QMetaMethod.Signal or method.access() == QMetaMethod.Public
+
+    def memberGroup(self, index: int) -> str:
+        """
+        Returns the name of the member group specified for the function with the given index.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Group name.
+        """
+        return self.ensure_info(index).group
+
+    def memberName(self, index: int) -> str:
+        """
+        Returns the name of the member function with the given index.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Name of the member function.
+        """
+        return self.meta.method(index).tag()
+
+    def parameterNames(self, index: int) -> List[QByteArray]:
+        """
+        Returns the parameter names of the member function with the given index, as a :class:`QByteArray` list.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            List of parameter names.
+        """
+        return self.meta.method(index).parameterNames()
+
+    def parameterTypes(self, index: int) -> List[QByteArray]:
+        """
+        Returns the parameter types of the member function with the given index, as a :class:`QByteArray` list.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            List of parameter types.
+        """
+        return self.meta.method(index).parameterTypes()
+
+    def setMemberGroup(self, index: int, group: str):
+        """
+        Sets the member group of the member function with the given index, to group.
+
+        Args:
+            index: Index of the member function.
+            group: New group name.
+        """
+        self.ensure_info(index).group = group
+
+    def setVisible(self, index: int, visible: bool):
+        """
+        If visible is :obj:`True`, the member function with the given index is visible in Qt Designer's
+        signals and slots editing mode; otherwise the member function is hidden.
+
+        Args:
+            index: Index of the member function.
+            visible: New visibility value.
+        """
+        self.ensure_info(index).visible = visible
+
+    def signature(self, index: int) -> str:
+        """
+        Returns the signature of the member function with the given index.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Method signature string.
+        """
+        return decode(self.meta.normalizedSignature(self.meta.method(index).methodSignature()))
+
+    def ensure_info(self, index: int) -> "WidgetsMemberSheetExtension.Info":
+        """
+        Convenience method to create a cache entry in the hash.
+
+        Args:
+            index: Index of the member function.
+
+        Returns:
+            Existing cache entry, or a newly created one, if did not exist before.
+        """
+        try:
+            info = self.info_hash[index]
+        except KeyError:
+            info = WidgetsMemberSheetExtension.Info(group="")
+            self.info_hash[index] = info
+        return info
+
+
+class HidePrivateSignalsExtension(WidgetsMemberSheetExtension):
+
+    def __init__(self, widget: QWidget, parent: QWidget):
+        """
+        This extension will prevent all non-public signals from appearing in Qt Designer's
+        signals and slots editing mode. Signals are considered non-public if their names
+        start with the underscore.
+
+        Args:
+            widget: Widget the extension is added to.
+            parent: Owning object.
+        """
+        super().__init__(widget=widget, parent=parent)
+
+        for idx in range(self.count()):
+            if self.isSignal(idx) and self.isVisible(idx) and self.signature(idx).startswith("_"):
+                self.setVisible(idx, False)
+
+
+class WidgetsTaskMenuCollectionExtension(QPyDesignerTaskMenuExtension):
 
     def __init__(self, widget: QWidget, parent: QWidget):
         """
@@ -68,10 +323,12 @@ class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
         super().__init__(parent)
         self.widget = widget
         self.__actions: Optional[List[QAction]] = None
-        self.__extensions: List[WidgetsExtension] = []
+        self.__extensions: List[WidgetsTaskMenuExtension] = []
         extensions = getattr(widget, "extensions", None)
         if extensions is not None:
             for ex in extensions:
+                if not issubclass(ex, WidgetsTaskMenuExtension):
+                    continue
                 extension = ex(self.widget)
                 self.__extensions.append(extension)
 
@@ -98,16 +355,19 @@ class WidgetsTaskMenuExtension(QPyDesignerTaskMenuExtension):
 
 class WidgetsExtensionFactory(QExtensionFactory):
 
-    def __init__(self, parent: QWidget = None):
-        """Factory of instantiating Task Menu extensions. """
+    def __init__(self, parent: QExtensionManager = None):
+        """Factory of instantiating Task Menu extensions."""
         super().__init__(parent)
+        self._member_sheet_extension_type: Optional[Type[WidgetsMemberSheetExtension]] = None
 
-    def createExtension(
-            self,
-            obj: QWidget,
-            iid: str,
-            parent: QWidget,
-    ) -> Optional[WidgetsTaskMenuExtension]:
+    def register_member_sheet_extension(self, extension_type: Type[WidgetsMemberSheetExtension]):
+        """
+        Register custom member sheet extension type. Only one member sheet extension is allowed to be
+        registered per widget.
+        """
+        self._member_sheet_extension_type = extension_type
+
+    def createExtension(self, obj: QObject, iid: str, parent: QObject) -> Optional[WidgetsTaskMenuCollectionExtension]:
         """
         Create Task Menu Extension instance.
 
@@ -119,14 +379,10 @@ class WidgetsExtensionFactory(QExtensionFactory):
         Returns:
             Extension instance or None depending of what object and iid are passed
         """
-        # For now check the iid for TaskMenu...
         if iid == "org.qt-project.Qt.Designer.TaskMenu":
-            return WidgetsTaskMenuExtension(obj, parent)
-        # In the future we can expand to the others such as Property and etc
-        # When the time comes...  we will need a new PyDMExtension and
-        # the equivalent for PyDMTaskMenuExtension classes for the
-        # property editor and an elif statement in here to instantiate it...
-
+            return WidgetsTaskMenuCollectionExtension(obj, parent)
+        elif iid == "org.qt-project.Qt.Designer.MemberSheet" and self._member_sheet_extension_type is not None:
+            return self._member_sheet_extension_type(obj, parent)
         return None
 
 
@@ -146,7 +402,7 @@ def _icon(name: str, base_path: Optional[Path] = None) -> QIcon:
     return QIcon(pixmap)
 
 
-_E = TypeVar("_E", bound=WidgetsExtension)
+SupportedExtensionType = Union[WidgetsTaskMenuExtension, WidgetsMemberSheetExtension]
 
 
 class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
@@ -156,7 +412,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
     def __init__(self,
                  widget_class: Type[QWidget],
                  group_name: str,
-                 extensions: Optional[List[Type[_E]]] = None,
+                 extensions: Optional[List[Type[SupportedExtensionType]]] = None,
                  is_container: bool = False,
                  tooltip: Optional[str] = None,
                  whats_this: Optional[str] = None,
@@ -186,7 +442,7 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         self._icon_base_path = icon_base_path
         self._tooltip = tooltip
         self._is_container = is_container
-        self.extensions: List[Type] = extensions or []
+        self.extensions: List[Type[SupportedExtensionType]] = extensions or []
         # Will be set in initialize
         self.manager: Optional[QExtensionManager] = None
 
@@ -199,10 +455,13 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
         if self.extensions is not None and len(self.extensions) > 0:
             self.manager = core.extensionManager()
             if self.manager:
-                self.manager.registerExtensions(
-                    WidgetsExtensionFactory(parent=self.manager),
-                    "org.qt-project.Qt.Designer.TaskMenu",
-                )
+                factory = WidgetsExtensionFactory(self.manager)
+                if any(issubclass(e, WidgetsTaskMenuExtension) for e in self.extensions):
+                    self.manager.registerExtensions(factory, "org.qt-project.Qt.Designer.TaskMenu")
+                if any(issubclass(e, WidgetsMemberSheetExtension) for e in self.extensions):
+                    member_sheet_type = next(e for e in self.extensions if issubclass(e, WidgetsMemberSheetExtension))
+                    factory.register_member_sheet_extension(member_sheet_type)
+                    self.manager.registerExtensions(factory, "org.qt-project.Qt.Designer.MemberSheet")
         self.initialized = True
 
     def isInitialized(self) -> bool:
@@ -296,7 +555,7 @@ _T = TypeVar("_T", bound=WidgetDesignerPlugin)
 def create_plugin(widget_class: Type[QWidget],
                   group: Union[str, WidgetBoxGroup],
                   cls: Type[_T] = WidgetDesignerPlugin,
-                  extensions: Optional[List[Type[_E]]] = None,
+                  extensions: Optional[List[Type[SupportedExtensionType]]] = None,
                   is_container: bool = False,
                   tooltip: Optional[str] = None,
                   whats_this: Optional[str] = None,
