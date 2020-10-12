@@ -151,6 +151,8 @@ _E = TypeVar("_E", bound=WidgetsExtension)
 
 class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
 
+    CUSTOM_INITIALIZER_METHOD = "_accwidgets_designer_init_"
+
     def __init__(self,
                  widget_class: Type[QWidget],
                  group_name: str,
@@ -224,6 +226,14 @@ class WidgetDesignerPlugin(QPyDesignerCustomWidgetPlugin):
             instance.extensions = self.extensions
         except (AttributeError, NameError):
             pass
+        try:
+            if hasattr(instance, self.CUSTOM_INITIALIZER_METHOD):
+                method = getattr(instance, self.CUSTOM_INITIALIZER_METHOD)
+                if callable(method):
+                    method()
+        except (AttributeError, NameError):
+            pass
+
         return instance
 
     def name(self) -> str:
