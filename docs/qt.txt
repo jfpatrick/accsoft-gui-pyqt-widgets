@@ -20,6 +20,9 @@ QToolButton py:class 1 qtoolbutton.html -
 PyQt5.QtWidgets.QWidget.toolTip py:attribute 1 qwidget.html#toolTip-prop QWidget.toolTip
 qtpy.QtWidgets.QWidget.toolTip py:attribute 1 qwidget.html#toolTip-prop QWidget.toolTip
 QWidget.toolTip py:attribute 1 qwidget.html#toolTip-prop -
+PyQt5.QtWidgets.QWidget.palette py:attribute 1 qwidget.html#palette-prop QWidget.palette
+qtpy.QtWidgets.QWidget.palette py:attribute 1 qwidget.html#palette-prop QWidget.palette
+QWidget.palette py:attribute 1 qwidget.html#palette-prop -
 PyQt5.QtWidgets.QCheckBox py:class 1 qcheckbox.html QCheckBox
 qtpy.QtWidgets.QCheckBox py:class 1 qcheckbox.html QCheckBox
 QCheckBox py:class 1 qcheckbox.html -
@@ -143,6 +146,9 @@ Qt.Orientation py:class 1 qt.html#Orientation-enum -
 qtpy.QtCore.Qt.ItemFlags py:class 1 qt.html#ItemFlag-enum Qt.ItemFlags
 PyQt5.QtCore.Qt.ItemFlags py:class 1 qt.html#ItemFlag-enum Qt.ItemFlags
 Qt.ItemFlags py:class 1 qt.html#ItemFlag-enum -
+qtpy.QtCore.Qt.GlobalColor py:class 1 qt.html#GlobalColor-enum Qt.GlobalColor
+PyQt5.QtCore.Qt.GlobalColor py:class 1 qt.html#GlobalColor-enum Qt.GlobalColor
+Qt.GlobalColor py:class 1 qt.html#GlobalColor-enum -
 qtpy.QtCore.QModelIndex py:class 1 qmodelindex.html QModelIndex
 PyQt5.QtCore.QModelIndex py:class 1 qmodelindex.html QModelIndex
 QModelIndex py:class 1 qmodelindex.html -
