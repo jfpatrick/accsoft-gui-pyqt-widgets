@@ -10,13 +10,13 @@ For importing all widgets belonging to a specific sub-project, you can import th
 
 .. code-block:: python
 
-   import accwidgets.graph as accgraph
+   from accwidgets.graph import ScrollingPlotWidget
    # ...
-   widget = accgraph.ExPlotWidget()
+   widget = ScrollingPlotWidget()
 
 You can learn how to use the widgets in 2 ways:
 
-#. Check the :doc:`api/index`
+#. Check the API reference (can be found later in the documentation of individual widgets)
 #. Try out `Interactive examples`_
 
 
