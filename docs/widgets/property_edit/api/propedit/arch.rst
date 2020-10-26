@@ -5,6 +5,7 @@
    :alt: PropertyEdit widget architecture
 
    digraph hierarchy {
+     graph[resolution=120];
      size="5,5"
      node[shape=record,style=filled,fillcolor=gray95];
      edge[dir=back, arrowtail=empty];
