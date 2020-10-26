@@ -1,0 +1,13 @@
+.collapsible-block .collapsible-title {
+    display: block;
+    clear: both;
+    color: #3091d1;
+}
+
+.collapsible-block .collapsible-title:before {
+    content: "▶  ";
+}
+
+.collapsible-block .collapsible-title.open:before {
+    content: "▼  ";
+}

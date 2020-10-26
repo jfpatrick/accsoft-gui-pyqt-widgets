@@ -72,6 +72,11 @@ html_favicon = html_logo = "./img/logo.png"  # Must be png here, as ico won't be
 html_css_files = [
     "fix_tables.css",
     "fix_bullets.css",
+    "collapsible.css",
+]
+
+html_js_files = [
+    "collapsible.js",
 ]
 
 # Both the class’ and the __init__ method’s docstring are concatenated and inserted.
