@@ -31,7 +31,6 @@ author = "Ivan Sinkarenko, Fabian Sorn"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx_rtd_theme",  # Read-the-docs theme
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.autosectionlabel",  # To allow cross-referencing sections between documents
@@ -41,6 +40,10 @@ extensions = [
     "sphinx.ext.inheritance_diagram",  # Draw inheritance diagrams
     "sphinx.ext.graphviz",  # Needed to draw diagrams produced by plugin above (and also by hand)
     "sphinx.ext.todo",
+    "acc_py_sphinx.theme",  # Enable "acc_py" HTML theme
+    "acc_py_sphinx.utils.exclude",  # Exclude members per-class
+    "acc_py_sphinx.utils.autocontent",  # Smarter merge of __init__ and class docstring
+    "acc_py_sphinx.utils.attrdoc",  # Fix propagation of attribute docstrings
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -57,7 +60,7 @@ exclude_patterns: List[str] = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "acc_py"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -70,7 +73,6 @@ html_title = f"{html_short_title} wiki"
 html_favicon = html_logo = "./img/logo.png"  # Must be png here, as ico won't be rendered by Chrome (and is not advised by MDN)
 
 html_css_files = [
-    "fix_tables.css",
     "fix_bullets.css",
     "collapsible.css",
 ]
@@ -80,11 +82,12 @@ html_js_files = [
 ]
 
 # Both the class’ and the __init__ method’s docstring are concatenated and inserted.
-autoclass_content = "both"
+autoclass_content = "acc-prefer-class"
 # This value controls the docstrings inheritance. If set to True the docstring for classes or methods,
 # if not explicitly set, is inherited form parents.
 autodoc_inherit_docstrings = True
 # The default options for autodoc directives. They are applied to all autodoc directives automatically.
+
 autodoc_default_options = {
     "show-inheritance": True,
     "member-order": "bysource",
@@ -109,7 +112,7 @@ autodoc_default_options = {
                        "__eq__,"
                        "__dir__,"
                        "__delattr__,"
-                       "DrwaChildren,"
+                       "DrawChildren,"
                        "DrawWindowBackground,"
                        "IgnoreMask,"
                        "PaintDeviceMetric,"
@@ -304,6 +307,7 @@ autodoc_default_options = {
                        "minimumSizeHint,"
                        "minimumWidth,"
                        "mouseDoubleClickEvent,"
+                       "mouseDragEvent,"
                        "mouseGrabber,"
                        "mouseMoveEvent,"
                        "mousePressEvent,"
@@ -484,6 +488,7 @@ autodoc_default_options = {
                        "upperCtrlLimitChanged,"
                        "visibleRegion,"
                        "whatsThis,"
+                       "wheelEvent,"
                        "width,"
                        "widthMM,"
                        "winId,"
@@ -563,7 +568,9 @@ autodoc_default_options = {
                        "textEdited,"
                        "textMargins,"
                        "validator,"
+                       "CacheMode,"
                        "ColorSpec,"
+                       "DeviceCoordinateCache,"
                        "aboutQt,"
                        "aboutToQuit,"
                        "activeModalWidget,"
@@ -630,7 +637,85 @@ autodoc_default_options = {
                        "ItemZValueHasChanged,"
                        "NoCache,"
                        "NonModal,"
-                       "PanelModal,",
+                       "PanelModal,"
+                       "PanelModality,"
+                       "SceneModal,"
+                       "acceptHoverEvents,"
+                       "acceptTouchEvents,"
+                       "acceptedMouseButtons,"
+                       "allChildItems,"
+                       "boundingRegionGranularity,"
+                       "childrenBoundingRect,"
+                       "childrenShape,"
+                       "collidesWithItem,"
+                       "collidesWithPath,"
+                       "commonAncestorItem,"
+                       "effectiveOpacity,"
+                       "effectiveSizeHint,"
+                       "filtersChildEvents,"
+                       "forgetViewBox,"
+                       "forgetViewWidget,"
+                       "geometryChanged,"
+                       "getContextMenus,"
+                       "getWindowFrameMargins,"
+                       "grabKeyboardEvent,"
+                       "grabMouseEvent,"
+                       "graphicsItem,"
+                       "hoverEvent,"
+                       "hoverEnterEvent,"
+                       "hoverLeaveEvent,"
+                       "hoverMoveEvent,"
+                       "installSceneEventFilter,"
+                       "isBlockedByModalPanel,"
+                       "isObscuredBy,"
+                       "mapFromItem,"
+                       "mapFromScene,"
+                       "mapFromView,"
+                       "mapRectFromItem,"
+                       "mapRectFromParent,"
+                       "mapRectFromScene,"
+                       "mapRectFromView,"
+                       "mapRectToItem,"
+                       "mapRectToParent,"
+                       "mapRectToScene,"
+                       "mapRectToView,"
+                       "mapToItem,"
+                       "mapToScene,"
+                       "mapToView,"
+                       "mouseClickEvent,"
+                       "ownedByLayout,"
+                       "paintWindowFrame,"
+                       "panelModality,"
+                       "parentLayoutItem,"
+                       "polishEvent,"
+                       "prepareGeometryChange,"
+                       "removeSceneEventFilter,"
+                       "sceneBoundingRect,"
+                       "sceneEvent,"
+                       "sceneEventFilter,"
+                       "setAcceptHoverEvents,"
+                       "setAcceptTouchEvents,"
+                       "setAcceptedMouseButtons,"
+                       "setBoundingRegionGranularity,"
+                       "setCacheMode,"
+                       "setFiltersChildEvents,"
+                       "setGraphicsItem,"
+                       "setOwnedByLayout,"
+                       "setPanelModality,"
+                       "setParentLayoutItem,"
+                       "setTransformOriginPoint,"
+                       "setWindowFrameMargins,"
+                       "toGraphicsObject,"
+                       "ungrabKeyboard,"
+                       "ungrabKeyboardEvent,"
+                       "ungrabMouse,"
+                       "ungrabMouseEvent,"
+                       "unsetWindowFrameMargins,"
+                       "windowFrameEvent,"
+                       "windowFrameGeometry,"
+                       "windowFrameRect,"
+                       "windowFrameSectionAt,"
+                       "viewportEvent,",
 }
 
 # Scan all found documents for autosummary directives, and generate stub pages for each.

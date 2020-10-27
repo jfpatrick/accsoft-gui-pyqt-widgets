@@ -10,3 +10,4 @@ StaticCurveDataModel
    :undoc-members:
    :inherited-members:
    :show-inheritance:
+   :acc-exclude: disconnect

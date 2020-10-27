@@ -6,3 +6,4 @@ ExPlotWidgetProperties
    :undoc-members:
    :inherited-members:
    :show-inheritance:
+   :acc-exclude: Both, Bottom, Center, Hidden, Left, Right, Top, X, Y
