@@ -1,5 +1,5 @@
 Data models
-==========
+===========
 
 .. automodule:: accwidgets.graph.datamodel.itemdatamodel
    :no-members:

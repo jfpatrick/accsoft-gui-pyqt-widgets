@@ -10,4 +10,4 @@ SignalBoundDataSource
    :undoc-members:
    :inherited-members:
    :show-inheritance:
-   :acc-exclude: disconnect
+   :additional-exclusions: disconnect

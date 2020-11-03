@@ -10,4 +10,4 @@ AbstractLiveDataModel
    :undoc-members:
    :inherited-members:
    :show-inheritance:
-   :acc-exclude: disconnect, sig_data_model_changed, sig_data_model_edited
+   :additional-exclusions: disconnect, sig_data_model_changed, sig_data_model_edited

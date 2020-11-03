@@ -73,7 +73,6 @@ html_title = f"{html_short_title} wiki"
 html_favicon = html_logo = "./img/logo.png"  # Must be png here, as ico won't be rendered by Chrome (and is not advised by MDN)
 
 html_css_files = [
-    "fix_bullets.css",
     "collapsible.css",
 ]
 
@@ -82,7 +81,8 @@ html_js_files = [
 ]
 
 # Both the class’ and the __init__ method’s docstring are concatenated and inserted.
-autoclass_content = "acc-prefer-class"
+autoclass_content = "init"
+custom_autoclass_content = True
 # This value controls the docstrings inheritance. If set to True the docstring for classes or methods,
 # if not explicitly set, is inherited form parents.
 autodoc_inherit_docstrings = True
