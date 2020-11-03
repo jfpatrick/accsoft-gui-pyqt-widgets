@@ -133,17 +133,17 @@
   <customwidget>
    <class>ScrollingPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accwidgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph</header>
   </customwidget>
   <customwidget>
    <class>CyclicPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accwidgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph</header>
   </customwidget>
   <customwidget>
    <class>StaticPlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>accwidgets.graph.widgets.plotwidget</header>
+   <header>accwidgets.graph</header>
   </customwidget>
  </customwidgets>
  <resources/>
