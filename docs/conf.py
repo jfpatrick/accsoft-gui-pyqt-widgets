@@ -12,11 +12,13 @@
 # In our case we have to point Sphinx to the accwidgets package
 # which is located two directories upwards.
 
+import sphinx.ext.autodoc
 from typing import List
 from datetime import datetime
 from sys import version_info as py_version
 from qtpy.QtCore import qVersion, PYQT_VERSION_STR
 from accwidgets import __version__
+from accwidgets._api import REAL_MODULE_NAME_VAR
 
 # -- Project information -----------------------------------------------------
 
@@ -757,3 +759,15 @@ rst_epilog = """
 .. include:: <s5defs.txt>
 """
 html_css_files.append("s5defs-roles.css")
+
+
+# This is a workaround to make Sphinx compatible with the modules that have been replaced for the "public API"
+# paradigm.
+
+def get_real_modname(self):
+    return (self.get_attr(self.object, REAL_MODULE_NAME_VAR, None)
+            or self.get_attr(self.object, "__module__", None)
+            or self.modname)
+
+
+sphinx.ext.autodoc.Documenter.get_real_modname = get_real_modname

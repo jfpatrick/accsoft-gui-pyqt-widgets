@@ -2,6 +2,9 @@ import inspect
 from typing import Type
 
 
+REAL_MODULE_NAME_VAR = "__accwidgets_real_module__"
+
+
 def mark_public_api(class_: Type, public_mod_name: str):
     """
     Mark the class to as coming canonically from this module rather
@@ -18,6 +21,7 @@ def mark_public_api(class_: Type, public_mod_name: str):
     if getattr(class_, private_var_name, False):
         return
 
+    setattr(class_, REAL_MODULE_NAME_VAR, class_.__module__)
     class_.__module__ = public_mod_name
     setattr(class_, private_var_name, True)
 
