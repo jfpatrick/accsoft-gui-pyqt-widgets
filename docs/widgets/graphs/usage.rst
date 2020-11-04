@@ -155,7 +155,7 @@ Update Source
 ^^^^^^^^^^^^^
 
 Similar to the example above, data communication will be relayed through
-:class:`~accwidgets.graph.datamodel.connection.UpdateSource` subclass. Here, it will not only define where the
+:class:`~accwidgets.graph.UpdateSource` subclass. Here, it will not only define where the
 **initial data comes from**, but also what happens **after data modifications have been committed**.
 
 In our example, we implement the source, as shown below. The edit handler in this example will simply print
@@ -250,7 +250,7 @@ functions and add them to the toolbar. It takes 2 bits:
 
 - :class:`QAction` object that defines the appearance of the function in the toolbar
 - ``transformation_function(input: accgraph.CurveData) -> accgraph.CurveData`` that will be triggered by the action
-- Register these 2 components with :meth:`~accwidgets.graph.widgets.editingbar.EditingToolBar.add_transformation`
+- Register these 2 components with :meth:`~accwidgets.graph.EditingToolBar.add_transformation`
 
 It is safe for the transformation function to operate directly on the input curve, as it is only a copy of the
 original data.

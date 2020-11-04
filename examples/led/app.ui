@@ -95,7 +95,7 @@
   <customwidget>
    <class>Led</class>
    <extends>QWidget</extends>
-   <header>accwidgets.led.led</header>
+   <header>accwidgets.led</header>
   </customwidget>
  </customwidgets>
  <resources/>

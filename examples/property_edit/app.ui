@@ -140,7 +140,7 @@
   <customwidget>
    <class>PropertyEdit</class>
    <extends>QWidget</extends>
-   <header>accwidgets.property_edit.propedit</header>
+   <header>accwidgets.property_edit</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -28,11 +28,11 @@ The following is a list of widgets that are requested (implemented ones have sta
    |app-frame-link|       |wip|                               Standard shell for PyQt accelerator
                                                               applications
    |led-link|             |done|            |led|             Works with arbitrary colors or a predefined
-                                                              status: :attr:`~accwidgets.led.led.Led.Status.ON`,
-                                                              :attr:`~accwidgets.led.led.Led.Status.OFF`,
-                                                              :attr:`~accwidgets.led.led.Led.Status.WARNING`,
-                                                              :attr:`~accwidgets.led.led.Led.Status.ERROR`,
-                                                              :attr:`~accwidgets.led.led.Led.Status.NONE`
+                                                              status: :attr:`~accwidgets.led.Led.Status.ON`,
+                                                              :attr:`~accwidgets.led.Led.Status.OFF`,
+                                                              :attr:`~accwidgets.led.Led.Status.WARNING`,
+                                                              :attr:`~accwidgets.led.Led.Status.ERROR`,
+                                                              :attr:`~accwidgets.led.Led.Status.NONE`
    =====================  ================  ================  ===============================================
 
 In addition to explicitly requested widgets, those available in

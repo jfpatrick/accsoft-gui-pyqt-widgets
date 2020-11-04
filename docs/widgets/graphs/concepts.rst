@@ -26,21 +26,21 @@ Plotting Styles
 As mentioned in the :ref:`widgets/graphs/index:Features`, data can be visualized not only as different elements (Curves, Bar Graphs, etc...)
 but also in different plotting styles, affecting how live data is integrated.
 
-==============  ==================================================================  ============================================================================
-Plotting Style  Plot Widget Class                                                   Features
---------------  ------------------------------------------------------------------  ----------------------------------------------------------------------------
-STATIC          :class:`~accwidgets.graph.widgets.plotwidget.StaticPlotWidget`      - New data completely replaces existing data
-                                                                                    - Best option for plotting static data with pure PyQtGraph plotting items
-                                                                                      (:class:`pyqtgraph.PlotDataItem`, :class:`pyqtgraph.BarGraphItem`, etc.)
-SCROLLING       :class:`~accwidgets.graph.widgets.plotwidget.ScrollingPlotWidget`   New data is appended on the right. The plot will scroll
-                                                                                    automatically, so the new data moves into the view. Data that is older than
-                                                                                    the visible range, won't be displayed anymore.
-CYCLIC          :class:`~accwidgets.graph.widgets.plotwidget.CyclicPlotWidget`      At first, new data is appended on the right. When the new data reaches the
-                                                                                    end of the configured cycle, it starts to overwrite the old data, moving
-                                                                                    left to right.
-EDITABLE        - :class:`~accwidgets.graph.widgets.plotwidget.EditablePlotWidget`  - Edit individual points in a curve using plots
-                - :class:`~accwidgets.graph.widgets.editingbar.EditingToolBar`      - Apply predefined or custom functions on multiple points on a plot
-==============  ==================================================================  ============================================================================
+==============  ===============================================  ============================================================================
+Plotting Style  Plot Widget Class                                Features
+--------------  -----------------------------------------------  ----------------------------------------------------------------------------
+STATIC          :class:`~accwidgets.graph.StaticPlotWidget`      - New data completely replaces existing data
+                                                                 - Best option for plotting static data with pure PyQtGraph plotting items
+                                                                   (:class:`pyqtgraph.PlotDataItem`, :class:`pyqtgraph.BarGraphItem`, etc.)
+SCROLLING       :class:`~accwidgets.graph.ScrollingPlotWidget`   New data is appended on the right. The plot will scroll
+                                                                 automatically, so the new data moves into the view. Data that is older than
+                                                                 the visible range, won't be displayed anymore.
+CYCLIC          :class:`~accwidgets.graph.CyclicPlotWidget`      At first, new data is appended on the right. When the new data reaches the
+                                                                 end of the configured cycle, it starts to overwrite the old data, moving
+                                                                 left to right.
+EDITABLE        - :class:`~accwidgets.graph.EditablePlotWidget`  - Edit individual points in a curve using plots
+                - :class:`~accwidgets.graph.EditingToolBar`      - Apply predefined or custom functions on multiple points on a plot
+==============  ===============================================  ============================================================================
 
 
 .. figure:: ../../img/scrollingplot.png
@@ -59,10 +59,10 @@ EDITABLE        - :class:`~accwidgets.graph.widgets.plotwidget.EditablePlotWidge
 
 
 A plot widget cannot change its supported plotting style dynamically. All items added through the widget's convenience
-methods (e.g. :meth:`~accwidgets.graph.widgets.plotwidget.ExPlotWidget.addCurve`) will automatically fit this style.
+methods (e.g. :meth:`~accwidgets.graph.ExPlotWidget.addCurve`) will automatically fit this style.
 If a plotting style does not support a certain
 type of data visualization, a :exc:`TypeError` will be raised. If items are created manually and added using widget's
-:meth:`~accwidgets.graph.widgets.plotitem.ExPlotItem.addItem` method, the user has to make sure that they are
+:meth:`~accwidgets.graph.ExPlotItem.addItem` method, the user has to make sure that they are
 fitting the widget's plotting style.
 
 
@@ -89,19 +89,19 @@ Update Source
 *************
 
 Data models are decoupled from the acquisition of data, which is handled by the
-:class:`~accwidgets.graph.datamodel.connection.UpdateSource`. This enables reusing of the data model,
+:class:`~accwidgets.graph.UpdateSource`. This enables reusing of the data model,
 regardless if data comes from a locally simulated source or from a control system device.
-Each :class:`~accwidgets.graph.datamodel.connection.UpdateSource` is responsible for:
+Each :class:`~accwidgets.graph.UpdateSource` is responsible for:
 
 #. Acquiring data
 #. Wrapping data in a data structure, which can be interpreted by the data model
 #. Publishing this data structure via a PyQt signal
 
 In contrast to the data model, which is created automatically, user is required to provide an explicit
-:class:`~accwidgets.graph.datamodel.connection.UpdateSource`.
+:class:`~accwidgets.graph.UpdateSource`.
 
 One way to do that is implementing
-:class:`~accwidgets.graph.datamodel.connection.UpdateSource` subclass and utilizing PyQt signals for publishing the data:
+:class:`~accwidgets.graph.UpdateSource` subclass and utilizing PyQt signals for publishing the data:
 
 .. code-block:: python
    :linenos:
@@ -123,7 +123,7 @@ One way to do that is implementing
                                       y_value=0.0)
            self.sig_new_data[accgraph.PointData].emit(point)
 
-Another option is creating an instance of :class:`~accwidgets.graph.datamodel.connection.UpdateSource` directly and
+Another option is creating an instance of :class:`~accwidgets.graph.UpdateSource` directly and
 calling its signals externally:
 
 .. code-block:: python
@@ -321,7 +321,7 @@ subclasses. In addition, we add type hints and docstrings to even further improv
 To avoid our explicit API breaking with newer PyQtGraph versions, we have added ``**kwargs`` to our APIs, which will
 capture any new arguments, appearing in the newer PyQtGraph version before our subclass API can be improved.
 
-Here's the same method, in our own subclass, :class:`~accwidgets.graph.widgets.plotitem.ExPlotItem`:
+Here's the same method, in our own subclass, :class:`~accwidgets.graph.ExPlotItem`:
 
 .. code-block:: python
    :linenos:
