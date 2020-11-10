@@ -56,6 +56,10 @@ subsections):
 pip install -e .[all]
 ```
 
+>
+> **[Read contributing guide](https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets/docs/stable/contrib/index.html)**
+>
+
 ## Linting
 
 *accwidgets* is integrated with several linting utilities:
