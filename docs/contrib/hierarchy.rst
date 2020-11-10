@@ -16,12 +16,12 @@ from the fictitious widget ``calendar``.
      ┃ ┣ 📂...
      ┃ ┗ 📂calendar
      ┃ ┃ ┣ 📂designer
-     ┃ ┃ ┃ ┣ 📜calendar_icon.ico           // Icon file for the Qt Designer plugin
+     ┃ ┃ ┃ ┣ 📂icons
+     ┃ ┃ ┃ ┃ ┣ 📜Calendar.ico                          // Icon file for the Qt Designer plugin
      ┃ ┃ ┃ ┗ 📜accwidgets_calendar_designer_plugin.py  // Qt Designer plugin for the widget (must have unique file name amongst all Designer plugins)
-     ┃ ┃ ┣ 📂model
-     ┃ ┃ ┃ ┗ 📜calendar_model.py           // Model source code
-     ┃ ┃ ┗ 📂widgets
-     ┃ ┃ ┃ ┗ 📜calendar.py                 // Widget (view) source code
+     ┃ ┃ ┗ 📜_model.py                     // Model source code
+     ┃ ┃ ┗ 📜_view.py                      // Widget (view) source code
+     ┃ ┃ ┗ 📜__init__.py                   // Public interface of the widget
      ┣ 📂benchmarks
      ┃ ┣ 📂...
      ┃ ┗ 📂calendar                        // Optional if widget provides benchmarks

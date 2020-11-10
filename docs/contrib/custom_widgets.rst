@@ -1,6 +1,10 @@
 Implementing custom Qt Widgets
 ==============================
 
+- `Public API`_
+
+  * `Hiding real module name`_
+
 - `The Model/View Pattern`_
 - `Qt Bindings`_
 - `Qt Designer Plugins`_
@@ -11,6 +15,41 @@ Implementing custom Qt Widgets
   * `Widget in Qt Designer`_
   * `Context menu plugins`_
 
+
+Public API
+----------
+Every widget must expose its public API in main ``__init__.py`` file located inside widget's directory. Avoid having
+unnecessary imports to only expose classes and objects that are stable and are likely to stay stable. Limiting the
+surface visible to the end-user ensures flexibility of changing the internal structure of the widget later.
+
+Hiding real module name
+^^^^^^^^^^^^^^^^^^^^^^^
+Because classes are normally defined in other files, and only re-imported by ``__init__.py``, their actual module
+name is different from what the user should expect. Consider the following structure of the widget ``calendar``:
+
+.. code-block::
+
+   📦accsoft-gui-pyqt-widgets
+    ┣ 📂accwidgets
+    ┃ ┣ 📂...
+    ┃ ┗ 📂calendar
+    ┃ ┃ ┗ 📜__init__.py
+    ┃ ┃ ┗ 📜_view.py
+
+If the actual widget is implemented in ``_view.py``, its corresponding module will be ``accwidgets.calendar._view``.
+However, we want to hide this fact, and pretend it is ``accwidgets.calendar``, so that we can rename ``_view.py`` later
+without the harm to the user applications. This module name is exposed in at least 2 places: generated Sphinx
+documentation, and ``*.ui`` files produced by Qt Designer. To replace the module name, a function call is necessary in
+the ``__init__.py`` file after the import statement. E.g.
+
+
+.. code-block:: python
+
+   from ._view import Calendar
+
+
+   from accwidgets._api import mark_public_api as _mark_public_api
+   _mark_public_api(Calendar, __name__)
 
 
 The Model/View Pattern

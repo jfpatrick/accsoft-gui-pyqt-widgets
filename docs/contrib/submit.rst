@@ -5,7 +5,6 @@ Submission process
 Submitting your widgets will include the following steps, based on
 `GitLab's Forking Workflow <https://docs.gitlab.com/ee/user/project/repository/forking_workflow.html>`__:
 
-#. Create an issue in JIRA describing your widget
 #. Fork the repository
 #. Implement your widgets, examples, tests, designer plugins and write documentation
 #. Test your widgets, examples and the designer plugin
