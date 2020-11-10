@@ -3,6 +3,9 @@
 (as a concept of CERN's device properties), similar to the "Knob" of a "WorkingSet".
 """
 # flake8: noqa: F401
+from accwidgets._api import assert_dependencies as _assert_dependencies
+_assert_dependencies(__file__)
+
 
 from .propedit import (PropertyEdit, PropertyEditField, EnumItemConfig,
                        AbstractPropertyEditLayoutDelegate, AbstractPropertyEditWidgetDelegate)
