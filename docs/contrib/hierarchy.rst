@@ -19,9 +19,12 @@ from the fictitious widget ``calendar``.
      ┃ ┃ ┃ ┣ 📂icons
      ┃ ┃ ┃ ┃ ┣ 📜Calendar.ico                          // Icon file for the Qt Designer plugin
      ┃ ┃ ┃ ┗ 📜accwidgets_calendar_designer_plugin.py  // Qt Designer plugin for the widget (must have unique file name amongst all Designer plugins)
+     ┃ ┃ ┗ 📂__extras__
+     ┃ ┃ ┃ ┗ 📜__deps__.py                 // Required extras for the widget (e.g. testing, linting, documentation or benchmarking)
      ┃ ┃ ┗ 📜_model.py                     // Model source code
      ┃ ┃ ┗ 📜_view.py                      // Widget (view) source code
      ┃ ┃ ┗ 📜__init__.py                   // Public interface of the widget
+     ┃ ┃ ┗ 📜__deps__.py                   // Specification of runtime dependencies for the widget
      ┣ 📂benchmarks
      ┃ ┣ 📂...
      ┃ ┗ 📂calendar                        // Optional if widget provides benchmarks
@@ -51,45 +54,48 @@ from the fictitious widget ``calendar``.
 Definition of dependencies
 --------------------------
 
-All dependencies are defined on the top level and are groped per-widget and per category. You will find them in
-``dependencies.ini`` file in the project root, e.g.:
+Dependencies are defined on the per-widget basis and are split into 2 parts: main runtime dependencies, needed for the
+widget to run; and extra dependencies for testing, linting, documentation and other auxiliary phases.
 
-.. literalinclude:: ../../dependencies.ini
-   :language: ini
-   :lines: 28-63
+.. note:: It is a good practice to include all 3rd-party dependencies that you explicitly import in your code
+          (basically any import except the built-in modules). Refrain from listing :mod:`PyQt5` in this file to
+          avoid accidental installation when PyQt Distribution is not activated. When using
+          :ref:`qtpy <contrib/custom_widgets:Qt Bindings>`, :mod:`PyQt5` will (almost) never be your explicit import,
+          thus will not have to be mentioned in the requirements file. Exceptional cases may be :mod:`~PyQt5.QtTest`
+          imports that :mod:`qtpy` does not cover completely (even though
+          `pytest-qt <https://pypi.org/project/pytest-qt/>`__ package may cover those cases).
 
-Here the dependencies are listed in *toml* format, naming the widgets between ``[ ]`` square brackets. This name should
-correspond to your sub-directory names. In our case it would be ``calendar``. ``[accwidgets]`` is a reserved name and
-defines common dependencies for the whole project.
+Runtime dependencies should be placed in the ``__deps__.py`` file. This file must expose a variable called ``core``
+that represents a list of strings, formatted in the same way, as put in ``setup.py`` files, compatible with
+`PEP440 <https://www.python.org/dev/peps/pep-0440>`__. For example:
 
-The categories are:
+.. literalinclude:: ../../accwidgets/led/__deps__.py
+   :language: python
 
-- **core**: Required runtime dependencies
+Similarly, the extra dependencies, located in ``__extras__/__deps__.py`` are using the same format. In this file, the
+parser expects a variable called ``extras`` to be a dictionary, where keys are amongst the allowed extras names
+(``test``, ``lint``, ``doc``, ``bench``), and values are lists of strings with
+`PEP440 <https://www.python.org/dev/peps/pep-0440>`__ dependencies. For example:
+
+.. literalinclude:: ../../accwidgets/led/__extras__/__deps__.py
+   :language: python
+
+Allowed extras can be classified as following:
+
 - **test**: Required packages to successfully run test suite
 - **lint**: Required package for running code quality and inspection tools
 - **doc**: Dependencies to build Sphinx documentation
 - **bench**: Packages need for running benchmarks
-- **release**: Tools needed for uploading the package to package repository
 
-The specification format is standard for
-`pip requirements files <https://pip.pypa.io/en/stable/reference/pip_install/#requirements-file-format>`__. We suggest
-to use upper limits for the versions in order to make your widgets future-proof (we have observed even minor version
-bumps containing breaking changes often, therefore we prefer to pin to range of patch versions within the same minor
-version). `Semantic Versioning terminology <https://semver.org/>`__.
+To fail early when dependencies are not respected, it is a good practice to put a runtime check in widget's main
+``__init__.py`` file, e.g.
 
-**Example requirement with version range**
+.. literalinclude:: ../../accwidgets/led/__init__.py
+   :language: python
+   :lines: 3-7
 
-.. code-block:: ini
-
-   # Defining numpy as a requirement
-   numpy>=1.16.4,<1.17
-
-.. note:: It is a good practice to include all 3rd-party dependencies that you explicitly import in your code.
-          Refrain from listing :mod:`PyQt5` in this file to avoid accidental installation when PyQt Distribution is
-          not activated. When using :ref:`qtpy <contrib/custom_widgets:Qt Bindings>`, :mod:`PyQt5`
-          will (almost) never be your explicit import, thus will not have to be mentioned in the requirements file.
-          Exceptional cases are some :mod:`~PyQt5.QtTest` imports that :mod:`qtpy` does not cover completely.
-
-.. note:: pip does not provide proper dependency graph resolution, therefore conflicting versions between different
-          widget dependencies may break the package at some point. You need to pay careful attention when adding new
-          dependencies.
+Some widgets may decide to opt out from checking it at the import time, if they are not completely isolated. E.g.
+:class:`~accwidgets.timing_bar.TimingBar` is included by :class:`~accwidgets.timing_bar.ApplicationFrame`, but it's
+not guaranteed that for all applications will use the functionality of the timing bar in the
+:class:`~accwidgets.timing_bar.ApplicationFrame`. Therefore, dependency check here will be delayed until the
+:class:`~accwidgets.timing_bar.TimingBar` is actually initialized and activated.

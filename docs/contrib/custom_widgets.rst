@@ -1,6 +1,7 @@
 Implementing custom Qt Widgets
 ==============================
 
+- `Widget dependencies`_
 - `Public API`_
 
   * `Hiding real module name`_
@@ -14,6 +15,11 @@ Implementing custom Qt Widgets
   * `Defining properties`_
   * `Widget in Qt Designer`_
   * `Context menu plugins`_
+
+Widget dependencies
+-------------------
+
+Please beware that every widget must explicitly define its required dependencies, as explained in :ref:`contrib/hierarchy:Definition of dependencies`.
 
 
 Public API
