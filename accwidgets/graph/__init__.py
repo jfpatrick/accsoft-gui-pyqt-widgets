@@ -1,6 +1,9 @@
 """PyQtGraph based plotting graph library"""
 
 # flake8: noqa: E401,E403
+from accwidgets._api import assert_dependencies as _assert_dependencies
+_assert_dependencies(__file__)
+
 from ._const import DEFAULT_COLOR, DEFAULT_BUFFER_SIZE
 from ._enum import PlotWidgetStyle
 from ._config import ExPlotWidgetConfig, TimeSpan
