@@ -23,7 +23,8 @@ The following is a list of widgets that are requested (implemented ones have sta
                                                               of a specific device property
    |log-link|             |wip|
    |trim-link|            |done|            |trim|
-   |timing-link|          |na|              |timing|
+   |timing-link|          |done|            |timing|          `"XTIM" <https://wikis.cern.ch/display/TIMING/XTIM>`__
+                                                              RDA device based timing
    |spinner-link|         |spinner-status|  |spinner|
    |app-frame-link|       |wip|                               Standard shell for PyQt accelerator
                                                               applications
@@ -64,7 +65,7 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |trim-link| replace:: :ref:`Trim function editor (Editable charts) <widgets/graphs/usage:Edit data using plots>`
 
-.. |timing-link| replace:: `Timing toolbar <https://issues.cern.ch/browse/ACCPY-28>`__
+.. |timing-link| replace:: :doc:`Timing bar <timing_bar/index>`
 
 .. |spinner-link| replace:: `Spinner (wheel field) <https://issues.cern.ch/browse/ACCPY-32>`__
 
@@ -89,7 +90,7 @@ their usage statistics gathered from existing Inspector projects.
 .. |trim| image:: ../img/trimeditor.png
    :width: 250px
 
-.. |timing| image:: ../img/ascbeameventviewer.gif
+.. |timing| image:: ../img/timing_bar.png
    :width: 250px
 
 .. |spinner| image:: ../img/wheelfield.gif
@@ -106,4 +107,5 @@ Explore individual widgets
    graphs/index
    property_edit/index
    led/index
+   timing_bar/index
    qt/modules

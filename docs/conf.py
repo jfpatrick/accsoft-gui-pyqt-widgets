@@ -17,7 +17,8 @@ from typing import List
 from datetime import datetime
 from sys import version_info as py_version
 from qtpy.QtCore import qVersion, PYQT_VERSION_STR
-from accwidgets import __version__
+import pyjapc
+import accwidgets
 from accwidgets._api import REAL_MODULE_NAME_VAR
 
 # -- Project information -----------------------------------------------------
@@ -69,7 +70,7 @@ html_theme = "acc_py"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-html_short_title = f"{project} v{__version__}"
+html_short_title = f"{project} v{accwidgets.__version__}"
 html_title = f"{html_short_title} wiki"
 
 html_favicon = html_logo = "./img/logo.png"  # Must be png here, as ico won't be rendered by Chrome (and is not advised by MDN)
@@ -739,6 +740,7 @@ intersphinx_mapping = {
     "numpy": ("http://docs.scipy.org/doc/numpy/", None),
     "pyqtgraph": ("http://www.pyqtgraph.org/documentation/", None),
     "comrad": ("https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/rad/accsoft-gui-rad-comrad/docs/stable/", None),
+    "pyjapc": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pyjapc/docs/v{pyjapc.__version__}/", None),
 }
 
 
