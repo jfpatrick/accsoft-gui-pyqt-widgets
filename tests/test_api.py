@@ -9,6 +9,7 @@ from accwidgets._api import mark_public_api, assert_dependencies, assert_require
 @pytest.fixture(scope="function", autouse=True)
 def test_fn_wrapper():
     import accwidgets._api
+    accwidgets._api._ASSERT_CACHE.clear()
     yield
     accwidgets._api._ASSERT_CACHE.clear()
     try:
