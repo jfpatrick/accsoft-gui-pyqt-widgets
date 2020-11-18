@@ -5,9 +5,17 @@ Installation
 - `Specifying dependencies`_
 - `Install`_
 
-  * `Using "pip" from CO package index`_
-  * `Using "pip" from Gitlab repository`_
-  * `Using "pip" from source`_
+  * `Using "pip" in virtual environment`_
+
+    - `Using "pip" from CO package index`_
+    - `Using "pip" from Gitlab repository`_
+    - `Using "pip" from source`_
+
+  * `Specify accwidgets as a dependency for a Python project`_
+
+    - `Stable accwidgets version`_
+    - `accwidgets from Gitlab repository`_
+
   * `Installing outside of "Accelerating Python" environment`_
 
 
@@ -53,8 +61,15 @@ an :exc:`ImportError` will be triggered, e.g.
 Install
 -------
 
+.. note:: In the following examples, ``<widgets>`` is a placeholder for the specifiers that are described in `Specifying dependencies`_.
+
+Using "pip" in virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is useful when you are just installing the package into a virtual environment via command line interface.
+
 Using "pip" from CO package index
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+*********************************
 
 .. code-block:: bash
 
@@ -62,7 +77,7 @@ Using "pip" from CO package index
 
 
 Using "pip" from Gitlab repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**********************************
 
 If you have SSH access:
 
@@ -76,7 +91,7 @@ If you don't have SSH access (requires entering credentials manually):
 
    pip install git+https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git#egg=accwidgets[<widgets>]
 
-Or if you need specific branch (same approach for both SSH and HTTPS)
+Or if you need a specific branch (same approach for both SSH and HTTPS)
 
 .. code-block:: bash
 
@@ -84,13 +99,56 @@ Or if you need specific branch (same approach for both SSH and HTTPS)
 
 
 Using "pip" from source
-^^^^^^^^^^^^^^^^^^^^^^^
+***********************
 
 .. code-block:: bash
 
    git clone git+ssh://git@gitlab.cern.ch:7999/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git
    cd accsoft-gui-pyqt-widgets
    pip install .[<widgets>]
+
+Specify accwidgets as a dependency for a Python project
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Similarly to above, dependency for the project can be specified to the stable package version from CO package index or
+from the Gitlab repository. This chapter presents the formats that are compatible with ``install_requires`` defined
+in ``setup.py``, the `setup <https://pythonhosted.org/an_example_pypi_project/setuptools.html>`__ function.
+
+Stable accwidgets version
+*************************
+
+It is highly suggested to define version range for the dependencies, to avoid unforeseen breaking if the dependency
+updates with breaking changes.
+
+.. code-block:: python
+
+   "accwidgets[<widgets>]>=1.0,<2.0a0"
+
+
+accwidgets from Gitlab repository
+*********************************
+
+The following format is understood by setuptools.
+
+.. note::" This is not compatible with deployed applications and is suitable only for development purposes.
+
+If you have SSH access:
+
+.. code-block:: python
+
+   "accwidgets @ git+ssh://git@gitlab.cern.ch:7999/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git#egg=accwidgets[<widgets>]"
+
+If you don't have SSH access (requires entering credentials manually during the installation of your project):
+
+.. code-block:: python
+
+   "accwidgets @ git+https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git#egg=accwidgets[<widgets>]"
+
+Or if you need a specific branch (same approach for both SSH and HTTPS)
+
+.. code-block:: python
+
+   "accwidgets @ git+https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git@branch-name#egg=accwidgets[<widgets>]"
 
 
 Installing outside of "Accelerating Python" environment
