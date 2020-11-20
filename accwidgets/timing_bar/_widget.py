@@ -11,7 +11,7 @@ from enum import IntFlag
 from qtpy.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QSpacerItem
 from qtpy.QtGui import (QPaintEvent, QPalette, QColor, QPainter, QFontMetrics, QPixmap, QBrush, QLinearGradient,
                         QShowEvent)
-from qtpy.QtCore import Property, Slot, Q_FLAGS, Qt, QRectF, QRect, Q_ENUMS
+from qtpy.QtCore import Property, Slot, Q_FLAGS, Qt, QRectF, QRect, Q_ENUMS, QSize
 from accwidgets.designer_check import is_designer
 from ._model import TimingBarModel, TimingBarDomain
 
@@ -209,9 +209,8 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
         self._model = model or TimingBarModel()
         self._connect_model(self._model)
 
-        self.setMinimumWidth(340)
         self._canvas.setLayout(layout)
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Ignored))
 
         self._update_label_visibility()
         if not disable_supercycle:
@@ -628,6 +627,26 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
         super().showEvent(event)
         if not event.spontaneous() and not self._model.activated:
             self._model.activate()  # Initialize japc subscriptions
+
+    def minimumSizeHint(self) -> QSize:
+        """
+        If the value of this property is an invalid size, no minimum size is recommended.  The default
+        implementation of :meth:`QWidget.minimumSizeHint` returns an invalid size if there is no layout for
+        this widget, and returns the layout's minimum size otherwise. Most built-in widgets reimplement
+        :meth:`QWidget.minimumSizeHint`.
+
+        :class:`QLayout` will never resize a widget to a size smaller than the minimum size hint unless
+        :meth:`minimumSize` is set or the size policy is set to :attr:`QSizePolicy.Ignore`. If
+        :meth:`minimumSize` is set, the minimum size hint will be ignored.
+
+        Returns:
+            Recommended minimum size for the widget.
+        """
+        min_non_supercycle_width = (TimingBarCanvas._NON_SUPERCYCLE_BP_COUNT * 2
+                                    + TimingBarCanvas._CYCLE_BAR_MARGIN_LEFT
+                                    + TimingBarCanvas._CYCLE_BAR_MARGIN_RIGHT)
+        desired_width = max(super().minimumSizeHint().width(), min_non_supercycle_width)
+        return QSize(desired_width, self.minimumHeight())
 
     def _update_label_visibility(self):
         has_error = self._model.has_error
