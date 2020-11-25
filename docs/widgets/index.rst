@@ -21,7 +21,8 @@ The following is a list of widgets that are requested (implemented ones have sta
                                                               properties change to a specific state
    |propedit-link|        |done|            |propedit|        Allows to explicitly Get/Set one or more fields
                                                               of a specific device property
-   |log-link|             |wip|
+   |log-link|             |done|            |logconsole|      Capture standard Python loggers, or custom logs
+                                                              via custom model implementation
    |trim-link|            |done|            |trim|
    |timing-link|          |done|            |timing|          `"XTIM" <https://wikis.cern.ch/display/TIMING/XTIM>`__
                                                               RDA device based timing
@@ -61,7 +62,7 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |propedit-link| replace:: :doc:`PropertyEdit <property_edit/index>`
 
-.. |log-link| replace:: `Log Console <https://issues.cern.ch/browse/ACCPY-29>`__
+.. |log-link| replace:: :doc:`LogConsole <log_console/index>`
 
 .. |trim-link| replace:: :ref:`Trim function editor (Editable charts) <widgets/graphs/usage:Edit data using plots>`
 
@@ -80,8 +81,12 @@ their usage statistics gathered from existing Inspector projects.
 .. |wip| replace:: :blue:`In progress`
 
 .. |livecharts| image:: ../img/live-charts.png
+   :width: 250px
 
 .. |devicesel| image:: ../img/ascdevicecontrolbox.png
+
+.. |logconsole| image:: ../img/logconsole.png
+   :width: 250px
 
 .. |toggle-trigger| image:: ../img/ascdiscretecontrol.png
 
@@ -106,6 +111,7 @@ Explore individual widgets
 
    graphs/index
    property_edit/index
+   log_console/index
    led/index
    timing_bar/index
    qt/modules

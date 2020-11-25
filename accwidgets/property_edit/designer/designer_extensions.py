@@ -9,7 +9,7 @@ from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget,
                             QStyleOptionViewItem, QComboBox)
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, EnumItemConfig
 from accwidgets.property_edit.propedit import _pack_designer_fields, _unpack_designer_fields
-from accwidgets._designer_base import WidgetsExtension, get_designer_cursor
+from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableDialog, AbstractTableModel, BooleanPropertyColumnDelegate,
                            AbstractComboBoxColumnDelegate, TableViewColumnResizer, _STYLED_ITEM_DELEGATE_INDEX)
 
@@ -292,7 +292,7 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         self.all_rw.setEnabled(data_prefilled)
 
 
-class PropertyFieldExtension(WidgetsExtension):
+class PropertyFieldExtension(WidgetsTaskMenuExtension):
 
     def __init__(self, widget: PropertyEdit):
         """
