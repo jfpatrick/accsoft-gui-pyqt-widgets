@@ -7,7 +7,6 @@ PyQt accelerator widgets (accwidgets)
 Quick links
 -----------
 
-- API reference: :doc:`Sphinx <api/index>`
 - Issue tracker: `JIRA <https://issues.cern.ch/browse/ACCPY-389?jql=project%20%3D%20ACCPY%20AND%20resolution%20%3D%20Unresolved%20AND%20labels%20%3D%20PyQt_Widgets%20ORDER%20BY%20priority%20DESC%2C%20updated%20DESC>`__
 - Git repo: `Gitlab <https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets>`__
 - Support:
