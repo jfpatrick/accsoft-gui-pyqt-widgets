@@ -13,28 +13,28 @@ The following is a list of widgets that are requested (implemented ones have sta
    =====================  ================  ================  ===============================================
    Name                   Status            Preview           Comments
    ---------------------  ----------------  ----------------  -----------------------------------------------
+   |app-frame-link|       |done|            |appframe|        Standard shell for PyQt accelerator
+                                                              applications
    |livecharts-link|      |done|            |livecharts|      JDataViewer-like features, PyQtGraph derivative
-   |lsa-link|             |lsa-status|
-   |device-sel-link|      |na|              |devicesel|
-   |toggle-trigger-link|  |na|              |toggle-trigger|  For JAPC context
-   |status-led-link|      |na|                                Changes its state only when all linked
-                                                              properties change to a specific state
+   |trim-link|            |done|            |trim|
    |propedit-link|        |done|            |propedit|        Allows to explicitly Get/Set one or more fields
                                                               of a specific device property
-   |log-link|             |done|            |logconsole|      Capture standard Python loggers, or custom logs
-                                                              via custom model implementation
-   |trim-link|            |done|            |trim|
-   |timing-link|          |done|            |timing|          `"XTIM" <https://wikis.cern.ch/display/TIMING/XTIM>`__
-                                                              RDA device based timing
-   |spinner-link|         |spinner-status|  |spinner|
-   |app-frame-link|       |wip|                               Standard shell for PyQt accelerator
-                                                              applications
    |led-link|             |done|            |led|             Works with arbitrary colors or a predefined
                                                               status: :attr:`~accwidgets.led.Led.Status.ON`,
                                                               :attr:`~accwidgets.led.Led.Status.OFF`,
                                                               :attr:`~accwidgets.led.Led.Status.WARNING`,
                                                               :attr:`~accwidgets.led.Led.Status.ERROR`,
                                                               :attr:`~accwidgets.led.Led.Status.NONE`
+   |lsa-link|             |lsa-status|
+   |spinner-link|         |spinner-status|  |spinner|
+   |device-sel-link|      |na|              |devicesel|
+   |toggle-trigger-link|  |na|              |toggle-trigger|  For JAPC context
+   |status-led-link|      |na|                                Changes its state only when all linked
+                                                              properties change to a specific state
+   |log-link|             |done|            |logconsole|      Capture standard Python loggers, or custom logs
+                                                              via custom model implementation
+   |timing-link|          |done|            |timing|          `"XTIM" <https://wikis.cern.ch/display/TIMING/XTIM>`__
+                                                              RDA device based timing
    =====================  ================  ================  ===============================================
 
 In addition to explicitly requested widgets, those available in
@@ -52,7 +52,7 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |device-sel-link| replace:: `Device selector <https://issues.cern.ch/browse/ACCPY-44>`__
 
-.. |app-frame-link| replace:: `Application frame <https://issues.cern.ch/browse/ACCPY-691>`__
+.. |app-frame-link| replace:: :doc:`Application frame <app_frame/index>`
 
 .. |toggle-trigger-link| replace:: `Enable/disable trigger <https://issues.cern.ch/browse/ACCPY-38>`__
 
@@ -100,6 +100,9 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |spinner| image:: ../img/wheelfield.gif
 
+.. |appframe| image:: ../img/appframe.png
+   :width: 250px
+
 .. |led| image:: ../img/led.png
 
 
@@ -109,6 +112,7 @@ Explore individual widgets
 .. toctree::
    :maxdepth: 1
 
+   app_frame/index
    graphs/index
    property_edit/index
    log_console/index

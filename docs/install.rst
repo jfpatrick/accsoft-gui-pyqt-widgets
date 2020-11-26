@@ -18,6 +18,8 @@ Installation
 
   * `Installing outside of "Accelerating Python" environment`_
 
+- `Enable Qt Designer templates`_
+
 
 Prerequisites
 -------------
@@ -179,3 +181,32 @@ sure that packages can be installed correctly.
    .. code-block:: bash
 
       pip install --trusted-host acc-py-repo.cern.ch ... --index-url http://acc-py-repo.cern.ch:8081/repository/vr-py-releases/simple/
+
+
+Enable Qt Designer templates
+----------------------------
+
+Considering that you have installed the library into a virtual environment, it is advised to install Qt Designer
+templates if you are using Qt Designer in your development workflows.
+
+.. code-block:: bash
+
+  accwidgets-cli install-templates
+
+This action will alias your regular ``designer`` command to automatically pick up accwidgets templates that are
+bundled with the library. It will also instruct Qt Designer to load all widget plugins provided by the library.
+You need to pay attention to the output of the command, in order to re-activate the virtual environment for the
+changes to take effect.
+
+.. note:: This action modifies your virtual environment's ``activate`` script. It is advised to roll back the changes
+          before uninstalling accwidgets library from the environment. The corresponding command is
+          ``accwidgets-cli uninstall-templates``.
+
+After installation, your Qt Designer's "New Form" window should expose the "accwidgets/templates" category with
+available templates, when launching via ``designer`` command.
+
+.. figure:: ./img/cern_templates.png
+   :align: center
+   :alt: New Form with custom templates
+
+   New Form with custom templates

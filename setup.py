@@ -186,7 +186,7 @@ this library, a widget may shortly become available in comrad.""",
     },
     entry_points={
         "console_scripts": [
-            "accwidgets_designer_path=_accwidgets._designer_path:run",
+            "accwidgets-cli=_accwidgets._cli:run",
         ],
     },
     platforms=["centos7"],
