@@ -608,6 +608,12 @@ autodoc_default_options = {
                        "GraphicsItemChange,"
                        "GraphicsItemFlag,"
                        "GraphicsItemFlags,"
+                       "EditNextItem,"
+                       "EditPreviousItem,"
+                       "EndEditHint,"
+                       "NoHint,"
+                       "RevertModelCache,"
+                       "SubmitModelCache,"
                        "ItemAcceptsInputMethod,"
                        "ItemChildAddedChange,"
                        "ItemChildRemovedChange,"
@@ -660,6 +666,10 @@ autodoc_default_options = {
                        "ItemVisibleHasChanged,"
                        "ItemZValueChange,"
                        "ItemZValueHasChanged,"
+                       "HorizontalSortHint,"
+                       "LayoutChangeHint,"
+                       "NoLayoutChangeHint,"
+                       "VerticalSortHint,"
                        "NoCache,"
                        "NonModal,"
                        "PanelModal,"
@@ -749,7 +759,9 @@ autodoc_default_options = {
                        "tabifiedDockWidgetActivated,"
                        "tabifiedDockWidgets,"
                        "tabifyDockWidget,"
-                       "unifiedTitleAndToolBarOnMac,",
+                       "unifiedTitleAndToolBarOnMac,"
+                       "itemEditorFactory,"
+                       "setItemEditorFactory,",
 }
 
 # Scan all found documents for autosummary directives, and generate stub pages for each.

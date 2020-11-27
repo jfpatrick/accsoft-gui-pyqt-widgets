@@ -1,7 +1,19 @@
 Qt Convenience Abstractions
-=============================
+===========================
 
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: accwidgets.qt
-   :members:
-   :show-inheritance:
+   abstractcomboboxcolumndelegate
+   abstractlistmodel
+   abstractqgraphicsitemmeta
+   abstractqobjectmeta
+   abstracttabledialog
+   abstracttablemodel
+   booleanbutton
+   booleanpropertycolumndelegate
+   persistenteditortableview
+   tableviewcolumnresizer
+
+* :ref:`modindex`
+* :ref:`genindex`
