@@ -9,12 +9,12 @@ from ._model import AbstractLogConsoleModel, LogConsoleModel, LogConsoleRecord
 from ._viewer import LogConsole, LogConsoleDock
 
 
-from accwidgets._api import mark_public_api
-mark_public_api(LogLevel, __name__)
-mark_public_api(AbstractLogConsoleFormatter, __name__)
-mark_public_api(LogConsoleFormatter, __name__)
-mark_public_api(AbstractLogConsoleModel, __name__)
-mark_public_api(LogConsoleModel, __name__)
-mark_public_api(LogConsoleRecord, __name__)
-mark_public_api(LogConsole, __name__)
-mark_public_api(LogConsoleDock, __name__)
+from accwidgets._api import mark_public_api as _mark_public_api
+_mark_public_api(LogLevel, __name__)
+_mark_public_api(AbstractLogConsoleFormatter, __name__)
+_mark_public_api(LogConsoleFormatter, __name__)
+_mark_public_api(AbstractLogConsoleModel, __name__)
+_mark_public_api(LogConsoleModel, __name__)
+_mark_public_api(LogConsoleRecord, __name__)
+_mark_public_api(LogConsole, __name__)
+_mark_public_api(LogConsoleDock, __name__)
