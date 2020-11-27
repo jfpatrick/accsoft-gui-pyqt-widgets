@@ -1,0 +1,16 @@
+Qt Designer additions
+=====================
+
+.. toctree::
+   :maxdepth: 4
+
+   fieldeditortablemodel
+   enumtabledata
+   enumeditortablemodel
+   userdatacolumndelegate
+   fieldtypecolumndelegate
+   enumoptionsdialog
+   fieldsdialog
+
+* :ref:`modindex`
+* :ref:`genindex`

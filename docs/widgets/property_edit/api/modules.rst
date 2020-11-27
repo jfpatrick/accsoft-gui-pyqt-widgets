@@ -7,7 +7,7 @@ API reference
    :maxdepth: 4
 
    propedit/modules
-   designer
+   designer/modules
 
 * :ref:`modindex`
 * :ref:`genindex`
