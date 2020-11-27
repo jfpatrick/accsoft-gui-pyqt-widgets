@@ -13,7 +13,7 @@ API reference
 
    model/modules
    widgets/modules
-   designer
+   designer/modules
 
 * :ref:`modindex`
 * :ref:`genindex`
