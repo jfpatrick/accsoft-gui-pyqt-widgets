@@ -1,3 +1,9 @@
+"""
+This example shows the simple integration of Led widget into a window. 2 Leds are placed side by side, one of
+which is controlled via "Status" combobox, that modifies Led color based on the predefined status, while another
+Led accepts an arbitrary RBG color from the color picker.
+"""
+
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QColorDialog, QPushButton, QComboBox, QWidget, QGridLayout
 from accwidgets.led import Led
@@ -10,11 +16,8 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
-        """
-        Color picker allows setting custom color, while combobox
-        sets the color to the predefined status color. This is identical to designer_example.py
-        """
         super().__init__(*args, **kwargs)
+        self.setWindowTitle("Led simple example")
         self.setCentralWidget(QWidget())
         layout = QGridLayout()
         self.centralWidget().setLayout(layout)
@@ -40,21 +43,16 @@ class MainWindow(QMainWindow):
         self.status_combo.activated.emit(3)
 
         self.resize(360, 223)
-        self.show()
 
     def pick_color(self):
         new_color = QColorDialog.getColor(self.color_led.color)
-        if not new_color.isValid():
-            # User cancelled the selection
+        if not new_color.isValid():  # User cancelled the selection
             return
         self.color_led.color = new_color
 
 
-def run():
-    app = QApplication(sys.argv)
-    _ = MainWindow()
-    sys.exit(app.exec_())
-
-
 if __name__ == "__main__":
-    run()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())

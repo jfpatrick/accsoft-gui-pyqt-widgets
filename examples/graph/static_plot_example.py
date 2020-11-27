@@ -1,17 +1,14 @@
 """
-Example application of a plot displaying two curves displaying
-continuously changing data. The two displayed sinus curves are
-being scaled in y direction. As a new sinus curve is emitted,
-it is replacing the old one.
+Example application of a plot displaying two curves displaying continuously changing data. The two displayed
+sin curves are being scaled in Y direction. As a new sinus curve is emitted, it is replacing the old one.
+StaticPlotWidget, in contrast with other plot widget types, replaces the entire contents of the graph with the new
+data every time. Hence, it is perfect for displaying waveforms.
 """
 
-
 import sys
-
 from qtpy.QtWidgets import QApplication, QMainWindow
-
-from accwidgets import graph as accgraph
-import example_sources
+from accwidgets.graph import StaticPlotWidget
+from example_sources import WaveformSinusSource, SinusCurveSourceEmitTypes
 
 # Allow smooth exit on Ctrl+C
 import signal
@@ -22,40 +19,32 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        curve_ds = example_sources.WaveformSinusSource(
-            curve_length=100,
-            type=example_sources.SinusCurveSourceEmitTypes.POINT)
-        bars_ds = example_sources.WaveformSinusSource(
-            curve_length=11,
-            y_offset=1.0,
-            type=example_sources.SinusCurveSourceEmitTypes.BAR)
-        injection_ds = example_sources.WaveformSinusSource(
-            curve_length=11,
-            y_offset=2.0,
-            type=example_sources.SinusCurveSourceEmitTypes.INJECTIONBAR)
-        marker_ds = example_sources.WaveformSinusSource(
-            x_start=2,
-            x_stop=5,
-            curve_length=3,
-            y_offset=2.0,
-            type=example_sources.SinusCurveSourceEmitTypes.INFINITELINE)
-        self.plot = accgraph.StaticPlotWidget()
-        self.plot.addCurve(data_source=curve_ds, pen="r")
-        self.plot.addBarGraph(data_source=bars_ds, width=0.5)
-        self.plot.addInjectionBar(data_source=injection_ds, beam=0.05, pen="b")
-        self.plot.addTimestampMarker(data_source=marker_ds)
+        self.setWindowTitle("Static plot example")
+        self.plot = StaticPlotWidget()
+        self.plot.addCurve(pen="r",
+                           data_source=WaveformSinusSource(curve_length=100,
+                                                           type=SinusCurveSourceEmitTypes.POINT))
+        self.plot.addBarGraph(width=0.5,
+                              data_source=WaveformSinusSource(curve_length=11,
+                                                              y_offset=1.0,
+                                                              type=SinusCurveSourceEmitTypes.BAR))
+        self.plot.addInjectionBar(beam=0.05,
+                                  pen="b",
+                                  data_source=WaveformSinusSource(curve_length=11,
+                                                                  y_offset=2.0,
+                                                                  type=SinusCurveSourceEmitTypes.INJECTION_BAR))
+        self.plot.addTimestampMarker(data_source=WaveformSinusSource(x_start=2,
+                                                                     x_stop=5,
+                                                                     curve_length=3,
+                                                                     y_offset=2.0,
+                                                                     type=SinusCurveSourceEmitTypes.INFINITE_LINE))
         self.plot.setRange(yRange=[-1, 3])
-        self.show()
-        self.resize(800, 600)
         self.setCentralWidget(self.plot)
-
-
-def run():
-    """Run Application"""
-    app = QApplication(sys.argv)
-    _ = MainWindow()
-    sys.exit(app.exec_())
+        self.resize(800, 600)
 
 
 if __name__ == "__main__":
-    run()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())

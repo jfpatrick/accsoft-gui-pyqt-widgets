@@ -1,3 +1,9 @@
+"""
+This example embeds a single PropertyEdit widget, which contains 2 fields of different types.
+The purpose is to show how to create a custom inner widget, as opposed to default form field
+widget.
+"""
+
 import sys
 import json
 from typing import Dict, Any, Optional, cast
@@ -38,13 +44,8 @@ class CustomWidgetDelegate(AbstractPropertyEditWidgetDelegate):
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
-        """
-        This example embeds a single PropertyEdit widget, which contains 2 fields of different types.
-        The purpose is to show how to create a custom inner widget, as opposed to default form field
-        widget.
-        """
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("Custom widgets")
+        self.setWindowTitle("PropertyEdit custom widget delegate example")
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_widget.setLayout(QVBoxLayout())
@@ -60,8 +61,6 @@ class MainWindow(QMainWindow):
         self.property_edit = property_edit
         main_widget.layout().addWidget(property_edit)
 
-        self.show()
-
     def format_data(self, incoming: Dict[str, Any]):
         formatted_text = json.dumps(incoming, indent=4)
         self.label.setText(formatted_text)
@@ -73,11 +72,8 @@ class MainWindow(QMainWindow):
         })
 
 
-def run():
-    app = QApplication(sys.argv)
-    _ = MainWindow()
-    sys.exit(app.exec_())
-
-
 if __name__ == "__main__":
-    run()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())

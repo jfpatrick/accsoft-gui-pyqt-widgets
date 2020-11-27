@@ -1,3 +1,10 @@
+"""
+This example embeds a single PropertyEdit widget, which contains 4 fields of different types.
+Both "Get" and "Set" buttons are available. Whenever user presses "Set", the assumed propagation of the value
+to the control system is reflected by JSON representation in the bottom of the window.
+"Get" will reset the field values to the predefined setting.
+"""
+
 import sys
 import json
 from typing import Dict, Any
@@ -12,15 +19,8 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
-        """
-        This example embeds a single PropertyEdit widget, which contains 4 fields of different types.
-        Both "Get" and "Set" buttons are available. Whenever user presses "Set", the assumed propagation of the value
-        to the control system is reflected by JSON representation in the bottom of the window.
-        "Get" will reset the field values to the predefined setting.
-        """
-
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("Proton-Ion Property Editor")
+        self.setWindowTitle("PropertyEdit simple example")
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_widget.setLayout(QVBoxLayout())
@@ -53,7 +53,6 @@ class MainWindow(QMainWindow):
         res_box.layout().addWidget(label)
         main_widget.layout().addWidget(res_box)
         self.label = label
-        self.show()
 
     def format_data(self, incoming: Dict[str, Any]):
         formatted_text = json.dumps(incoming, indent=4)
@@ -68,11 +67,8 @@ class MainWindow(QMainWindow):
         })
 
 
-def run():
-    app = QApplication(sys.argv)
-    _ = MainWindow()
-    sys.exit(app.exec_())
-
-
 if __name__ == "__main__":
-    run()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
