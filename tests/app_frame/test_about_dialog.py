@@ -3,7 +3,7 @@ import re
 from freezegun import freeze_time
 from pytestqt.qtbot import QtBot
 from datetime import datetime
-from dateutil.tz import tzoffset
+from dateutil.tz import UTC
 from unittest import mock
 from qtpy.QtGui import QIcon
 from accwidgets.app_frame._about_dialog import AboutDialog
@@ -11,8 +11,7 @@ from accwidgets.app_frame._about_dialog import AboutDialog
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to
 # take the current timezone which lets tests fail
-TZ = tzoffset("UTC+0", 0)
-STATIC_TIME = datetime(year=2020, day=1, month=1, hour=4, minute=43, second=5, microsecond=214923, tzinfo=TZ)
+STATIC_TIME = datetime(year=2020, day=1, month=1, hour=4, minute=43, second=5, microsecond=214923, tzinfo=UTC)
 
 
 @mock.patch("accwidgets.app_frame._about_dialog.QDialog.setWindowIcon")
