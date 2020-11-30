@@ -12,7 +12,7 @@ This page briefly explains the examples, that can be found in ``examples/log_con
 - `Custom model example`_
 - `Child loggers example`_
 - `Ignored loggers example`_
-- `Threading example`_
+- `Multi-threading example`_
 - `QSS styling example`_
 
 
@@ -256,8 +256,8 @@ Buttons allow simulating log entries for each of the available loggers.
 
    <p />
 
-Threading example
------------------
+Multi-threading example
+-----------------------
 
 To launch this example from the project root, run:
 

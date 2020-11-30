@@ -57,6 +57,7 @@ Further read
    concepts
    perf
    alt
+   examples
    api/modules
 
 
