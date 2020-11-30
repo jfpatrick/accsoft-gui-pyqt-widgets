@@ -133,6 +133,7 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
         self._use_heartbeat: bool = True
         self._tick_bkg: bool = False
         self._show_us: bool = False
+        self._show_tz: bool = False
 
         self._palette = TimingBarPalette(text=Qt.black,
                                          error_text=Qt.red,
@@ -299,6 +300,20 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
     showMicroSeconds: bool = Property(bool, fget=_get_show_us, fset=_set_show_us)
     """
     Use microsecond precision in the timestamp label. Defaults to :obj:`False`.
+    """
+
+    def _get_show_tz(self) -> bool:
+        return self._show_tz
+
+    def _set_show_tz(self, new_val: bool):
+        if new_val == self._show_tz:
+            return
+        self._show_tz = new_val
+        self._on_new_timing_info(False)
+
+    showTimeZone: bool = Property(bool, fget=_get_show_tz, fset=_set_show_tz)
+    """
+    Display timezone in the timestamp label. Defaults to :obj:`False`.
     """
 
     def _get_palette(self) -> TimingBarPalette:
@@ -677,7 +692,12 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
 
         info = self._model.last_info
         if info:
-            self._lbl_datetime.setText(info.timestamp.strftime("%Y-%m-%d  %H:%M:%S.%f" if self.showMicroSeconds else "%Y-%m-%d  %H:%M:%S"))
+            time_fmt = "%Y-%m-%d  %H:%M:%S"
+            if self.showMicroSeconds:
+                time_fmt += ".%f"
+            if self.showTimeZone:
+                time_fmt += " %Z"
+            self._lbl_datetime.setText(info.timestamp.strftime(time_fmt))
             self._lbl_lsa_name.setText(info.lsa_name)
             self._lbl_user.setText(info.user)
             self._lbl_beam_offset.setNum(info.offset + 1)

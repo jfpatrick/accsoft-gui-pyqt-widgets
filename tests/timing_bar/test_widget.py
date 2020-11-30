@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from unittest import mock
 from pytestqt.qtbot import QtBot
+from dateutil.tz import UTC, tzoffset
 from dateutil.parser import isoparse
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QPalette
@@ -212,7 +213,7 @@ def test_timing_bar_highlighted_user_affects_advance(qtbot, supercycle_obj, init
 
     def update_last_info(new_bp: int):
         _, new_cycle = supercycle_obj.cycle_at_basic_period(new_bp)
-        view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21"),
+        view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21Z"),
                                              offset=new_bp,
                                              lsa_name=new_cycle.lsa_name,
                                              user=new_cycle.user)
@@ -280,7 +281,7 @@ def test_timing_bar_highlighted_user_resets_current_color(qtbot, supercycle_obj,
     view.color_palette = palette
     view.model._bcd = supercycle_obj
     _, curr_cycle = supercycle_obj.cycle_at_basic_period(initial_bp)
-    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21"),
+    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21Z"),
                                          offset=initial_bp,
                                          lsa_name=curr_cycle.lsa_name,
                                          user=curr_cycle.user)
@@ -336,35 +337,53 @@ def test_timing_bar_set_render_supercycle(hideSuperCycle, showSuperCycle, qtbot,
         hideSuperCycle.assert_not_called()
 
 
-@pytest.mark.parametrize("initial_flag,new_flag,expected_initial_label,expected_new_label", [
-    (False, False, "2018-04-02  15:33:21", "2018-04-02  15:33:21"),
-    (False, True, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495"),
-    (True, False, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21"),
-    (True, True, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495"),
+@pytest.mark.parametrize("initial_us_flag,new_us_flag,initial_tz_flag,new_tz_flag,expected_initial_label,expected_new_label", [
+    (False, False, False, False, "2018-04-02  15:33:21", "2018-04-02  15:33:21"),
+    (False, True, False, False, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495"),
+    (True, False, False, False, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21"),
+    (True, True, False, False, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495"),
+    (False, False, False, True, "2018-04-02  15:33:21", "2018-04-02  15:33:21 UTC"),
+    (False, True, False, True, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, False, True, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21 UTC"),
+    (True, True, False, True, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495 UTC"),
+    (False, False, True, False, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21"),
+    (False, True, True, False, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495"),
+    (True, False, True, False, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21"),
+    (True, True, True, False, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495"),
+    (False, False, True, True, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21 UTC"),
+    (False, True, True, True, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, True, True, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21 UTC"),
+    (True, True, True, True, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495 UTC"),
 ])
-def test_timing_bar_set_show_us_affects_current_timestamp(qtbot, initial_flag, new_flag, expected_initial_label, expected_new_label):
+def test_timing_bar_set_show_us_and_tz_affect_current_timestamp(qtbot, initial_us_flag, new_us_flag, initial_tz_flag, new_tz_flag,
+                                                                expected_initial_label, expected_new_label):
     view = TimingBar()
     qtbot.add_widget(view)
-    view.showMicroSeconds = initial_flag
-    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21.543495"),
+    view.showMicroSeconds = initial_us_flag
+    view.showTimeZone = initial_tz_flag
+    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21.543495Z"),
                                          offset=0,
                                          lsa_name="",
                                          user="")
     view.model.timingUpdateReceived.emit(False)
     assert view._lbl_datetime.text() == expected_initial_label
-    view.showMicroSeconds = new_flag
+    view.showMicroSeconds = new_us_flag
+    view.showTimeZone = new_tz_flag
     assert view._lbl_datetime.text() == expected_new_label
 
 
 @pytest.mark.parametrize("indicate_advancement", [True, False])
-@pytest.mark.parametrize("flag_val,timing_updates,expected_labels", [
-    (False, ["2018-04-02 15:33:21.543495", "2018-04-02 15:33:22.543495"], ["2018-04-02  15:33:21", "2018-04-02  15:33:22"]),
-    (True, ["2018-04-02 15:33:21.543495", "2018-04-02 15:33:22.543495"], ["2018-04-02  15:33:21.543495", "2018-04-02  15:33:22.543495"]),
+@pytest.mark.parametrize("us_val,tz_val,timing_updates,expected_labels", [
+    (False, False, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21", "2018-04-02  15:33:22"]),
+    (True, False, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495", "2018-04-02  15:33:22.543495"]),
+    (False, True, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21 UTC", "2018-04-02  15:33:22 UTC"]),
+    (True, True, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:22.543495 UTC"]),
 ])
-def test_timing_bar_set_show_us_affects_new_timestamps(qtbot, flag_val, timing_updates, indicate_advancement, expected_labels):
+def test_timing_bar_set_show_us_and_tz_affect_new_timestamps(qtbot, us_val, tz_val, timing_updates, indicate_advancement, expected_labels):
     view = TimingBar()
     qtbot.add_widget(view)
-    view.showMicroSeconds = flag_val
+    view.showMicroSeconds = us_val
+    view.showTimeZone = tz_val
     for timestamp, expected_text in zip(timing_updates, expected_labels):
         view.model._last_info = TimingUpdate(timestamp=isoparse(timestamp),
                                              offset=0,
@@ -888,40 +907,176 @@ def test_timing_bar_noop_activated_model_on_first_show(_, qtbot: QtBot):
         activate.assert_not_called()
 
 
-@pytest.mark.parametrize("timing_update,show_us,expected_datetime,expected_lsa_name,expected_user,expected_offset,expect_visible_separator", [
-    (None, True, "", "", "", "", False),
-    (None, False, "", "", "", "", False),
+@pytest.mark.parametrize("timing_update,show_us,show_tz,tz,expected_datetime,expected_lsa_name,expected_user,expected_offset,expect_visible_separator", [
+    (None, True, False, None, "", "", "", "", False),
+    (None, False, False, None, "", "", "", "", False),
     (
         TimingUpdate(user="user1",
                      lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238"),
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
                      offset=4),
-        True, "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
+        True, False, None, "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
     ), (
         TimingUpdate(user="user2",
                      lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238"),
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
                      offset=5),
-        False, "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
+        False, False, None, "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
     ), (
         TimingUpdate(user="user1",
                      lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238"),
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
                      offset=4),
-        True, "2018-04-02  15:33:21.294238", "", "user1", "5", False,
+        True, False, None, "2018-04-02  15:33:21.294238", "", "user1", "5", False,
     ), (
         TimingUpdate(user="user2",
                      lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238"),
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
                      offset=5),
-        False, "2018-04-02  15:33:21", "", "user2", "6", False,
+        False, False, None, "2018-04-02  15:33:21", "", "user2", "6", False,
+    ),
+    (None, True, False, UTC, "", "", "", "", False),
+    (None, False, False, UTC, "", "", "", "", False),
+    (
+        TimingUpdate(user="user1",
+                     lsa_name="lsa1",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, False, UTC, "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="lsa2",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, False, UTC, "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
+    ), (
+        TimingUpdate(user="user1",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, False, UTC, "2018-04-02  15:33:21.294238", "", "user1", "5", False,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, False, UTC, "2018-04-02  15:33:21", "", "user2", "6", False,
+    ),
+    (None, True, False, tzoffset(name="CET", offset=1), "", "", "", "", False),
+    (None, False, False, tzoffset(name="CET", offset=1), "", "", "", "", False),
+    (
+        TimingUpdate(user="user1",
+                     lsa_name="lsa1",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=4),
+        True, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="lsa2",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=5),
+        False, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
+    ), (
+        TimingUpdate(user="user1",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=4),
+        True, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238", "", "user1", "5", False,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=5),
+        False, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21", "", "user2", "6", False,
+    ),
+    (None, True, True, None, "", "", "", "", False),
+    (None, False, True, None, "", "", "", "", False),
+    (
+        TimingUpdate(user="user1",
+                     lsa_name="lsa1",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, True, None, "2018-04-02  15:33:21.294238 UTC", "lsa1", "user1", "5", True,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="lsa2",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, True, None, "2018-04-02  15:33:21 UTC", "lsa2", "user2", "6", True,
+    ), (
+        TimingUpdate(user="user1",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, True, None, "2018-04-02  15:33:21.294238 UTC", "", "user1", "5", False,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, True, None, "2018-04-02  15:33:21 UTC", "", "user2", "6", False,
+    ),
+    (None, True, True, UTC, "", "", "", "", False),
+    (None, False, True, UTC, "", "", "", "", False),
+    (
+        TimingUpdate(user="user1",
+                     lsa_name="lsa1",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, True, UTC, "2018-04-02  15:33:21.294238 UTC", "lsa1", "user1", "5", True,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="lsa2",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, True, UTC, "2018-04-02  15:33:21 UTC", "lsa2", "user2", "6", True,
+    ), (
+        TimingUpdate(user="user1",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=4),
+        True, True, UTC, "2018-04-02  15:33:21.294238 UTC", "", "user1", "5", False,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
+                     offset=5),
+        False, True, UTC, "2018-04-02  15:33:21 UTC", "", "user2", "6", False,
+    ),
+    (None, True, True, tzoffset(name="CET", offset=1), "", "", "", "", False),
+    (None, False, True, tzoffset(name="CET", offset=1), "", "", "", "", False),
+    (
+        TimingUpdate(user="user1",
+                     lsa_name="lsa1",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=4),
+        True, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238 CET", "lsa1", "user1", "5", True,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="lsa2",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=5),
+        False, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21 CET", "lsa2", "user2", "6", True,
+    ), (
+        TimingUpdate(user="user1",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=4),
+        True, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238 CET", "", "user1", "5", False,
+    ), (
+        TimingUpdate(user="user2",
+                     lsa_name="",
+                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
+                     offset=5),
+        False, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21 CET", "", "user2", "6", False,
     ),
 ])
-def test_timing_bar_on_new_timing_info(timing_update, show_us, expect_visible_separator, expected_datetime, expected_lsa_name,
+def test_timing_bar_on_new_timing_info(timing_update, show_us, show_tz, tz, expect_visible_separator, expected_datetime, expected_lsa_name,
                                        expected_offset, expected_user, qtbot: QtBot):
-    view = TimingBar(model=TimingBarModel(japc=mock.MagicMock()))
+    view = TimingBar(model=TimingBarModel(japc=mock.MagicMock(), timezone=tz))
     qtbot.add_widget(view)
     view.showMicroSeconds = show_us
+    view.showTimeZone = show_tz
     with qtbot.wait_exposed(view):
         view.show()
     view.model._last_info = timing_update

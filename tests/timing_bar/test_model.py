@@ -3,7 +3,7 @@ import functools
 import operator
 import numpy as np
 from datetime import datetime
-from dateutil.tz import tzoffset
+from dateutil.tz import tzoffset, UTC
 from dateutil.parser import isoparse
 from freezegun import freeze_time
 from pytestqt.qtbot import QtBot
@@ -18,8 +18,7 @@ from .fixtures import *  # noqa: F401,F403
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to
 # take the current timezone which lets tests fail
-TZ = tzoffset("UTC+0", 0)
-STATIC_TIME = datetime(year=2020, day=1, month=1, hour=4, minute=43, second=5, tzinfo=TZ)
+STATIC_TIME = datetime(year=2020, day=1, month=1, hour=4, minute=43, second=5, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -307,12 +306,17 @@ def test_model_activate_imports_pyjapc_only_once(import_pyjapc):
     import_pyjapc.assert_not_called()
 
 
+@pytest.mark.parametrize("tz,expected_argument", [
+    (None, UTC),
+    (tzoffset("CET", 1), tzoffset("CET", 1)),
+    (UTC, UTC),
+])
 @mock.patch("accwidgets.timing_bar._model.import_pyjapc")
-def test_model_default_pyjapc_constructor(import_pyjapc):
-    model = TimingBarModel()
+def test_model_default_pyjapc_constructor(import_pyjapc, tz, expected_argument):
+    model = TimingBarModel(timezone=tz)
     import_pyjapc.assert_not_called()
     model.activate()
-    import_pyjapc.return_value.assert_called_once_with(selector="", incaAcceleratorName=None)
+    import_pyjapc.return_value.assert_called_once_with(selector="", incaAcceleratorName=None, timeZone=expected_argument)
 
 
 @mock.patch("accwidgets.timing_bar._model.import_pyjapc")
@@ -478,12 +482,12 @@ def test_model_xtim_callback_ignores_first_update(qtbot: QtBot, subscribe_param_
 
 
 @pytest.mark.parametrize("header,data,expected_time", [
-    ({"acqStamp": isoparse("2020-01-01 05:11:03")}, {}, isoparse("2020-01-01 05:11:03")),
-    ({}, {"acqStamp": isoparse("2019-03-02 03:18:04")}, isoparse("2019-03-02 03:18:04")),
+    ({"acqStamp": isoparse("2020-01-01 05:11:03Z")}, {}, isoparse("2020-01-01 05:11:03Z")),
+    ({}, {"acqStamp": isoparse("2019-03-02 03:18:04Z")}, isoparse("2019-03-02 03:18:04Z")),
     (
-        {"acqStamp": isoparse("2020-01-01 05:11:03")},
-        {"acqStamp": isoparse("2019-03-02 03:18:04")},
-        isoparse("2019-03-02 03:18:04"),
+        {"acqStamp": isoparse("2020-01-01 05:11:03Z")},
+        {"acqStamp": isoparse("2019-03-02 03:18:04Z")},
+        isoparse("2019-03-02 03:18:04Z"),
     ),
     ({}, {}, STATIC_TIME),
 ])
@@ -719,9 +723,9 @@ def test_model_xtim_subscription_does_not_fail_without_japc():
 
 
 @pytest.mark.parametrize("timing_update,expected_timestamp", [
-    (None, isoparse("2018-04-02 15:33:21")),
-    ({}, isoparse("2018-04-02 15:33:21")),
-    ({"acqStamp": isoparse("2019-05-01 14:31:24")}, isoparse("2019-05-01 14:31:24")),
+    (None, isoparse("2018-04-02 15:33:21Z")),
+    ({}, isoparse("2018-04-02 15:33:21Z")),
+    ({"acqStamp": isoparse("2019-05-01 14:31:24Z")}, isoparse("2019-05-01 14:31:24Z")),
 ])
 @freeze_time(STATIC_TIME)
 def test_model_recalculate_last_info_adjusts_timestamps(timing_update, expected_timestamp, subscribe_param_side_effect):
@@ -730,11 +734,11 @@ def test_model_recalculate_last_info_adjusts_timestamps(timing_update, expected_
     japc_mock.subscribeParam.side_effect = subscribe_param_side_effect(xtim_payload=timing_update, xtim_sub=xtim_sub)
     model = TimingBarModel(japc=japc_mock)
     model.activate()
-    model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21"),
+    model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21Z"),
                                     offset=0,
                                     lsa_name="lsa1",
                                     user="user1")
-    assert model.last_info.timestamp.timestamp() == isoparse("2018-04-02 15:33:21").timestamp()
+    assert model.last_info.timestamp.timestamp() == isoparse("2018-04-02 15:33:21Z").timestamp()
     xtim_sub.value_callback()
     assert model.last_info.timestamp.timestamp() == expected_timestamp.timestamp()
 
@@ -790,14 +794,14 @@ def test_model_recalculate_last_info_switches_supercycle_spare(is_supercycle, in
 
 
 @pytest.mark.parametrize("is_supercycle,timing_update,expected_new_timestamp", [
-    (True, {"acqStamp": isoparse("2015-05-21 21:54:23")}, STATIC_TIME),
-    (True, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": -1}, STATIC_TIME),
-    (True, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": 999}, STATIC_TIME),
-    (True, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": 1}, isoparse("2015-05-21 21:54:23")),
-    (False, {"acqStamp": isoparse("2015-05-21 21:54:23")}, isoparse("2015-05-21 21:54:23")),
-    (False, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": -1}, isoparse("2015-05-21 21:54:23")),
-    (False, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": 999}, isoparse("2015-05-21 21:54:23")),
-    (False, {"acqStamp": isoparse("2015-05-21 21:54:23"), "BASIC_PERIOD_NB": 1}, isoparse("2015-05-21 21:54:23")),
+    (True, {"acqStamp": isoparse("2015-05-21 21:54:23Z")}, STATIC_TIME),
+    (True, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": -1}, STATIC_TIME),
+    (True, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": 999}, STATIC_TIME),
+    (True, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": 1}, isoparse("2015-05-21 21:54:23Z")),
+    (False, {"acqStamp": isoparse("2015-05-21 21:54:23Z")}, isoparse("2015-05-21 21:54:23")),
+    (False, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": -1}, isoparse("2015-05-21 21:54:23Z")),
+    (False, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": 999}, isoparse("2015-05-21 21:54:23Z")),
+    (False, {"acqStamp": isoparse("2015-05-21 21:54:23Z"), "BASIC_PERIOD_NB": 1}, isoparse("2015-05-21 21:54:23Z")),
 ])
 @freeze_time(STATIC_TIME)
 def test_model_recalculate_last_info_does_not_update_on_invalid_basic_period(supercycle_obj, is_supercycle, timing_update, expected_new_timestamp,

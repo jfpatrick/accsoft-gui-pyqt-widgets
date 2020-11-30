@@ -10,6 +10,7 @@ Timing bar displays the composition of users and currently played user withing a
 
   * `PyJapc`_
   * `Timing updates`_
+  * `Timezone`_
 
 - `Styling`_
 - `Further read`_
@@ -57,8 +58,8 @@ The information presented by the widget can be reconfigured in several ways:
    optionally switched off, to reduce distractions.
 #. The widget is divided into 2 rows: information labels on the top, and the supercycle structure in the lower part.
    Optionally, the lower part can be hidden, leaving only the labels on screen.
-#. All labels in the upper part can be hidden or shown. In addition, timestamp label can show the value with the
-   second or microsecond precision.
+#. All labels in the upper part can be hidden or shown. In addition, timestamp label can optionally show the value
+   with the second or microsecond precision, as well as display timezone of the timestamps.
 #. Optionally, only certain cycles that correspond to a specific user can be highlighted with a color that is different
    from the rest.
 
@@ -140,6 +141,19 @@ In order to show the timestamp of the last timing update, the model will search 
 #. Meta field (header) ``acqStamp`` of the XTIM update
 #. Generate current timestamp from Python code, if above fields are not found
 
+
+Timezone
+^^^^^^^^
+
+By default, :class:`~accwidgets.timing_bar.TimingBarModel` instantiates its timestamp objects with the UTC timezone in
+mind. This can be overridden in by passing the corresponding constructor argument. The timezone is used when creating
+local timestamps (e.g. when no ``acqStamp`` field is found in the control system data), as well as constructing the
+default :class:`~pyjapc.PyJapc` instance (that will under the hood use it to generate objects from ``acqStamp`` fields).
+
+.. note:: When injecting a `custom PyJapc instance <PyJapc>`_, it is caller's responsibility to ensure that the
+          timezone of the :class:`~pyjapc.PyJapc` object corresponds to the timezone communicated to the
+          :class:`~accwidgets.timing_bar.TimingBarModel`. Currently, :class:`~pyjapc.PyJapc` does not provide public
+          API to read the timezone, therefore the model won't attempt to synchronize them, leaving it up to the user.
 
 
 Styling

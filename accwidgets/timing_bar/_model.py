@@ -6,7 +6,8 @@ information, such as supercycle structure, as well as listening to timing events
 import numpy as np
 import operator
 from typing import Optional, List, Dict, Any, Tuple, Callable, Set, Type, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, tzinfo
+from dateutil.tz import UTC
 from enum import Enum
 from dataclasses import dataclass
 from qtpy.QtCore import QObject, Signal
@@ -140,7 +141,11 @@ class TimingBarModel(QObject):
     repainting the rest of the canvas. The string argument is the name of the new timing domain.
     """
 
-    def __init__(self, domain: TimingBarDomain = TimingBarDomain.PSB, japc: Optional["PyJapc"] = None, parent: Optional[QObject] = None):
+    def __init__(self,
+                 domain: TimingBarDomain = TimingBarDomain.PSB,
+                 japc: Optional["PyJapc"] = None,
+                 timezone: Optional[tzinfo] = None,
+                 parent: Optional[QObject] = None):
         """
         Model manages the JAPC/RDA connections to the XTIM devices to receive timing events, as well as retrieves
         overall supercycle information for relevant domains from the CTIM (Central Timing) devices.
@@ -156,11 +161,13 @@ class TimingBarModel(QObject):
             japc: Optional instance of :class:`~pyjapc.PyJapc`, in case there's a need to use a specific instance (e.g.
                   if a subclass is preferred, or it absolutely needs to operate on a singleton). If none provided,
                   a new instance is create internally, with InCA disabled.
+            timezone: Timezone to use when creating timestamp objects. If :obj:`None` is provided, UTC timezone is used.
             parent: Owning object.
         """
         super().__init__(parent)
         self._japc = japc
         self._domain = domain
+        self._tz = timezone or UTC
         self._japc_activated = False
         self._error_state: Set[str] = set()  # Keep error for both XTIM and CTIM, as they are launched in parallel and may cancel each others error flag
         self._active_subs: List[PyJapcSubscription] = []
@@ -304,11 +311,13 @@ class TimingBarModel(QObject):
             if not is_designer():
                 if self._japc is None:
                     pyjapc_class = import_pyjapc()
-                    self._japc = pyjapc_class(selector="", incaAcceleratorName=None)  # XTIM does not need InCA
+                    self._japc = pyjapc_class(selector="",
+                                              incaAcceleratorName=None,  # XTIM does not need InCA
+                                              timeZone=self._tz)
                 self._attach_japc()
             else:
                 # For Designer, create a fake model information and notify the widget to re-render
-                self._last_info = TimingUpdate(timestamp=datetime.now(),
+                self._last_info = TimingUpdate(timestamp=datetime.now(tz=self._tz),
                                                user="USER",
                                                lsa_name="~~zero~~",
                                                offset=0)
@@ -464,9 +473,9 @@ class TimingBarModel(QObject):
             if self._last_info:
                 timestamp = self._last_info.timestamp
             else:
-                timestamp = datetime.now()
+                timestamp = datetime.now(tz=self._tz)
         else:
-            timestamp = timing_update.get("acqStamp", datetime.now())
+            timestamp = timing_update.get("acqStamp", datetime.now(tz=self._tz))
 
         if self._bcd is not None:
             if timing_update is None:
