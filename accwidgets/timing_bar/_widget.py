@@ -6,6 +6,8 @@ import math
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
+from dateutil.tz import UTC, tzlocal
+from datetime import tzinfo
 from typing import Optional, cast, List, Union
 from enum import IntFlag
 from qtpy.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QSpacerItem
@@ -22,6 +24,11 @@ class _QtDesignerLabels:
     User = 1 << 2
     CycleStart = 1 << 3
     LSACycleName = 1 << 4
+
+
+class _QtDesignerTimeZone:
+    Local = 0
+    UTC = 1
 
 
 class _QtDesignerDomain:
@@ -88,10 +95,11 @@ class TimingBarPalette:
     """Alternate color of the dot pattern overlaid over background gradient when indicating heartbeat."""
 
 
-class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
+class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZone):
 
     Q_FLAGS(_QtDesignerLabels)
-    Q_ENUMS(_QtDesignerDomain)
+    Q_ENUMS(_QtDesignerDomain,
+            _QtDesignerTimeZone)
 
     class Labels(IntFlag):
         """Bit mask for various labels that have to be displayed in the widget."""
@@ -110,6 +118,15 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
 
         LSA_CYCLE_NAME = _QtDesignerLabels.LSACycleName
         """Display LSA cycle name in the upper half of the widget."""
+
+    class TimeZone(IntFlag):
+        """Enum representing the timezone that is used to display timestamps."""
+
+        LOCAL = _QtDesignerTimeZone.Local
+        """Display the timestamp in the local timezone (depends on the machine configuration)."""
+
+        UTC = _QtDesignerTimeZone.UTC
+        """Display the timestamp in the UTC timezone."""
 
     def __init__(self,
                  parent: Optional[QWidget] = None,
@@ -134,6 +151,7 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
         self._tick_bkg: bool = False
         self._show_us: bool = False
         self._show_tz: bool = False
+        self._displayed_tz = TimingBar.TimeZone.LOCAL
 
         self._palette = TimingBarPalette(text=Qt.black,
                                          error_text=Qt.red,
@@ -245,6 +263,21 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
 
     labels: "TimingBar.Labels" = Property(_QtDesignerLabels, _get_labels, _set_labels)
     """Bit mask for various labels that have to be displayed in the widget. By default, all the labels are enabled."""
+
+    def _get_displayed_tz(self) -> "TimingBar.TimeZone":
+        return self._displayed_tz
+
+    def _set_displayed_tz(self, new_val: "TimingBar.TimeZone"):
+        if self._displayed_tz == new_val:
+            return
+        self._displayed_tz = new_val
+        self._on_new_timing_info(False)
+
+    displayedTimeZone: "TimingBar.TimeZone" = Property(_QtDesignerTimeZone, _get_displayed_tz, _set_displayed_tz)
+    """
+    Timezone that is used to display the timestamps in the label. It will shift the timestamps reported by
+    the model to correctly represent the selected timezone.
+    """
 
     def _get_indicate_heartbeat(self) -> bool:
         return self._use_heartbeat
@@ -697,7 +730,13 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain):
                 time_fmt += ".%f"
             if self.showTimeZone:
                 time_fmt += " %Z"
-            self._lbl_datetime.setText(info.timestamp.strftime(time_fmt))
+            if self._displayed_tz == TimingBar.TimeZone.LOCAL:
+                tz = get_local_tz()
+            elif self._displayed_tz == TimingBar.TimeZone.UTC:
+                tz = UTC
+            else:
+                raise ValueError(f"Unrecognized 'displayedTimeZone' value {self._displayed_tz!s}")
+            self._lbl_datetime.setText(info.timestamp.astimezone(tz).strftime(time_fmt))
             self._lbl_lsa_name.setText(info.lsa_name)
             self._lbl_user.setText(info.user)
             self._lbl_beam_offset.setNum(info.offset + 1)
@@ -1109,3 +1148,13 @@ class TimingBarCanvas(QWidget):
     _FRAME_FULL_HEIGHT = _CYCLE_BAR_MARGIN_TOP + _SUPERCYCLE_HEIGHT
     _FRAME_MINIMIZED_HEIGHT = _LABEL_AREA_HEIGHT + _LABEL_TOP_MARGIN + _LABEL_BOTTOM_MARGIN - 1
     _NON_SUPERCYCLE_BP_COUNT = 128
+
+
+_TZ_LOCAL: Optional[tzinfo] = None
+
+
+def get_local_tz() -> tzinfo:
+    global _TZ_LOCAL
+    if _TZ_LOCAL is None:
+        _TZ_LOCAL = tzlocal()
+    return _TZ_LOCAL

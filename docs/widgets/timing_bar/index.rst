@@ -55,13 +55,19 @@ Configuration
 The information presented by the widget can be reconfigured in several ways:
 
 #. The heartbeat (advancement of the time) is indicated in the widget by alternating its background color. This can be
-   optionally switched off, to reduce distractions.
+   optionally switched off, to reduce distractions (:attr:`~accwidgets.timing_bar.TimingBar.indicateHeartbeat`).
 #. The widget is divided into 2 rows: information labels on the top, and the supercycle structure in the lower part.
-   Optionally, the lower part can be hidden, leaving only the labels on screen.
-#. All labels in the upper part can be hidden or shown. In addition, timestamp label can optionally show the value
-   with the second or microsecond precision, as well as display timezone of the timestamps.
+   Optionally, the lower part can be hidden, leaving only the labels on screen
+   (:attr:`~accwidgets.timing_bar.TimingBar.renderSuperCycle`).
+#. All labels in the upper part can be hidden or shown (:attr:`~accwidgets.timing_bar.TimingBar.labels`).
+#. When displaying timestamp label, the timestamp format can be configured to optionally optionally show the value
+   with the second or microsecond precision (:attr:`~accwidgets.timing_bar.TimingBar.showMicroSeconds`), as well as
+   display timezone of the timestamps (:attr:`~accwidgets.timing_bar.TimingBar.showTimeZone`). It is also able to
+   display timestamps in either local or UTC timezone, based on
+   :attr:`~accwidgets.timing_bar.TimingBar.displayedTimeZone` value, regardless of the
+   :ref:`timezone used by the model <widgets/timing_bar/index:Timezone>`.
 #. Optionally, only certain cycles that correspond to a specific user can be highlighted with a color that is different
-   from the rest.
+   from the rest (:attr:`~accwidgets.timing_bar.TimingBar.highlightedUser`).
 
 
 Modes

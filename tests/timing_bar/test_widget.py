@@ -337,31 +337,85 @@ def test_timing_bar_set_render_supercycle(hideSuperCycle, showSuperCycle, qtbot,
         hideSuperCycle.assert_not_called()
 
 
-@pytest.mark.parametrize("initial_us_flag,new_us_flag,initial_tz_flag,new_tz_flag,expected_initial_label,expected_new_label", [
-    (False, False, False, False, "2018-04-02  15:33:21", "2018-04-02  15:33:21"),
-    (False, True, False, False, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495"),
-    (True, False, False, False, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21"),
-    (True, True, False, False, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495"),
-    (False, False, False, True, "2018-04-02  15:33:21", "2018-04-02  15:33:21 UTC"),
-    (False, True, False, True, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495 UTC"),
-    (True, False, False, True, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21 UTC"),
-    (True, True, False, True, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495 UTC"),
-    (False, False, True, False, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21"),
-    (False, True, True, False, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495"),
-    (True, False, True, False, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21"),
-    (True, True, True, False, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495"),
-    (False, False, True, True, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21 UTC"),
-    (False, True, True, True, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495 UTC"),
-    (True, False, True, True, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21 UTC"),
-    (True, True, True, True, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495 UTC"),
+@pytest.mark.parametrize("model_tz", [UTC, tzoffset("CET", offset=3600)])
+@pytest.mark.parametrize("initial_us_flag,new_us_flag,initial_tz_flag,new_tz_flag,initial_displayed_tz,new_displayed_tz,expected_initial_label,expected_new_label", [
+    (False, False, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21", "2018-04-02  15:33:21"),
+    (False, True, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495"),
+    (True, False, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21"),
+    (True, True, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495"),
+    (False, False, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21", "2018-04-02  15:33:21 UTC"),
+    (False, True, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21 UTC"),
+    (True, True, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495", "2018-04-02  15:33:21.543495 UTC"),
+    (False, False, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21"),
+    (False, True, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495"),
+    (True, False, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21"),
+    (True, True, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495"),
+    (False, False, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21 UTC"),
+    (False, True, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21 UTC", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21 UTC"),
+    (True, True, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:21.543495 UTC"),
+
+    (False, False, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21", "2018-04-02  15:33:21"),
+    (False, True, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21", "2018-04-02  15:33:21.543495"),
+    (True, False, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495", "2018-04-02  15:33:21"),
+    (True, True, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495", "2018-04-02  15:33:21.543495"),
+    (False, False, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21", "2018-04-02  15:33:21 UTC"),
+    (False, True, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495", "2018-04-02  15:33:21 UTC"),
+    (True, True, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495", "2018-04-02  15:33:21.543495 UTC"),
+    (False, False, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21 CET", "2018-04-02  15:33:21"),
+    (False, True, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21 CET", "2018-04-02  15:33:21.543495"),
+    (True, False, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495 CET", "2018-04-02  15:33:21"),
+    (True, True, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495 CET", "2018-04-02  15:33:21.543495"),
+    (False, False, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21 CET", "2018-04-02  15:33:21 UTC"),
+    (False, True, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21 CET", "2018-04-02  15:33:21.543495 UTC"),
+    (True, False, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495 CET", "2018-04-02  15:33:21 UTC"),
+    (True, True, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.UTC, "2018-04-02  16:33:21.543495 CET", "2018-04-02  15:33:21.543495 UTC"),
+
+    (False, False, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21", "2018-04-02  16:33:21"),
+    (False, True, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21", "2018-04-02  16:33:21.543495"),
+    (True, False, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495", "2018-04-02  16:33:21"),
+    (True, True, False, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495", "2018-04-02  16:33:21.543495"),
+    (False, False, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21", "2018-04-02  16:33:21 CET"),
+    (False, True, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21", "2018-04-02  16:33:21.543495 CET"),
+    (True, False, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495", "2018-04-02  16:33:21 CET"),
+    (True, True, False, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495", "2018-04-02  16:33:21.543495 CET"),
+    (False, False, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21 UTC", "2018-04-02  16:33:21"),
+    (False, True, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21 UTC", "2018-04-02  16:33:21.543495"),
+    (True, False, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  16:33:21"),
+    (True, True, True, False, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  16:33:21.543495"),
+    (False, False, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21 UTC", "2018-04-02  16:33:21 CET"),
+    (False, True, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21 UTC", "2018-04-02  16:33:21.543495 CET"),
+    (True, False, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  16:33:21 CET"),
+    (True, True, True, True, TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL, "2018-04-02  15:33:21.543495 UTC", "2018-04-02  16:33:21.543495 CET"),
+
+    (False, False, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21", "2018-04-02  16:33:21"),
+    (False, True, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21", "2018-04-02  16:33:21.543495"),
+    (True, False, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495", "2018-04-02  16:33:21"),
+    (True, True, False, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495", "2018-04-02  16:33:21.543495"),
+    (False, False, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21", "2018-04-02  16:33:21 CET"),
+    (False, True, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21", "2018-04-02  16:33:21.543495 CET"),
+    (True, False, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495", "2018-04-02  16:33:21 CET"),
+    (True, True, False, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495", "2018-04-02  16:33:21.543495 CET"),
+    (False, False, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21 CET", "2018-04-02  16:33:21"),
+    (False, True, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21 CET", "2018-04-02  16:33:21.543495"),
+    (True, False, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495 CET", "2018-04-02  16:33:21"),
+    (True, True, True, False, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495 CET", "2018-04-02  16:33:21.543495"),
+    (False, False, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21 CET", "2018-04-02  16:33:21 CET"),
+    (False, True, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21 CET", "2018-04-02  16:33:21.543495 CET"),
+    (True, False, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495 CET", "2018-04-02  16:33:21 CET"),
+    (True, True, True, True, TimingBar.TimeZone.LOCAL, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.543495 CET", "2018-04-02  16:33:21.543495 CET"),
 ])
-def test_timing_bar_set_show_us_and_tz_affect_current_timestamp(qtbot, initial_us_flag, new_us_flag, initial_tz_flag, new_tz_flag,
-                                                                expected_initial_label, expected_new_label):
+@mock.patch("accwidgets.timing_bar._widget.get_local_tz", return_value=tzoffset("CET", offset=3600))
+def test_timing_bar_set_timestamp_settings_affect_current_timestamp(_, qtbot, model_tz, initial_us_flag, new_us_flag, initial_tz_flag, new_tz_flag,
+                                                                    initial_displayed_tz, new_displayed_tz, expected_initial_label, expected_new_label):
     view = TimingBar()
     qtbot.add_widget(view)
     view.showMicroSeconds = initial_us_flag
     view.showTimeZone = initial_tz_flag
-    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21.543495Z"),
+    view.displayedTimeZone = initial_displayed_tz
+    view.model._last_info = TimingUpdate(timestamp=isoparse("2018-04-02 15:33:21.543495Z").astimezone(model_tz),
                                          offset=0,
                                          lsa_name="",
                                          user="")
@@ -369,23 +423,32 @@ def test_timing_bar_set_show_us_and_tz_affect_current_timestamp(qtbot, initial_u
     assert view._lbl_datetime.text() == expected_initial_label
     view.showMicroSeconds = new_us_flag
     view.showTimeZone = new_tz_flag
+    view.displayedTimeZone = new_displayed_tz
     assert view._lbl_datetime.text() == expected_new_label
 
 
 @pytest.mark.parametrize("indicate_advancement", [True, False])
-@pytest.mark.parametrize("us_val,tz_val,timing_updates,expected_labels", [
-    (False, False, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21", "2018-04-02  15:33:22"]),
-    (True, False, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495", "2018-04-02  15:33:22.543495"]),
-    (False, True, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21 UTC", "2018-04-02  15:33:22 UTC"]),
-    (True, True, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:22.543495 UTC"]),
+@pytest.mark.parametrize("model_tz", [UTC, tzoffset("CET", offset=3600)])
+@pytest.mark.parametrize("us_val,tz_val,displayed_tz,timing_updates,expected_labels", [
+    (False, False, TimingBar.TimeZone.UTC, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21", "2018-04-02  15:33:22"]),
+    (True, False, TimingBar.TimeZone.UTC, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495", "2018-04-02  15:33:22.543495"]),
+    (False, True, TimingBar.TimeZone.UTC, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21 UTC", "2018-04-02  15:33:22 UTC"]),
+    (True, True, TimingBar.TimeZone.UTC, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  15:33:21.543495 UTC", "2018-04-02  15:33:22.543495 UTC"]),
+    (False, False, TimingBar.TimeZone.LOCAL, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  16:33:21", "2018-04-02  16:33:22"]),
+    (True, False, TimingBar.TimeZone.LOCAL, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  16:33:21.543495", "2018-04-02  16:33:22.543495"]),
+    (False, True, TimingBar.TimeZone.LOCAL, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  16:33:21 CET", "2018-04-02  16:33:22 CET"]),
+    (True, True, TimingBar.TimeZone.LOCAL, ["2018-04-02 15:33:21.543495Z", "2018-04-02 15:33:22.543495Z"], ["2018-04-02  16:33:21.543495 CET", "2018-04-02  16:33:22.543495 CET"]),
 ])
-def test_timing_bar_set_show_us_and_tz_affect_new_timestamps(qtbot, us_val, tz_val, timing_updates, indicate_advancement, expected_labels):
+@mock.patch("accwidgets.timing_bar._widget.get_local_tz", return_value=tzoffset("CET", offset=3600))
+def test_timing_bar_set_timestamp_settings_affect_new_timestamps(_, qtbot, model_tz, displayed_tz, us_val, tz_val,
+                                                                 timing_updates, indicate_advancement, expected_labels):
     view = TimingBar()
     qtbot.add_widget(view)
     view.showMicroSeconds = us_val
     view.showTimeZone = tz_val
+    view.displayedTimeZone = displayed_tz
     for timestamp, expected_text in zip(timing_updates, expected_labels):
-        view.model._last_info = TimingUpdate(timestamp=isoparse(timestamp),
+        view.model._last_info = TimingUpdate(timestamp=isoparse(timestamp).astimezone(model_tz),
                                              offset=0,
                                              lsa_name="",
                                              user="")
@@ -907,185 +970,73 @@ def test_timing_bar_noop_activated_model_on_first_show(_, qtbot: QtBot):
         activate.assert_not_called()
 
 
-@pytest.mark.parametrize("timing_update,show_us,show_tz,tz,expected_datetime,expected_lsa_name,expected_user,expected_offset,expect_visible_separator", [
-    (None, True, False, None, "", "", "", "", False),
-    (None, False, False, None, "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, False, None, "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, False, None, "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, False, None, "2018-04-02  15:33:21.294238", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, False, None, "2018-04-02  15:33:21", "", "user2", "6", False,
-    ),
-    (None, True, False, UTC, "", "", "", "", False),
-    (None, False, False, UTC, "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, False, UTC, "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, False, UTC, "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, False, UTC, "2018-04-02  15:33:21.294238", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, False, UTC, "2018-04-02  15:33:21", "", "user2", "6", False,
-    ),
-    (None, True, False, tzoffset(name="CET", offset=1), "", "", "", "", False),
-    (None, False, False, tzoffset(name="CET", offset=1), "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=4),
-        True, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=5),
-        False, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=4),
-        True, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=5),
-        False, False, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21", "", "user2", "6", False,
-    ),
-    (None, True, True, None, "", "", "", "", False),
-    (None, False, True, None, "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, True, None, "2018-04-02  15:33:21.294238 UTC", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, True, None, "2018-04-02  15:33:21 UTC", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, True, None, "2018-04-02  15:33:21.294238 UTC", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, True, None, "2018-04-02  15:33:21 UTC", "", "user2", "6", False,
-    ),
-    (None, True, True, UTC, "", "", "", "", False),
-    (None, False, True, UTC, "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, True, UTC, "2018-04-02  15:33:21.294238 UTC", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, True, UTC, "2018-04-02  15:33:21 UTC", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=4),
-        True, True, UTC, "2018-04-02  15:33:21.294238 UTC", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238Z"),
-                     offset=5),
-        False, True, UTC, "2018-04-02  15:33:21 UTC", "", "user2", "6", False,
-    ),
-    (None, True, True, tzoffset(name="CET", offset=1), "", "", "", "", False),
-    (None, False, True, tzoffset(name="CET", offset=1), "", "", "", "", False),
-    (
-        TimingUpdate(user="user1",
-                     lsa_name="lsa1",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=4),
-        True, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238 CET", "lsa1", "user1", "5", True,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="lsa2",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=5),
-        False, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21 CET", "lsa2", "user2", "6", True,
-    ), (
-        TimingUpdate(user="user1",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=4),
-        True, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21.294238 CET", "", "user1", "5", False,
-    ), (
-        TimingUpdate(user="user2",
-                     lsa_name="",
-                     timestamp=isoparse("2018-04-02 15:33:21.294238+01:00").replace(tzinfo=tzoffset("CET", 1)),
-                     offset=5),
-        False, True, tzoffset(name="CET", offset=1), "2018-04-02  15:33:21 CET", "", "user2", "6", False,
-    ),
+@pytest.mark.parametrize("model_tz", [UTC, tzoffset("CET", offset=3600), None])
+@pytest.mark.parametrize("orig_timestamp,show_us,show_tz,displayed_timezone,expected_datetime", [
+    ("2018-04-02 15:33:21.294238Z", True, True, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.294238 UTC"),
+    ("2018-04-02 15:33:21.294238Z", True, True, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.294238 CET"),
+    ("2018-04-02 15:33:21.294238Z", True, False, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21.294238"),
+    ("2018-04-02 15:33:21.294238Z", True, False, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21.294238"),
+    ("2018-04-02 15:33:21.294238Z", False, True, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21 UTC"),
+    ("2018-04-02 15:33:21.294238Z", False, True, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21 CET"),
+    ("2018-04-02 15:33:21.294238Z", False, False, TimingBar.TimeZone.UTC, "2018-04-02  15:33:21"),
+    ("2018-04-02 15:33:21.294238Z", False, False, TimingBar.TimeZone.LOCAL, "2018-04-02  16:33:21"),
 ])
-def test_timing_bar_on_new_timing_info(timing_update, show_us, show_tz, tz, expect_visible_separator, expected_datetime, expected_lsa_name,
+@pytest.mark.parametrize("orig_lsa_name,expected_lsa_name,expect_visible_separator", [
+    ("lsa1", "lsa1", True),
+    ("lsa2", "lsa2", True),
+    ("", "", False),
+])
+@pytest.mark.parametrize("orig_offset,expected_offset", [
+    (4, "5"),
+    (5, "6"),
+])
+@pytest.mark.parametrize("orig_user,expected_user", [
+    ("user1", "user1"),
+    ("user2", "user2"),
+])
+@mock.patch("accwidgets.timing_bar._widget.get_local_tz", return_value=tzoffset("CET", offset=3600))
+def test_timing_bar_on_new_timing_info(_, show_us, show_tz, model_tz, displayed_timezone,
+                                       orig_lsa_name, orig_offset, orig_timestamp, orig_user,
+                                       expect_visible_separator, expected_datetime, expected_lsa_name,
                                        expected_offset, expected_user, qtbot: QtBot):
-    view = TimingBar(model=TimingBarModel(japc=mock.MagicMock(), timezone=tz))
+    view = TimingBar(model=TimingBarModel(japc=mock.MagicMock(), timezone=model_tz))
     qtbot.add_widget(view)
     view.showMicroSeconds = show_us
     view.showTimeZone = show_tz
+    view.displayedTimeZone = displayed_timezone
     with qtbot.wait_exposed(view):
         view.show()
-    view.model._last_info = timing_update
+    view.model._last_info = TimingUpdate(user=orig_user,
+                                         lsa_name=orig_lsa_name,
+                                         timestamp=isoparse(orig_timestamp).astimezone(model_tz),
+                                         offset=orig_offset)
     view.model.timingUpdateReceived.emit(True)
     assert view._lbl_user.text() == expected_user
     assert view._lbl_beam_offset.text() == expected_offset
     assert view._lbl_lsa_name.text() == expected_lsa_name
     assert view._lbl_datetime.text() == expected_datetime
     assert view._sep_lsa.isVisible() == expect_visible_separator
+
+
+@pytest.mark.parametrize("model_tz", [UTC, tzoffset("CET", offset=3600), None])
+@pytest.mark.parametrize("show_tz", [True, False])
+@pytest.mark.parametrize("show_us", [True, False])
+@pytest.mark.parametrize("displayed_timezone", [TimingBar.TimeZone.UTC, TimingBar.TimeZone.LOCAL])
+def test_timing_bar_on_none_new_timing_info(show_us, show_tz, model_tz, displayed_timezone, qtbot: QtBot):
+    view = TimingBar(model=TimingBarModel(japc=mock.MagicMock(), timezone=model_tz))
+    qtbot.add_widget(view)
+    view.showMicroSeconds = show_us
+    view.showTimeZone = show_tz
+    view.displayedTimeZone = displayed_timezone
+    with qtbot.wait_exposed(view):
+        view.show()
+    view.model._last_info = None
+    view.model.timingUpdateReceived.emit(True)
+    assert view._lbl_user.text() == ""
+    assert view._lbl_beam_offset.text() == ""
+    assert view._lbl_lsa_name.text() == ""
+    assert view._lbl_datetime.text() == ""
+    assert not view._sep_lsa.isVisible()
 
 
 @pytest.mark.parametrize("timing_update", [
