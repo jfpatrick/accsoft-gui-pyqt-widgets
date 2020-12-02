@@ -11,6 +11,7 @@ stages:
 variables:
   ACCPY_PYQT_DOCKER_IMAGE: gitlab-registry.cern.ch/acc-co/devops/python/distribution/ci/pyqt:v2020-11rc2
   project_name: accwidgets  # Required by acc-py templates
+  PY_VERSION: "3.7"  # Set expectations of the base templates to our assumed Python version
 
 .init_sequence: &init_sequence
 - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch".insteadOf ssh://git@gitlab.cern.ch:7999
@@ -84,7 +85,7 @@ sphinx:
 
 sphinx on tag:
   extends:
-    - .acc_py_build_docs_on_tag
+    - .acc_py_build_docs_on_tag_v2
     - .sphinx_custom
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Release
