@@ -6,14 +6,16 @@ include:
 stages:
   - Code Quality
   - Unit Tests
-  - Release
+  - Documentation
+  - Build Release
+  - Upload Release
 
 variables:
-  ACCPY_PYQT_DOCKER_IMAGE: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci-v20.05.0
+  ACCPY_PYQT_DOCKER_IMAGE: gitlab-registry.cern.ch/acc-co/devops/python/distribution/ci/pyqt:v2020-11rc2
   project_name: accwidgets  # Required by acc-py templates
+  PY_VERSION: "3.7"  # Set expectations of the base templates to our assumed Python version
 
 .init_sequence: &init_sequence
-- source /opt/venv/bin/activate
 - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch".insteadOf ssh://git@gitlab.cern.ch:7999
 
 before_script:
@@ -49,23 +51,8 @@ pytest:
     reports:
       junit: report.xml
 
-twine:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Release
-  script:
-    - pip install .[release]
-    - pip install -U setuptools
-    - python setup.py sdist bdist_wheel
-    - python -m twine upload --repository-url http://acc-py-repo:8081/repository/py-release-local/ -u $ACCPY_NEXUS_USER -p $ACCPY_NEXUS_PASSWD dist/*
-  when: manual
-  only:
-    refs:
-      - tags
-    variables:
-      - $ACCPY_NEXUS_USER != null
-      - $ACCPY_NEXUS_PASSWD != null
-
 .sphinx_custom:
+  stage: Documentation
   before_script:
       - *init_sequence
       - yum install -y -q graphviz  # Required to generate inheritance diagrams
@@ -77,7 +64,6 @@ sphinx:
     - .acc_py_build_docs
     - .sphinx_custom
   image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Release
   only:
     refs:
       - master
@@ -85,7 +71,21 @@ sphinx:
 
 sphinx on tag:
   extends:
-    - .acc_py_build_docs_on_tag
+    - .acc_py_build_docs_on_tag_v2
     - .sphinx_custom
   image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Release
+
+build wheel on tag:
+  extends: .acc_py_build_wheel
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Build Release
+
+release wheel on tag:
+  extends: .acc_py_release_wheel
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Upload Release
+
+release sdist on tag:
+  extends: .acc_py_release_sdist_v2
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Upload Release
