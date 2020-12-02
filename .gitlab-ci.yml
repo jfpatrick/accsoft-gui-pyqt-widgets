@@ -6,8 +6,8 @@ include:
 stages:
   - Code Quality
   - Unit Tests
+  - Build Wheel
   - Documentation
-  - Build Release
   - Upload Release
 
 variables:
@@ -51,6 +51,11 @@ pytest:
     reports:
       junit: report.xml
 
+build wheel:
+  extends: .acc_py_build_wheel
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Build Wheel
+
 .sphinx_custom:
   stage: Documentation
   before_script:
@@ -74,11 +79,6 @@ sphinx on tag:
     - .acc_py_build_docs_on_tag_v2
     - .sphinx_custom
   image: $ACCPY_PYQT_DOCKER_IMAGE
-
-build wheel on tag:
-  extends: .acc_py_build_wheel
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Build Release
 
 release wheel on tag:
   extends: .acc_py_release_wheel
