@@ -2,16 +2,15 @@ import pytest
 import numpy as np
 from freezegun import freeze_time
 from datetime import datetime
-from dateutil.tz import tzoffset
+from dateutil.tz import UTC
 from accwidgets.graph import (PlottingItemDataFactory, InvalidDataStructureWarning, PointData, BarData,
                               InjectionBarData, TimestampMarkerData, CurveData, BarCollectionData,
                               InjectionBarCollectionData, TimestampMarkerCollectionData)
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to
 # take the current timezone which lets tests fail
-TZ = tzoffset("UTC+0", 0)
-STATIC_TIME = datetime(year=2020, day=1, month=1, tzinfo=TZ)
-HEADER_TIME = datetime(year=2019, day=1, month=1, tzinfo=TZ)
+STATIC_TIME = datetime(year=2020, day=1, month=1, tzinfo=UTC)
+HEADER_TIME = datetime(year=2019, day=1, month=1, tzinfo=UTC)
 ACQ_TS_FIELD = PlottingItemDataFactory.TIMESTAMP_HEADER_FIELD
 HEADER_INFO = {ACQ_TS_FIELD: HEADER_TIME}
 
