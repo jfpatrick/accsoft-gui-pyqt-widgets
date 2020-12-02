@@ -26,14 +26,13 @@ PROJECT_ROOT: Path = Path(__file__).parent.absolute()
 CORE_OPTION = "core"
 LINT_OPTION = "lint"
 TEST_OPTION = "test"
-RELEASE_OPTION = "release"
 DOC_OPTION = "doc"
 BENCH_OPTION = "bench"
 PACKAGE_NAME = "accwidgets"
 EXTRAS_ALL_FEATURES = "all-widgets"
 DEPENDENCY_OPTIONS = {LINT_OPTION, TEST_OPTION, BENCH_OPTION, DOC_OPTION}
 # Section for commonly defined
-SHARED_OPTIONS = {LINT_OPTION, RELEASE_OPTION, TEST_OPTION, DOC_OPTION}
+SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 
 
 REQUIREMENTS: Dict[str, List[str]] = {
@@ -55,9 +54,6 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "flake8-builtins-unleashed>=1.3.1,<2a0",
         "flake8-blind-except>=0.1.1,<2a0",
         "flake8-bugbear>=19.8.0,<20a0",
-    ],
-    RELEASE_OPTION: [
-        "twine>=1.13.0,<1.14a0",
     ],
     TEST_OPTION: [
         "pytest>=4.4.0,<4.5a0",
