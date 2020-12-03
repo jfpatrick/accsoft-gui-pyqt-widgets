@@ -6,4 +6,4 @@ TimingBar
    :undoc-members:
    :inherited-members:
    :show-inheritance:
-   :additional-exclusions: ADE, CPS, CycleStart, DateTime, LEI, LHC, LNA, LSACycleName, PSB, SPS, TimingDomain, User, disconnect, index_of_domain, create
+   :additional-exclusions: Local, UTC, ADE, CPS, CycleStart, DateTime, LEI, LHC, LNA, LSACycleName, PSB, SPS, TimingDomain, User, disconnect, index_of_domain, create
