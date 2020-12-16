@@ -160,7 +160,7 @@ class TimingBarModel(QObject):
             domain: Timing domain to retrieve cycle information as well as timing events from.
             japc: Optional instance of :class:`~pyjapc.PyJapc`, in case there's a need to use a specific instance (e.g.
                   if a subclass is preferred, or it absolutely needs to operate on a singleton). If none provided,
-                  a new instance is create internally, with InCA disabled.
+                  a new instance is created internally, with InCA disabled.
             timezone: Timezone to use when creating timestamp objects. If :obj:`None` is provided, UTC timezone is used.
             parent: Owning object.
         """
