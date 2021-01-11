@@ -777,8 +777,8 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             self.sig_selection_edited.emit(np.array(self.getData()))
         else:
             data = np.copy(self._original_data)
-            apply_x = self._drag_direction & DragDirection.X
-            apply_y = self._drag_direction & DragDirection.Y
+            apply_x = self._drag_start is not None and self._drag_direction & DragDirection.X
+            apply_y = self._drag_start is not None and self._drag_direction & DragDirection.Y
             x_offset = ev.pos().x() + cast(QPointF, self._drag_start).x() if apply_x else 0.0
             y_offset = ev.pos().y() + cast(QPointF, self._drag_start).y() if apply_y else 0.0
             if x_offset or y_offset:
