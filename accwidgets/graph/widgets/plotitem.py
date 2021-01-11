@@ -1871,6 +1871,9 @@ class ExViewBox(pg.ViewBox):
             else:
                 y_range = target_bounds.bottom(), target_bounds.top()
                 primary_vb.set_range_manually(yRange=y_range, padding=padding, disableAutoRange=False)
+        else:
+            self.getViewBox().autoRange(padding=padding,
+                                        items=items)
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
@@ -1958,7 +1961,7 @@ class ExViewBox(pg.ViewBox):
                             another_vb: "ExViewBox",
                             items: Optional[List[pg.GraphicsItem]]) -> QRectF:
         """
-        Map a view box bounding rectangle to the coordinates of an other one.
+        Map a view box bounding rectangle to the coordinates of another one.
         It is expected that both ViewBoxes have synchronized x ranges, so the
         x range of the mapped bounding rectangle will be the same.
 

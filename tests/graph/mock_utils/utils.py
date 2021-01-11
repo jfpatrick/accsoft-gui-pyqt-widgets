@@ -38,7 +38,7 @@ def sim_selection_moved(marker: DataSelectionMarker,
     This is a workaround for qttest api for movemouse being buggy:
     https://bugreports.qt.io/browse/QTBUG-5232
     So instead of actually dragging the mouse we will simulate it here
-    TODO: switch to proper mouse events as soon as this is fixed
+    TODO: switch to proper mouse events as soon as this is fixed (promised in Qt 6)
 
     Args:
         marker: Data Selection Marker of an editable curve
