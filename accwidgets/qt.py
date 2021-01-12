@@ -605,7 +605,7 @@ class AbstractTableDialog(QDialog, Generic[LI, DM], metaclass=GenericQtMeta):
     def _save(self):
         try:
             self._table_model.validate()
-        except Exception as ex:
+        except Exception as ex:  # noqa: B902
             # We must catch all types of exceptions here, even though we target ValueError only,
             # Because otherwise it will abort python interpreter due to exceptions in virtual methods
             # See https://pytest-qt.readthedocs.io/en/latest/virtual_methods.html for details.

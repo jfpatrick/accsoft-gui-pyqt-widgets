@@ -464,7 +464,7 @@ class TimingBarModel(QObject):
                                                     handler=handler))
         try:
             handler.startMonitoring()  # Java call
-        except Exception as e:
+        except Exception as e:  # noqa: B902
             self._error_state.add(param)
             self.timingErrorReceived.emit(str(e))
 

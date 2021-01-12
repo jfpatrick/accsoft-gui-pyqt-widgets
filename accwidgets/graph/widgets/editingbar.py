@@ -432,7 +432,7 @@ class EditingToolBar(QToolBar):
             try:
                 result = transformation(deepcopy(curve))
                 cast(ExPlotWidget, self.selected_plot).replace_selection(result)
-            except BaseException as e:
+            except BaseException as e:  # noqa: B902
                 # In case an added transformation fails
                 warnings.warn(f"Transformation failed because a "
                               f"{type(e).__name__} was risen:\n{str(e)}")

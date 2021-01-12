@@ -498,7 +498,7 @@ class TimestampMarkerData(PlottingItemData):
         # Catch invalid colors and replace with the default color to prevent exceptions
         try:
             pg.mkColor(color)
-        except Exception:
+        except Exception:  # noqa: B902
             # mkColor() raises Exception every time it can not interpret the passed color
             # In these cases we want to fall back to our default color
             warnings.warn(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "
@@ -565,7 +565,7 @@ class TimestampMarkerCollectionData(PlottingItemData):
         for index, color in enumerate(colors):
             try:
                 pg.mkColor(color)
-            except Exception:
+            except Exception:  # noqa: B902
                 # mkColor() raises Exception every time it can not interpret the passed color
                 # In these cases we want to fall back to our default color
                 warnings.warn(f"Timestamp Marker color '{color}' is replaced with {DEFAULT_COLOR} "

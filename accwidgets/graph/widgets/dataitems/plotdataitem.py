@@ -946,7 +946,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             if not isinstance(color, QColor):
                 try:
                     color = pg.mkColor(color)
-                except Exception:
+                except Exception:  # noqa: B902
                     # Exception -> mkColor does not get more precise
                     color = None
             if color:

@@ -362,7 +362,7 @@ def _clean_up_model_before_delete(handlers: Dict[str, "PythonLoggingHandler"]):
         for name, handler in handlers.items():
             logger = _get_logger(name)
             logger.removeHandler(handler)
-    except Exception:
+    except Exception:  # noqa: B902
         # Avoid crashing at the clean-up phase for any reason
         pass
 
