@@ -688,8 +688,6 @@ def test_auto_button_visibility(qtbot, item_to_test):
     assert not window.plot.plotItem.autoBtn.isVisible()
     _simulate_mouse_hover_for_auto_button(plot, True)
     assert window.plot.plotItem.autoBtn.isVisible()
-    layer_1.view_box.enableAutoRange()
-    assert not window.plot.plotItem.autoBtn.isVisible()
 
 
 @pytest.mark.parametrize("item_to_test", {
