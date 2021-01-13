@@ -1,12 +1,13 @@
 import numpy as np
 import pyqtgraph as pg
 import pytest
-from typing import List, Tuple, Dict, Optional, Union
+from typing import Tuple, Dict, Optional, Union
 from pyqtgraph.GraphicsScene.mouseEvents import HoverEvent
 from accwidgets.graph import (PlotItemLayer, LayerIdentification, ExPlotItem, ExPlotWidget, ExViewBox,
                               ExPlotWidgetConfig, PlotWidgetStyle)
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow
+from .asserts import assert_view_box_range_similar
 
 # Some constants for the tests related to axes
 
@@ -56,9 +57,9 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
         view_range=(2.0, 3.0),
         layer="layer_2",
     )
-    check_range(layer_0.view_box.targetRange(), [[-10, 10], [0.0, 1.0]])
-    check_range(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
-    check_range(layer_2.view_box.targetRange(), [[-10, 10], [2.0, 3.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 10], [0.0, 1.0]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-10, 10], [2.0, 3.0]])
     # reference = empty string
     _set_range(
         method=method,
@@ -66,7 +67,7 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
         view_range=(-1.0, 0.0),
         layer="",
     )
-    check_range(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
     with pytest.raises(KeyError):
         plot.setYRange(
             min=-100.0,
@@ -75,9 +76,9 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
             layer="non existing layer",
         )
     # No ranges should be touched
-    check_range(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
-    check_range(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
-    check_range(layer_2.view_box.targetRange(), [[-10, 10], [2.0, 3.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 10], [-1.0, 0.0]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10, 10], [1.0, 2.0]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-10, 10], [2.0, 3.0]])
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -129,17 +130,17 @@ def test_link_y_layers(qtbot, item_to_test):
     second_layer = plot.add_layer("second_layer")
     # Layers are not linked. They move separate.
     plot.setYRange(min=-5.0, max=5.0, padding=0.0)
-    check_range(plot.getViewBox().targetRange(), [[0, 1], [-5.0, 5.0]])
-    check_range(first_layer.view_box.targetRange(), [[0, 1], [0.0, 1.0]])
-    check_range(second_layer.view_box.targetRange(), [[0, 1], [0.0, 1.0]])
+    assert_view_box_range_similar(plot.getViewBox().targetRange(), [[0, 1], [-5.0, 5.0]])
+    assert_view_box_range_similar(first_layer.view_box.targetRange(), [[0, 1], [0.0, 1.0]])
+    assert_view_box_range_similar(second_layer.view_box.targetRange(), [[0, 1], [0.0, 1.0]])
     # Link all axes
     plot.setYLink(view=first_layer.view_box)
     plot.setYLink(view=second_layer.view_box, layer=first_layer)
     # Since all layers are linked, the movements should be transferred
     plot.setYRange(min=-15.0, max=15.0, padding=0.0)
-    check_range(plot.getViewBox().targetRange(), [[0, 1], [-15.0, 15.0]])
-    check_range(first_layer.view_box.targetRange(), [[0, 1], [-15.0, 15.0]])
-    check_range(second_layer.view_box.targetRange(), [[0, 1], [-15.0, 15.0]])
+    assert_view_box_range_similar(plot.getViewBox().targetRange(), [[0, 1], [-15.0, 15.0]])
+    assert_view_box_range_similar(first_layer.view_box.targetRange(), [[0, 1], [-15.0, 15.0]])
+    assert_view_box_range_similar(second_layer.view_box.targetRange(), [[0, 1], [-15.0, 15.0]])
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -307,7 +308,7 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
         plot = window.plot
     layer_0 = plot.add_layer(layer_id="layer_0")
     assert not layer_0.view_box.yInverted()
-    check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
     layer_1 = plot.add_layer(
         layer_id="layer_1",
         y_range=(-1.0, 2.0),
@@ -315,14 +316,14 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     )
     assert not layer_0.view_box.yInverted()
     assert not layer_1.view_box.yInverted()
-    check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
-    check_range(layer_1.view_box.targetRange(), [[0, 1], [-1.0, 2.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[0, 1], [-1.0, 2.0]])
     layer_2 = plot.add_layer(
         layer_id="layer_2",
         invert_y=True,
     )
-    check_range(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
-    check_range(layer_1.view_box.targetRange(), [[0, 1], [-1.0, 2.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[0, 1], [0, 1]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[0, 1], [-1.0, 2.0]])
     assert not layer_0.view_box.yInverted()
     assert not layer_1.view_box.yInverted()
     assert layer_2.view_box.yInverted()
@@ -558,48 +559,48 @@ def test_set_axis_range(qtbot, item_to_test):
     manual_range_change(layer_0, xRange=[-10, 10], yRange=[0, 10])
     manual_range_change(layer_1, yRange=[3, 8])
     manual_range_change(layer_2, yRange=[-5, -2])
-    check_range(layer_0.view_box.targetRange(), [[-10, 10], [0, 10]])
-    check_range(layer_1.view_box.targetRange(), [[-10, 10], [3, 8]])
-    check_range(layer_2.view_box.targetRange(), [[-10, 10], [-5, -2]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 10], [0, 10]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10, 10], [3, 8]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-10, 10], [-5, -2]])
     # Check if X axis are properly linked together
     manual_range_change(layer_0, xRange=[-20, 20])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check translation in connected axes
     plot._couple_layers_yrange(link=True)
     manual_range_change(layer_0, yRange=[10, 20])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [8, 13]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-2, 1]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [8, 13]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-2, 1]])
     # Move axes back to their original position
     manual_range_change(layer_0, yRange=[0, 10])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check translation in disconnected axes
     plot._couple_layers_yrange(link=False)
     manual_range_change(layer_0, yRange=[10, 20])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [10, 20]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Move axes back to their original position
     manual_range_change(layer_0, yRange=[0, 10])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [3, 8]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-5, -2]])
     # Check scaling in connected axes
     plot._couple_layers_yrange(link=True)
     manual_range_change(layer_0, yRange=[-10, 20])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [-10, 20]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [-10, 20]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
     # Check scaling in disconnected axes
     plot._couple_layers_yrange(link=False)
     manual_range_change(layer_0, yRange=[0, 10])
-    check_range(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
-    check_range(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
-    check_range(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-20, 20], [0, 10]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-20, 20], [-2, 13]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-20, 20], [-8, 1]])
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -621,9 +622,9 @@ def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
     layer_1.view_box.setRange(xRange=[-1.0, 2.0], yRange=[2.0, 3.0], padding=0.0)
     layer_2.view_box.setRange(xRange=[-1.0, 2.0], yRange=[2.0, 3.0], padding=0.0)
     layer_0.view_box.autoRange(padding=0.0)
-    check_range(layer_0.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
-    check_range(layer_1.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
-    check_range(layer_2.view_box.targetRange(), [[0.0, 1.0], [-1.0, 5.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[0.0, 1.0], [0, 1]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[0.0, 1.0], [-1, 2]])
+    assert_view_box_range_similar(layer_2.view_box.targetRange(), [[0.0, 1.0], [4.99, 5.01]], tolerance_factor=30)
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -647,9 +648,9 @@ def test_auto_range_all_layers_at_different_range(qtbot, item_to_test):
     # Autorange, check if also repeatable
     for _ in range(0, 100):
         layer_0.view_box.autoRange(padding=0.0)
-        check_range(layer_0.view_box.targetRange(), [[-10.0, 400.0], [0.0, 9.0]])
-        check_range(layer_1.view_box.targetRange(), [[-10.0, 400.0], [-8.0, 10.0]])
-        check_range(layer_2.view_box.targetRange(), [[-10.0, 400.0], [-350.0, 100.0]])
+        assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10.0, 400.0], [0.0, 1]])
+        assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10.0, 400.0], [1, 3]])
+        assert_view_box_range_similar(layer_2.view_box.targetRange(), [[-10.0, 400.0], [-200.0, 100.0]])
 
 
 @pytest.mark.parametrize("item_to_test", {
@@ -711,14 +712,14 @@ def test_auto_button_functionality(qtbot, item_to_test):
     plot.addItem(layer="layer_1", item=pg.PlotDataItem([0, 1], [1.0, 3.0]))
     # Set the range automatically to something different
     layer_0.view_box.setRange(xRange=[0.0, 20.0], yRange=[-2.0, 2.0], padding=0.0)
-    check_range(layer_0.view_box.targetRange(), [[0.0, 20.0], [-2.0, 2.0]])
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[0.0, 20.0], [-2.0, 2.0]])
     layer_1.view_box.setRange(xRange=[0.0, 200.0], yRange=[-20.0, 20.0], padding=0.0)
-    check_range(layer_1.view_box.targetRange(), [[0.0, 200.0], [-20.0, 20.0]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[0.0, 200.0], [-20.0, 20.0]])
     # Press the small [A] button in the plot
     plot.autoBtnClicked()
     qtbot.wait_for_window_shown(window)
-    check_range(layer_0.view_box.targetRange(), [[-10, 150], [0, 1]], tolerance_factor=0.05)
-    check_range(layer_1.view_box.targetRange(), [[-10, 150], [1.0, 3.0]], tolerance_factor=0.05)
+    assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 150], [0, 1]])
+    assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10, 150], [1.0, 3.0]])
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -746,28 +747,6 @@ def _simulate_mouse_hover_for_auto_button(plot: Union[pg.PlotItem, pg.PlotWidget
         event.enter = False
         event.exit = True
     plot.hoverEvent(event)
-
-
-def check_range(
-        actual_range: List[List[float]],
-        expected_range: List[List[float]],
-        tolerance_factor: float = 0.0025,
-):
-    """
-    Compare a viewboxes range with an expected range
-
-    Args:
-        actual_range: Actual range that is supposed to be checked
-        expected_range: Range that we expect
-        tolerance_factor: Sometimes the range of  the plot is a bit hard to predict
-                          because of padding on ranges. This tolerance factor influences
-                          the range in which the actual range is seen as right.
-    """
-    for actual, expected in list(zip(actual_range, expected_range)):
-        # a bit of tolerance
-        absolute_tolerance = tolerance_factor * (expected[1] - expected[0])
-        assert np.isclose(actual[0], expected[0], atol=absolute_tolerance)
-        assert np.isclose(actual[1], expected[1], atol=absolute_tolerance)
 
 
 def manual_range_change(layer: PlotItemLayer, **kwargs):
