@@ -1864,6 +1864,8 @@ class ExViewBox(pg.ViewBox):
                 target_bounds = target_bounds.united(bounds)
 
             primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
+            for vb in other_viewboxes:
+                vb.enableAutoRange(x=False, y=True)
 
             # Setting the range with the manual signal will move all other layers accordingly
             if auto_range_x_axis:
