@@ -74,7 +74,7 @@ that represents a list of strings, formatted in the same way, as put in ``setup.
 
 Similarly, the extra dependencies, located in ``__extras__/__deps__.py`` are using the same format. In this file, the
 parser expects a variable called ``extras`` to be a dictionary, where keys are amongst the allowed extras names
-(``test``, ``lint``, ``doc``, ``bench``), and values are lists of strings with
+(``test``, ``lint``, ``doc``, ``bench``, ``examples``), and values are lists of strings with
 `PEP440 <https://www.python.org/dev/peps/pep-0440>`__ dependencies. For example:
 
 .. literalinclude:: ../../accwidgets/led/__extras__/__deps__.py

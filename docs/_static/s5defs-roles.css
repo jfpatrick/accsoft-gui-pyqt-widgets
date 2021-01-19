@@ -1,15 +1,35 @@
-.green {
+.green, .greenbold {
     color: green;
 }
 
-.red {
+.red, .redbold {
     color: red;
 }
 
-.gray {
+.gray, .graybold {
     color: darkgray;
 }
 
-.blue {
+.blue, .bluebold {
     color: blue;
+}
+
+.orange, .orangebold {
+    color: darkorange;
+}
+
+.cyan, .cyanbold {
+    color: darkcyan;
+}
+
+.yellow, .yellowbold {
+    color: #9c9c00;
+}
+
+.black, .blackbold {
+    color: black;
+}
+
+.bold, .greenbold, .redbold, .graybold, .bluebold, .orangebold, .cyanbold, .yellowbold, .blackbold {
+    font-weight: bold;
 }

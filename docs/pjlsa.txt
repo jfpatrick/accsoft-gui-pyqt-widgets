@@ -1,0 +1,6 @@
+# Sphinx inventory version 2
+# Project: pjlsa
+# Version: 5
+# The remainder of this file is compressed using zlib.
+pjlsa.LSAClient py:class 1 README.md LSAClient
+LSAClient py:class 1 README.md -

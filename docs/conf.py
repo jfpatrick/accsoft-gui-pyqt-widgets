@@ -18,7 +18,9 @@ from datetime import datetime
 from sys import version_info as py_version
 from qtpy.QtCore import qVersion, PYQT_VERSION_STR
 import pyjapc
+import pjlsa
 import accwidgets
+import papc
 from accwidgets._api import REAL_MODULE_NAME_VAR
 
 # -- Project information -----------------------------------------------------
@@ -784,6 +786,8 @@ intersphinx_mapping = {
     "pyqtgraph": ("http://www.pyqtgraph.org/documentation/", None),
     "comrad": ("https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/rad/accsoft-gui-rad-comrad/docs/stable/", None),
     "pyjapc": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pyjapc/docs/v{pyjapc.__version__}/", None),
+    "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
+    "papc": (f"https://acc-py.web.cern.ch/gitlab/pelson/papc/docs/v{papc.__version__}/", None),
 }
 
 
@@ -802,6 +806,7 @@ autosectionlabel_prefix_document = True
 # Support for text colors, proposed here: https://stackoverflow.com/a/60991308
 rst_epilog = """
 .. include:: <s5defs.txt>
+.. include:: /extra-s5defs.txt
 """
 html_css_files.append("s5defs-roles.css")
 

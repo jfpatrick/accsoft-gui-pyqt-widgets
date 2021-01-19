@@ -1,5 +1,5 @@
 # Sphinx inventory version 2
-# Project: qt
+# Project: pyqt
 # Version: 5
 # The remainder of this file is compressed using zlib.
 PyQt5.QtCore.pyqtSignal py:class 1 signals_slots.html#PyQt5.QtCore.pyqtSignal pyqtSignal
