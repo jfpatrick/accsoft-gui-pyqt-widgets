@@ -27,10 +27,11 @@ CORE_OPTION = "core"
 LINT_OPTION = "lint"
 TEST_OPTION = "test"
 DOC_OPTION = "doc"
+EXAMPLE_OPTION = "examples"
 BENCH_OPTION = "bench"
 PACKAGE_NAME = "accwidgets"
 EXTRAS_ALL_FEATURES = "all-widgets"
-DEPENDENCY_OPTIONS = {LINT_OPTION, TEST_OPTION, BENCH_OPTION, DOC_OPTION}
+DEPENDENCY_OPTIONS = {LINT_OPTION, TEST_OPTION, BENCH_OPTION, DOC_OPTION, EXAMPLE_OPTION}
 # Section for commonly defined
 SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 
@@ -67,6 +68,11 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "sphinxcontrib-napoleon2>=1.0,<2a0",
         "sphinx-autodoc-typehints>=1.10.3,<1.11a0",
         "acc-py-sphinx>=0.9,<0.10a0",
+        # These are simply here to provide package version in conf.py
+        # If any of the widgets requires specific versions, it is expected to narrow this down
+        "papc",
+        "pyjapc",
+        "pjlsa",
     ],
 }
 

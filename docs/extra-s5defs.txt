@@ -1,0 +1,9 @@
+.. role:: blackbold
+.. role:: graybold
+
+.. role:: redbold
+.. role:: orangebold
+.. role:: yellowbold
+.. role:: cyanbold
+.. role:: bluebold
+.. role:: greenbold

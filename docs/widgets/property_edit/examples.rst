@@ -2,7 +2,12 @@ Examples
 ==========
 
 This page briefly explains the examples, that can be found in ``examples/property_edit`` directory of the project's
-`source code <https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets>`__.
+`source code <https://gitlab.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets>`__. To ensure presence of additional
+packages needed to run examples, it is advised to install a special ``examples`` category:
+
+.. code-block:: bash
+
+   pip install .[examples]
 
 - `Programmatic example`_
 - `Qt Designer example`_

@@ -19,13 +19,13 @@ The following is a list of widgets that are requested (implemented ones have sta
    |trim-link|            |done|            |trim|
    |propedit-link|        |done|            |propedit|        Allows to explicitly Get/Set one or more fields
                                                               of a specific device property
+   |lsa-link|             |done|            |lsaselector|     Displays and selects LSA cycles
    |led-link|             |done|            |led|             Works with arbitrary colors or a predefined
                                                               status: :attr:`~accwidgets.led.Led.Status.ON`,
                                                               :attr:`~accwidgets.led.Led.Status.OFF`,
                                                               :attr:`~accwidgets.led.Led.Status.WARNING`,
                                                               :attr:`~accwidgets.led.Led.Status.ERROR`,
                                                               :attr:`~accwidgets.led.Led.Status.NONE`
-   |lsa-link|             |lsa-status|
    |spinner-link|         |spinner-status|  |spinner|
    |device-sel-link|      |na|              |devicesel|
    |toggle-trigger-link|  |na|              |toggle-trigger|  For JAPC context
@@ -48,7 +48,7 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |livecharts-link| replace:: :doc:`Live Charts <graphs/index>`
 
-.. |lsa-link| replace:: `LSA context selector <https://issues.cern.ch/browse/ACCPY-25>`__
+.. |lsa-link| replace:: :doc:`LSA Selector <lsa_selector/index>`
 
 .. |device-sel-link| replace:: `Device selector <https://issues.cern.ch/browse/ACCPY-44>`__
 
@@ -92,6 +92,8 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |propedit| image:: ../img/propedit.png
 
+.. |lsaselector| image:: ../img/lsaselector.png
+
 .. |trim| image:: ../img/trimeditor.png
    :width: 250px
 
@@ -115,7 +117,8 @@ Explore individual widgets
    app_frame/index
    graphs/index
    property_edit/index
-   log_console/index
+   lsa_selector/index
    led/index
+   log_console/index
    timing_bar/index
    qt/modules
