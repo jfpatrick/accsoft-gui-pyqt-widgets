@@ -32,6 +32,11 @@ class WidgetBoxGroup(Enum):
     INPUTS = "Input Widgets"
     CHARTS = "Charts"
     INDICATORS = "Display Widgets"
+
+    # This is a special category name hardcoded into Qt Designer. Category with this name will not appear
+    # in the widget box. In Qt sources you can find it in
+    # qttools/src/designer/src/components/widgetbox/widgetboxtreewidget.cpp, declared on line 70 and used
+    # on lines 613, 630
     HIDDEN = "[invisible]"
 
 
