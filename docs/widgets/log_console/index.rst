@@ -10,6 +10,7 @@ Log console is a widget to display logs in a HTML-stylized list.
 
 - `Context menu`_
 - `Formatter`_
+- `Preferences`_
 - `Further read`_
 
 .. image:: ../../img/logconsole.png
