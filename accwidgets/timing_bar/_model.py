@@ -454,11 +454,19 @@ class TimingBarModel(QObject):
         # As discussed with Phil, it's better to have a risk of accessing Java API, than allow
         # clearing subscriptions by parameterName, selector (which potentially may erase subscriptions
         # done by the user from another part of the application)
-        handler = self._japc.subscribeParam(parameterName=param,
-                                            timingSelectorOverride=sel,
-                                            getHeader=get_header,
-                                            onValueReceived=callback,
-                                            onException=exception_callback)
+        try:
+            handler = self._japc.subscribeParam(parameterName=param,
+                                                timingSelectorOverride=sel,
+                                                getHeader=get_header,
+                                                onValueReceived=callback,
+                                                onException=exception_callback)
+        except Exception as e:  # noqa: B902
+            # Exception may happen here when PyJapc is used without GPN or TN availability and is configured for InCA
+            # e.g. org.springframework.remoting.RemoteAccessException: Failed to connect to all InCA servers
+            self._error_state.add(param)
+            self.timingErrorReceived.emit(str(e))
+            return
+
         self._active_subs.append(PyJapcSubscription(param_name=param,
                                                     selector=sel,
                                                     handler=handler))

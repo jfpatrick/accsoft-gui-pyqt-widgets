@@ -271,7 +271,7 @@ def test_model_remote_connection_error(qtbot: QtBot, domain, xtim_err, ctim_err,
     (TimingBarDomain.LHC, True, False, ["xtim"]),
     (TimingBarDomain.LHC, False, False, []),
 ])
-def test_model_subscription_error(qtbot: QtBot, domain, xtim_err, ctim_err, expect_errors):
+def test_model_subscription_monitoring_error(qtbot: QtBot, domain, xtim_err, ctim_err, expect_errors):
     xtim_sub = mock.MagicMock()
     if xtim_err:
         xtim_sub.startMonitoring.side_effect = Exception("xtim")
@@ -291,7 +291,36 @@ def test_model_subscription_error(qtbot: QtBot, domain, xtim_err, ctim_err, expe
         model.activate()
     assert model.has_error == should_have_error
     signal_args = list(map(operator.itemgetter(0), map(operator.attrgetter("args"), blocker.all_signals_and_args)))
-    print(signal_args)
+    assert signal_args == expect_errors
+
+
+@pytest.mark.parametrize("domain,xtim_err,ctim_err,expect_errors", [
+    (TimingBarDomain.PSB, True, True, ["ctim", "xtim"]),
+    (TimingBarDomain.PSB, False, True, ["ctim"]),
+    (TimingBarDomain.PSB, True, False, ["xtim"]),
+    (TimingBarDomain.PSB, False, False, []),
+    (TimingBarDomain.LHC, True, False, ["xtim"]),
+    (TimingBarDomain.LHC, False, False, []),
+])
+def test_model_subscription_creation_error(qtbot: QtBot, domain, xtim_err, ctim_err, expect_errors):
+
+    def subscribe_param(parameterName: str, *_, **__):
+        is_xtim = parameterName.startswith("XTIM")
+        if is_xtim and xtim_err:
+            raise Exception("xtim")
+        elif not is_xtim and ctim_err:
+            raise Exception("ctim")
+        return mock.MagicMock()
+
+    japc_mock = mock.MagicMock()
+    japc_mock.subscribeParam.side_effect = subscribe_param
+
+    should_have_error = len(expect_errors) > 0
+    model = TimingBarModel(domain=domain, japc=japc_mock)
+    with qtbot.wait_signals([model.timingErrorReceived, model.timingErrorReceived], raising=False, timeout=100, order="strict") as blocker:
+        model.activate()
+    assert model.has_error == should_have_error
+    signal_args = list(map(operator.itemgetter(0), map(operator.attrgetter("args"), blocker.all_signals_and_args)))
     assert signal_args == expect_errors
 
 
