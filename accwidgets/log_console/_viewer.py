@@ -465,7 +465,7 @@ class LogConsole(QWidget):
             self._contents.setTextCursor(cursor)
         # Search is defaulting to backwards, so make sure that we are always in the end of the document
         self._contents.moveCursor(QTextCursor.End, QTextCursor.MoveAnchor)
-        dialog = LogSearchDialog()
+        dialog = LogSearchDialog(parent=self)
         dialog.search_requested.connect(self._on_search_requested)
         dialog.search_direction_changed.connect(self._on_search_direction_changed)
         self._sig_match_result.connect(dialog.on_search_result)
@@ -492,7 +492,8 @@ class LogConsole(QWidget):
                                         color_map=self._color_scheme.color_map)
         dialog = LogPreferencesDialog(model_config=model_config,
                                       view_config=view_config,
-                                      sample_formatter_type=type(self.formatter))
+                                      sample_formatter_type=type(self.formatter),
+                                      parent=self)
         if dialog.exec_() == QDialog.Accepted:
             model.buffer_size = dialog.model_config.buffer_size
             model.visible_levels = dialog.model_config.visible_levels
@@ -510,7 +511,7 @@ class LogConsole(QWidget):
 
     def _open_print_dialog(self):
         """Open print preview for the contents of the console."""
-        dialog = QPrintPreviewDialog()
+        dialog = QPrintPreviewDialog(self)
         dialog.paintRequested.connect(self._contents.print_)
         dialog.exec_()
 

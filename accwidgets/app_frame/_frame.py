@@ -63,7 +63,8 @@ class ApplicationFrame(QMainWindow):
         """
         dialog = AboutDialog(app_name=self.windowTitle(),
                              version=self.appVersion,
-                             icon=self.windowIcon())
+                             icon=self.windowIcon(),
+                             parent=self)
         dialog.exec_()
 
     @Slot()
