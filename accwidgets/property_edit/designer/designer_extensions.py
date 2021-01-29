@@ -99,6 +99,11 @@ class FieldEditorTableModel(AbstractTableModel[PropertyEditField]):
                 options = ud.get("options")
                 if not options:
                     raise ValueError(f'Row #{idx+1} must define enum options via "User data".')
+            elif item.type == PropertyEdit.ValueType.REAL:
+                ud = item.user_data or {}
+                precision = ud.get("precision")
+                if precision == 0:
+                    raise ValueError(f'Row #{idx+1} has 0 precision for REAL type. Use INTEGER instead.')
             used_fields.add(item.field)
 
 

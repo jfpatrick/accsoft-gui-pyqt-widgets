@@ -287,6 +287,8 @@ def test_fields_model(editable, value_type, user_data, num_fields):
     ([PropertyEditField(field="f1", type=PropertyEdit.ValueType.ENUM, editable=False, user_data={})], 'Row #1 must define enum options via "User data".'),
     ([PropertyEditField(field="f1", type=PropertyEdit.ValueType.ENUM, editable=False, user_data={"options": None})], 'Row #1 must define enum options via "User data".'),
     ([PropertyEditField(field="f1", type=PropertyEdit.ValueType.ENUM, editable=False, user_data={"options": []})], 'Row #1 must define enum options via "User data".'),
+    ([PropertyEditField(field="f1", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"precision": 0})], "Row #1 has 0 precision for REAL type. Use INTEGER instead."),
+    ([PropertyEditField(field="f1", type=PropertyEdit.ValueType.REAL, editable=False, user_data={"precision": 0})], "Row #1 has 0 precision for REAL type. Use INTEGER instead."),
     ([
      PropertyEditField(field="", type=PropertyEdit.ValueType.INTEGER, editable=False),
      PropertyEditField(field="", type=PropertyEdit.ValueType.INTEGER, editable=False),
