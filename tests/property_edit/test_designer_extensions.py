@@ -2,7 +2,7 @@ import pytest
 from pytestqt.qtbot import QtBot
 from unittest import mock
 from qtpy.QtCore import QVariant, Qt
-from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QPushButton
+from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QPushButton, QDialogButtonBox, QFormLayout
 from PyQt5.QtTest import QAbstractItemModelTester
 from accwidgets.property_edit.propedit import PropertyEdit, PropertyEditField, _pack_designer_fields
 from accwidgets.property_edit.designer.designer_extensions import (
@@ -11,6 +11,7 @@ from accwidgets.property_edit.designer.designer_extensions import (
     FieldEditorTableModel,
     PropertyFieldExtension,
     EnumTableData,
+    NumericFieldDialog,
 )
 
 
@@ -354,6 +355,310 @@ def test_enum_config_validate_fails(data, error_msg):
     model = EnumEditorTableModel(data=data)
     with pytest.raises(ValueError, match=error_msg):
         model.validate()
+
+
+@pytest.mark.parametrize("initial_data", [
+    {},
+    {"min": 1},
+    {"max": 4},
+    {"min": -2, "max": 5},
+    {"max": -2, "min": 5},
+    {"units": "TST"},
+    {"precision": 3},
+    {"units": "TST", "precision": 3},
+    {"units": "TST", "precision": 3, "min": -2, "max": 5},
+    {"units": "TST", "min": -2, "max": 5},
+])
+@pytest.mark.parametrize("use_precision,chk_prec,prec_val,chk_unit,unit_val,chk_min,min_val,chk_max,max_val,expected_error", [
+    (False, None, None, False, "", True, 0, True, -1, "Min value cannot be greater than max"),
+    (False, None, None, False, "", True, 10, True, 2, "Min value cannot be greater than max"),
+    (True, False, 0, False, "", True, 0, True, -1, "Min value cannot be greater than max"),
+    (True, False, 0, False, "", True, 10, True, 2, "Min value cannot be greater than max"),
+    (True, False, 0, False, "", True, 0.0, True, -0.1, "Min value cannot be greater than max"),
+    (True, False, 0, False, "", True, 10, True, 2.5, "Min value cannot be greater than max"),
+    (True, False, 1, False, "", True, 0, True, -1, "Min value cannot be greater than max"),
+    (True, False, 1, False, "", True, 10, True, 2, "Min value cannot be greater than max"),
+    (True, False, 1, False, "", True, 0.0, True, -0.1, "Min value cannot be greater than max"),
+    (True, False, 1, False, "", True, 10, True, 2.5, "Min value cannot be greater than max"),
+])
+@mock.patch("accwidgets.property_edit.designer.designer_extensions.QMessageBox")
+def test_numeric_dialog_save_fails(QMessageBox, qtbot: QtBot, initial_data, use_precision, chk_prec, chk_max, chk_min, chk_unit,
+                                   prec_val, unit_val, min_val, max_val, expected_error):
+    widget = NumericFieldDialog(config=initial_data, use_precision=use_precision, on_save=mock.Mock())
+    qtbot.add_widget(widget)
+    if use_precision:
+        widget.chkbx_precision.setChecked(chk_prec)
+        widget.precision_spinbox.setValue(prec_val)
+    widget.chkbx_max.setChecked(chk_max)
+    widget.max_spinbox.setValue(max_val)
+    widget.chkbx_min.setChecked(chk_min)
+    widget.min_spinbox.setValue(min_val)
+    widget.chkbx_units.setChecked(chk_unit)
+    widget.units_line.setText(unit_val)
+    QMessageBox.warning.assert_not_called()
+    widget.buttons.button(QDialogButtonBox.Ok).click()
+    QMessageBox.warning.assert_called_with(mock.ANY, "Invalid data", expected_error)
+
+
+@pytest.mark.parametrize("initial_data", [
+    {},
+    {"min": 1},
+    {"max": 4},
+    {"min": -2, "max": 5},
+    {"max": -2, "min": 5},
+    {"units": "TST"},
+    {"precision": 3},
+    {"units": "TST", "precision": 3},
+    {"units": "TST", "precision": 3, "min": -2, "max": 5},
+    {"units": "TST", "min": -2, "max": 5},
+])
+@pytest.mark.parametrize("use_precision,chk_prec,prec_val,chk_unit,unit_val,chk_min,min_val,chk_max,max_val,expected_res", [
+    (False, None, None, False, "", False, 0, False, 0, {}),
+    (False, None, None, True, "", False, 0, False, 0, {}),
+    (False, None, None, True, "TST", False, 0, False, 0, {"units": "TST"}),
+    (False, None, None, False, "", True, 5, False, 0, {"min": 5}),
+    (False, None, None, False, "", True, -5, False, 0, {"min": -5}),
+    (False, None, None, False, "", True, 0, False, 0, {"min": 0}),
+    (False, None, None, False, "", False, 0, True, 0, {"max": 0}),
+    (False, None, None, False, "", False, 0, True, 5, {"max": 5}),
+    (False, None, None, False, "", False, 0, True, -5, {"max": -5}),
+    (False, None, None, False, "", True, 5, True, 10, {"min": 5, "max": 10}),
+    (False, None, None, False, "", True, 5, True, 5, {"min": 5, "max": 5}),
+    (False, None, None, False, "", True, -5, True, 5, {"min": -5, "max": 5}),
+    (False, None, None, True, "TST", True, -5, True, 5, {"units": "TST", "min": -5, "max": 5}),
+    (True, False, 1, False, "", False, 0, False, 0, {}),
+    (True, False, 1, True, "", False, 0, False, 0, {}),
+    (True, False, 1, True, "TST", False, 0, False, 0, {"units": "TST"}),
+    (True, True, 3, False, "", False, 0, False, 0, {"precision": 3}),
+    (True, False, 1, False, "", True, 5, False, 0, {"min": 5}),
+    (True, False, 1, False, "", True, -5, False, 0, {"min": -5}),
+    (True, False, 1, False, "", True, 0, False, 0, {"min": 0}),
+    (True, False, 1, False, "", False, 0, True, 0, {"max": 0}),
+    (True, False, 1, False, "", False, 0, True, 5, {"max": 5}),
+    (True, False, 1, False, "", False, 0, True, -5, {"max": -5}),
+    (True, False, 1, False, "", True, 5, True, 10, {"min": 5, "max": 10}),
+    (True, False, 1, False, "", True, 5, True, 5, {"min": 5, "max": 5}),
+    (True, False, 1, False, "", True, -5, True, 5, {"min": -5, "max": 5}),
+    (True, True, 3, False, "", True, -5, True, 5, {"precision": 3, "min": -5, "max": 5}),
+    (True, False, 1, True, "TST", True, -5, True, 5, {"units": "TST", "min": -5, "max": 5}),
+    (True, True, 3, True, "TST", True, -5, True, 5, {"precision": 3, "units": "TST", "min": -5, "max": 5}),
+])
+def test_numeric_dialog_save_succeeds(qtbot: QtBot, initial_data, use_precision, chk_prec, chk_max, chk_min, chk_unit,
+                                      prec_val, unit_val, min_val, max_val, expected_res):
+    on_save = mock.Mock()
+    widget = NumericFieldDialog(config=initial_data, use_precision=use_precision, on_save=on_save)
+    qtbot.add_widget(widget)
+    if use_precision:
+        widget.chkbx_precision.setChecked(chk_prec)
+        widget.precision_spinbox.setValue(prec_val)
+    widget.chkbx_max.setChecked(chk_max)
+    widget.max_spinbox.setValue(max_val)
+    widget.chkbx_min.setChecked(chk_min)
+    widget.min_spinbox.setValue(min_val)
+    widget.chkbx_units.setChecked(chk_unit)
+    widget.units_line.setText(unit_val)
+    on_save.assert_not_called()
+    widget.buttons.button(QDialogButtonBox.Ok).click()
+    on_save.assert_called_with(expected_res)
+
+
+@pytest.mark.parametrize(
+    "use_precision,initial_data,expect_chk_prec,expect_chk_max,expect_chk_min,expect_chk_unit,"
+    "expected_prec_val,expected_unit_val,expected_min_val,expected_max_val",
+    [
+        (False, {}, False, False, False, False, None, "", 0, 0),
+        (False, {"min": -2}, False, False, True, False, None, "", -2, 0),
+        (False, {"min": 0}, False, False, True, False, None, "", 0, 0),
+        (False, {"max": 2}, False, True, False, False, None, "", 0, 2),
+        (False, {"max": 0}, False, True, False, False, None, "", 0, 0),
+        (False, {"units": "TST"}, False, False, False, True, None, "TST", 0, 0),
+        (False, {"max": 2, "min": -2}, False, True, True, False, None, "", -2, 2),
+        (False, {"max": 0, "min": 0}, False, True, True, False, None, "", 0, 0),
+        (False, {"units": "TST", "min": -2}, False, False, True, True, None, "TST", -2, 0),
+        (False, {"units": "TST", "max": 2}, False, True, False, True, None, "TST", 0, 2),
+        (False, {"units": "TST", "max": 2, "min": -2}, False, True, True, True, None, "TST", -2, 2),
+        (True, {}, False, False, False, False, 1, "", 0, 0),
+        (True, {"min": -2}, False, False, True, False, 1, "", -2, 0),
+        (True, {"min": 0}, False, False, True, False, 1, "", 0, 0),
+        (True, {"max": 2}, False, True, False, False, 1, "", 0, 2),
+        (True, {"max": 0}, False, True, False, False, 1, "", 0, 0),
+        (True, {"units": "TST"}, False, False, False, True, 1, "TST", 0, 0),
+        (True, {"precision": 3}, True, False, False, False, 3, "", 0, 0),
+        (True, {"max": 2, "min": -2}, False, True, True, False, 1, "", -2, 2),
+        (True, {"max": 2, "precision": 3}, True, True, False, False, 3, "", 0, 2),
+        (True, {"precision": 3, "min": -2}, True, False, True, False, 3, "", -2, 0),
+        (True, {"max": 0, "min": 0}, False, True, True, False, 1, "", 0, 0),
+        (True, {"precision": 3, "units": "TST"}, True, False, False, True, 3, "TST", 0, 0),
+        (True, {"units": "TST", "min": -2}, False, False, True, True, 1, "TST", -2, 0),
+        (True, {"units": "TST", "max": 2}, False, True, False, True, 1, "TST", 0, 2),
+        (True, {"max": 2, "min": -2, "precision": 3}, True, True, True, False, 3, "", -2, 2),
+        (True, {"max": 2, "units": "TST", "precision": 3}, True, True, False, True, 3, "TST", 0, 2),
+        (True, {"units": "TST", "min": -2, "precision": 3}, True, False, True, True, 3, "TST", -2, 0),
+        (True, {"units": "TST", "max": 2, "min": -2}, False, True, True, True, 1, "TST", -2, 2),
+        (True, {"units": "TST", "max": 2, "min": -2, "precision": 3}, True, True, True, True, 3, "TST", -2, 2),
+    ],
+)
+def test_numeric_dialog_configures_initial_ui(use_precision, initial_data, expected_prec_val, expected_max_val, expected_unit_val,
+                                              expected_min_val, expect_chk_min, expect_chk_max, expect_chk_prec,
+                                              expect_chk_unit, qtbot: QtBot):
+    widget = NumericFieldDialog(config=initial_data, use_precision=use_precision, on_save=mock.Mock())
+    qtbot.add_widget(widget)
+    assert widget.chkbx_min.isChecked() == expect_chk_min
+    assert widget.chkbx_max.isChecked() == expect_chk_max
+    assert widget.chkbx_units.isChecked() == expect_chk_unit
+    assert widget.min_spinbox.value() == expected_min_val
+    assert widget.max_spinbox.value() == expected_max_val
+    assert widget.units_line.text() == expected_unit_val
+
+    if use_precision:
+        assert widget.chkbx_precision.isChecked() == expect_chk_prec
+        assert widget.precision_spinbox.value() == expected_prec_val
+
+
+@pytest.mark.parametrize("use_precision,expect_precision_controls", [
+    (True, True),
+    (False, False),
+])
+def test_numeric_dialog_precision_not_available_for_int(qtbot: QtBot, use_precision, expect_precision_controls):
+    widget = NumericFieldDialog(config={}, use_precision=use_precision, on_save=mock.Mock())
+    qtbot.add_widget(widget)
+    assert widget.form.rowCount() == 4 if expect_precision_controls else 3
+    assert widget.form.itemAt(0, QFormLayout.LabelRole).widget() == widget.chkbx_units
+    assert widget.form.itemAt(0, QFormLayout.FieldRole).widget() == widget.units_line
+    assert widget.form.itemAt(1, QFormLayout.LabelRole).widget() == widget.chkbx_min
+    assert widget.form.itemAt(1, QFormLayout.FieldRole).widget() == widget.min_spinbox
+    assert widget.form.itemAt(2, QFormLayout.LabelRole).widget() == widget.chkbx_max
+    assert widget.form.itemAt(2, QFormLayout.FieldRole).widget() == widget.max_spinbox
+    if expect_precision_controls:
+        assert widget.form.itemAt(3, QFormLayout.LabelRole).widget() == widget.chkbx_precision
+        assert widget.form.itemAt(3, QFormLayout.FieldRole).widget() == widget.precision_spinbox
+
+
+@pytest.mark.parametrize("initial_data,expected_initial_decimals", [
+    ({}, 1),
+    ({"min": 1}, 1),
+    ({"max": 4}, 1),
+    ({"min": -2, "max": 5}, 1),
+    ({"max": -2, "min": 5}, 1),
+    ({"units": "TST"}, 1),
+    ({"precision": 3}, 3),
+    ({"units": "TST", "precision": 3}, 3),
+    ({"units": "TST", "precision": 3, "min": -2, "max": 5}, 3),
+    ({"units": "TST", "min": -2, "max": 5}, 1),
+])
+@pytest.mark.parametrize("new_precision,expected_new_decimals", [
+    (1, 1),
+    (2, 2),
+    (3, 3),
+    (10, 10),
+    (15, 15),
+    (20, 20),
+])
+def test_numeric_dialog_precision_reconfigures_limits(qtbot: QtBot, initial_data, expected_initial_decimals, new_precision,
+                                                      expected_new_decimals):
+    widget = NumericFieldDialog(config=initial_data, use_precision=True, on_save=mock.Mock())
+    qtbot.add_widget(widget)
+    assert widget.min_spinbox.decimals() == expected_initial_decimals
+    assert widget.max_spinbox.decimals() == expected_initial_decimals
+    widget.precision_spinbox.setValue(new_precision)
+    assert widget.min_spinbox.decimals() == expected_new_decimals
+    assert widget.max_spinbox.decimals() == expected_new_decimals
+
+
+@pytest.mark.parametrize("use_precision,initial_data,toggle_prec,toggle_min,toggle_max,toggle_unit,expect_prec_enabled,expect_min_enabled,expect_max_enabled,expect_unit_enabled", [
+    (False, {}, False, False, False, False, False, False, False, False),
+    (False, {"min": 1}, False, False, False, False, False, True, False, False),
+    (False, {"max": 4}, False, False, False, False, False, False, True, False),
+    (False, {"min": -2, "max": 5}, False, False, False, False, False, True, True, False),
+    (False, {"max": -2, "min": 5}, False, False, False, False, False, True, True, False),
+    (False, {"units": "TST"}, False, False, False, False, False, False, False, True),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, False, False, False, False, True, True, True),
+    (False, {}, False, True, False, False, False, True, False, False),
+    (False, {"min": 1}, False, True, False, False, False, False, False, False),
+    (False, {"max": 4}, False, True, False, False, False, True, True, False),
+    (False, {"min": -2, "max": 5}, False, True, False, False, False, False, True, False),
+    (False, {"max": -2, "min": 5}, False, True, False, False, False, False, True, False),
+    (False, {"units": "TST"}, False, True, False, False, False, True, False, True),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, True, False, False, False, False, True, True),
+    (False, {}, False, True, True, False, False, True, True, False),
+    (False, {"min": 1}, False, True, True, False, False, False, True, False),
+    (False, {"max": 4}, False, True, True, False, False, True, False, False),
+    (False, {"min": -2, "max": 5}, False, True, True, False, False, False, False, False),
+    (False, {"max": -2, "min": 5}, False, True, True, False, False, False, False, False),
+    (False, {"units": "TST"}, False, True, True, False, False, True, True, True),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, True, True, False, False, False, False, True),
+    (False, {}, False, False, False, True, False, False, False, True),
+    (False, {"min": 1}, False, False, False, True, False, True, False, True),
+    (False, {"max": 4}, False, False, False, True, False, False, True, True),
+    (False, {"min": -2, "max": 5}, False, False, False, True, False, True, True, True),
+    (False, {"max": -2, "min": 5}, False, False, False, True, False, True, True, True),
+    (False, {"units": "TST"}, False, False, False, True, False, False, False, False),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, False, False, True, False, True, True, False),
+    (False, {}, False, True, False, True, False, True, False, True),
+    (False, {"min": 1}, False, True, False, True, False, False, False, True),
+    (False, {"max": 4}, False, True, False, True, False, True, True, True),
+    (False, {"min": -2, "max": 5}, False, True, False, True, False, False, True, True),
+    (False, {"max": -2, "min": 5}, False, True, False, True, False, False, True, True),
+    (False, {"units": "TST"}, False, True, False, True, False, True, False, False),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, True, False, True, False, False, True, False),
+    (False, {}, False, False, True, True, False, False, True, True),
+    (False, {"min": 1}, False, False, True, True, False, True, True, True),
+    (False, {"max": 4}, False, False, True, True, False, False, False, True),
+    (False, {"min": -2, "max": 5}, False, False, True, True, False, True, False, True),
+    (False, {"max": -2, "min": 5}, False, False, True, True, False, True, False, True),
+    (False, {"units": "TST"}, False, False, True, True, False, False, True, False),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, False, True, True, False, True, False, False),
+    (False, {}, False, True, True, True, False, True, True, True),
+    (False, {"min": 1}, False, True, True, True, False, False, True, True),
+    (False, {"max": 4}, False, True, True, True, True, True, False, True),
+    (False, {"min": -2, "max": 5}, False, True, True, True, False, False, False, True),
+    (False, {"max": -2, "min": 5}, False, True, True, True, False, False, False, True),
+    (False, {"units": "TST"}, False, True, True, True, False, True, True, False),
+    (False, {"units": "TST", "min": -2, "max": 5}, False, True, True, True, False, False, False, False),
+    (True, {}, False, False, False, True, False, False, False, True),
+    (True, {"min": 1}, False, False, False, True, False, True, False, True),
+    (True, {"max": 4}, False, False, False, True, False, False, True, True),
+    (True, {"min": -2, "max": 5}, False, False, False, True, False, True, True, True),
+    (True, {"max": -2, "min": 5}, False, False, False, True, False, True, True, True),
+    (True, {"units": "TST"}, False, False, False, True, False, False, False, False),
+    (True, {"units": "TST", "min": -2, "max": 5}, False, False, False, True, False, True, True, False),
+    (True, {}, False, True, False, True, False, True, False, True),
+    (True, {"min": 1}, False, True, False, True, False, False, False, True),
+    (True, {"max": 4}, False, True, False, True, False, True, True, True),
+    (True, {"min": -2, "max": 5}, False, True, False, True, False, False, True, True),
+    (True, {"max": -2, "min": 5}, False, True, False, True, False, False, True, True),
+    (True, {"units": "TST"}, False, True, False, True, False, True, False, False),
+    (True, {"units": "TST", "min": -2, "max": 5}, False, True, False, True, False, False, True, False),
+    (True, {}, False, False, False, False, False, False, False, False),
+    (True, {"min": 1}, False, False, False, False, False, True, False, False),
+    (True, {"max": 4}, False, False, False, False, False, False, True, False),
+    (True, {"min": -2, "max": 5}, False, False, False, False, False, True, True, False),
+    (True, {"max": -2, "min": 5}, False, False, False, False, False, True, True, False),
+    (True, {"units": "TST"}, False, False, False, False, False, False, False, True),
+    (True, {"units": "TST", "min": -2, "max": 5}, False, False, False, False, False, True, True, True),
+    (True, {"precision": 3}, False, False, False, False, True, False, False, False),
+    (True, {"units": "TST", "precision": 3}, False, False, False, False, True, False, False, True),
+    (True, {"units": "TST", "precision": 3, "min": -2, "max": 5}, False, False, False, False, True, True, True, True),
+])
+def test_numeric_dialog_checkboxes_toggle_controls(qtbot: QtBot, use_precision, initial_data, toggle_prec, toggle_min,
+                                                   toggle_max, toggle_unit, expect_prec_enabled, expect_min_enabled,
+                                                   expect_max_enabled, expect_unit_enabled):
+    widget = NumericFieldDialog(config=initial_data, use_precision=use_precision, on_save=mock.Mock())
+    qtbot.add_widget(widget)
+    if toggle_max:
+        widget.chkbx_max.click()
+    if toggle_min:
+        widget.chkbx_min.click()
+    if toggle_unit:
+        widget.chkbx_units.click()
+    if toggle_prec:
+        widget.chkbx_precision.click()
+
+    assert widget.min_spinbox.isEnabled() == expect_min_enabled
+    assert widget.max_spinbox.isEnabled() == expect_max_enabled
+    assert widget.units_line.isEnabled() == expect_unit_enabled
+    if use_precision:
+        assert widget.precision_spinbox.isEnabled() == expect_prec_enabled
 
 
 @pytest.mark.parametrize("editable, button_name", [
