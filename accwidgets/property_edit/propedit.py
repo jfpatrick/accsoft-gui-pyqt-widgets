@@ -37,7 +37,8 @@ class PropertyEditField:
     user_data: Optional[Dict[str, Any]] = None
     """
     Optional additional data for specific fields. For example, :attr:`~PropertyEdit.ValueType.ENUM`
-    configuration needs ``options``.
+    configuration needs ``options``, while numeric fields may contain valid ranges, units and floating point
+    precision here.
     """
 
 
@@ -63,6 +64,10 @@ EnumItemConfig = Tuple[str, int]
 
 
 _ENUM_OPTIONS_KEY = "options"
+_NUM_MAX_KEY = "max"
+_NUM_MIN_KEY = "min"
+_NUM_UNITS_KEY = "units"
+_NUM_PRECISION_KEY = "precision"
 
 
 def form_property(prop_name: str) -> Callable:
@@ -818,15 +823,29 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
             return widget
         if item_type == PropertyEdit.ValueType.INTEGER:
             widget = QSpinBox(parent)
-            max_val = 2**sys.int_info.bits_per_digit  # can't use sys.maxsize here, as it supplies "long" size overflowing Qt
-            widget.setMaximum(max_val - 1)
-            widget.setMinimum(-max_val + 1)
+            ud = user_data or {}
+            max_allowed_int = 2**sys.int_info.bits_per_digit  # can't use sys.maxsize here, as it supplies "long" size overflowing Qt
+            widget.setMaximum(ud.get(_NUM_MAX_KEY, max_allowed_int - 1))
+            widget.setMinimum(ud.get(_NUM_MIN_KEY, -max_allowed_int + 1))
+            try:
+                widget.setSuffix(f" {ud[_NUM_UNITS_KEY]}")
+            except KeyError:
+                pass
             return widget
         if item_type == PropertyEdit.ValueType.REAL:
             widget = QDoubleSpinBox(parent)
-            max_val = sys.float_info.max
-            widget.setMaximum(max_val)
-            widget.setMinimum(-max_val)
+            ud = user_data or {}
+            max_allowed_float = sys.float_info.max
+            widget.setMaximum(ud.get(_NUM_MAX_KEY, max_allowed_float))
+            widget.setMinimum(ud.get(_NUM_MIN_KEY, -max_allowed_float))
+            try:
+                widget.setDecimals(ud[_NUM_PRECISION_KEY])
+            except KeyError:
+                pass
+            try:
+                widget.setSuffix(f" {ud[_NUM_UNITS_KEY]}")
+            except KeyError:
+                pass
             return widget
         if item_type == PropertyEdit.ValueType.BOOLEAN:
             return QCheckBox(parent)
@@ -844,7 +863,7 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
             if item_type == PropertyEdit.ValueType.ENUM:
                 if isinstance(value, int):
                     ud = user_data or {}
-                    options = cast(List[EnumItemConfig], ud.get("options", []))
+                    options = cast(List[EnumItemConfig], ud.get(_ENUM_OPTIONS_KEY, []))
                     for label, code in options:
                         if code == value:
                             cast(QLabel, widget).setText(label)
@@ -862,7 +881,24 @@ class PropertyEditWidgetDelegate(AbstractPropertyEditWidgetDelegate):
             elif isinstance(value, bool):
                 cast(QLabel, widget).setText(str(value))
             elif isinstance(value, int) or isinstance(value, float):
-                cast(QLabel, widget).setNum(value)
+                ud = user_data or {}
+                str_val = None
+                if item_type == PropertyEdit.ValueType.REAL:
+                    try:
+                        str_val = f"{{:.{ud[_NUM_PRECISION_KEY]}f}}".format(value)
+                    except KeyError:
+                        pass
+
+                if item_type == PropertyEdit.ValueType.INTEGER or item_type == PropertyEdit.ValueType.REAL:
+                    try:
+                        str_val = f"{str_val or str(value)} {ud[_NUM_UNITS_KEY]}"
+                    except KeyError:
+                        pass
+
+                if str_val is not None:
+                    cast(QLabel, widget).setText(str_val)
+                else:
+                    cast(QLabel, widget).setNum(value)
             else:
                 warnings.warn(f"Can't set data {value} to QLabel. Unsupported data type.")
         elif isinstance(widget, Led):

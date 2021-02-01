@@ -10,6 +10,7 @@ Qt Designer additions
    userdatacolumndelegate
    fieldtypecolumndelegate
    enumoptionsdialog
+   numericfielddialog
    fieldsdialog
 
 * :ref:`modindex`

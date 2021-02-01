@@ -927,26 +927,49 @@ def test_delegate_create_widget(qtbot: QtBot, editable, value_type, expected_wid
     assert isinstance(new_widget, expected_widget_type)
 
 
-@pytest.mark.parametrize("editable, value_type, sent_value, expected_method_call, expected_method_arg, property_mock", [
-    (False, PropertyEdit.ValueType.INTEGER, 2, "setNum", 2, False),
-    (False, PropertyEdit.ValueType.REAL, 2.5, "setNum", 2.5, False),
-    (False, PropertyEdit.ValueType.BOOLEAN, True, "status", Led.Status.ON, True),
-    (False, PropertyEdit.ValueType.STRING, "val", "setText", "val", False),
-    (False, PropertyEdit.ValueType.ENUM, 4, "setText", "one", False),
-    (False, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setText", "custom-text", False),
-    (True, PropertyEdit.ValueType.INTEGER, 2, "setValue", 2, False),
-    (True, PropertyEdit.ValueType.REAL, 2.5, "setValue", 2.5, False),
-    (True, PropertyEdit.ValueType.BOOLEAN, True, "setChecked", True, False),
-    (True, PropertyEdit.ValueType.STRING, "val", "setText", "val", False),
-    (True, PropertyEdit.ValueType.ENUM, 4, "setCurrentIndex", 1, False),
-    (True, PropertyEdit.ValueType.ENUM, (4, "custom-text"), "setCurrentIndex", 1, False),
+@pytest.mark.parametrize("editable, value_type, ud, sent_value, expected_method_call, expected_method_arg, property_mock", [
+    (False, PropertyEdit.ValueType.INTEGER, None, 2, "setNum", 2, False),
+    (False, PropertyEdit.ValueType.INTEGER, {"min": 1}, 2, "setNum", 2, False),
+    (False, PropertyEdit.ValueType.INTEGER, {"max": 1}, 2, "setNum", 2, False),
+    (False, PropertyEdit.ValueType.INTEGER, {"min": 1, "max": 2}, 2, "setNum", 2, False),
+    (False, PropertyEdit.ValueType.INTEGER, {"units": "TST"}, 2, "setText", "2 TST", False),
+    (False, PropertyEdit.ValueType.INTEGER, {"units": "TST", "min": 1, "max": 2}, 2, "setText", "2 TST", False),
+    (False, PropertyEdit.ValueType.REAL, None, 2.5, "setNum", 2.5, False),
+    (False, PropertyEdit.ValueType.REAL, {"min": 1}, 2.5, "setNum", 2.5, False),
+    (False, PropertyEdit.ValueType.REAL, {"max": 1}, 2.5, "setNum", 2.5, False),
+    (False, PropertyEdit.ValueType.REAL, {"precision": 3}, 2.5, "setText", "2.500", False),
+    (False, PropertyEdit.ValueType.REAL, {"min": 1, "max": 2}, 2.5, "setNum", 2.5, False),
+    (False, PropertyEdit.ValueType.REAL, {"units": "TST"}, 2.5, "setText", "2.5 TST", False),
+    (False, PropertyEdit.ValueType.REAL, {"units": "TST", "precision": 3}, 2.5, "setText", "2.500 TST", False),
+    (False, PropertyEdit.ValueType.REAL, {"units": "TST", "min": 1, "max": 2}, 2.5, "setText", "2.5 TST", False),
+    (False, PropertyEdit.ValueType.BOOLEAN, None, True, "status", Led.Status.ON, True),
+    (False, PropertyEdit.ValueType.STRING, None, "val", "setText", "val", False),
+    (False, PropertyEdit.ValueType.ENUM, {"options": [("none", 0), ("one", 4), ("two", 5)]}, 4, "setText", "one", False),
+    (False, PropertyEdit.ValueType.ENUM, {"options": [("none", 0), ("one", 4), ("two", 5)]}, (4, "custom-text"), "setText", "custom-text", False),
+    (True, PropertyEdit.ValueType.INTEGER, None, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.INTEGER, {"min": 1}, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.INTEGER, {"max": 1}, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.INTEGER, {"min": 1, "max": 2}, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.INTEGER, {"units": "TST"}, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.INTEGER, {"units": "TST", "min": 1, "max": 2}, 2, "setValue", 2, False),
+    (True, PropertyEdit.ValueType.REAL, None, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"min": 1}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"max": 1}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"precision": 3}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"min": 1, "max": 2}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"units": "TST"}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"units": "TST", "precision": 3}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.REAL, {"units": "TST", "min": 1, "max": 2}, 2.5, "setValue", 2.5, False),
+    (True, PropertyEdit.ValueType.BOOLEAN, None, True, "setChecked", True, False),
+    (True, PropertyEdit.ValueType.STRING, None, "val", "setText", "val", False),
+    (True, PropertyEdit.ValueType.ENUM, {"options": [("none", 0), ("one", 4), ("two", 5)]}, 4, "setCurrentIndex", 1, False),
+    (True, PropertyEdit.ValueType.ENUM, {"options": [("none", 0), ("one", 4), ("two", 5)]}, (4, "custom-text"), "setCurrentIndex", 1, False),
 ])
-def test_delegate_display_data(qtbot: QtBot, editable, value_type, sent_value, expected_method_call, expected_method_arg, property_mock):
+def test_delegate_display_data(qtbot: QtBot, editable, value_type, ud, sent_value, expected_method_call, expected_method_arg, property_mock):
     delegate = PropertyEditWidgetDelegate()
     widget = PropertyEdit()
     qtbot.add_widget(widget)
     widget.widget_delegate = delegate
-    ud = PropertyEdit.ValueType.enum_user_data([("none", 0), ("one", 4), ("two", 5)])  # user_data is ignored by all except enums
     new_widget = delegate.widget_for_item(parent=widget,
                                           config=PropertyEditField(field="test",
                                                                    type=value_type,

@@ -44,7 +44,7 @@
          <bool>false</bool>
         </property>
         <property name="fields" stdset="0">
-         <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: true, &quot;label&quot;: &quot;Amplitude (mA)&quot;}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: true, &quot;label&quot;: &quot;Frequency (Hz)&quot;}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: true, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: true, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
+         <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: true, &quot;label&quot;: &quot;Amplitude&quot;, &quot;ud&quot;: {&quot;precision&quot;: 1, &quot;min&quot;: 0.0, &quot;max&quot;: 10000.0, &quot;units&quot;: &quot;mA&quot;}}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: true, &quot;label&quot;: &quot;Frequency&quot;, &quot;ud&quot;: {&quot;min&quot;: 1, &quot;max&quot;: 20000, &quot;units&quot;: &quot;Hz&quot;}}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: true, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: true, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
         </property>
        </widget>
       </item>
@@ -62,7 +62,7 @@
            <enum>PropertyEdit::Frame</enum>
           </property>
           <property name="fields" stdset="0">
-           <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: false, &quot;label&quot;: &quot;Amplitude (mA)&quot;}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: false, &quot;label&quot;: &quot;Frequency (Hz)&quot;}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: false, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: false, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
+           <string>[{&quot;field&quot;: &quot;amplitude&quot;, &quot;type&quot;: 2, &quot;rw&quot;: false, &quot;label&quot;: &quot;Amplitude&quot;, &quot;ud&quot;: {&quot;precision&quot;: 1, &quot;units&quot;: &quot;mA&quot;}}, {&quot;field&quot;: &quot;frequency&quot;, &quot;type&quot;: 1, &quot;rw&quot;: false, &quot;label&quot;: &quot;Frequency&quot;, &quot;ud&quot;: {&quot;units&quot;: &quot;Hz&quot;}}, {&quot;field&quot;: &quot;enabled&quot;, &quot;type&quot;: 3, &quot;rw&quot;: false, &quot;label&quot;: &quot;Enabled&quot;}, {&quot;field&quot;: &quot;particles&quot;, &quot;type&quot;: 5, &quot;rw&quot;: false, &quot;label&quot;: &quot;Particle Type&quot;, &quot;ud&quot;: {&quot;options&quot;: [[&quot;Protons&quot;, 1], [&quot;Ions&quot;, 2], [&quot;Electrons&quot;, 4]]}}]</string>
           </property>
          </widget>
         </item>
@@ -130,7 +130,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

@@ -4,11 +4,13 @@ from dataclasses import dataclass
 from typing import Optional, List, cast, Callable, Dict, Any
 from pathlib import Path
 from collections import OrderedDict
+from qtpy.uic import loadUi
 from qtpy.QtCore import QObject, QModelIndex, Qt, QPersistentModelIndex
-from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget,
-                            QStyleOptionViewItem, QComboBox)
+from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget, QDialogButtonBox, QCheckBox, QLineEdit,
+                            QStyleOptionViewItem, QComboBox, QDialog, QSpinBox, QFormLayout, QMessageBox, QDoubleSpinBox)
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, EnumItemConfig
-from accwidgets.property_edit.propedit import _pack_designer_fields, _unpack_designer_fields
+from accwidgets.property_edit.propedit import (_pack_designer_fields, _unpack_designer_fields, _ENUM_OPTIONS_KEY,
+                                               _NUM_MAX_KEY, _NUM_MIN_KEY, _NUM_UNITS_KEY, _NUM_PRECISION_KEY)
 from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableDialog, AbstractTableModel, BooleanPropertyColumnDelegate,
                            AbstractComboBoxColumnDelegate, TableViewColumnResizer, _STYLED_ITEM_DELEGATE_INDEX)
@@ -49,10 +51,11 @@ class FieldEditorTableModel(AbstractTableModel[PropertyEditField]):
         This makes user data cells disabled when not available.
         """
         if index.column() == self.columnCount() - 1:
-            if index.siblingAtColumn(1).data() != PropertyEdit.ValueType.ENUM:
-                return Qt.ItemIsSelectable | Qt.ItemIsEnabled
-            else:
+            field_type = index.siblingAtColumn(1).data()
+            if field_type in (PropertyEdit.ValueType.ENUM, PropertyEdit.ValueType.INTEGER, PropertyEdit.ValueType.REAL):
                 return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+            else:
+                return Qt.ItemIsSelectable | Qt.ItemIsEnabled
         return super().flags(index)
 
     def column_name(self, section: int) -> str:
@@ -96,9 +99,14 @@ class FieldEditorTableModel(AbstractTableModel[PropertyEditField]):
                 raise ValueError(f'Row #{idx+1} defines unknown "Field type".')
             if item.type == PropertyEdit.ValueType.ENUM:
                 ud = item.user_data or {}
-                options = ud.get("options")
+                options = ud.get(_ENUM_OPTIONS_KEY)
                 if not options:
                     raise ValueError(f'Row #{idx+1} must define enum options via "User data".')
+            elif item.type == PropertyEdit.ValueType.REAL:
+                ud = item.user_data or {}
+                precision = ud.get(_NUM_PRECISION_KEY)
+                if precision == 0:
+                    raise ValueError(f"Row #{idx+1} has 0 precision for REAL type. Use INTEGER instead.")
             used_fields.add(item.field)
 
 
@@ -173,15 +181,19 @@ class UserDataColumnDelegate(QStyledItemDelegate):
         if not isinstance(editor, QPushButton):
             return
 
-        enum_config = index.data() or {}
-        option_cnt = len(cast(Dict[str, List], enum_config).get("options", []))
-        if option_cnt == 0:
-            suffix = ""
+        user_data = index.data() or {}
+        field_type = index.siblingAtColumn(1).data()
+        if field_type == PropertyEdit.ValueType.ENUM:
+            option_cnt = len(cast(Dict[str, List], user_data).get(_ENUM_OPTIONS_KEY, []))
+            if option_cnt == 0:
+                suffix = ""
+            else:
+                suffix = f" ({option_cnt} option"
+                if option_cnt > 1:
+                    suffix += "s"
+                suffix += ")"
         else:
-            suffix = f" ({option_cnt} option"
-            if option_cnt > 1:
-                suffix += "s"
-            suffix += ")"
+            suffix = ""
         editor.setText("Configure" + suffix)
 
         if getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None) != index:
@@ -196,16 +208,27 @@ class UserDataColumnDelegate(QStyledItemDelegate):
         index: Optional[QPersistentModelIndex] = getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None)
         if index and index.isValid():
             regular_index = QModelIndex(index)  # We can't use QPersistentModelIndex to update data
-            enum_config = regular_index.data() or {}
-            options = cast(Dict[str, List[EnumItemConfig]], enum_config).get("options", [])
-            dialog = EnumOptionsDialog(options=options,
-                                       on_save=functools.partial(self._save_from_dialog, index=regular_index))
+            field_type = regular_index.siblingAtColumn(1).data()
+            user_data = regular_index.data() or {}
+            if field_type == PropertyEdit.ValueType.ENUM:
+                options = cast(Dict[str, List[EnumItemConfig]], user_data).get(_ENUM_OPTIONS_KEY, [])
+                dialog = EnumOptionsDialog(options=options,
+                                           on_save=functools.partial(self._save_from_enum_dialog, index=regular_index),
+                                           parent=self.parent())
+            else:
+                dialog = NumericFieldDialog(config=user_data,
+                                            on_save=functools.partial(self._save_from_numeric_dialog, index=regular_index),
+                                            use_precision=field_type == PropertyEdit.ValueType.REAL,
+                                            parent=self.parent())
             dialog.show()
             dialog.exec_()
 
-    def _save_from_dialog(self, data: List[EnumItemConfig], index: QModelIndex):
+    def _save_from_enum_dialog(self, data: List[EnumItemConfig], index: QModelIndex):
         value = PropertyEdit.ValueType.enum_user_data(data)
         index.model().setData(index, value)
+
+    def _save_from_numeric_dialog(self, data: Dict[str, Any], index: QModelIndex):
+        index.model().setData(index, data)
 
 
 class FieldTypeColumnDelegate(AbstractComboBoxColumnDelegate):
@@ -240,6 +263,127 @@ class EnumOptionsDialog(AbstractTableDialog[EnumItemConfig, EnumEditorTableModel
 
     def on_save(self):
         self._on_save([row.to_enum_item_config() for row in self._table_model.raw_data])
+
+
+class NumericFieldDialog(QDialog):
+
+    def __init__(self,
+                 config: Dict[str, Any],
+                 use_precision: bool,
+                 on_save: Callable[[Dict[str, Any]], None],
+                 parent: Optional[QObject] = None):
+        """
+        Dialog displaying configuration options for REAL/INTEGER fields.
+
+        Args:
+            config: Existing configuration. This dictionary can contain keys: "max", "min", "units", "precision"
+            use_precision: Show precision configuration.
+            on_save: Callback to accept updated values.
+            parent: Parent item for the dialog.
+        """
+        super().__init__(parent)
+        self._on_save = on_save
+        self._caster: Callable
+        self._use_precision = use_precision
+
+        self.buttons: QDialogButtonBox = None
+        self.chkbx_max: QCheckBox = None
+        self.chkbx_min: QCheckBox = None
+        self.chkbx_precision: QCheckBox = None
+        self.chkbx_units: QCheckBox = None
+        self.max_spinbox: QDoubleSpinBox = None
+        self.min_spinbox: QDoubleSpinBox = None
+        self.precision_spinbox: QSpinBox = None
+        self.units_line: QLineEdit = None
+        self.form: QFormLayout = None
+
+        loadUi(Path(__file__).parent.absolute() / "numeric_editor.ui", self)
+
+        try:
+            self.units_line.setText(config[_NUM_UNITS_KEY])
+            self.chkbx_units.setChecked(True)
+        except KeyError:
+            self.units_line.setDisabled(True)
+
+        if self._use_precision:
+            try:
+                self.precision_spinbox.setValue(config[_NUM_PRECISION_KEY])
+                self.chkbx_precision.setChecked(True)
+            except KeyError:
+                self.precision_spinbox.setDisabled(True)
+            self.chkbx_precision.stateChanged.connect(self._on_precision_toggled)
+            self.precision_spinbox.valueChanged.connect(self._on_precision_changed)
+
+        if not self._use_precision:
+            # Delete precision (assuming it's last row)
+            self.form.removeRow(self.form.rowCount() - 1)
+            self._caster = int
+            spin_precision = 0
+        else:
+            self._caster = float
+            spin_precision = self.precision_spinbox.value()
+
+        self._on_precision_changed(spin_precision)
+
+        try:
+            self.min_spinbox.setValue(config[_NUM_MIN_KEY])
+            self.chkbx_min.setChecked(True)
+        except KeyError:
+            self.min_spinbox.setDisabled(True)
+
+        try:
+            self.max_spinbox.setValue(config[_NUM_MAX_KEY])
+            self.chkbx_max.setChecked(True)
+        except KeyError:
+            self.max_spinbox.setDisabled(True)
+
+        self.chkbx_max.stateChanged.connect(self._on_max_toggled)
+        self.chkbx_min.stateChanged.connect(self._on_min_toggled)
+        self.chkbx_units.stateChanged.connect(self._on_units_toggled)
+
+        self.buttons.accepted.connect(self._on_accepted)
+
+    def _on_precision_toggled(self, state):
+        self.precision_spinbox.setEnabled(state == Qt.Checked)
+
+    def _on_max_toggled(self, state):
+        self.max_spinbox.setEnabled(state == Qt.Checked)
+
+    def _on_min_toggled(self, state):
+        self.min_spinbox.setEnabled(state == Qt.Checked)
+
+    def _on_units_toggled(self, state):
+        self.units_line.setEnabled(state == Qt.Checked)
+
+    def _on_precision_changed(self, val: int):
+        self.max_spinbox.setDecimals(val)
+        self.min_spinbox.setDecimals(val)
+
+    def _read_values(self):
+        res = {}
+        if self._use_precision and self.chkbx_precision.isChecked():
+            res[_NUM_PRECISION_KEY] = self.precision_spinbox.value()
+        if self.chkbx_min.isChecked():
+            res[_NUM_MIN_KEY] = self._caster(self.min_spinbox.value())
+        if self.chkbx_max.isChecked():
+            res[_NUM_MAX_KEY] = self._caster(self.max_spinbox.value())
+        if self.chkbx_units.isChecked() and self.units_line.text():
+            res[_NUM_UNITS_KEY] = self.units_line.text()
+        try:
+            if res[_NUM_MIN_KEY] > res[_NUM_MAX_KEY]:
+                raise ValueError("Min value cannot be greater than max")
+        except KeyError:
+            pass
+        return res
+
+    def _on_accepted(self):
+        try:
+            config = self._read_values()
+        except ValueError as ex:
+            QMessageBox.warning(self, "Invalid data", str(ex))
+            return
+        self._on_save(config)
+        self.accept()
 
 
 class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]):

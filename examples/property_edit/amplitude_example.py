@@ -29,8 +29,24 @@ class MainWindow(QMainWindow):
         property_edit.buttons = PropertyEdit.Buttons.SET | PropertyEdit.Buttons.GET
         property_edit.sendOnlyUpdatedValues = False
         property_edit.fields = [
-            PropertyEditField(field="amplitude", label="Amplitude (mA)", editable=True, type=PropertyEdit.ValueType.REAL),
-            PropertyEditField(field="frequency", label="Frequency (Hz)", editable=True, type=PropertyEdit.ValueType.INTEGER),
+            PropertyEditField(field="amplitude",
+                              label="Amplitude",
+                              editable=True, type=PropertyEdit.ValueType.REAL,
+                              user_data={
+                                  "min": 0.0,
+                                  "max": 10000.0,
+                                  "units": "mA",
+                                  "precision": 1,
+                              }),
+            PropertyEditField(field="frequency",
+                              label="Frequency",
+                              editable=True,
+                              type=PropertyEdit.ValueType.INTEGER,
+                              user_data={
+                                  "min": 1,
+                                  "max": 20000,
+                                  "units": "Hz",
+                              }),
             PropertyEditField(field="enabled", label="Enabled", editable=True, type=PropertyEdit.ValueType.BOOLEAN),
             PropertyEditField(field="particles",
                               label="Particle Type",
