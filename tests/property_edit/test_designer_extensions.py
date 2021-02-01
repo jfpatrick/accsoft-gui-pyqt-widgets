@@ -45,12 +45,12 @@ def test_field_editor_table_model_flags(editable):
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
-         Qt.ItemIsSelectable | Qt.ItemIsEnabled],
+         Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable],
         [Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
-         Qt.ItemIsSelectable | Qt.ItemIsEnabled],
+         Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable],
         [Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
          Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable,
@@ -179,7 +179,7 @@ def test_render_enum_configure_btn(qtbot: QtBot, calls_parent, draws_control, ex
     (4, True, True, [[1, "test1"], [2, "test2"]]),
 ])
 @mock.patch("accwidgets.property_edit.designer.designer_extensions.EnumOptionsDialog")
-def test_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, handles_single_click, editor_options):
+def test_enum_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, handles_single_click, editor_options):
     config = [
         PropertyEditField(field="f2", type=PropertyEdit.ValueType.ENUM, editable=True),
         PropertyEditField(field="f3", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={}),
@@ -203,7 +203,63 @@ def test_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, handl
         editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
         assert isinstance(editor, QPushButton)
         editor.click()
-        opt_dialog.assert_called_once_with(options=editor_options, on_save=mock.ANY)
+        opt_dialog.assert_called_once_with(options=editor_options, on_save=mock.ANY, parent=mock.ANY)
+        opt_dialog.return_value.exec_.assert_called_once()
+
+
+@pytest.mark.parametrize("row, handles_single_click, handles_dbl_click, use_precision, editor_options", [
+    (0, True, True, True, {}),
+    (1, True, True, True, {}),
+    (2, True, True, True, {"min": -0.1}),
+    (3, True, True, True, {"max": 0.1}),
+    (4, True, True, True, {"min": -0.1, "max": 0.1}),
+    (5, True, True, True, {"units": "TST"}),
+    (6, True, True, True, {"precision": 1}),
+    (7, True, True, True, {"min": -0.1, "max": 0.1, "units": "TST", "precision": 1}),
+    (8, True, True, False, {}),
+    (9, True, True, False, {}),
+    (10, True, True, False, {"min": -0.1}),
+    (11, True, True, False, {"max": 0.1}),
+    (12, True, True, False, {"min": -0.1, "max": 0.1}),
+    (13, True, True, False, {"units": "TST"}),
+    (14, True, True, False, {"min": -0.1, "max": 0.1, "units": "TST"}),
+])
+@mock.patch("accwidgets.property_edit.designer.designer_extensions.NumericFieldDialog")
+def test_numeric_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, handles_single_click, use_precision, editor_options):
+    config = [
+        PropertyEditField(field="f2", type=PropertyEdit.ValueType.REAL, editable=True),
+        PropertyEditField(field="f3", type=PropertyEdit.ValueType.REAL, editable=True, user_data={}),
+        PropertyEditField(field="f4", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"min": -0.1}),
+        PropertyEditField(field="f5", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"max": 0.1}),
+        PropertyEditField(field="f6", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"min": -0.1, "max": 0.1}),
+        PropertyEditField(field="f7", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"units": "TST"}),
+        PropertyEditField(field="f8", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"precision": 1}),
+        PropertyEditField(field="f9", type=PropertyEdit.ValueType.REAL, editable=True, user_data={"min": -0.1, "max": 0.1, "units": "TST", "precision": 1}),
+        PropertyEditField(field="f10", type=PropertyEdit.ValueType.INTEGER, editable=True),
+        PropertyEditField(field="f11", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={}),
+        PropertyEditField(field="f12", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"min": -0.1}),
+        PropertyEditField(field="f13", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"max": 0.1}),
+        PropertyEditField(field="f14", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"min": -0.1, "max": 0.1}),
+        PropertyEditField(field="f15", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"units": "TST"}),
+        PropertyEditField(field="f16", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"min": -0.1, "max": 0.1, "units": "TST"}),
+    ]
+
+    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
+        # Because designer always expects JSON, we need to "pack" it.
+        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
+        mock_prop.return_value = _pack_designer_fields(config)
+        property_edit = PropertyEdit()
+        qtbot.add_widget(property_edit)
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
+        dialog.show()
+        user_data_column = 4
+        delegate = dialog.table.itemDelegateForColumn(user_data_column)
+        index = dialog.table.model().createIndex(row, user_data_column)
+        editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
+        assert isinstance(editor, QPushButton)
+        editor.click()
+        opt_dialog.assert_called_once_with(config=editor_options, on_save=mock.ANY, use_precision=use_precision, parent=mock.ANY)
         opt_dialog.return_value.exec_.assert_called_once()
 
 
