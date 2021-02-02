@@ -9,11 +9,12 @@ from sys import float_info
 from dataclasses import dataclass
 from typing import Union, Optional, Tuple, List, cast, Dict, Any
 from qtpy.QtCore import Qt, QModelIndex, QObject, QVariant, QLocale
-from qtpy.QtWidgets import QAction, QWidget, QDoubleSpinBox, QStyleOptionViewItem, QStyledItemDelegate
+from qtpy.QtWidgets import (QAction, QWidget, QDoubleSpinBox, QStyleOptionViewItem, QStyledItemDelegate,
+                            QHeaderView)
 from accwidgets.graph import ExPlotWidget
 from accwidgets.graph.widgets.plotwidget import ExPlotWidgetProperties
 from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
-from accwidgets.qt import (AbstractTableModel, TableViewColumnResizer, AbstractTableDialog,
+from accwidgets.qt import (AbstractTableModel, AbstractTableDialog,
                            BooleanPropertyColumnDelegate)
 
 
@@ -216,7 +217,7 @@ class PlotLayerEditingDialog(AbstractTableDialog[LayerTableRow, PlotLayerTableMo
         self.table.setItemDelegateForColumn(4, RangeColumnDelegate(self.table))
         self.table.set_persistent_editor_for_column(2)
 
-        TableViewColumnResizer.install_onto(self.table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.resize(600, 300)
 
     def on_save(self):

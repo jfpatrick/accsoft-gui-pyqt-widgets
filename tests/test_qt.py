@@ -2,10 +2,10 @@ import pytest
 from pytestqt.qtbot import QtBot
 from typing import Optional, cast, Type
 from unittest import mock
-from qtpy.QtCore import Qt, QVariant, QAbstractListModel, QObject, QPersistentModelIndex, QLocale, QEvent
-from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QWidget, QTableView, QApplication
+from qtpy.QtCore import Qt, QVariant, QAbstractListModel, QObject, QPersistentModelIndex, QLocale
+from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QWidget
 from PyQt5.QtTest import QAbstractItemModelTester
-from accwidgets.qt import (TableViewColumnResizer, AbstractListModel, AbstractTableModel, AbstractTableDialog,
+from accwidgets.qt import (AbstractListModel, AbstractTableModel, AbstractTableDialog,
                            PersistentEditorTableView, BooleanPropertyColumnDelegate, BooleanButton,
                            AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX)
 
@@ -54,64 +54,6 @@ def get_table_model_class(column_count: int = 1):
 @pytest.fixture
 def concrete_table_model_impl():
     return get_table_model_class()
-
-
-@pytest.mark.parametrize("column_count,scrollbar,width,header_visible,expected_width", [
-    (0, Qt.ScrollBarAsNeeded, 800, False, 800),
-    (1, Qt.ScrollBarAsNeeded, 800, False, 800),
-    (2, Qt.ScrollBarAsNeeded, 800, False, 400),
-    (2, Qt.ScrollBarAsNeeded, 1200, False, 600),
-    (5, Qt.ScrollBarAsNeeded, 1000, False, 200),
-    (1, Qt.ScrollBarAlwaysOn, 800, False, 800),
-    (2, Qt.ScrollBarAlwaysOn, 800, False, 400),
-    (2, Qt.ScrollBarAlwaysOn, 1200, False, 600),
-    (5, Qt.ScrollBarAlwaysOn, 1000, False, 200),
-    (1, Qt.ScrollBarAsNeeded, 800, True, 800),
-    (2, Qt.ScrollBarAsNeeded, 800, True, 400),
-    (2, Qt.ScrollBarAsNeeded, 1200, True, 600),
-    (5, Qt.ScrollBarAsNeeded, 1000, True, 200),
-    (1, Qt.ScrollBarAlwaysOn, 800, True, 800),
-    (2, Qt.ScrollBarAlwaysOn, 800, True, 400),
-    (2, Qt.ScrollBarAlwaysOn, 1200, True, 600),
-    (5, Qt.ScrollBarAlwaysOn, 1000, True, 200),
-])
-def test_table_view_resizer_recalc(qtbot: QtBot, column_count, scrollbar, header_visible, width, expected_width):
-    model_class = get_table_model_class(column_count)
-    widget = QTableView()
-    widget.setModel(model_class([]))
-    qtbot.add_widget(widget)
-    widget.setHorizontalScrollBarPolicy(scrollbar)
-    widget.verticalHeader().setVisible(header_visible)
-    widget.resize(width, 1000)
-
-    resizer = TableViewColumnResizer()
-    resizer._recalc(widget)
-    for i in range(column_count):
-        assert widget.columnWidth(i) == expected_width
-
-
-def test_table_view_resizer_reacts_to_resize_event(qtbot: QtBot):
-    model_class = get_table_model_class()
-    widget = QTableView()
-    widget.setModel(model_class([]))
-    qtbot.add_widget(widget)
-    resizer = TableViewColumnResizer.install_onto(widget)
-    with mock.patch.object(resizer, "_recalc") as recalc:
-        recalc.assert_not_called()
-        QApplication.instance().sendEvent(widget, QEvent(QEvent.Resize))
-        recalc.assert_called_once_with(widget)
-
-
-def test_table_view_resizer_reacts_to_header_change(qtbot: QtBot):
-    model_class = get_table_model_class()
-    widget = QTableView()
-    widget.setModel(model_class([]))
-    qtbot.add_widget(widget)
-    resizer = TableViewColumnResizer.install_onto(widget)
-    with mock.patch.object(resizer, "_recalc") as recalc:
-        recalc.assert_not_called()
-        widget.verticalHeader().geometriesChanged.emit()
-        recalc.assert_called_once_with(widget)
 
 
 @pytest.mark.parametrize("delegate_row,delegate_col", [

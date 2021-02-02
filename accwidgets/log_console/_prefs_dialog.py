@@ -7,9 +7,9 @@ from typing import Optional, Any, Dict, Set, Type, Tuple, cast
 from qtpy.QtCore import QSignalBlocker, QModelIndex, Qt
 from qtpy.QtGui import QShowEvent, QPalette
 from qtpy.QtWidgets import (QDialog, QCheckBox, QPushButton, QWidget, QDialogButtonBox, QGroupBox, QVBoxLayout,
-                            QSpinBox, QComboBox, QLabel)
+                            QSpinBox, QComboBox, QLabel, QHeaderView)
 from qtpy.uic import loadUi
-from accwidgets.qt import (TableViewColumnResizer, ColorPropertyColumnDelegate, PersistentEditorTableView,
+from accwidgets.qt import (ColorPropertyColumnDelegate, PersistentEditorTableView,
                            AbstractTableModel, BooleanPropertyColumnDelegate, AbstractComboBoxColumnDelegate)
 from ._config import LogLevel, ColorMap
 from ._fmt import AbstractLogConsoleFormatter
@@ -186,7 +186,7 @@ class LogPreferencesDialog(QDialog):
 
         self.spin_buffer_size.valueChanged.connect(self._on_buffer_size_change)
 
-        TableViewColumnResizer.install_onto(self.table_colors)
+        self.table_colors.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._colors_model = ColorTableModel(data=[ColorTableModelItem(level=level, color=val[0], invert=val[1])
                                                    for level, val in view_config.color_map.items()],
                                              parent=self)

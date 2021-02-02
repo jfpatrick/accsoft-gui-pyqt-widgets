@@ -7,13 +7,14 @@ from collections import OrderedDict
 from qtpy.uic import loadUi
 from qtpy.QtCore import QObject, QModelIndex, Qt, QPersistentModelIndex
 from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget, QDialogButtonBox, QCheckBox, QLineEdit,
-                            QStyleOptionViewItem, QComboBox, QDialog, QSpinBox, QFormLayout, QMessageBox, QDoubleSpinBox)
+                            QStyleOptionViewItem, QComboBox, QDialog, QSpinBox, QFormLayout, QMessageBox, QDoubleSpinBox,
+                            QHeaderView)
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, EnumItemConfig
 from accwidgets.property_edit.propedit import (_pack_designer_fields, _unpack_designer_fields, _ENUM_OPTIONS_KEY,
                                                _NUM_MAX_KEY, _NUM_MIN_KEY, _NUM_UNITS_KEY, _NUM_PRECISION_KEY)
 from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableDialog, AbstractTableModel, BooleanPropertyColumnDelegate,
-                           AbstractComboBoxColumnDelegate, TableViewColumnResizer, _STYLED_ITEM_DELEGATE_INDEX)
+                           AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX)
 
 
 class FieldEditorTableModel(AbstractTableModel[PropertyEditField]):
@@ -254,7 +255,7 @@ class EnumOptionsDialog(AbstractTableDialog[EnumItemConfig, EnumEditorTableModel
         """
         table_model = EnumEditorTableModel(data=list(map(EnumTableData.from_enum_item_config, options)))
         super().__init__(table_model=table_model, parent=parent)
-        TableViewColumnResizer.install_onto(self.table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._on_save = on_save
 
         self.setWindowTitle("Configure enum options")
@@ -401,7 +402,7 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         table_model = FieldEditorTableModel(_unpack_designer_fields(cast(str, widget.fields)))
         super().__init__(file_path=Path(__file__).absolute().parent / "field_editor.ui", table_model=table_model, parent=parent)
         self._widget = widget
-        TableViewColumnResizer.install_onto(self.table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.setWindowTitle("Define PropertyEdit fields")
 

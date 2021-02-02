@@ -1,12 +1,12 @@
 import warnings
 from enum import IntEnum, auto
 from pathlib import Path
-from typing import Optional, Set, List, TypeVar, Generic, Any, cast
+from typing import Optional, Set, List, TypeVar, Generic, Any
 from abc import abstractmethod, ABCMeta
 from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog, QColorDialog,
                             QDialogButtonBox, QStyledItemDelegate, QStyleOptionViewItem, QSpacerItem, QSizePolicy,
                             QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame)
-from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant, QEvent,
+from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant,
                          QPersistentModelIndex, QLocale, Signal)
 from qtpy.QtGui import QFont, QColor
 from qtpy.uic import loadUi
@@ -40,19 +40,14 @@ class AbstractQGraphicsItemMeta(type(QGraphicsItem), ABCMeta):  # type: ignore
 
 
 class TableViewColumnResizer(QObject):
-    """
-    There seems to be no built-in functionality to stretch :class:`QTableView` columns evenly.
-    This proxy acts as an event listener that is able to resize the table, passed as ``watched``.
-
-    Apply it to the table view using :meth:`TableViewColumnResizer.install_onto`.
-    """
 
     @classmethod
     def install_onto(cls, watched: QTableView) -> "TableViewColumnResizer":
         """
-        Installs resizing spy onto the given table view.
-        You should avoid calling this method multiple times, as every time a new object will be created
-        and installed on the table, causing duplicate logic passes during the event processing.
+        **DEPRECATED!** Use ``QTableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)``.
+
+        Configures the table view's horizontal header (displaying columns) to resize evenly,
+        or interactively by the user.
 
         Args:
             watched: Table view to start monitoring.
@@ -60,29 +55,12 @@ class TableViewColumnResizer(QObject):
         Returns:
             Instance of the resizer objects that's been installed.
         """
-        spy = cls(watched)
-        watched.installEventFilter(spy)
-        watched.verticalHeader().geometriesChanged.connect(spy._on_header_resized)
+        warnings.warn(f"{cls.__name__}.install_onto is deprecated. Please use "
+                      "QTableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch) instead.")
+        spy = cls()
+        header = watched.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
         return spy
-
-    def eventFilter(self, watched: QTableView, event: QEvent) -> bool:
-        if event.type() == QEvent.Resize and isinstance(watched, QTableView):
-            self._recalc(watched)
-        return False
-
-    def _recalc(self, table: QTableView):
-        column_count = table.model().columnCount()
-        width = table.width() - table.horizontalOffset()
-        if table.verticalHeader().isVisible():
-            width -= table.verticalHeader().width() + 2  # 2 Avoids occasional scroll bar creation because of fractional overlap
-        if table.verticalScrollBar().isVisible():
-            width -= table.verticalScrollBar().width() + 2  # 2 Avoids occasional scroll bar creation because of fractional overlap
-        for i in range(column_count):
-            table.setColumnWidth(i, int(width / column_count))
-
-    def _on_header_resized(self):
-        header = cast(QHeaderView, self.sender())
-        self._recalc(header.parentWidget())
 
 
 class PersistentEditorTableView(QTableView):
