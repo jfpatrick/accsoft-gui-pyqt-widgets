@@ -2,8 +2,14 @@ import pytest
 import sys
 from unittest import mock
 from typing import Optional, Any
-from importlib_metadata import PackageNotFoundError
 from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement
+
+try:
+    # Python >=3.8
+    from importlib.metadata import PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
+except ImportError:
+    # Python <3.8
+    from importlib_metadata import PackageNotFoundError
 
 
 @pytest.fixture(scope="function", autouse=True)

@@ -4,9 +4,15 @@ import sys
 import importlib
 import warnings
 from packaging.requirements import Requirement, InvalidRequirement
-from importlib_metadata import distribution, PackageNotFoundError
 from pathlib import Path
 from typing import Type, Set, Union
+
+try:
+    # Python >=3.8
+    from importlib.metadata import distribution, PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
+except ImportError:
+    # Python <3.8
+    from importlib_metadata import distribution, PackageNotFoundError
 
 
 REAL_MODULE_NAME_VAR = "__accwidgets_real_module__"
