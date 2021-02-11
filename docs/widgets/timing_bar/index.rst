@@ -129,9 +129,10 @@ a :class:`~pyjapc.PyJapc` singleton for the application. It also is a great help
           instance, :meth:`~pyjapc.PyJapc.stopSubscriptions` and :meth:`~pyjapc.PyJapc.clearSubscriptions` APIs take
           optional parameter name and selector as arguments, affecting every subscription that matches it. Consequently,
           if you happen to provide arguments that match the XTIM and CTIM subscriptions of the
-          :class:`~accwidgets.timing_bar.TimingBarModel`, the timing bar widget will malfunction. On the other hand,
-          :class:`~accwidgets.timing_bar.TimingBarModel` does its best to not affect any subscriptions other that the
-          ones it has created (hence the use of private APIs).
+          :class:`~accwidgets.timing_bar.TimingBarModel`, the timing bar widget will malfunction. When no argument is
+          given, all subscriptions are affected. On the other hand, :class:`~accwidgets.timing_bar.TimingBarModel`
+          does its best to not affect any subscriptions other that the ones it has created (hence the use of private
+          APIs).
 
 
 Timing updates
@@ -152,7 +153,7 @@ Timezone
 ^^^^^^^^
 
 By default, :class:`~accwidgets.timing_bar.TimingBarModel` instantiates its timestamp objects with the UTC timezone in
-mind. This can be overridden in by passing the corresponding constructor argument. The timezone is used when creating
+mind. This can be overridden by passing the corresponding constructor argument. The timezone is used when creating
 local timestamps (e.g. when no ``acqStamp`` field is found in the control system data), as well as constructing the
 default :class:`~pyjapc.PyJapc` instance (that will under the hood use it to generate objects from ``acqStamp`` fields).
 
