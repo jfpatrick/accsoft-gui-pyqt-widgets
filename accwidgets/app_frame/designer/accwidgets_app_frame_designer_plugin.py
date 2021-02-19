@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for Application frame widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.app_frame import ApplicationFrame
+    with disable_assert_cache():
+        from accwidgets.app_frame import ApplicationFrame
 except ImportError:
     skip_plugin = True
 

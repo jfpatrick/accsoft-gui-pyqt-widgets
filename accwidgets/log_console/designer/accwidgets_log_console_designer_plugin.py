@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for Log console widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.log_console import LogConsole
+    with disable_assert_cache():
+        from accwidgets.log_console import LogConsole
 except ImportError:
     skip_plugin = True
 

@@ -2,7 +2,7 @@ import pytest
 import sys
 from unittest import mock
 from typing import Optional, Any
-from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement
+from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement, disable_assert_cache
 
 try:
     # Python >=3.8
@@ -353,3 +353,28 @@ def test_assert_dependency_skips_and_fails_by_another(distribution, import_modul
     distribution.side_effect = side_effect
     with pytest.raises(ImportError, match=r"accwidgets.test_widget *"):
         assert_dependencies(base_path="/path/to/test_widget", raise_error=True, skip_assert=skipped)
+
+
+@pytest.mark.parametrize("disable_cache,initial_state,new_modules,expected_new_state", [
+    (False, set(), [], set()),
+    (True, set(), [], set()),
+    (False, {"pkg1"}, [], {"pkg1"}),
+    (True, {"pkg1"}, [], {"pkg1"}),
+    (False, set(), ["test_widget"], {"test_widget"}),
+    (True, set(), ["test_widget"], set()),
+    (False, {"pkg1"}, ["test_widget"], {"pkg1", "test_widget"}),
+    (True, {"pkg1"}, ["test_widget"], {"pkg1"}),
+])
+@mock.patch("importlib.import_module", side_effect=ImportError)  # To exit early, as we don't need to test later code
+def test_disable_assert_cache(_, disable_cache, initial_state, new_modules, expected_new_state):
+    import accwidgets._api
+    assert accwidgets._api._ASSERT_CACHE == set()
+    accwidgets._api._ASSERT_CACHE = initial_state
+    if disable_cache:
+        with disable_assert_cache():
+            for widget_name in new_modules:
+                assert_dependencies(base_path=f"/path/to/{widget_name}")
+    else:
+        for widget_name in new_modules:
+            assert_dependencies(base_path=f"/path/to/{widget_name}")
+    assert accwidgets._api._ASSERT_CACHE == expected_new_state

@@ -6,6 +6,7 @@ import warnings
 from packaging.requirements import Requirement, InvalidRequirement
 from pathlib import Path
 from typing import Type, Set, Union, Optional, List
+from contextlib import contextmanager
 
 try:
     # Python >=3.8
@@ -46,6 +47,7 @@ def mark_public_api(class_: Type, public_mod_name: str):
 
 
 _ASSERT_CACHE: Set[str] = set()
+_ASSERT_CACHE_ENABLED: bool = True
 
 
 def assert_dependencies(base_path: Union[str, os.PathLike, Path],
@@ -66,9 +68,10 @@ def assert_dependencies(base_path: Union[str, os.PathLike, Path],
     if widget_path.name == "__init__.py":
         widget_path = widget_path.parent
 
-    if widget_path.name in _ASSERT_CACHE:
-        return
-    _ASSERT_CACHE.add(widget_path.name)
+    if _ASSERT_CACHE_ENABLED:
+        if widget_path.name in _ASSERT_CACHE:
+            return
+        _ASSERT_CACHE.add(widget_path.name)
 
     pkg_name = f"accwidgets.{widget_path.name}.__deps__"
     try:
@@ -132,3 +135,23 @@ def assert_requirement(req: Requirement, widget_name: str):
                           f"in the environment, use: 'pip install accwidgets[{widget_name}]'.\n"
                           "You can override this limitation by setting an environment variable "
                           "ACCWIDGETS_OVERRIDE_DEPENDENCIES=1.")
+
+
+@contextmanager
+def disable_assert_cache():
+    """
+    Disabling assert cache can be useful to avoid runtime import errors without proper accwidgets explanation, when
+    subsequent assert has been preempted by the original widget import. E.g. consider LogConsole is being imported
+    in Qt Designer and fails, widget plugin loading is skipped. If the assert was cached here, using
+    ApplicationFrame with useLogConsole enabled would produce an error, which however would not be identical to
+    the one, when used in runtime, when on first widget loading, LogConsole complains about missing dependencies.
+    """
+    global _ASSERT_CACHE_ENABLED
+    orig_val = _ASSERT_CACHE_ENABLED
+    _ASSERT_CACHE_ENABLED = False
+    try:
+        yield
+    except Exception:  # noqa: B902
+        raise
+    finally:
+        _ASSERT_CACHE_ENABLED = orig_val

@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for different type of graphs.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.graph import ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget
+    with disable_assert_cache():
+        from accwidgets.graph import ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget
 except ImportError:
     skip_plugin = True
 

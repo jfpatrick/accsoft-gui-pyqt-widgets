@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for TimingBar widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.timing_bar import TimingBar
+    with disable_assert_cache():
+        from accwidgets.timing_bar import TimingBar
 except ImportError:
     skip_plugin = True
 

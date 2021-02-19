@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for LSA selector widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.lsa_selector import LsaSelector
+    with disable_assert_cache():
+        from accwidgets.lsa_selector import LsaSelector
 except ImportError:
     skip_plugin = True
 
