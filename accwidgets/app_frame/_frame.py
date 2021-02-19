@@ -19,7 +19,7 @@ class ApplicationFrame(QMainWindow):
     def __init__(self,
                  parent: Optional[QWidget] = None,
                  flags: Optional[Union[Qt.WindowFlags, Qt.WindowType]] = None,
-                 use_log_console: bool = True,
+                 use_log_console: bool = False,
                  # use_rbac: bool = True,
                  use_timing_bar: bool = False):
         """

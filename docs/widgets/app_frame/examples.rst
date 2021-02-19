@@ -11,6 +11,7 @@ packages needed to run examples, it is advised to install a special ``examples``
 
 - `Basic example`_
 - `Qt Designer example`_
+- `LogConsole example`_
 - `TimingBar example`_
 - `Subclassing example`_
 - `Custom log console example`_
@@ -27,9 +28,10 @@ To launch this example from the project root, run:
    python examples/app_frame/programmatic_example.py
 
 This example shows the simplest and the most minimalistic use of :class:`~accwidgets.app_frame.ApplicationFrame`
-window with the default setup in code. By default, it will enable only :class:`~accwidgets.log_console.LogConsoleDock`,
-a widget that does not require additional connections, and thus additional setup. Menus here are configured to
-partially recreate the experience provided by "CERN Application Frame"
+window with the default setup in code. By default, it will not enable any
+additional widgets in order to prevent the implicit need to install additional dependencies for other widgets.
+It is possible, however, to enable those in property configuration or via initializer arguments (see examples below).
+Menus here are configured to partially recreate the experience provided by "CERN Application Frame"
 :ref:`Qt Designer template <install:Enable Qt Designer templates>`.
 
 .. image:: ../../img/examples_appframe_basic.png
@@ -59,10 +61,10 @@ To launch this example from the project root, run:
    python examples/app_frame/designer_example.py
 
 This is the the same :class:`~accwidgets.app_frame.ApplicationFrame` example as ``programmatic_example.py``, but
-integrating with Qt Designer widget, instead of the programmatically created one. By default, it will enable only
-:class:`~accwidgets.log_console.LogConsoleDock`, a widget that does not require additional connections, and thus
-additional setup. The ``app.ui`` file was created using "CERN Application Frame"
-:ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+integrating with Qt Designer widget, instead of the programmatically created one. By default, it will not enable any
+additional widgets in order to prevent the implicit need to install additional dependencies for other widgets.
+It is possible, however, to enable those in property configuration (see examples below). The ``app.ui`` file was
+created using "CERN Application Frame" :ref:`Qt Designer template <install:Enable Qt Designer templates>`.
 
 .. image:: ../../img/examples_appframe_designer.png
 
@@ -81,6 +83,38 @@ additional setup. The ``app.ui`` file was created using "CERN Application Frame"
    <p />
 
 
+LogConsole example
+------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/log_console_example.py
+
+This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
+:class:`~accwidgets.log_console.LogConsole` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.log_console.LogConsole` must be installed, as explained in
+:ref:`widgets/app_frame/index:Transitive dependencies`. Menus here are configured to partially recreate the experience
+provided by "CERN Application Frame" :ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+
+.. image:: ../../img/examples_appframe_log_console.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of log_console_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/log_console_example.py
+
+.. raw:: html
+
+   <p />
+
+
 TimingBar example
 -----------------
 
@@ -91,8 +125,10 @@ To launch this example from the project root, run:
    python examples/app_frame/timing_bar_example.py
 
 This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
-:class:`~accwidgets.timing_bar.TimingBar` enabled. For the sake of example, we are using custom model that does not
-require connection to real devices (same model as used in examples of
+:class:`~accwidgets.timing_bar.TimingBar` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.timing_bar.TimingBar` must be installed, as explained in
+:ref:`widgets/app_frame/index:Transitive dependencies`. For the sake of example, we are using custom model that
+does not require connection to real devices (same model as used in examples of
 :doc:`TimingBar itself <../timing_bar/examples>`). Timing domain can be configured on the model of the
 :class:`~accwidgets.timing_bar.TimingBar` widget. Menus here are configured to partially recreate the experience
 provided by "CERN Application Frame" :ref:`Qt Designer template <install:Enable Qt Designer templates>`.

@@ -1,9 +1,7 @@
 """
-This example shows the simplest and the most minimalistic use of ApplicationFrame window with the default setup
-in code. By default, it will not enable any additional widgets in order to prevent the implicit need to install
-additional dependencies for other widgets. It is possible, however, to enable those in property configuration or
-via initializer arguments  Menus here are configured to partially recreate the experience provided by
-"CERN Application Frame" Qt Designer template.
+This example shows the use of ApplicationFrame window with LogConsole enabled. Note, this code requires
+additional dependencies for LogConsole must be installed (accwidgets[log_console]). Menus here are configured to
+partially recreate the experience provided by "CERN Application Frame" Qt Designer template.
 """
 
 import sys
@@ -24,8 +22,8 @@ if __name__ == "__main__":
     font = my_widget.font()
     font.setPointSize(32)
     my_widget.setFont(font)
-    window = ApplicationFrame()
-    window.setWindowTitle("Programmatic Example")
+    window = ApplicationFrame(use_log_console=True)
+    window.setWindowTitle("LogConsole Example")
     window.setCentralWidget(my_widget)
     window.resize(800, 600)
     window.show()

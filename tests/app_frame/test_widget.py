@@ -32,7 +32,7 @@ def test_app_frame_default_subwidget_usage_flags(qtbot: QtBot):
     widget = ApplicationFrame()
     qtbot.add_widget(widget)
     assert widget.useTimingBar is False
-    assert widget.useLogConsole is True
+    assert widget.useLogConsole is False
 
 
 @mock.patch("accwidgets.app_frame._frame.AboutDialog.exec_")

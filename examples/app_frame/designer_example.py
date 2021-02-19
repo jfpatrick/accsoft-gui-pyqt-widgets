@@ -1,7 +1,8 @@
 """
 This is the the same ApplicationFrame example as programmatic_example.py, but integrating with Qt Designer widget,
-instead of the programmatically created one. By default, it will enable only LogConsoleDock, a widget that does not
-require additional connections, and thus additional setup. The app.ui file was created using "CERN Application Frame"
+instead of the programmatically created one. By default, it will not enable any additional widgets in order to prevent
+the implicit need to install additional dependencies for other widgets. It is possible, however, to enable those in
+property configuration. The app.ui file was created using "CERN Application Frame"
 Qt Designer template. To find out how to install such a template, use the command line utility:
 
 $ accwidgets-cli -h

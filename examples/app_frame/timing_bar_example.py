@@ -1,5 +1,6 @@
 """
-This example shows the use of ApplicationFrame window with TimingBar enabled. For the sake of example, we are using
+This example shows the use of ApplicationFrame window with TimingBar enabled. Note, this code requires
+additional dependencies for TimingBar must be installed (accwidgets[timing_bar]). For the sake of example, we are using
 custom model that does not require connection to real devices (same model as used in examples of TimingBar itself).
 Timing domain can be configured on the model of the TimingBar widget. Menus here are configured to partially recreate
 the experience provided by "CERN Application Frame" Qt Designer template.
