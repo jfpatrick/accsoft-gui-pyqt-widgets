@@ -2,6 +2,10 @@
 :class:`TimingBar` displays the currently played cycle in the supercycle view.
 """
 # flake8: noqa: F401
+from accwidgets._api import assert_dependencies as _assert_dependencies
+_assert_dependencies(__file__, skip_assert=['pyjapc'])
+
+
 from ._model import TimingBarModel, TimingBarDomain
 from ._widget import TimingBar, TimingBarPalette
 

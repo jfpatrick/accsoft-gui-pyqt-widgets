@@ -5,7 +5,7 @@ import importlib
 import warnings
 from packaging.requirements import Requirement, InvalidRequirement
 from pathlib import Path
-from typing import Type, Set, Union
+from typing import Type, Set, Union, Optional, List
 
 try:
     # Python >=3.8
@@ -48,13 +48,16 @@ def mark_public_api(class_: Type, public_mod_name: str):
 _ASSERT_CACHE: Set[str] = set()
 
 
-def assert_dependencies(base_path: Union[str, os.PathLike, Path], raise_error: bool = True):
+def assert_dependencies(base_path: Union[str, os.PathLike, Path],
+                        raise_error: bool = True,
+                        skip_assert: Optional[List[str]] = None):
     """
     Verifies that a given widget has all requirements installed.
 
     Args:
         base_path: Path to the top directory of the widget or __init__.py file inside of it.
         raise_error: Raise ImportError when :obj:`True`, otherwise issue a warning.
+        skip_assert: Names of the requirements to ignore during the assert.
 
     Raises:
         ImportError: Requirements are not satisfied, when ``raise_error`` was set to :obj:`True`.
@@ -78,11 +81,17 @@ def assert_dependencies(base_path: Union[str, os.PathLike, Path], raise_error: b
     except AttributeError:
         return
 
+    if skip_assert is not None:
+        skip_assert = [x.casefold() for x in skip_assert]
+
     for dep in deps:
         try:
             req = Requirement(dep)
         except InvalidRequirement as e:
             warnings.warn(f"Failed to parse dependency {dep}. This constraint will be ignored.\n{e!s}")
+            continue
+
+        if skip_assert is not None and req.name.casefold() in skip_assert:
             continue
 
         try:
