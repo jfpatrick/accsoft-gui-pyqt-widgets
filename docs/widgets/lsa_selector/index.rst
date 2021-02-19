@@ -6,6 +6,9 @@
 LsaSelector
 ===========
 
+.. note:: To start using this widget, make sure to add ``lsa_selector`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
+
 :class:`~accwidgets.lsa_selector.LsaSelector` exposes a selectable table with a list of LSA cycles/contexts and
 associated timing users.
 

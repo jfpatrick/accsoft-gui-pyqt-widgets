@@ -1,6 +1,9 @@
 LogConsole
 ==========
 
+.. note:: To start using this widget, make sure to add ``log_console`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
+
 Log console is a widget to display logs in a HTML-stylized list.
 
 - `Dock`_

@@ -1,6 +1,9 @@
 TimingBar
 =========
 
+.. note:: To start using this widget, make sure to add ``timing_bar`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
+
 Timing bar displays the composition of users and currently played user withing a given timing domain.
 
 - `Errors`_

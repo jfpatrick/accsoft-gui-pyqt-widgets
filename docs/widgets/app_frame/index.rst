@@ -1,6 +1,11 @@
 ApplicationFrame
 ================
 
+.. note:: To start using this widget, make sure to add ``app_frame`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`. In addition,
+          you may need to specify ``log_console`` or ``timing_bar``, when these components are enabled, as stated in
+          `Transitive dependencies`_.
+
 - `Transitive dependencies`_
 - `Using in Qt Designer`_
 - `Primary toolbar`_
@@ -27,7 +32,7 @@ instance, :class:`~accwidgets.timing_bar.TimingBar` will have a requirement for 
 :ref:`widgets/timing_bar/index:PyJapc` versions.
 
 .. note:: Application developer must specify dependency on used components for his or her application,
-          in addition to ``app-frame`` specifier for the :class:`~accwidgets.app_frame.ApplicationFrame` (or use
+          in addition to ``app_frame`` specifier for the :class:`~accwidgets.app_frame.ApplicationFrame` (or use
           ``all-widgets`` specifier). See :ref:`install:Specifying dependencies`.
 
 

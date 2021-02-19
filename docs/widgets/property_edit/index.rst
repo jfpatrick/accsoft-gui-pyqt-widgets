@@ -3,6 +3,9 @@ PropertyEdit
 
 .. image:: ../../img/propertyedit.png
 
+.. note:: To start using this widget, make sure to add ``property_edit`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
+
 :class:`~accwidgets.property_edit.PropertyEdit` allows interacting with multiple fields of the same property
 (as a concept of CERN's device properties), similar to the "Knob" of a
 `WorkingSet <https://wikis.cern.ch/display/CTF3OP/WorkingSet>`__. Its main advantage is that it allows writing (or

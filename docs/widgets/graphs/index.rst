@@ -5,6 +5,9 @@
 Graphs
 ======
 
+.. note:: To start using these widgets, make sure to add ``graph`` as a widget specifier, when installing
+          accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
+
 The Graph library is based on the pure Python plotting library `PyQtGraph <http://www.pyqtgraph.org/>`__ and extends
 it with features inspired by `JDataViewer <https://wikis.cern.ch/display/InCA/JDVE+-+Demos>`__. It uses the coordinate
 system based on `PyQtGraph's PlotWidget <http://www.pyqtgraph.org/documentation/plotting.html>`__ but provides a more
