@@ -6,7 +6,7 @@ from qtpy.QtGui import QShowEvent
 from qtpy.QtCore import Qt, Property, Slot
 # TODO: Uncomment when RBAC is ready
 # from accwidgets.rbac import RbaToolbarWidget
-from accwidgets._designer_base import _icon
+from accwidgets._designer_base import _icon, designer_user_error, DesignerUserError
 from ._about_dialog import AboutDialog
 
 if TYPE_CHECKING:
@@ -90,7 +90,11 @@ class ApplicationFrame(QMainWindow):
             return
 
         if not TYPE_CHECKING:
-            from accwidgets.log_console import LogConsoleDock  # noqa: F811
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.log_console import LogConsoleDock  # noqa: F811
+            except DesignerUserError:
+                return
         self.log_console = LogConsoleDock() if new_val else None
 
     useLogConsole: bool = Property(bool, fget=__get_use_log_console, fset=__set_use_log_console)
@@ -106,7 +110,11 @@ class ApplicationFrame(QMainWindow):
 
     def __set_log_console(self, new_val: Optional[QWidget]):
         if not TYPE_CHECKING:
-            from accwidgets.log_console import LogConsoleDock, LogConsole  # noqa: F811
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.log_console import LogConsoleDock, LogConsole  # noqa: F811
+            except DesignerUserError:
+                return
         if ((new_val is None and self.__log_console is None)
                 or (new_val is not None and self.__log_console is not None
                     and ((isinstance(new_val, QDockWidget) and new_val == self.__log_console)
@@ -192,7 +200,11 @@ class ApplicationFrame(QMainWindow):
             return
 
         if not TYPE_CHECKING:
-            from accwidgets.timing_bar import TimingBar  # noqa: F811
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.timing_bar import TimingBar  # noqa: F811
+            except DesignerUserError:
+                return
         self.timing_bar = TimingBar() if new_val else None
 
     useTimingBar: bool = Property(bool, fget=__get_use_timing_bar, fset=__set_use_timing_bar)
@@ -414,3 +426,6 @@ class ToolBarSpacer(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
         layout.addItem(QSpacerItem(w, h, h_policy, v_policy))
+
+
+_DESIGNER_IMPORT_ERROR = r"accwidgets.\w+ (is intended|cannot reliably)"

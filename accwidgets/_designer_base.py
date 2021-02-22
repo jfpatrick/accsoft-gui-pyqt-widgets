@@ -2,10 +2,11 @@ import warnings
 from codecs import decode
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Type, Optional, List, TypeVar, Union, Dict
-from qtpy.QtWidgets import QWidget, QAction
+from typing import Type, Optional, List, TypeVar, Union, Dict, cast
+from qtpy.QtWidgets import QWidget, QAction, QMessageBox, QApplication
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtCore import QObject, QMetaMethod, QByteArray
 from qtpy.QtDesigner import (
@@ -18,7 +19,8 @@ from qtpy.QtDesigner import (
     QDesignerFormWindowCursorInterface,
     QDesignerFormWindowInterface,
 )
-from accwidgets.designer_check import set_designer
+from accwidgets.designer_check import set_designer, is_designer
+from accwidgets._api import disable_assert_cache
 
 
 class WidgetBoxGroup(Enum):
@@ -618,3 +620,43 @@ def is_inside_designer_canvas(widget: QWidget) -> bool:
         :obj:`True` if it only is rendered in the canvas and not the Designer Form Preview, or outside Designer completely.
     """
     return get_designer_cursor(widget) is not None
+
+
+class DesignerUserError(Exception):
+    """
+    Error to be thrown by :func:`designer_user_error`, specifying that GUI error has been shown and further
+    execution should be silently prevented (without raising an exception, to not crash the GUI)."""
+    pass
+
+
+@contextmanager
+def designer_user_error(error_type: Type[Exception], match: Optional[str] = None):
+    """
+    Attempt to display error in Qt Designer GUI rather than throwing an exception.
+    It has no effect, when block is called outside of Qt Designer.
+
+    Args:
+        error_type: Exception type to catch.
+        match: Optional string regex pattern in error message to look for.
+    """
+    if is_designer():
+        try:
+            with disable_assert_cache():
+                yield
+        except error_type as e:
+            if match is not None:
+                import re
+                if not re.search(match, str(e)):
+                    raise
+
+            for widget in cast(List[QWidget], QApplication.instance().topLevelWidgets()):
+                if widget.isVisible():
+                    parent = widget
+                    break
+            else:
+                raise
+
+            QMessageBox.warning(parent, "Error occurred", f"This property cannot be used due to error: {e!s}")
+            raise DesignerUserError(e)
+    else:
+        yield
