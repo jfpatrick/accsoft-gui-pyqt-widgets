@@ -41,7 +41,7 @@ pytest:
   stage: Unit Tests
   script:
     - pip install .[test]
-    - run_headless python -m pytest --random-order --junitxml=report.xml --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
+    - OMP_NUM_THREADS=1 run_headless python -m pytest --random-order --junitxml=report.xml --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
   artifacts:
     name: coverage-report
     paths:
