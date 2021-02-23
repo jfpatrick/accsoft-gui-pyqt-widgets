@@ -2,7 +2,7 @@ import pytest
 import sys
 from unittest import mock
 from typing import Optional, Any
-from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement
+from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement, disable_assert_cache
 
 try:
     # Python >=3.8
@@ -100,7 +100,7 @@ def test_mark_public_api_modifies_inner_classes_from_same_hierarchy(custom_class
     assert custom_class.InnerTestClass.__accwidgets_real_module__ == "test.mod.subpackage"
 
 
-def test_mark_public_api_ingores_inner_classes_from_different_hierarchy(custom_class):
+def test_mark_public_api_ignores_inner_classes_from_different_hierarchy(custom_class):
     custom_class.InnerTestClass.__module__ = "different.mod.hierarchy"
     mark_public_api(custom_class, public_mod_name="test.mod")
     assert custom_class.InnerTestClass.__module__ == "different.mod.hierarchy"
@@ -293,3 +293,88 @@ def test_assert_dependencies_succeeds(distribution, import_module, inject_mod_si
     import_module.side_effect = inject_mod_side_effect(mock_obj)
     distribution.return_value.version = actual_version
     assert_dependencies(base_path="/path/to/test_widget", raise_error=raise_error)
+
+
+@pytest.mark.parametrize("requirements,skipped,existing", [
+    ([], [], {}),
+    ([], ["test_package"], {}),
+    ([], ["test_package"], {"test_package": "1.1"}),
+    (["test_package>=0.9,<2"], ["test_package"], {"test_package": "1.1"}),
+    (["test_package>=0.9,<2"], ["test_package"], {"test_package": "0.8"}),
+    (["test_package>=0.9,<2", "pkg2>0.3"], ["test_package"], {"pkg2": "0.6"}),
+    (["test_package>=0.9,<2", "pkg2>0.3"], ["test_package"], {"test_package": "0.8", "pkg2": "0.6"}),
+    (["test_package>=0.9,<2", "pkg2>0.3"], ["test_package"], {"test_package": "1.1", "pkg2": "0.6"}),
+])
+@mock.patch("importlib.import_module")
+@mock.patch("accwidgets._api.distribution")
+def test_assert_dependency_skips_and_succeeds(distribution, import_module, inject_mod_side_effect, requirements, skipped, existing):
+    mock_obj = mock.MagicMock()
+    mock_obj.core = requirements
+    import_module.side_effect = inject_mod_side_effect(mock_obj)
+
+    def side_effect(name: str):
+        try:
+            version = existing[name]
+        except KeyError:
+            raise PackageNotFoundError
+        else:
+            val = mock.MagicMock()
+            val.version = version
+            return val
+
+    distribution.side_effect = side_effect
+    assert_dependencies(base_path="/path/to/test_widget", raise_error=True, skip_assert=skipped)
+
+
+@pytest.mark.parametrize("requirements,skipped,existing", [
+    (["test_package>=0.9,<2"], ["not_considered"], {"test_package": "0.8"}),
+    (["test_package>=0.9,<2"], ["not_considered"], {}),
+    (["test_package>=0.9,<2"], ["not_considered"], {"not_considered": "1.1"}),
+    (["test_package>=0.9,<2"], ["not_considered"], {"test_package": "0.8", "not_considered": "1.1"}),
+])
+@mock.patch("importlib.import_module")
+@mock.patch("accwidgets._api.distribution")
+def test_assert_dependency_skips_and_fails_by_another(distribution, import_module, inject_mod_side_effect, requirements, skipped, existing):
+    mock_obj = mock.MagicMock()
+    mock_obj.core = requirements
+    import_module.side_effect = inject_mod_side_effect(mock_obj)
+
+    def side_effect(name: str):
+        try:
+            version = existing[name]
+        except KeyError:
+            raise PackageNotFoundError("Test error")
+        else:
+            val = mock.MagicMock()
+            val.version = version
+            val.name = name
+            return val
+
+    distribution.side_effect = side_effect
+    with pytest.raises(ImportError, match=r"accwidgets.test_widget *"):
+        assert_dependencies(base_path="/path/to/test_widget", raise_error=True, skip_assert=skipped)
+
+
+@pytest.mark.parametrize("disable_cache,initial_state,new_modules,expected_new_state", [
+    (False, set(), [], set()),
+    (True, set(), [], set()),
+    (False, {"pkg1"}, [], {"pkg1"}),
+    (True, {"pkg1"}, [], {"pkg1"}),
+    (False, set(), ["test_widget"], {"test_widget"}),
+    (True, set(), ["test_widget"], set()),
+    (False, {"pkg1"}, ["test_widget"], {"pkg1", "test_widget"}),
+    (True, {"pkg1"}, ["test_widget"], {"pkg1"}),
+])
+@mock.patch("importlib.import_module", side_effect=ImportError)  # To exit early, as we don't need to test later code
+def test_disable_assert_cache(_, disable_cache, initial_state, new_modules, expected_new_state):
+    import accwidgets._api
+    assert accwidgets._api._ASSERT_CACHE == set()
+    accwidgets._api._ASSERT_CACHE = initial_state
+    if disable_cache:
+        with disable_assert_cache():
+            for widget_name in new_modules:
+                assert_dependencies(base_path=f"/path/to/{widget_name}")
+    else:
+        for widget_name in new_modules:
+            assert_dependencies(base_path=f"/path/to/{widget_name}")
+    assert accwidgets._api._ASSERT_CACHE == expected_new_state

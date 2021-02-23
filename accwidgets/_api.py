@@ -5,7 +5,8 @@ import importlib
 import warnings
 from packaging.requirements import Requirement, InvalidRequirement
 from pathlib import Path
-from typing import Type, Set, Union
+from typing import Type, Set, Union, Optional, List
+from contextlib import contextmanager
 
 try:
     # Python >=3.8
@@ -46,15 +47,19 @@ def mark_public_api(class_: Type, public_mod_name: str):
 
 
 _ASSERT_CACHE: Set[str] = set()
+_ASSERT_CACHE_ENABLED: bool = True
 
 
-def assert_dependencies(base_path: Union[str, os.PathLike, Path], raise_error: bool = True):
+def assert_dependencies(base_path: Union[str, os.PathLike, Path],
+                        raise_error: bool = True,
+                        skip_assert: Optional[List[str]] = None):
     """
     Verifies that a given widget has all requirements installed.
 
     Args:
         base_path: Path to the top directory of the widget or __init__.py file inside of it.
         raise_error: Raise ImportError when :obj:`True`, otherwise issue a warning.
+        skip_assert: Names of the requirements to ignore during the assert.
 
     Raises:
         ImportError: Requirements are not satisfied, when ``raise_error`` was set to :obj:`True`.
@@ -63,9 +68,10 @@ def assert_dependencies(base_path: Union[str, os.PathLike, Path], raise_error: b
     if widget_path.name == "__init__.py":
         widget_path = widget_path.parent
 
-    if widget_path.name in _ASSERT_CACHE:
-        return
-    _ASSERT_CACHE.add(widget_path.name)
+    if _ASSERT_CACHE_ENABLED:
+        if widget_path.name in _ASSERT_CACHE:
+            return
+        _ASSERT_CACHE.add(widget_path.name)
 
     pkg_name = f"accwidgets.{widget_path.name}.__deps__"
     try:
@@ -78,11 +84,17 @@ def assert_dependencies(base_path: Union[str, os.PathLike, Path], raise_error: b
     except AttributeError:
         return
 
+    if skip_assert is not None:
+        skip_assert = [x.casefold() for x in skip_assert]
+
     for dep in deps:
         try:
             req = Requirement(dep)
         except InvalidRequirement as e:
             warnings.warn(f"Failed to parse dependency {dep}. This constraint will be ignored.\n{e!s}")
+            continue
+
+        if skip_assert is not None and req.name.casefold() in skip_assert:
             continue
 
         try:
@@ -123,3 +135,23 @@ def assert_requirement(req: Requirement, widget_name: str):
                           f"in the environment, use: 'pip install accwidgets[{widget_name}]'.\n"
                           "You can override this limitation by setting an environment variable "
                           "ACCWIDGETS_OVERRIDE_DEPENDENCIES=1.")
+
+
+@contextmanager
+def disable_assert_cache():
+    """
+    Disabling assert cache can be useful to avoid runtime import errors without proper accwidgets explanation, when
+    subsequent assert has been preempted by the original widget import. E.g. consider LogConsole is being imported
+    in Qt Designer and fails, widget plugin loading is skipped. If the assert was cached here, using
+    ApplicationFrame with useLogConsole enabled would produce an error, which however would not be identical to
+    the one, when used in runtime, when on first widget loading, LogConsole complains about missing dependencies.
+    """
+    global _ASSERT_CACHE_ENABLED
+    orig_val = _ASSERT_CACHE_ENABLED
+    _ASSERT_CACHE_ENABLED = False
+    try:
+        yield
+    except Exception:  # noqa: B902
+        raise
+    finally:
+        _ASSERT_CACHE_ENABLED = orig_val

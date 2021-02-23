@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for LED widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.led import Led
+    with disable_assert_cache():
+        from accwidgets.led import Led
 except ImportError:
     skip_plugin = True
 

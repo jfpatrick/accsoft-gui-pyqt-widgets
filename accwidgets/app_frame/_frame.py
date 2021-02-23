@@ -1,15 +1,17 @@
-from typing import Optional, Union, overload, cast, Tuple
+from typing import Optional, Union, overload, cast, Tuple, TYPE_CHECKING
 from pathlib import Path
 from qtpy.QtWidgets import (QMainWindow, QWidget, QDockWidget, QMenu, QAction, QMenuBar, QToolBar, QSpacerItem,
                             QSizePolicy, QHBoxLayout)
 from qtpy.QtGui import QShowEvent
 from qtpy.QtCore import Qt, Property, Slot
-from accwidgets.log_console import LogConsoleDock, LogConsole
 # TODO: Uncomment when RBAC is ready
 # from accwidgets.rbac import RbaToolbarWidget
-from accwidgets.timing_bar import TimingBar
-from accwidgets._designer_base import _icon
+from accwidgets._designer_base import _icon, designer_user_error, DesignerUserError
 from ._about_dialog import AboutDialog
+
+if TYPE_CHECKING:
+    from accwidgets.log_console import LogConsoleDock, LogConsole  # noqa: F401
+    from accwidgets.timing_bar import TimingBar  # noqa: F401
 
 
 class ApplicationFrame(QMainWindow):
@@ -41,7 +43,7 @@ class ApplicationFrame(QMainWindow):
         super().__init__(parent, flags)
 
         self.__log_console: Optional[QDockWidget] = None
-        self.__timing_tool: Optional[Tuple[QAction, TimingBar]] = None  # atomically keep both together
+        self.__timing_tool: Optional[Tuple[QAction, "TimingBar"]] = None  # atomically keep both together
         # TODO: Uncomment when RBAC is ready
         # self.__rba_tool: Optional[Tuple[QAction, RbaToolbarWidget]] = None  # atomically keep both together
         self.__app_version: str = "0.0.1"
@@ -87,6 +89,12 @@ class ApplicationFrame(QMainWindow):
         if new_val == self.useLogConsole:
             return
 
+        if not TYPE_CHECKING:
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.log_console import LogConsoleDock  # noqa: F811
+            except DesignerUserError:
+                return
         self.log_console = LogConsoleDock() if new_val else None
 
     useLogConsole: bool = Property(bool, fget=__get_use_log_console, fset=__set_use_log_console)
@@ -97,10 +105,16 @@ class ApplicationFrame(QMainWindow):
     If you wish to use a custom log console class, assign it to the :attr:`log_console` property directly.
     """
 
-    def __get_log_console(self) -> Optional[LogConsoleDock]:
+    def __get_log_console(self) -> Optional["LogConsoleDock"]:
         return self.__log_console
 
     def __set_log_console(self, new_val: Optional[QWidget]):
+        if not TYPE_CHECKING:
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.log_console import LogConsoleDock, LogConsole  # noqa: F811
+            except DesignerUserError:
+                return
         if ((new_val is None and self.__log_console is None)
                 or (new_val is not None and self.__log_console is not None
                     and ((isinstance(new_val, QDockWidget) and new_val == self.__log_console)
@@ -185,6 +199,12 @@ class ApplicationFrame(QMainWindow):
         if new_val == self.useTimingBar:
             return
 
+        if not TYPE_CHECKING:
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.timing_bar import TimingBar  # noqa: F811
+            except DesignerUserError:
+                return
         self.timing_bar = TimingBar() if new_val else None
 
     useTimingBar: bool = Property(bool, fget=__get_use_timing_bar, fset=__set_use_timing_bar)
@@ -195,7 +215,7 @@ class ApplicationFrame(QMainWindow):
     If you wish to use a custom widget class, assign it to the :attr:`timing_bar` property directly.
     """
 
-    def __get_timing_bar(self) -> Optional[TimingBar]:
+    def __get_timing_bar(self) -> Optional["TimingBar"]:
         return None if self.__timing_tool is None else self.__timing_tool[1]
 
     def __set_timing_bar(self, new_val: Optional[QWidget]):
@@ -406,3 +426,6 @@ class ToolBarSpacer(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
         layout.addItem(QSpacerItem(w, h, h_policy, v_policy))
+
+
+_DESIGNER_IMPORT_ERROR = r"accwidgets.\w+ (is intended|cannot reliably)"

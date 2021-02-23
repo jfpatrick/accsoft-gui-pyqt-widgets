@@ -3,11 +3,13 @@ Module containing QtDesigner plugin for PropertyEdit widget.
 """
 
 from pathlib import Path
+from accwidgets._api import disable_assert_cache
 
 
 skip_plugin = False
 try:
-    from accwidgets.property_edit import PropertyEdit
+    with disable_assert_cache():
+        from accwidgets.property_edit import PropertyEdit
 except ImportError:
     skip_plugin = True
 
