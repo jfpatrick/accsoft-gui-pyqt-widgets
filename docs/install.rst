@@ -116,7 +116,7 @@ Using "pip" from source
 Specify accwidgets as a dependency for a Python project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Similarly to above, dependency for the project can be specified to the stable package version from CO package index or
+Similarly to above, dependency for the project can be specified to the stable package version from Acc-Py package index or
 from the Gitlab repository. This chapter presents the formats that are compatible with ``install_requires`` defined
 in ``setup.py``, the `setup <https://pythonhosted.org/an_example_pypi_project/setuptools.html>`__ function.
 
@@ -169,12 +169,8 @@ sure that packages can be installed correctly.
 
       python -m pip install -U pip
 
-2. Ensure that you have access to Acc-Py Nexus repository, as described in
+2. Ensure that you have access to Acc-Py package index, as described in
    `Python package index / repository <https://wikis.cern.ch/pages/viewpage.action?pageId=145493385>`__.
-
-
-.. note:: When using ComRAD outside of "Accelerating Python" environment, you will not have
-          "ComRAD Designer" mode, and will only be able to work with standard Qt Designer.
 
 
 Enable Qt Designer templates

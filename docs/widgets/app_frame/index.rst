@@ -1,7 +1,7 @@
 ApplicationFrame
 ================
 
-.. note:: To start using this widget, make sure to add ``app_frame`` as a widget specifier, when installing
+.. note:: To start using this widget, make sure to specify ``app_frame`` as an extra, when installing
           accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`. In addition,
           you may need to specify ``log_console`` or ``timing_bar``, when these components are enabled, as stated in
           `Transitive dependencies`_.
@@ -32,8 +32,8 @@ instance, :class:`~accwidgets.timing_bar.TimingBar` will have a requirement for 
 :ref:`widgets/timing_bar/index:PyJapc` versions.
 
 .. note:: Application developer must specify dependency on used components for his or her application,
-          in addition to ``app_frame`` specifier for the :class:`~accwidgets.app_frame.ApplicationFrame` (or use
-          ``all-widgets`` specifier). See :ref:`install:Specifying dependencies`.
+          in addition to ``app_frame`` extra for the :class:`~accwidgets.app_frame.ApplicationFrame` (or use
+          ``all-widgets`` extra). See :ref:`install:Specifying dependencies`.
 
 
 Using in Qt Designer
@@ -78,7 +78,7 @@ respected, :class:`~accwidgets.app_frame.ApplicationFrame` will always use the c
           relevant components are removed. Attention should be payed when placing custom actions/widgets into this
           toolbar. Developer has to make sure that :class:`~accwidgets.app_frame.ApplicationFrame`'s components
           are not being removed at any point, to not cause the removal of the toolbar. Alternatively, it is possible to
-          create another toolbar for custom widgets/actions. 2 separate toolbars can be perfectly reside side by side
+          create another toolbar for custom widgets/actions. 2 separate toolbars can be perfectly co-exist side by side
           in a horizontal or a vertical ribbon.
 
 

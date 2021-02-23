@@ -6,12 +6,13 @@
 LsaSelector
 ===========
 
-.. note:: To start using this widget, make sure to add ``lsa_selector`` as a widget specifier, when installing
+.. note:: To start using this widget, make sure to specify ``lsa_selector`` as an extra, when installing
           accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
 
 :class:`~accwidgets.lsa_selector.LsaSelector` exposes a selectable table with a list of LSA cycles/contexts and
 associated timing users.
 
+- `Color scheme`_
 - `Tooltips`_
 - `Errors`_
 - `Configuration`_
@@ -26,6 +27,12 @@ User can select one cycle at a time, which triggers
 contexts, associated timing user :ref:`can be plugged directly <widgets/lsa_selector/examples:PyJapc example>`
 into :class:`~pyjapc.PyJapc`.
 
+The data is accessed via :mod:`pjlsa` library. By default the widget instantiates LSA client connected to the
+``gpn`` server. Is is also possible to use a custom :class:`~pjlsa.LSAClient` object by instantiating a
+:class:`~accwidgets.lsa_selector.LsaSelectorModel` with ``lsa`` argument and passing it to the widget. This widget
+takes full advantage of accwidgets' :ref:`widget-specific dependencies <install:Specifying dependencies>` to not
+create a hard dependency on :mod:`pjlsa`, when the widget is not used.
+
 Cycles/contexts are retrieved for a specific accelerator.
 
 .. note:: Not all accelerators that are defined by LSA framework are visible, primarily because they are obsolete:
@@ -33,6 +40,9 @@ Cycles/contexts are retrieved for a specific accelerator.
           * ``LINAC3`` is removed and is part of :attr:`~accwidgets.lsa_selector.LsaSelectorAccelerator.LEIR` now
           * ``LINAC4`` is removed and is part of :attr:`~accwidgets.lsa_selector.LsaSelectorAccelerator.PSB` now
           * ``REX`` has also been removed as obsolete
+
+Color scheme
+------------
 
 While color scheme of the widget :ref:`can be customized <widgets/lsa_selector/examples:QSS styling example>`,
 the standard set replicates that of the corresponding Java widget. Contexts are colored based on their type as follows:
@@ -60,12 +70,6 @@ displayed in the tooltip.
    :alt: Tooltip when hovering over a cycle in the list
 
    Tooltip when hovering over a cycle in the list
-
-The data is accessed via :mod:`pjlsa` library. By default the widget instantiates LSA client connected to the
-`gpn` server. Is is also possible to use a custom :class:`~pjlsa.LSAClient` object by instantiating a
-:class:`~accwidgets.lsa_selector.LsaSelectorModel` with ``lsa`` argument and passing it to the widget. This widget
-takes full advantage of accwidgets' :ref:`widget-specific dependencies <install:Specifying dependencies>` to not
-create a hard dependency on :mod:`pjlsa`, when the widget is not used.
 
 
 Errors

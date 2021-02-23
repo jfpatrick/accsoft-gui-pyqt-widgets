@@ -5,7 +5,7 @@
 Graphs
 ======
 
-.. note:: To start using these widgets, make sure to add ``graph`` as a widget specifier, when installing
+.. note:: To start using these widgets, make sure to specify ``graph`` as an extra, when installing
           accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
 
 The Graph library is based on the pure Python plotting library `PyQtGraph <http://www.pyqtgraph.org/>`__ and extends

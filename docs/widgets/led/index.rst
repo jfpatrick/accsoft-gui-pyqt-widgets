@@ -3,7 +3,7 @@ Led
 
 .. image:: ../../img/led.png
 
-.. note:: To start using this widget, make sure to add ``led`` as a widget specifier, when installing accwidgets, or
+.. note:: To start using this widget, make sure to specify ``led`` as an extra, when installing accwidgets, or
           use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
 
 :class:`~accwidgets.led.Led` displays a single LED useful for representing binary values or other color-coded values.

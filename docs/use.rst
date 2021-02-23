@@ -20,7 +20,7 @@ For importing all widgets belonging to a specific sub-project, you can import th
 You can learn how to use the widgets in 2 ways:
 
 #. Check the API reference (can be found later in the documentation of individual widgets)
-#. Try out `Interactive examples`_
+#. Try out `Interactive examples`_  (can also be found later in the documentation of individual widgets)
 
 
 Interactive examples
@@ -35,9 +35,11 @@ the widget they are related to. You run them using simple python command (rememb
    git clone git+ssh://git@gitlab.cern.ch:7999/acc-co/accsoft/gui/accsoft-gui-pyqt-widgets.git
    cd accsoft-gui-pyqt-widgets
    # Install the runtime dependencies
-   pip install .
+   pip install .[examples]
    # Run the example
-   python examples/graph/minimum_example.py
+   python examples/graph/simple_example.py
+
+.. seealso:: Each widget in this wiki presents its examples in more detail. Explore more in :doc:`widgets/index`.
 
 
 Using with Qt Designer

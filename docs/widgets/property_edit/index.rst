@@ -3,7 +3,7 @@ PropertyEdit
 
 .. image:: ../../img/propertyedit.png
 
-.. note:: To start using this widget, make sure to add ``property_edit`` as a widget specifier, when installing
+.. note:: To start using this widget, make sure to specify ``property_edit`` as an extra, when installing
           accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`.
 
 :class:`~accwidgets.property_edit.PropertyEdit` allows interacting with multiple fields of the same property
