@@ -268,6 +268,21 @@ def test_model_domain_change_issues_signal(qtbot: QtBot, initial_domain, new_dom
     assert blocker.signal_triggered == should_trigger
 
 
+@pytest.mark.parametrize("initial_val,new_val,should_trigger", [
+    (True, True, False),
+    (True, False, True),
+    (False, True, True),
+    (False, False, False),
+])
+def test_model_monitoring_change_issues_signal(qtbot: QtBot, initial_val, new_val, should_trigger):
+    model = TimingBarModel(monitoring=initial_val, japc=mock.MagicMock())
+    with qtbot.wait_signal(model.monitoringChanged, raising=False, timeout=100) as blocker:
+        model.monitoring = new_val
+    assert blocker.signal_triggered == should_trigger
+    if should_trigger:
+        assert blocker.args == [new_val]
+
+
 @pytest.mark.parametrize("domain,xtim_first_update,xtim_err,ctim_err,expect_err", [
     (TimingBarDomain.PSB, True, True, True, True),
     (TimingBarDomain.PSB, False, True, True, True),
@@ -977,3 +992,108 @@ def test_model_monitoring_affects_all_properties(subs_monitoring, initial_val, n
             sub.set_monitoring.assert_not_called()
         else:
             sub.set_monitoring.assert_called_once_with(expected_inner_value)
+
+
+@pytest.mark.parametrize("subs_monitoring", [
+    [],
+    [True],
+    [True, False],
+    [True, True],
+    [False, False],
+    [False, True],
+    [True, False, False, True, False],
+])
+@pytest.mark.parametrize("initial_val,new_val,expected_value", [
+    (False, True, True),
+    (False, False, False),
+    (True, False, False),
+    (True, True, True),
+])
+def test_model_monitoring_returns_single_state_even_if_some_are_not_monitoring(subs_monitoring, initial_val, new_val,
+                                                                               expected_value):
+
+    def create_sub(monitoring: bool):
+        sub = mock.MagicMock(spec=PyJapcSubscription)
+        sub.monitoring = monitoring
+        return sub
+
+    model = TimingBarModel(japc=mock.MagicMock(), monitoring=initial_val)
+    model._active_subs = list(map(create_sub, subs_monitoring))
+    assert model.monitoring == initial_val
+    model.monitoring = new_val
+    model._active_subs = list(map(create_sub, subs_monitoring))
+    assert model.monitoring == new_val
+
+
+@pytest.mark.parametrize("subs_error,expected_error", [
+    ([None], None),
+    (["Err1"], "Err1"),
+    (["Err1", "Err2"], "Err1"),
+    ([None, "Err1"], "Err1"),
+    ([None, "Err1", "Err2"], "Err1"),
+    (["Err1", None], "Err1"),
+    (["Err1", "Err2", None], "Err1"),
+    (["Err1", None, "Err2"], "Err1"),
+])
+@pytest.mark.parametrize("initial_monitoring,new_val", [
+    (True, False),
+    (False, True),
+])
+def test_model_reports_error_when_monitoring_fails(qtbot: QtBot, subs_error, expected_error, initial_monitoring, new_val):
+
+    def create_sub(error: Optional[str]):
+        sub = mock.MagicMock(spec=PyJapcSubscription)
+        sub.param_name = str(error)
+        if error is not None:
+            sub.set_monitoring.side_effect = RuntimeError(error)
+        return sub
+
+    model = TimingBarModel(japc=mock.MagicMock(), monitoring=initial_monitoring)
+    model._active_subs = list(map(create_sub, subs_error))
+    if expected_error is None:
+        with qtbot.assert_not_emitted(model.timingErrorReceived):
+            model.monitoring = new_val
+        assert model.has_error is False
+    else:
+        with qtbot.wait_signal(model.timingErrorReceived) as blocker:
+            model.monitoring = new_val
+        assert blocker.args == [expected_error]
+        assert model.has_error is True
+
+
+@pytest.mark.parametrize("initial_monitoring,should_monitor", [
+    (True, True),
+    (False, False),
+])
+def test_model_new_subscriptions_activated_only_if_in_monitoring_state_initially(initial_monitoring, should_monitor):
+    japc = mock.MagicMock()
+    model = TimingBarModel(japc=japc, monitoring=initial_monitoring)
+    japc.subscribeParam.assert_not_called()
+    japc.subscribeParam.return_value.startMonitoring.assert_not_called()
+    model.activate()
+    japc.subscribeParam.assert_called()
+    if should_monitor:
+        japc.subscribeParam.return_value.startMonitoring.assert_called()
+    else:
+        japc.subscribeParam.return_value.startMonitoring.assert_not_called()
+
+
+@pytest.mark.parametrize("initial_monitoring,new_monitoring,should_monitor", [
+    (True, True, True),
+    (True, False, False),
+    (False, True, True),
+    (False, False, False),
+])
+def test_model_new_subscriptions_activated_only_if_in_monitoring_state_at_the_time(initial_monitoring, new_monitoring,
+                                                                                   should_monitor):
+    japc = mock.MagicMock()
+    model = TimingBarModel(japc=japc, monitoring=initial_monitoring)
+    model.monitoring = new_monitoring
+    japc.subscribeParam.assert_not_called()
+    japc.subscribeParam.return_value.startMonitoring.assert_not_called()
+    model.activate()
+    japc.subscribeParam.assert_called()
+    if should_monitor:
+        japc.subscribeParam.return_value.startMonitoring.assert_called()
+    else:
+        japc.subscribeParam.return_value.startMonitoring.assert_not_called()

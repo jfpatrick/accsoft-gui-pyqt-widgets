@@ -151,10 +151,18 @@ class TimingBarModel(QObject):
     repainting the rest of the canvas. The string argument is the name of the new timing domain.
     """
 
+    monitoringChanged = Signal(bool)
+    """
+    Signal to notify that model's monitoring state has been altered. This signal arrives before subscriptions have been
+    affected. Therefore, if subscription procedure produces an error, :attr:`timingErrorReceived` signal will follow
+    afterwards.
+    """
+
     def __init__(self,
                  domain: TimingBarDomain = TimingBarDomain.PSB,
                  japc: Optional["PyJapc"] = None,
                  timezone: Optional[tzinfo] = None,
+                 monitoring: bool = True,
                  parent: Optional[QObject] = None):
         """
         Model manages the JAPC/RDA connections to the XTIM devices to receive timing events, as well as retrieves
@@ -172,9 +180,12 @@ class TimingBarModel(QObject):
                   if a subclass is preferred, or it absolutely needs to operate on a singleton). If none provided,
                   a new instance is created internally, with InCA disabled.
             timezone: Timezone to use when creating timestamp objects. If :obj:`None` is provided, UTC timezone is used.
+            monitoring: Pass :obj:`False` to not establish connection to CTIM/XTIM devices, until enabled explicitly
+                  later using :attr:`monitoring` setter.
             parent: Owning object.
         """
         super().__init__(parent)
+        self._monitoring = monitoring
         self._japc = japc
         self._domain = domain
         self._tz = timezone or UTC
@@ -296,19 +307,23 @@ class TimingBarModel(QObject):
     """
 
     def _get_monitoring(self) -> bool:
-        for sub in self._active_subs:
-            if sub.monitoring:
-                return True
-        return False
+        return self._monitoring
 
     def _set_monitoring(self, new_val: bool):
+        if self._monitoring == new_val:
+            return
+        self._monitoring = new_val
+        self.monitoringChanged.emit(new_val)
         for sub in self._active_subs:
-            sub.set_monitoring(new_val)
+            self._monitor_param(sub, monitor=new_val)
 
     monitoring = property(fget=_get_monitoring, fset=_set_monitoring)
     """
     Advanced control over JAPC subscriptions to XTIM and CTIM devices. When a widget needs to be "frozen", this
     property can be set to :obj:`False`.
+
+    .. note:: If initially monitoring of the model was set to :obj:`False`, setting this to :obj:`True` will not
+              automatically create connections. It is still required to call :meth:`activate`.
     """
 
     @property
@@ -493,14 +508,12 @@ class TimingBarModel(QObject):
             self.timingErrorReceived.emit(str(e))
             return
 
-        self._active_subs.append(PyJapcSubscription(param_name=param,
-                                                    selector=sel,
-                                                    handler=handler))
-        try:
-            handler.startMonitoring()  # Java call
-        except Exception as e:  # noqa: B902
-            self._error_state.add(param)
-            self.timingErrorReceived.emit(str(e))
+        sub = PyJapcSubscription(param_name=param,
+                                 selector=sel,
+                                 handler=handler)
+        self._active_subs.append(sub)
+        if self.monitoring:
+            self._monitor_param(sub, monitor=True)
 
     def _recalculate_last_info(self, timing_update: Optional[Dict[str, Any]] = None):
         if not timing_update:
@@ -566,6 +579,13 @@ class TimingBarModel(QObject):
     def _notify_timing_update(self, time_advanced: bool):
         if not self.has_error:
             self.timingUpdateReceived.emit(time_advanced)
+
+    def _monitor_param(self, param: PyJapcSubscription, monitor: bool):
+        try:
+            param.set_monitoring(monitor)
+        except Exception as e:  # noqa: B902
+            self._error_state.add(param.param_name)
+            self.timingErrorReceived.emit(str(e))
 
 
 _XTIM_MAPPING = {
