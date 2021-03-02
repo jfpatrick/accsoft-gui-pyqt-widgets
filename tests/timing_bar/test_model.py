@@ -12,7 +12,7 @@ from typing import Optional, Dict, Any
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import QEvent
 from accwidgets.timing_bar import TimingBarModel, TimingBarDomain
-from accwidgets.timing_bar._model import TimingSuperCycle, TimingCycle, TimingUpdate
+from accwidgets.timing_bar._model import TimingSuperCycle, TimingCycle, TimingUpdate, PyJapcSubscription
 from .fixtures import *  # noqa: F401,F403
 
 
@@ -50,6 +50,45 @@ def subscribe_param_side_effect():
         return side_effect
 
     return _wrapper
+
+
+@pytest.mark.parametrize("name", ["", "dev/prop#filed", "dev/prop"])
+@pytest.mark.parametrize("selector", ["", "TEST.USER.ALL", "TEST.PARTY.ION"])
+@pytest.mark.parametrize("is_monitoring,new_val,expected_orig_val,expected_new_val,should_start,should_stop", [
+    (True, True, True, True, True, False),
+    (True, False, True, False, False, True),
+    (False, True, False, True, True, False),
+    (False, False, False, False, False, True),
+])
+def test_subscription_wrapper_monitoring(name, selector, is_monitoring, new_val, expected_new_val, expected_orig_val,
+                                         should_start, should_stop):
+    sh = mock.MagicMock()
+    sh.monitoring = is_monitoring
+    sh.isMonitoring.side_effect = lambda: sh.monitoring
+
+    def start():
+        sh.monitoring = True
+
+    def stop():
+        sh.monitoring = False
+
+    sh.stopMonitoring.side_effect = stop
+    sh.startMonitoring.side_effect = start
+
+    wrapper = PyJapcSubscription(param_name=name,
+                                 selector=selector,
+                                 handler=sh)
+    assert wrapper.monitoring == expected_orig_val
+    wrapper.set_monitoring(new_val)
+    if should_start:
+        sh.startMonitoring.assert_called_once()
+    else:
+        sh.startMonitoring.assert_not_called()
+    if should_stop:
+        sh.stopMonitoring.assert_called_once()
+    else:
+        sh.stopMonitoring.assert_not_called()
+    assert wrapper.monitoring == expected_new_val
 
 
 def test_timing_supercycle_chooses_proper_mode(supercycle_obj: TimingSuperCycle):
@@ -98,14 +137,16 @@ def test_timing_supercycle_cycle_basic_period_succeeds(supercycle_obj: TimingSup
 def test_model_detaches_japc_on_destroy(qtbot):
     _ = qtbot
     japc = mock.MagicMock()
-    subscription = mock.MagicMock()
+    sh = mock.MagicMock()
 
     model = TimingBarModel(japc=japc)
-    model._active_subs = [subscription]
+    model._active_subs = [PyJapcSubscription(param_name="test",
+                                             handler=sh,
+                                             selector="")]
 
-    subscription.handler.stopMonitoring.assert_not_called()
+    sh.stopMonitoring.assert_not_called()
     QApplication.instance().sendEvent(model, QEvent(QEvent.DeferredDelete))  # The only working way of triggering "destroyed" signal
-    subscription.handler.stopMonitoring.assert_called_once()
+    sh.stopMonitoring.assert_called_once()
 
 
 @pytest.mark.parametrize("with_bcd,fails", [
@@ -902,3 +943,37 @@ def test_model_create_supercycle_fails(data):
                                  lsa_key="lsa",
                                  users_key="users",
                                  data=data)
+
+
+@pytest.mark.parametrize("subs_monitoring", [
+    [],
+    [True],
+    [True, False],
+    [True, True],
+    [False, False],
+    [False, True],
+    [True, False, False, True, False],
+])
+@pytest.mark.parametrize("initial_val,new_val,expected_inner_value", [
+    (False, True, True),
+    (False, False, None),
+    (True, False, False),
+    (True, True, None),
+])
+def test_model_monitoring_affects_all_properties(subs_monitoring, initial_val, new_val, expected_inner_value):
+
+    def create_sub(monitoring: bool):
+        sub = mock.MagicMock(spec=PyJapcSubscription)
+        sub.monitoring = monitoring
+        return sub
+
+    model = TimingBarModel(japc=mock.MagicMock(), monitoring=initial_val)
+    model._active_subs = list(map(create_sub, subs_monitoring))
+    for sub in model._active_subs:
+        sub.set_monitoring.assert_not_called()
+    model.monitoring = new_val
+    for sub in model._active_subs:
+        if expected_inner_value is None:
+            sub.set_monitoring.assert_not_called()
+        else:
+            sub.set_monitoring.assert_called_once_with(expected_inner_value)

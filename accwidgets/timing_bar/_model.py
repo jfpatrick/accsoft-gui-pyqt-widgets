@@ -56,6 +56,16 @@ class PyJapcSubscription:
     handler: object  # This is the Jpype object
     selector: str
 
+    @property
+    def monitoring(self) -> bool:
+        return self.handler.isMonitoring()  # type: ignore  # Java call
+
+    def set_monitoring(self, new_val: bool):
+        if new_val:
+            self.handler.startMonitoring()  # type: ignore  # Java call
+        else:
+            self.handler.stopMonitoring()  # type: ignore  # Java call
+
 
 @dataclass(frozen=True)
 class TimingUpdate:
@@ -285,6 +295,22 @@ class TimingBarModel(QObject):
     to XTIM and CTIM devices and creation of the new ones.
     """
 
+    def _get_monitoring(self) -> bool:
+        for sub in self._active_subs:
+            if sub.monitoring:
+                return True
+        return False
+
+    def _set_monitoring(self, new_val: bool):
+        for sub in self._active_subs:
+            sub.set_monitoring(new_val)
+
+    monitoring = property(fget=_get_monitoring, fset=_set_monitoring)
+    """
+    Advanced control over JAPC subscriptions to XTIM and CTIM devices. When a widget needs to be "frozen", this
+    property can be set to :obj:`False`.
+    """
+
     @property
     def activated(self) -> bool:
         """
@@ -398,7 +424,7 @@ class TimingBarModel(QObject):
                 # As discussed with Phil, it's better to have a risk of accessing Java API, than allow
                 # clearing subscriptions by parameterName, selector (which potentially may erase subscriptions
                 # done by the user from another part of the application)
-                sub.handler.stopMonitoring()  # Java call
+                sub.set_monitoring(False)
                 # TODO: This is accessing private API and should be eliminated when we move to PyJapc 3
                 key = japc._transformSubscribeCacheKey(sub.param_name, sub.selector)
                 try:
