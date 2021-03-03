@@ -35,6 +35,8 @@ The following is a list of widgets that are requested (implemented ones have sta
                                                               via custom model implementation
    |timing-link|          |done|            |timing|          `"XTIM" <https://wikis.cern.ch/display/TIMING/XTIM>`__
                                                               RDA device based timing
+   |rbac-link|            |done|            |rbac|            :mod:`pyrbac`-backed component. Needs manual
+                                                              synchronization with Java RBAC libraries.
    =====================  ================  ================  ===============================================
 
 In addition to explicitly requested widgets, those available in
@@ -63,6 +65,8 @@ their usage statistics gathered from existing Inspector projects.
 .. |propedit-link| replace:: :doc:`PropertyEdit <property_edit/index>`
 
 .. |log-link| replace:: :doc:`LogConsole <log_console/index>`
+
+.. |rbac-link| replace:: :doc:`RbaButton <rbac/index>`
 
 .. |trim-link| replace:: :ref:`Trim function editor (Editable charts) <widgets/graphs/usage:Edit data using plots>`
 
@@ -100,6 +104,8 @@ their usage statistics gathered from existing Inspector projects.
 .. |timing| image:: ../img/timing_bar.png
    :width: 250px
 
+.. |rbac| image:: ../img/rbac_loggedin.png
+
 .. |spinner| image:: ../img/wheelfield.gif
 
 .. |appframe| image:: ../img/appframe.png
@@ -121,4 +127,5 @@ Explore individual widgets
    led/index
    log_console/index
    timing_bar/index
+   rbac/index
    qt/modules
