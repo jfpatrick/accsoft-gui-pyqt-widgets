@@ -167,6 +167,7 @@ this library, a widget may shortly become available in comrad.""",
                  "docs*",
                  "tests*",
                  "benchmarks*",
+                 "coverage*",  # Produced as artifact in CI and may propagate into the final wheel
                  "build*",
                  "dist*",
                  "*.__extras__",
