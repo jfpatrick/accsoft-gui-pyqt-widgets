@@ -3,8 +3,8 @@ ApplicationFrame
 
 .. note:: To start using this widget, make sure to specify ``app_frame`` as an extra, when installing
           accwidgets, or use ``all-widgets``. More on :ref:`install:Specifying dependencies`. In addition,
-          you may need to specify ``log_console`` or ``timing_bar``, when these components are enabled, as stated in
-          `Transitive dependencies`_.
+          you may need to specify ``log_console``, ``rbac`` or ``timing_bar``, when these components are enabled,
+          as stated in `Transitive dependencies`_.
 
 - `Transitive dependencies`_
 - `Using in Qt Designer`_

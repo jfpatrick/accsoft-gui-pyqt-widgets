@@ -13,9 +13,13 @@ packages needed to run examples, it is advised to install a special ``examples``
 - `Qt Designer example`_
 - `LogConsole example`_
 - `TimingBar example`_
+- `RBAC example`_
 - `Subclassing example`_
+- `PyJapc RBAC authentication example`_
+- `RBAC expiration example`_
 - `Custom log console example`_
 - `Custom timing bar example`_
+- `Custom RBAC example`_
 
 
 Basic example
@@ -149,6 +153,40 @@ provided by "CERN Application Frame" :ref:`Qt Designer template <install:Enable 
 
    <p />
 
+
+RBAC example
+------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/rbac_example.py
+
+This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
+:class:`~accwidgets.rbac.RbaButton` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.rbac.RbaButton` must be installed, as explained in
+:ref:`widgets/app_frame/index:Transitive dependencies`. To present the usage of the token
+in the application, the username is printed in the central widget's area. Menus here are configured to partially
+recreate the experience provided by "CERN Application Frame"
+:ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+
+.. image:: ../../img/examples_appframe_rbac.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of rbac_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/rbac_example.py
+
+.. raw:: html
+
+   <p />
+
 Subclassing example
 -------------------
 
@@ -177,6 +215,74 @@ here are configured to partially recreate the experience provided by "CERN Appli
          Show contents of subclassing_example.py...
 
    .. literalinclude:: ../../../examples/app_frame/subclassing_example.py
+
+.. raw:: html
+
+   <p />
+
+PyJapc RBAC authentication example
+----------------------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/pyjapc_rbac_example.py
+
+This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
+:class:`~accwidgets.rbac.RbaButton` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.rbac.RbaButton` must be installed, as explained in
+:ref:`widgets/app_frame/index:Transitive dependencies`. It is similar to the use-case in
+`RBAC example`_, except the token is used to authenticate Java client inside :class:`~pyjapc.PyJapc`
+(to further perform authorized interaction with the control system via :class:`~pyjapc.PyJapc`). To present the
+usage of the token in :class:`~pyjapc.PyJapc`, the username that is extracted from Java RBAC token is printed in
+the central widget's area. Menus here are configured to partially recreate the
+experience provided by "CERN Application Frame" :ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+
+.. image:: ../../img/examples_appframe_pyjapc.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of pyjapc_rbac_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/pyjapc_rbac_example.py
+
+.. raw:: html
+
+   <p />
+
+RBAC expiration example
+-----------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/rbac_expiration_example.py
+
+This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
+:class:`~accwidgets.rbac.RbaButton` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.rbac.RbaButton` must be installed, as explained in
+:ref:`widgets/app_frame/index:Transitive dependencies`. This example presents the
+events of token creation/expiration and removal. For this reason, the token lifetime is forced to 1 minute
+(the shortest possible time). When logged in without selecting roles to preserve auto-renewal, after
+approximately 30 seconds the list should print events about token expiration and renewal.
+
+.. image:: ../../img/examples_appframe_expiration.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of rbac_expiration_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/rbac_expiration_example.py
 
 .. raw:: html
 
@@ -238,6 +344,36 @@ partially recreate the experience provided by "CERN Application Frame"
          Show contents of custom_timing_bar_example.py...
 
    .. literalinclude:: ../../../examples/app_frame/custom_timing_bar_example.py
+
+.. raw:: html
+
+   <p />
+
+Custom RBAC example
+-------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/custom_rbac_example.py
+
+This example shows that :class:`~accwidgets.app_frame.ApplicationFrame` may accept any widget as a RBAC button, not
+necessarily derivative of accwidgets' :class:`~accwidgets.rbac.RbaButton`. Menus here are configured to
+partially recreate the experience provided by "CERN Application Frame"
+:ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+
+.. image:: ../../img/examples_appframe_custom_rbac.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of custom_rbac_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/custom_rbac_example.py
 
 .. raw:: html
 

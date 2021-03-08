@@ -4,14 +4,13 @@ from qtpy.QtWidgets import (QMainWindow, QWidget, QDockWidget, QMenu, QAction, Q
                             QSizePolicy, QHBoxLayout)
 from qtpy.QtGui import QShowEvent
 from qtpy.QtCore import Qt, Property, Slot
-# TODO: Uncomment when RBAC is ready
-# from accwidgets.rbac import RbaToolbarWidget
 from accwidgets._designer_base import _icon, designer_user_error, DesignerUserError
 from ._about_dialog import AboutDialog
 
 if TYPE_CHECKING:
     from accwidgets.log_console import LogConsoleDock, LogConsole  # noqa: F401
     from accwidgets.timing_bar import TimingBar  # noqa: F401
+    from accwidgets.rbac import RbaButton  # noqa: F401
 
 
 class ApplicationFrame(QMainWindow):
@@ -20,8 +19,8 @@ class ApplicationFrame(QMainWindow):
                  parent: Optional[QWidget] = None,
                  flags: Optional[Union[Qt.WindowFlags, Qt.WindowType]] = None,
                  use_log_console: bool = False,
-                 # use_rbac: bool = True,
-                 use_timing_bar: bool = False):
+                 use_timing_bar: bool = False,
+                 use_rbac: bool = False):
         """
         Main window of the common CERN accelerator applications.
 
@@ -33,10 +32,9 @@ class ApplicationFrame(QMainWindow):
             use_timing_bar: Display timing cycle indicator in the primary toolbar. Set this to :obj:`False` if you
                             are not intending to use the component, to avoid unnecessary allocations and remote
                             connections.
+            use_rbac: Display RBAC authentication widget in the primary toolbar. Set this to :obj:`False` if you
+                      are not intending to use the component, to avoid unnecessary allocations and remote connections.
         """
-        # TODO: Uncomment when RBAC is ready
-        # use_rbac: Display RBAC toolbar item in the primary toolbar. Set this to :obj:`False` if you are not
-        #           intending to use component, to avoid unnecessary allocations.
         if flags is None:
             flags = Qt.WindowFlags() | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
 
@@ -44,15 +42,13 @@ class ApplicationFrame(QMainWindow):
 
         self.__log_console: Optional[QDockWidget] = None
         self.__timing_tool: Optional[Tuple[QAction, "TimingBar"]] = None  # atomically keep both together
-        # TODO: Uncomment when RBAC is ready
-        # self.__rba_tool: Optional[Tuple[QAction, RbaToolbarWidget]] = None  # atomically keep both together
+        self.__rba_tool: Optional[Tuple[QAction, "RbaButton"]] = None  # atomically keep both together
         self.__app_version: str = "0.0.1"
 
         self.setWindowIcon(_icon(name=ApplicationFrame.__name__, base_path=Path(__file__).parent.absolute()))
 
         self.useLogConsole = use_log_console
-        # TODO: Uncomment when RBAC is ready
-        # self.useRBAC = use_rbac
+        self.useRBAC = use_rbac
         self.useTimingBar = use_timing_bar
 
     @Slot()
@@ -143,54 +139,59 @@ class ApplicationFrame(QMainWindow):
     log_console = property(fget=__get_log_console, fset=__set_log_console)
     """Handle of the log console widget that is integrated in the application frame."""
 
-    # TODO: Uncomment when RBAC is ready
-    # def __get_use_rbac(self) -> bool:
-    #     return self.__rba_tool is not None
-    #
-    # def __set_use_rbac(self, new_val: bool):
-    #     if new_val == self.useRBAC:
-    #         return
-    #
-    #     self.rba_widget = RbaToolbarWidget() if new_val else None
-    #
-    # useRBAC: bool = Property(bool, fget=__get_use_rbac, fset=__set_use_rbac)
-    # """
-    # Display RBAC toolbar item (placed at the right of the primary toolbar).
-    #
-    # This call will instantiate a :class:`RbaToolbarWidget` object.
-    # If you wish to use a custom widget class, assign it to the :attr:`rba_widget` property directly.
-    # """
-    #
-    # def __get_rba_widget(self) -> Optional[RbaToolbarWidget]:
-    #     return None if self.__rba_tool is None else self.__rba_tool[1]
-    #
-    # def __set_rba_widget(self, new_val: Optional[QWidget]):
-    #     if ((new_val is None and self.__rba_tool is None)
-    #             or (new_val is not None and self.__rba_tool is not None and self.__rba_tool[1] == new_val)):
-    #         return
-    #
-    #     if self.__rba_tool is not None:
-    #         tool_action, tool_widget = self.__rba_tool
-    #         for associated_widget in tool_action.associatedWidgets():
-    #             if isinstance(associated_widget, QToolBar) and associated_widget.parent() == self:
-    #                 associated_widget.removeAction(tool_action)
-    #         tool_widget.deleteLater()
-    #         self.__rba_tool = None
-    #     if new_val is not None:
-    #         toolbar = self.main_toolbar()
-    #         tool_widget = new_val
-    #         # Always align right (last action)
-    #         cnt = len(toolbar.actions())
-    #         if cnt == 0 or not isinstance(toolbar.widgetForAction(toolbar.actions()[cnt - 1]), ToolBarSpacer):
-    #             # Also use the spacer, to always snap to the right edge
-    #             toolbar.addWidget(ToolBarSpacer())
-    #         tool_action = toolbar.addWidget(tool_widget)
-    #         self.__rba_tool = (tool_action, tool_widget)
-    #     else:
-    #         self.__remove_main_toolbar_if_needed()
-    #
-    # rba_widget = property(fget=__get_rba_widget, fset=__set_rba_widget)
-    # """Handle of the RBAC toolbar item that is integrated in the primary toolbar."""
+    def __get_use_rbac(self) -> bool:
+        return self.__rba_tool is not None
+
+    def __set_use_rbac(self, new_val: bool):
+        if new_val == self.useRBAC:
+            return
+
+        if not TYPE_CHECKING:
+            try:
+                with designer_user_error(ImportError, match=_DESIGNER_IMPORT_ERROR):
+                    from accwidgets.rbac import RbaButton  # noqa: F811
+            except DesignerUserError:
+                return
+        self.rba_widget = RbaButton() if new_val else None
+
+    useRBAC: bool = Property(bool, fget=__get_use_rbac, fset=__set_use_rbac)
+    """
+    Display RBAC toolbar item (placed at the right of the primary toolbar).
+
+    This call will instantiate a :class:`RbaButton` object.
+    If you wish to use a custom widget class, assign it to the :attr:`rba_widget` property directly.
+    """
+
+    def __get_rba_widget(self) -> Optional["RbaButton"]:
+        return None if self.__rba_tool is None else self.__rba_tool[1]
+
+    def __set_rba_widget(self, new_val: Optional[QWidget]):
+        if ((new_val is None and self.__rba_tool is None)
+                or (new_val is not None and self.__rba_tool is not None and self.__rba_tool[1] == new_val)):
+            return
+
+        if self.__rba_tool is not None:
+            tool_action, tool_widget = self.__rba_tool
+            for associated_widget in tool_action.associatedWidgets():
+                if isinstance(associated_widget, QToolBar) and associated_widget.parent() == self:
+                    associated_widget.removeAction(tool_action)
+            tool_widget.deleteLater()
+            self.__rba_tool = None
+        if new_val is not None:
+            toolbar = self.main_toolbar()
+            tool_widget = new_val
+            # Always align right (last action)
+            cnt = len(toolbar.actions())
+            if cnt == 0 or not isinstance(toolbar.widgetForAction(toolbar.actions()[cnt - 1]), ToolBarSpacer):
+                # Also use the spacer, to always snap to the right edge
+                toolbar.addWidget(ToolBarSpacer())
+            tool_action = toolbar.addWidget(tool_widget)
+            self.__rba_tool = (tool_action, tool_widget)
+        else:
+            self.__remove_main_toolbar_if_needed()
+
+    rba_widget = property(fget=__get_rba_widget, fset=__set_rba_widget)
+    """Handle of the RBAC toolbar item that is integrated in the primary toolbar."""
 
     def __get_use_timing_bar(self) -> bool:
         return self.__timing_tool is not None
@@ -299,20 +300,16 @@ class ApplicationFrame(QMainWindow):
         """
         Removes the ``toolbar`` from the main window layout and hides it. Note that the ``toolbar`` is not deleted.
 
-        This reimplementation also unsets timing bar indicator usage flags, if the primary toolbar is
+        This reimplementation also unsets RBAC or timing bar indicator usage flags, if the primary toolbar is
         being removed, because those items are intended to be placed inside the primary toolbar.
 
         Args:
             toolbar: Toolbar to remove.
         """
-        # TODO: Replace docstring when RBAC is ready
-        # This reimplementation also unsets RBAC or timing bar indicator usage flags, if the primary toolbar is
-        # being removed, because those items are intended to be placed inside the primary toolbar.
         if toolbar.windowTitle() == self.__MAIN_TOOLBAR_TITLE:
             # We are removing primary toolbar, make sure no components keep relying on it
-            # TODO: Uncomment when RBAC is ready
-            # if self.useRBAC:
-            #     self.useRBAC = False
+            if self.useRBAC:
+                self.useRBAC = False
             if self.useTimingBar:
                 self.useTimingBar = False
         super().removeToolBar(toolbar)
@@ -323,17 +320,13 @@ class ApplicationFrame(QMainWindow):
 
         .. note:: Main window takes ownership of the ``bar`` pointer and deletes it at the appropriate time.
 
-        This reimplementation also adds toggle view actions for supported toolbar items, such as timing bar
+        This reimplementation also adds toggle view actions for supported toolbar items, such as RBAC or timing bar
         indicator. These actions become available under "View" top menu. If such menu does not
         exist in the ``bar``, the actions will not be placed.
 
         Args:
             bar: Menu bar to integrate into the main window.
         """
-        # TODO: Replace docstring when RBAC is ready
-        # This reimplementation also adds toggle view actions for supported toolbar items, such as RBAC or
-        # timing bar indicator. These actions become available under "View" top menu. If such menu does not
-        # exist in the ``bar``, the actions will not be placed.
         super().setMenuBar(bar)
         if self.__log_console:
             self.__ensure_log_toggle_action(self.__log_console)
@@ -390,9 +383,7 @@ class ApplicationFrame(QMainWindow):
             view.addAction(toolbar.toggleViewAction())
 
     def __remove_main_toolbar_if_needed(self):
-        # TODO: Uncomment when RBAC is ready
-        # if self.timing_bar is None and self.rba_widget is None:
-        if self.timing_bar is None:
+        if self.timing_bar is None and self.rba_widget is None:
             # Remove main toolbar completely, as it is not being used by anything
             toolbar = self.main_toolbar(create=False)
             if toolbar and len(toolbar.actions()) == 0:
