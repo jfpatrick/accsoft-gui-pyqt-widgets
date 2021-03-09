@@ -14,11 +14,7 @@ from qtpy.QtCore import QTimer
 from qtpy.QtWidgets import QApplication, QMainWindow
 from accwidgets.graph import (StaticPlotWidget, ScrollingPlotWidget, CyclicPlotWidget, LivePlotCurve, UpdateSource,
                               PointData)
-
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+from accwidgets.qt import exec_app_interruptable
 
 
 class MainWindow(QMainWindow):
@@ -64,4 +60,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    app.exec_()
+    sys.exit(exec_app_interruptable(app))

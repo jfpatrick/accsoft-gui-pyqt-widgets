@@ -9,10 +9,7 @@ from pathlib import Path
 from qtpy.QtWidgets import QApplication, QMainWindow, QColorDialog, QPushButton, QComboBox
 from qtpy.uic import loadUi
 from accwidgets.led import Led
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+from accwidgets.qt import exec_app_interruptable
 
 
 class MainWindow(QMainWindow):
@@ -41,4 +38,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

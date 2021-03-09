@@ -9,12 +9,9 @@ from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
 from accwidgets.timing_bar import TimingBar
+from accwidgets.qt import exec_app_interruptable
 from dark_mode import dark_mode_style
 from sample_model import SampleTimingBarModel
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -51,4 +48,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

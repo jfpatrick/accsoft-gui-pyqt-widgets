@@ -7,11 +7,8 @@ For the sake of example, we are using custom model that does not require connect
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from accwidgets.timing_bar import TimingBar
+from accwidgets.qt import exec_app_interruptable
 from sample_model import SampleTimingBarModel
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -33,4 +30,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

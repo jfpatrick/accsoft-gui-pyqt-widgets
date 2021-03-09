@@ -6,11 +6,8 @@ with ability to adjust the visible time span.
 import sys
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget, QSpinBox, QLabel
 from accwidgets.graph import ScrollingPlotWidget, TimeSpan, ExPlotWidgetConfig, PlotWidgetStyle
+from accwidgets.qt import exec_app_interruptable
 from example_sources import SinusCurveSourceEmitTypes, SinusCurveSource
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -87,4 +84,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

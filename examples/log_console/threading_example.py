@@ -10,11 +10,8 @@ from threading import current_thread
 from qtpy.QtCore import QTimer, QThread
 from qtpy.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget
 from accwidgets.log_console import LogConsoleModel, LogConsole
+from accwidgets.qt import exec_app_interruptable
 from utils import GibberishGenerator
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MessageEmitter(QThread, GibberishGenerator):
@@ -76,6 +73,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    ret = app.exec_()
+    ret = exec_app_interruptable(app)
     window.stop_threads()
     sys.exit(ret)

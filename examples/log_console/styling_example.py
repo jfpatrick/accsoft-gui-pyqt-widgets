@@ -9,11 +9,8 @@ import logging
 from pathlib import Path
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from accwidgets.log_console import LogConsole
+from accwidgets.qt import exec_app_interruptable
 from utils import LogConsoleExampleButtons
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -46,4 +43,4 @@ LogConsole {
 }
 """
     app.setStyleSheet(dark_mode)
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

@@ -5,12 +5,9 @@ Everything else stays the same.
 
 import sys
 from qtpy.QtWidgets import QApplication
+from accwidgets.qt import exec_app_interruptable
 from qss_example import MainWindow
 from dark_mode import dark_mode_style
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 if __name__ == "__main__":
@@ -34,4 +31,4 @@ TimingBar {
 }
     """)
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

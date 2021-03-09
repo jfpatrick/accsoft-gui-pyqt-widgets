@@ -10,12 +10,8 @@ import sys
 from qtpy.QtWidgets import QApplication, QLabel, QMenuBar, QAction
 from qtpy.QtCore import Qt
 from accwidgets.app_frame import ApplicationFrame
+from accwidgets.qt import exec_app_interruptable
 from sample_model import SampleTimingBarModel
-
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MyMainWindow(ApplicationFrame):
@@ -49,4 +45,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MyMainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

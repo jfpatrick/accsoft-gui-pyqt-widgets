@@ -7,11 +7,8 @@ that does not require connection to LSA servers.
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QCheckBox, QVBoxLayout, QGroupBox
 from accwidgets.lsa_selector import LsaSelector, AbstractLsaSelectorContext
+from accwidgets.qt import exec_app_interruptable
 from sample_model import SampleLsaSelectorModel
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -148,4 +145,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))
