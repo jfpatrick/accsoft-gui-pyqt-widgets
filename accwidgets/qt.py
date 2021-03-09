@@ -5,12 +5,14 @@ from typing import Optional, Set, List, TypeVar, Generic, Any
 from abc import abstractmethod, ABCMeta
 from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog, QColorDialog,
                             QDialogButtonBox, QStyledItemDelegate, QStyleOptionViewItem, QSpacerItem, QSizePolicy,
-                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame)
+                            QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame,
+                            QApplication)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant,
                          QPersistentModelIndex, QLocale, Signal)
 from qtpy.QtGui import QFont, QColor
 from qtpy.uic import loadUi
 from accwidgets._generics import GenericQtMeta
+from accwidgets._signal import attach_sigint
 
 
 class AbstractQObjectMeta(type(QObject), ABCMeta):  # type: ignore
@@ -824,3 +826,17 @@ class ColorPropertyColumnDelegate(QStyledItemDelegate):
             return
         new_name = new_color.name()
         index.model().setData(QModelIndex(index), new_name)
+
+
+def exec_app_interruptable(app: QApplication) -> int:
+    """
+    Run PyQt application's main event loop, while ensuring that application can be terminated using Ctrl+C sequence.
+
+    Args:
+        app: Main application instance.
+
+    Returns:
+        Value that was set during exit call, e.g. ``0`` if called via :meth:`QApplication.quit`.
+    """
+    attach_sigint(app)
+    return app.exec_()
