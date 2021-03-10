@@ -9,7 +9,7 @@ from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessage
                             QApplication)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant,
                          QPersistentModelIndex, QLocale, Signal)
-from qtpy.QtGui import QFont, QColor
+from qtpy.QtGui import QFont, QColor, QIcon, QPixmap
 from qtpy.uic import loadUi
 from accwidgets._generics import GenericQtMeta
 from accwidgets._signal import attach_sigint
@@ -826,6 +826,14 @@ class ColorPropertyColumnDelegate(QStyledItemDelegate):
             return
         new_name = new_color.name()
         index.model().setData(QModelIndex(index), new_name)
+
+
+def make_icon(path: Path) -> QIcon:
+    """Shortcut to create :class:`QIcon` objects from their image paths."""
+    if not path.is_file():
+        warnings.warn(f"Icon '{str(path)}' cannot be found")
+    pixmap = QPixmap(str(path))
+    return QIcon(pixmap)
 
 
 def exec_app_interruptable(app: QApplication) -> int:
