@@ -5,6 +5,9 @@
 PyQt5.QtCore.QObject py:class 1 qobject.html QObject
 qtpy.QtCore.QObject py:class 1 qobject.html QObject
 QObject py:class 1 qobject.html -
+PyQt5.QtWidgets.QSizePolicy py:class 1 qsizepolicy.html QSizePolicy
+qtpy.QtWidgets.QSizePolicy py:class 1 qsizepolicy.html QSizePolicy
+QSizePolicy py:class 1 qsizepolicy.html -
 PyQt5.QtWidgets.QWidget py:class 1 qwidget.html QWidget
 qtpy.QtWidgets.QWidget py:class 1 qwidget.html QWidget
 QWidget py:class 1 qwidget.html -
@@ -59,6 +62,9 @@ QPlainTextEdit py:class 1 qplaintextedit.html -
 PyQt5.QtWidgets.QToolBar py:class 1 qtoolbar.html QToolBar
 qtpy.QtWidgets.QToolBar py:class 1 qtoolbar.html QToolBar
 QToolBar py:class 1 qtoolbar.html -
+PyQt5.QtWidgets.QToolBar.orientation py:method 1 qtoolbar.html#orientation-prop QToolBar.orientation
+qtpy.QtWidgets.QToolBar.orientation py:method 1 qtoolbar.html#orientation-prop QToolBar.orientation
+QToolBar.orientation py:method 1 qtoolbar.html#orientation-prop -
 PyQt5.QtWidgets.QMenuBar py:class 1 qmenubar.html QMenuBar
 qtpy.QtWidgets.QMenuBar py:class 1 qmenubar.html QMenuBar
 QMenuBar py:class 1 qmenubar.html -

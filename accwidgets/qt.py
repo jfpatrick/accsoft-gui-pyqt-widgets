@@ -8,7 +8,7 @@ from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessage
                             QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame,
                             QApplication)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant,
-                         QPersistentModelIndex, QLocale, Signal)
+                         QPersistentModelIndex, QLocale, Signal, Slot)
 from qtpy.QtGui import QFont, QColor, QIcon, QPixmap
 from qtpy.uic import loadUi
 from accwidgets._generics import GenericQtMeta
@@ -826,6 +826,41 @@ class ColorPropertyColumnDelegate(QStyledItemDelegate):
             return
         new_name = new_color.name()
         index.model().setData(QModelIndex(index), new_name)
+
+
+class OrientedToolButton(QToolButton):
+
+    def __init__(self,
+                 primary: QSizePolicy,
+                 secondary: QSizePolicy,
+                 orientation: Qt.Orientation = Qt.Horizontal,
+                 parent: Optional[QWidget] = None):
+        """
+        Toolbar button that changes (swaps) it's resizing policies based on the toolbar :meth:`~QToolBar.orientation`.
+
+        Args:
+            primary: Horizontal size policy in the `Qt.Horizontal` orientation, otherwise acts as a vertical size policy.
+            secondary: Vertical size policy in the `Qt.Horizontal` orientation, otherwise acts as a horizontal size policy.
+            orientation: Initial orientation.
+            parent: Owning object.
+        """
+        super().__init__(parent)
+        self._primary_policy = primary
+        self._secondary_policy = secondary
+        self.setOrientation(orientation)
+
+    @Slot(Qt.Orientation)
+    def setOrientation(self, new_val: Qt.Orientation):
+        """
+        Update size policies according to the new orientation.
+
+        Args:
+            new_val: New orientation.
+        """
+        if new_val == Qt.Horizontal:
+            self.setSizePolicy(self._primary_policy, self._secondary_policy)
+        else:
+            self.setSizePolicy(self._secondary_policy, self._primary_policy)
 
 
 def make_icon(path: Path) -> QIcon:
