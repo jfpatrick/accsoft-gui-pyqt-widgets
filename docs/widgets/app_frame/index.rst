@@ -62,6 +62,17 @@ maximize/minimize/fullscreen menu items, "File"→"Exit" and "Help"→"About"). 
 :class:`~accwidgets.app_frame.ApplicationFrame` cannot be found in the "Widget Box" (again, because it should not be
 dragged onto another window), but still is loaded by Qt Designer and can be seen in "Help"→"About Plugins" list.
 
+:class:`~accwidgets.app_frame.ApplicationFrame`'s subcomponents, such as :class:`~accwidgets.timing_bar.TimingBar`
+or :class:`~accwidgets.log_console.LogConsole`, can be enabled in "Property Editor". If a subcomponent is missing
+dependencies (see `Transitive dependencies`_), an error will be shown in the popup and the subcomponent will not be
+enabled.
+
+.. figure:: ../../img/appframe_deps_error.png
+   :align: center
+   :alt: Example of ApplicationFrame's subcomponent missing dependencies
+
+   Example of ApplicationFrame's subcomponent missing dependencies
+
 
 Primary toolbar
 ---------------
