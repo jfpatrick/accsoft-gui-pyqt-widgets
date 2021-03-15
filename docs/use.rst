@@ -50,6 +50,9 @@ in one of the default locations (e.g. ``$HOME/.designer/plugins/python`` or
 `library search paths known to Qt <https://doc.qt.io/qt-5/qcoreapplication.html#libraryPaths>`__). To list loaded
 plugins, use menu "Help"→"About Plugins" in Qt Designer and see items listed under "libpyqt5.so" category.
 
+.. note:: If certain widgets from the library lack dependencies, they will not be loaded into Qt Designer without any
+          error. This is a valid use-case for library installations that require only a subset of available widgets.
+
 With Designer templates installed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
