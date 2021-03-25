@@ -5,8 +5,7 @@ from pathlib import Path
 from qtpy.QtWidgets import (QMenu, QWidget, QHBoxLayout, QDockWidget, QToolButton, QLineEdit, QFrame, QVBoxLayout,
                             QPlainTextEdit, QDialog, QMessageBox, QSizePolicy)
 from qtpy.QtCore import Qt, Signal, Property, Slot, QVariantAnimation, QEasingCurve, QEvent, QObject
-from qtpy.QtGui import (QIcon, QCursor, QTextDocument, QTextCursor, QPalette, QColor, QFont, QPaintEvent, QPainter,
-                        QShowEvent)
+from qtpy.QtGui import QIcon, QCursor, QTextDocument, QTextCursor, QPalette, QColor, QFont, QPaintEvent, QPainter
 from qtpy.QtPrintSupport import QPrintPreviewDialog
 from qtpy.uic import loadUi
 from ._search_dialog import LogSearchDialog
@@ -78,10 +77,9 @@ class LogConsole(QWidget):
         self._contents: QPlainTextEdit = None
         self._hlayout: QHBoxLayout = None
 
-        self._model = model
-        if model:
-            self._connect_model(model)
-            model.setParent(self)
+        self._model = model or LogConsoleModel()
+        self._connect_model(self._model)
+        self._model.setParent(self)
         self._color_scheme = LogConsolePalette()
 
         # Set these to None for the attribute to exist, to properly execute property setter in the end of this method
@@ -116,7 +114,7 @@ class LogConsole(QWidget):
     It is possible to provide a custom implementation of the formatter.
     """
 
-    def __get_model(self) -> Optional[AbstractLogConsoleModel]:
+    def __get_model(self) -> AbstractLogConsoleModel:
         return self._model
 
     def __set_model(self, new_model: AbstractLogConsoleModel):
@@ -148,8 +146,7 @@ class LogConsole(QWidget):
 
         This method can be used as a slot.
         """
-        if self._model:
-            self.model.clear()
+        self.model.clear()
         self._last_msg_line.clear()
         self._contents.clear()
 
@@ -161,8 +158,7 @@ class LogConsole(QWidget):
 
         This method can be used as a slot. It is also called when the user checks "Freeze" item in the context menu.
         """
-        if self.model:
-            self.model.freeze()
+        self.model.freeze()
 
     @Slot()
     def unfreeze(self):
@@ -171,8 +167,7 @@ class LogConsole(QWidget):
 
         This method can be used as a slot. It is also called when the user unchecks "Freeze" item in the context menu.
         """
-        if self.model:
-            self.model.unfreeze()
+        self.model.unfreeze()
 
     @Slot()
     def toggleFreeze(self):
@@ -204,32 +199,7 @@ class LogConsole(QWidget):
         Frozen console does not show new logs, until "unfrozen". The model keeps accumulating incoming
         log records, so that they can be displayed after :meth:`unfreeze` is called.
         """
-        if self.model:
-            return self.model.frozen
-        return False
-
-    def showEvent(self, event: QShowEvent):
-        """
-        This event handler is reimplemented widget show events so that default model implementation gets created if
-        model was not passed in the constructor, or before showing the widgets. Default implementation is deferred
-        until the first show event to allow Python loggers to be properly set up, because model will create handlers
-        with a corresponding severity level at the creation time.
-
-        Non-spontaneous show events are sent to widgets immediately before they are shown. The spontaneous show
-        events of windows are delivered afterwards.
-
-        Note: A widget receives spontaneous show and hide events when its mapping status is changed by the window
-        system, e.g. a spontaneous hide event when the user minimizes the window, and a spontaneous show event when
-        the window is restored again. After receiving a spontaneous hide event, a widget is still considered visible
-        in the sense of :meth:`isVisible`.
-
-        Args:
-            event: Show event.
-        """
-        super().showEvent(event)
-        if self._model is None:
-            self._model = LogConsoleModel(parent=self)
-            self._connect_model(self._model)
+        return self.model.frozen
 
     def __get_expanded(self) -> bool:
         return self.__expanded
@@ -386,8 +356,6 @@ class LogConsole(QWidget):
 
     def _rerender_contents(self):
         model = self.model
-        if not model:
-            return
 
         # Try to avoid jumping of the scrolling as much as possible
         scrollbar = self._contents.verticalScrollBar()
@@ -473,8 +441,6 @@ class LogConsole(QWidget):
 
     def _open_prefs_dialog(self):
         model = self.model
-        if not model:
-            return
 
         model_config = ModelConfiguration(buffer_size=model.buffer_size,
                                           visible_levels=model.visible_levels,

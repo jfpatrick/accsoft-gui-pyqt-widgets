@@ -66,11 +66,6 @@ Log console can work with models that define where logs come from and how they a
 .. seealso:: :ref:`widgets/log_console/examples:Simple example` and
              :ref:`widgets/log_console/examples:Multiple loggers example`
 
-Note that default model gets instantiated only when the widget is shown. Until then, no logs are captured. This is done
-to give the opportunity for a programmer to configure desirable logger levels that influence how flexibly model allows
-configuring those levels in the future. Since in some situations widget may get instantiated before this logic can
-run, the model creation is delayed until show event.
-
 
 Python logger hierarchy
 ^^^^^^^^^^^^^^^^^^^^^^^
