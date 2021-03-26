@@ -12,6 +12,7 @@ packages needed to run examples, it is advised to install a special ``examples``
 - `Basic example`_
 - `Qt Designer example`_
 - `Error example`_
+- `Pause/resume example`_
 - `Palette styling example`_
 - `QSS styling examples`_
 
@@ -107,6 +108,37 @@ connection to real devices.
 .. raw:: html
 
    <p />
+
+
+Pause/resume example
+--------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/timing_bar/pause_example.py
+
+This is the example of how the :class:`~accwidgets.timing_bar.TimingBar` can be "frozen" by stopping active
+subscriptions to the timing devices. "Toggle" button will switch between frozen and normal states.
+For the sake of example, we are using custom model that does not require connection to real devices.
+
+.. image:: ../../img/examples_timingbar_pause.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of pause_example.py...
+
+   .. literalinclude:: ../../../examples/timing_bar/pause_example.py
+
+.. raw:: html
+
+   <p />
+
 
 Palette styling example
 -----------------------

@@ -47,6 +47,18 @@ class SampleTimingBarModel(TimingBarModel):
                                        lsa_name=cycle.lsa_name)
         self.timingUpdateReceived.emit(True)
 
+    def _get_monitoring(self) -> bool:
+        return self._timer.isActive()
+
+    def _set_monitoring(self, new_val: bool):
+        if new_val:
+            self._timer.start()
+        else:
+            self._timer.stop()
+        self.monitoringChanged.emit(self.monitoring)
+
+    monitoring = property(fget=_get_monitoring, fset=_set_monitoring)
+
     def _attach_japc(self):
         pass
 
