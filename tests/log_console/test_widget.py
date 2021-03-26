@@ -80,9 +80,10 @@ def test_log_console_init_model_belongs_to_widget_if_provided(qtbot: QtBot, prov
     widget = LogConsole(model=model if provide_model else None)
     qtbot.add_widget(widget)
     if should_belong:
-        assert widget.model == model
+        assert widget.model is model
     else:
-        assert widget.model is None
+        assert widget.model is not None
+        assert widget.model is not model
 
 
 def test_log_console_default_collapsible(qtbot: QtBot):
@@ -97,10 +98,11 @@ def test_log_console_default_expanded(qtbot: QtBot):
     assert widget.expanded is True
 
 
-def test_log_console_default_no_model(qtbot: QtBot):
+def test_log_console_default_model(qtbot: QtBot):
     widget = LogConsole()
     qtbot.add_widget(widget)
-    assert widget.model is None
+    assert widget.model is not None
+    assert isinstance(widget.model, LogConsoleModel)
 
 
 def test_log_console_default_color_scheme(qtbot: QtBot):
@@ -278,30 +280,7 @@ def test_log_console_toggle_expanded_mode(qtbot: QtBot, initial_expanded, expect
     assert widget.expanded == expected_new_expanded
 
 
-def test_log_console_creates_default_model_on_show_if_not_exist(qtbot: QtBot):
-    widget = LogConsole()
-    qtbot.add_widget(widget)
-    assert widget.model is None
-    with qtbot.wait_exposed(widget):
-        widget.show()
-    assert widget.model is not None
-    assert isinstance(widget.model, LogConsoleModel)
-    assert widget.model.parent() == widget
-    assert widget.model.receivers(widget.model.new_log_record_received) == 1
-    assert widget.model.receivers(widget.model.freeze_changed) == 1
-
-
-def test_log_console_does_not_create_model_on_show_if_exist(qtbot: QtBot):
-    model = LogConsoleModel()
-    widget = LogConsole(model=model)
-    qtbot.add_widget(widget)
-    assert widget.model == model
-    with qtbot.wait_exposed(widget):
-        widget.show()
-    assert widget.model == model
-
-
-def test_log_console_frozen_prop_with_model(qtbot: QtBot):
+def test_log_console_frozen_prop(qtbot: QtBot):
     model = LogConsoleModel()
     widget = LogConsole(model=model)
     qtbot.add_widget(widget)
@@ -310,13 +289,6 @@ def test_log_console_frozen_prop_with_model(qtbot: QtBot):
     with qtbot.wait_signal(model.freeze_changed):
         widget.toggleFreeze()
     assert widget.frozen == widget.model.frozen
-
-
-def test_log_console_frozen_prop_without_model(qtbot: QtBot):
-    widget = LogConsole()
-    qtbot.add_widget(widget)
-    assert widget.model is None
-    assert widget.frozen is False
 
 
 @pytest.mark.parametrize("initial_expanded,initial_collapsible,new_expanded,expected_collapsible", [
