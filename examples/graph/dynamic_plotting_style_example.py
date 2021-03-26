@@ -9,11 +9,8 @@ import pyqtgraph as pg
 from qtpy.QtWidgets import (QApplication, QGridLayout, QMainWindow, QWidget, QComboBox, QSpinBox, QLabel, QCheckBox,
                             QFrame)
 from accwidgets.graph import TimeSpan, ExPlotWidgetConfig, ExPlotWidget, PlotWidgetStyle
+from accwidgets.qt import exec_app_interruptable
 from example_sources import SinusCurveSource, SinusCurveSourceEmitTypes
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -117,4 +114,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

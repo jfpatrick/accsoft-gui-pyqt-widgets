@@ -15,11 +15,8 @@ import sys
 from qtpy.QtCore import QThread
 from qtpy.QtWidgets import QMainWindow, QApplication
 from accwidgets.graph import ScrollingPlotWidget, TimeSpan
+from accwidgets.qt import exec_app_interruptable
 from example_sources import SinusCurveSource
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class BackgroundSinusCurveSource(SinusCurveSource):
@@ -70,6 +67,6 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     window.start_threads()
-    ret = app.exec_()
+    ret = exec_app_interruptable(app)
     window.stop_threads()
     sys.exit(ret)

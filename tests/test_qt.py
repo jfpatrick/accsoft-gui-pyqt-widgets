@@ -7,7 +7,7 @@ from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QW
 from PyQt5.QtTest import QAbstractItemModelTester
 from accwidgets.qt import (AbstractListModel, AbstractTableModel, AbstractTableDialog,
                            PersistentEditorTableView, BooleanPropertyColumnDelegate, BooleanButton,
-                           AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX)
+                           AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX, exec_app_interruptable)
 
 
 @pytest.fixture
@@ -848,3 +848,14 @@ def test_boolean_delegate_reacts_to_button_press(qtbot, concrete_list_model_impl
 def test_boolean_delegate_display_text_empty(locale, value):
     delegate = BooleanPropertyColumnDelegate()
     assert delegate.displayText(value, locale) == ""
+
+
+@pytest.mark.parametrize("return_code", [0, 1, 2, 505])
+def test_exec_app_interruptable(return_code):
+    app = mock.MagicMock()
+    app.exec_.return_value = return_code
+    with mock.patch("accwidgets.qt.attach_sigint") as attach_sigint:
+        res = exec_app_interruptable(app)
+        assert res == return_code
+        attach_sigint.assert_called_once_with(app)
+        app.exec_.assert_called_once()

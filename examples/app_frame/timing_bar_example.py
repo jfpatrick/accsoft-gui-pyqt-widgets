@@ -11,11 +11,8 @@ from qtpy.QtWidgets import QApplication, QLabel, QMenuBar, QAction
 from qtpy.QtCore import Qt
 from accwidgets.app_frame import ApplicationFrame
 from accwidgets.timing_bar import TimingBarDomain
+from accwidgets.qt import exec_app_interruptable
 from sample_model import SampleTimingBarModel
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 if __name__ == "__main__":
@@ -41,4 +38,4 @@ if __name__ == "__main__":
     about = help.addAction("About", window.showAboutDialog)
     about.setMenuRole(QAction.AboutRole)
     window.setMenuBar(menu_bar)
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

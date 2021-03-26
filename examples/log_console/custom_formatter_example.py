@@ -7,11 +7,8 @@ with ":)". Buttons allow simulating log entries for each of the generated logger
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from accwidgets.log_console import LogConsole, AbstractLogConsoleFormatter
+from accwidgets.qt import exec_app_interruptable
 from utils import LogConsoleExampleButtons
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MyFormatter(AbstractLogConsoleFormatter):
@@ -51,4 +48,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

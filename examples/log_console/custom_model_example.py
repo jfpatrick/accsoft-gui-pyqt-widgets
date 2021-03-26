@@ -10,11 +10,8 @@ from datetime import datetime
 from qtpy.QtCore import QTimer
 from qtpy.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget
 from accwidgets.log_console import AbstractLogConsoleModel, LogLevel, LogConsoleRecord, LogConsole
+from accwidgets.qt import exec_app_interruptable
 from utils import GibberishGenerator
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MyConsoleModel(AbstractLogConsoleModel, GibberishGenerator):
@@ -111,4 +108,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

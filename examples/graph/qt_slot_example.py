@@ -11,10 +11,7 @@ from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from qtpy.QtCore import QTimer, QObject, Signal
 from qtpy.QtGui import QColor
 from accwidgets.graph import ScrollingPlotWidget, TimeSpan, SymbolOptions
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+from accwidgets.qt import exec_app_interruptable
 
 
 class MainWindow(QMainWindow):
@@ -63,4 +60,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))

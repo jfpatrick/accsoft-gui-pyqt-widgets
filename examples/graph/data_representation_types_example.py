@@ -7,11 +7,8 @@ its own data source producing a sin curve.
 import sys
 from qtpy.QtWidgets import QApplication, QGridLayout, QMainWindow, QWidget
 from accwidgets.graph import ScrollingPlotWidget, TimeSpan
+from accwidgets.qt import exec_app_interruptable
 from example_sources import SinusCurveSource, SinusCurveSourceEmitTypes
-
-# Allow smooth exit on Ctrl+C
-import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class MainWindow(QMainWindow):
@@ -93,4 +90,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(exec_app_interruptable(app))
