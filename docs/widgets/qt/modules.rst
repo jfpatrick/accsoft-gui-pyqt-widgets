@@ -15,8 +15,13 @@ in similar use-cases.
    abstracttablemodel
    booleanbutton
    booleanpropertycolumndelegate
+   colorbutton
+   colorpropertycolumndelegate
    persistenteditortableview
    tableviewcolumnresizer
+
+
+.. autofunction:: accwidgets.qt.exec_app_interruptable
 
 * :ref:`modindex`
 * :ref:`genindex`

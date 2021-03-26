@@ -83,6 +83,15 @@ QAction py:class 1 qaction.html -
 PyQt5.QtWidgets.QApplication py:class 1 qapplication.html QApplication
 qtpy.QtWidgets.QApplication py:class 1 qapplication.html QApplication
 QApplication py:class 1 qapplication.html -
+PyQt5.QtWidgets.QApplication.quit py:method 1 qcoreapplication.html#quit QApplication.quit
+qtpy.QtWidgets.QApplication.quit py:method 1 qcoreapplication.html#quit QApplication.quit
+QApplication.quit py:method 1 qcoreapplication.html#quit -
+PyQt5.QtGui.QGuiApplication.quit py:method 1 qcoreapplication.html#quit QGuiApplication.quit
+qtpy.QtGui.QGuiApplication.quit py:method 1 qcoreapplication.html#quit QGuiApplication.quit
+QGuiApplication.quit py:method 1 qcoreapplication.html#quit -
+PyQt5.QtCore.QCoreApplication.quit py:method 1 qcoreapplication.html#quit QCoreApplication.quit
+qtpy.QtCore.QCoreApplication.quit py:method 1 qcoreapplication.html#quit QCoreApplication.quit
+QCoreApplication.quit py:method 1 qcoreapplication.html#quit -
 PyQt5.QtWidgets.QMainWindow py:class 1 qmainwindow.html QMainWindow
 qtpy.QtWidgets.QMainWindow py:class 1 qmainwindow.html QMainWindow
 QMainWindow py:class 1 qmainwindow.html -
