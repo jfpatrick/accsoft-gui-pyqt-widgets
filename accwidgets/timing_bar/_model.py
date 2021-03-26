@@ -371,12 +371,10 @@ class TimingBarModel(QObject):
             pass
         try:
             self._bcd = TimingSuperCycle(normal=self._create_supercycle(data=data,
-                                                                        offsets_key="normalBcdBeamOffsetsBp",
                                                                         lengths_key="normalCycleLengthsBp",
                                                                         lsa_key="normalLsaCycleNames",
                                                                         users_key="normalUsers"),
                                          spare=self._create_supercycle(data=data,
-                                                                       offsets_key="spareBcdBeamOffsetsBp",
                                                                        lengths_key="spareCycleLengthsBp",
                                                                        lsa_key="spareLsaCycleNames",
                                                                        users_key="spareUsers"))
@@ -551,30 +549,32 @@ class TimingBarModel(QObject):
                                            offset=max(timing_update.get("BASIC_PERIOD_NB", -1) - 1, -1),
                                            timestamp=timestamp)
 
-    def _create_supercycle(self, data: Dict[str, Any], offsets_key: str, lengths_key: str, lsa_key: str, users_key: str) -> List[TimingCycle]:
-        normal_offsets = data.get(offsets_key, np.array([]))
-        normal_lengths = data.get(lengths_key, np.array([]))
-        normal_lsa_names = data.get(lsa_key, np.array([]))
-        normal_users = data.get(users_key, np.array([]))
+    def _create_supercycle(self, data: Dict[str, Any], lengths_key: str, lsa_key: str, users_key: str) -> List[TimingCycle]:
+        durations = data.get(lengths_key, np.array([]))
+        lsa_names = data.get(lsa_key, np.array([]))
+        users = data.get(users_key, np.array([]))
 
         # This is a workaround for PyJapc bug (https://issues.cern.ch/browse/ACCPY-724)
-        if not isinstance(normal_offsets, np.ndarray):
-            normal_offsets = [normal_offsets]
-        if not isinstance(normal_lengths, np.ndarray):
-            normal_lengths = [normal_lengths]
-        if not isinstance(normal_lsa_names, np.ndarray):
-            normal_lsa_names = [normal_lsa_names]
-        if not isinstance(normal_users, np.ndarray):
-            normal_users = [normal_users]
+        if not isinstance(durations, np.ndarray):
+            durations = [durations]
+        if not isinstance(lsa_names, np.ndarray):
+            lsa_names = [lsa_names]
+        if not isinstance(users, np.ndarray):
+            users = [users]
 
-        if not (len(normal_offsets) == len(normal_lengths) == len(normal_lsa_names) == len(normal_users)):
+        if not (len(durations) == len(lsa_names) == len(users)):
             raise ValueError
-        return [TimingCycle(user=user,
-                            lsa_name=lsa_name,
-                            duration=length,
-                            offset=offset)
-                for user, lsa_name, length, offset in
-                zip(normal_users, normal_lsa_names, normal_lengths, normal_offsets)]
+
+        res: List[TimingCycle] = []
+        offset = 0
+        for user, lsa_name, duration in zip(users, lsa_names, durations):
+            cycle = TimingCycle(user=user,
+                                lsa_name=lsa_name,
+                                duration=duration,
+                                offset=offset)
+            offset += duration
+            res.append(cycle)
+        return res
 
     def _notify_timing_update(self, time_advanced: bool):
         if not self.has_error:
