@@ -908,19 +908,19 @@ def test_model_recalculate_last_info_does_not_update_on_invalid_basic_period(sup
 
 
 @pytest.mark.parametrize("data,expected_cycles", [(
-    {"offsets": np.array([0]), "lengths": np.array([1]), "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
+    {"lengths": np.array([1]), "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
     [TimingCycle(user="user1", lsa_name="lsa1", duration=1, offset=0)],
 ), (
-    {"offsets": 0, "lengths": np.array([1]), "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
+    {"lengths": np.array([1]), "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
     [TimingCycle(user="user1", lsa_name="lsa1", duration=1, offset=0)],
 ), (
-    {"offsets": np.array([0]), "lengths": 1, "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
+    {"lengths": 1, "lsa": np.array(["lsa1"]), "users": np.array(["user1"])},
     [TimingCycle(user="user1", lsa_name="lsa1", duration=1, offset=0)],
 ), (
-    {"offsets": 0, "lengths": 1, "lsa": "lsa1", "users": "user1"},
+    {"lengths": 1, "lsa": "lsa1", "users": "user1"},
     [TimingCycle(user="user1", lsa_name="lsa1", duration=1, offset=0)],
 ), (
-    {"offsets": np.array([0, 2]), "lengths": np.array([2, 3]), "lsa": np.array(["lsa1", "lsa2"]), "users": np.array(["user1", "user2"])},
+    {"lengths": np.array([2, 3]), "lsa": np.array(["lsa1", "lsa2"]), "users": np.array(["user1", "user2"])},
     [
         TimingCycle(user="user1", lsa_name="lsa1", duration=2, offset=0),
         TimingCycle(user="user2", lsa_name="lsa2", duration=3, offset=2),
@@ -928,8 +928,7 @@ def test_model_recalculate_last_info_does_not_update_on_invalid_basic_period(sup
 )])
 def test_model_create_supercycle_succeeds(data, expected_cycles):
     model = TimingBarModel()
-    actual_cycles = model._create_supercycle(offsets_key="offsets",
-                                             lengths_key="lengths",
+    actual_cycles = model._create_supercycle(lengths_key="lengths",
                                              lsa_key="lsa",
                                              users_key="users",
                                              data=data)
@@ -937,12 +936,9 @@ def test_model_create_supercycle_succeeds(data, expected_cycles):
 
 
 @pytest.mark.parametrize("data", [{
-    "offsets": np.array([0]),
     "lengths": np.array([1, 2]),
     "lsa": np.array([]),
     "users": np.array([]),
-}, {
-    "offsets": np.array([0]),
 }, {
     "lengths": np.array([0]),
 }, {
@@ -953,8 +949,7 @@ def test_model_create_supercycle_succeeds(data, expected_cycles):
 def test_model_create_supercycle_fails(data):
     model = TimingBarModel()
     with pytest.raises(ValueError):
-        model._create_supercycle(offsets_key="offsets",
-                                 lengths_key="lengths",
+        model._create_supercycle(lengths_key="lengths",
                                  lsa_key="lsa",
                                  users_key="users",
                                  data=data)
