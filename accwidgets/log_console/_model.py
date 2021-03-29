@@ -339,10 +339,7 @@ class LogConsoleModel(AbstractLogConsoleModel):
 
         # If no specific parent handler is found, try using the root handler (if was added to the model)
         # Otherwise, bail out.
-        try:
-            return self._handlers[_ROOT_LOGGER_NAME]
-        except KeyError:
-            return None
+        return self._handlers.get(_ROOT_LOGGER_NAME, None)
 
     def __on_new_record_received(self, record: logging.LogRecord, should_display: bool):
         # Queue was already full
