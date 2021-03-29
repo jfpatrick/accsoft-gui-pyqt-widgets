@@ -357,6 +357,10 @@ def _clean_up_model_before_delete(handlers: Dict[str, "PythonLoggingHandler"]):
     try:
         # This avoids Python logger notifying handlers that have been deleted in deleted model
         for name, handler in handlers.items():
+            handler.acquire()
+            handler.flush()
+            handler.close()
+            handler.release()
             logger = _get_logger(name)
             logger.removeHandler(handler)
     except Exception:  # noqa: B902
@@ -423,6 +427,7 @@ class PythonLoggingHandler(QObject, logging.Handler):
         if isinstance(level, LogLevel):
             level = level.value
         logging.Handler.__init__(self, level=level)
+        self.name = name
         self.frozen = frozen
         self._filter: AbstractLoggerFilter = (RootLoggerFilter if name == _ROOT_LOGGER_NAME else LoggerFilter)(
             name=name,
@@ -441,6 +446,10 @@ class PythonLoggingHandler(QObject, logging.Handler):
 
     def filter_ignore_frozen(self, record: logging.LogRecord) -> bool:
         return record.levelname in self._visible_levels and self._filter.filter(record)
+
+    def __repr__(self):
+        val = super().__repr__()
+        return f"{val[:-1]} [{self.name or _ROOT_LOGGER_NAME}] at {hex(id(self))}>"
 
 
 def _logger_name_is_child_to(parent_name: str, child_name: str) -> bool:

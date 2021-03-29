@@ -1,4 +1,5 @@
 import pytest
+import re
 import logging
 from freezegun import freeze_time
 from datetime import datetime
@@ -710,3 +711,45 @@ def test_log_messages_get_ignored_of_not_tracked_logger(qtbot: QtBot):
     assert blocker.args[0].message == "test1"
     with qtbot.assert_not_emitted(model.new_log_record_received):
         logger2.warning("test2")
+
+
+@pytest.mark.parametrize("name,level,expected_output", [
+    ("", LogLevel.NOTSET, "<PythonLoggingHandler (NOTSET) [root] at 0xADDRESS>"),
+    ("", logging.NOTSET, "<PythonLoggingHandler (NOTSET) [root] at 0xADDRESS>"),
+    ("root", LogLevel.NOTSET, "<PythonLoggingHandler (NOTSET) [root] at 0xADDRESS>"),
+    ("root", logging.NOTSET, "<PythonLoggingHandler (NOTSET) [root] at 0xADDRESS>"),
+    ("custom_name", LogLevel.NOTSET, "<PythonLoggingHandler (NOTSET) [custom_name] at 0xADDRESS>"),
+    ("custom_name", logging.NOTSET, "<PythonLoggingHandler (NOTSET) [custom_name] at 0xADDRESS>"),
+    ("custom.pkg", LogLevel.NOTSET, "<PythonLoggingHandler (NOTSET) [custom.pkg] at 0xADDRESS>"),
+    ("custom.pkg", logging.NOTSET, "<PythonLoggingHandler (NOTSET) [custom.pkg] at 0xADDRESS>"),
+    ("", LogLevel.DEBUG, "<PythonLoggingHandler (DEBUG) [root] at 0xADDRESS>"),
+    ("", logging.DEBUG, "<PythonLoggingHandler (DEBUG) [root] at 0xADDRESS>"),
+    ("root", LogLevel.DEBUG, "<PythonLoggingHandler (DEBUG) [root] at 0xADDRESS>"),
+    ("root", logging.DEBUG, "<PythonLoggingHandler (DEBUG) [root] at 0xADDRESS>"),
+    ("custom_name", LogLevel.DEBUG, "<PythonLoggingHandler (DEBUG) [custom_name] at 0xADDRESS>"),
+    ("custom_name", logging.DEBUG, "<PythonLoggingHandler (DEBUG) [custom_name] at 0xADDRESS>"),
+    ("custom.pkg", LogLevel.DEBUG, "<PythonLoggingHandler (DEBUG) [custom.pkg] at 0xADDRESS>"),
+    ("custom.pkg", logging.DEBUG, "<PythonLoggingHandler (DEBUG) [custom.pkg] at 0xADDRESS>"),
+])
+@pytest.mark.parametrize("frozen", [True, False])
+@pytest.mark.parametrize("visible_levels", [
+    {},
+    {LogLevel.NOTSET},
+    {LogLevel.INFO, LogLevel.ERROR},
+    {LogLevel.DEBUG, LogLevel.ERROR, LogLevel.INFO, LogLevel.CRITICAL, LogLevel.WARNING},
+])
+@pytest.mark.parametrize("all_handler_names", [
+    [],
+    ["root"],
+    ["logger1"],
+    ["root", "logger1"],
+])
+def test_python_log_handler_repr(name, level, expected_output, frozen, visible_levels, all_handler_names):
+    handler = PythonLoggingHandler(name=name,
+                                   frozen=frozen,
+                                   visible_levels=visible_levels,
+                                   all_handler_names=all_handler_names,
+                                   level=level)
+    output = repr(handler)
+    output = re.sub(r"0x[\da-fA-F]+", "0xADDRESS", output)
+    assert output == expected_output
