@@ -1,5 +1,4 @@
 import logging
-import functools
 import operator
 from typing import Optional, Dict, Set, Deque, Union, Iterator, Iterable, List, Tuple
 from abc import abstractmethod, ABCMeta
@@ -232,7 +231,23 @@ class LogConsoleModel(AbstractLogConsoleModel):
             logger.addHandler(handler)
             self._handlers[logger.name] = handler
 
-        self.destroyed.connect(functools.partial(_clean_up_model_before_delete, handlers=self._handlers))
+    def __del__(self):
+        try:
+            # This avoids Python logger notifying handlers that have been deleted in deleted model
+            for name, handler in self._handlers.items():
+                try:
+                    handler.acquire()
+                    handler.flush()
+                    handler.close()
+                except Exception:  # noqa: B902
+                    pass
+                finally:
+                    handler.release()
+                logger = _get_logger(name)
+                logger.removeHandler(handler)
+        except Exception:  # noqa: B902
+            # Avoid crashing at the clean-up phase for any reason
+            pass
 
     @property
     def all_records(self) -> Iterator[LogConsoleRecord]:
@@ -347,25 +362,6 @@ class LogConsoleModel(AbstractLogConsoleModel):
         self._rt_queue.append(record)
         if should_display and not self.frozen:
             self.new_log_record_received.emit(_record_from_python_logging_record(record), buffer_overflown)
-
-
-def _clean_up_model_before_delete(handlers: Dict[str, "PythonLoggingHandler"]):
-    # This has to be an independent method, not belonging to the model itself, because apparently
-    # it's not getting called, when belonging to the model. We just preserve the list of handlers here
-    # that can be cleaned up independently.
-
-    try:
-        # This avoids Python logger notifying handlers that have been deleted in deleted model
-        for name, handler in handlers.items():
-            handler.acquire()
-            handler.flush()
-            handler.close()
-            handler.release()
-            logger = _get_logger(name)
-            logger.removeHandler(handler)
-    except Exception:  # noqa: B902
-        # Avoid crashing at the clean-up phase for any reason
-        pass
 
 
 def _record_from_python_logging_record(input: logging.LogRecord) -> LogConsoleRecord:

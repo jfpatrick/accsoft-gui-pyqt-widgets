@@ -6,8 +6,6 @@ from datetime import datetime
 from dateutil.tz import UTC
 from typing import cast
 from pytestqt.qtbot import QtBot
-from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import QEvent
 from accwidgets.log_console import LogLevel, LogConsoleModel, LogConsoleRecord
 from accwidgets.log_console._model import PythonLoggingHandler, _record_from_python_logging_record, _get_logger
 from .fixtures import *  # noqa: F401,F403
@@ -25,6 +23,7 @@ def test_fn_wrapper():
     logging.Logger.root = logging.root
     logging.Logger.manager = logging.Manager(logging.Logger.root)
     yield
+    logging.shutdown()
 
 
 def test_abc_model_available_logger_levels(custom_model_class):
@@ -52,10 +51,13 @@ def test_model_cleans_up_on_destroy(qtbot):
     logger2 = logging.getLogger("test_logger2")
     assert len(logger.handlers) == 0
     assert len(logger2.handlers) == 0
-    model = LogConsoleModel(loggers={logger, logger2})
-    assert len(logger.handlers) == 1
-    assert len(logger2.handlers) == 1
-    QApplication.instance().sendEvent(model, QEvent(QEvent.DeferredDelete))  # The only working way of triggering "destroyed" signal
+
+    def scope():
+        _ = LogConsoleModel(loggers={logger, logger2})
+        assert len(logger.handlers) == 1
+        assert len(logger2.handlers) == 1
+
+    scope()
     assert len(logger.handlers) == 0
     assert len(logger2.handlers) == 0
 
