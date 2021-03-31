@@ -17,6 +17,7 @@ in similar use-cases.
    booleanpropertycolumndelegate
    colorbutton
    colorpropertycolumndelegate
+   orientedtoolbutton
    persistenteditortableview
    tableviewcolumnresizer
 

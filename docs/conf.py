@@ -788,6 +788,7 @@ intersphinx_mapping = {
     "pyjapc": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pyjapc/docs/v{pyjapc.__version__}/", None),
     "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
     "papc": (f"https://acc-py.web.cern.ch/gitlab/pelson/papc/docs/v{papc.__version__}/", None),
+    "pyrbac": (f"https://acc-py.web.cern.ch/gitlab-mono/acc-co/cmw/cmw-core/docs/pyrbac/master/", None),
 }
 
 

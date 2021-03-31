@@ -1,4 +1,3 @@
-import warnings
 from codecs import decode
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -7,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Type, Optional, List, TypeVar, Union, Dict, cast
 from qtpy.QtWidgets import QWidget, QAction, QMessageBox, QApplication
-from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtGui import QIcon
 from qtpy.QtCore import QObject, QMetaMethod, QByteArray
 from qtpy.QtDesigner import (
     QDesignerFormEditorInterface,
@@ -21,6 +20,7 @@ from qtpy.QtDesigner import (
 )
 from accwidgets.designer_check import set_designer, is_designer
 from accwidgets._api import disable_assert_cache
+from accwidgets.qt import make_icon
 
 
 class WidgetBoxGroup(Enum):
@@ -403,11 +403,7 @@ def _icon(name: str, base_path: Optional[Path] = None) -> QIcon:
     """ Load icons by their file name from folder 'icons' """
     if base_path is None:
         base_path = Path(__file__).absolute().parent
-    icon_path = base_path / "icons" / f"{name}.ico"
-    if not icon_path.is_file():
-        warnings.warn(f"Icon '{name}' cannot be found at {str(icon_path)}")
-    pixmap = QPixmap(str(icon_path))
-    return QIcon(pixmap)
+    return make_icon(base_path / "icons" / f"{name}.ico")
 
 
 SupportedExtensionType = Union[WidgetsTaskMenuExtension, WidgetsMemberSheetExtension]

@@ -3,9 +3,9 @@ from pytestqt.qtbot import QtBot
 from typing import Optional, cast, Type
 from unittest import mock
 from qtpy.QtCore import Qt, QVariant, QAbstractListModel, QObject, QPersistentModelIndex, QLocale
-from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QWidget
+from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QWidget, QSizePolicy, QToolBar
 from PyQt5.QtTest import QAbstractItemModelTester
-from accwidgets.qt import (AbstractListModel, AbstractTableModel, AbstractTableDialog,
+from accwidgets.qt import (AbstractListModel, AbstractTableModel, AbstractTableDialog, OrientedToolButton,
                            PersistentEditorTableView, BooleanPropertyColumnDelegate, BooleanButton,
                            AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX, exec_app_interruptable)
 
@@ -859,3 +859,70 @@ def test_exec_app_interruptable(return_code):
         assert res == return_code
         attach_sigint.assert_called_once_with(app)
         app.exec_.assert_called_once()
+
+
+@pytest.mark.parametrize("primary,secondary,expected_h,expected_v", [
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, QSizePolicy.Minimum, QSizePolicy.Expanding),
+])
+def test_oriented_tool_button_standard_horizontal_orientation(qtbot: QtBot, primary, secondary, expected_h, expected_v):
+    widget = OrientedToolButton(primary=primary, secondary=secondary)
+    qtbot.add_widget(widget)
+    assert widget.sizePolicy() == QSizePolicy(expected_h, expected_v)
+
+
+@pytest.mark.parametrize("primary,secondary,orientation,expected_initial_h,expected_initial_v,new_orientation,expected_new_h,expected_new_v", [
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Minimum, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Minimum, Qt.Horizontal, QSizePolicy.Minimum, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Minimum),
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Minimum, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Minimum),
+])
+def test_oriented_tool_button_changes_orientation(qtbot: QtBot, primary, secondary, orientation, expected_initial_h,
+                                                  expected_initial_v, expected_new_h, expected_new_v, new_orientation):
+    widget = OrientedToolButton(primary=primary, secondary=secondary, orientation=orientation)
+    qtbot.add_widget(widget)
+    assert widget.sizePolicy() == QSizePolicy(expected_initial_h, expected_initial_v)
+    widget.setOrientation(new_orientation)
+    assert widget.sizePolicy() == QSizePolicy(expected_new_h, expected_new_v)
+
+
+@pytest.mark.parametrize("primary,secondary,initial_btn_orientation,expected_h,expected_v", [
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Horizontal, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Horizontal, QSizePolicy.Minimum, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Preferred),
+    (QSizePolicy.Expanding, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Expanding),
+    (QSizePolicy.Preferred, QSizePolicy.Preferred, Qt.Vertical, QSizePolicy.Preferred, QSizePolicy.Preferred),
+    (QSizePolicy.Minimum, QSizePolicy.Expanding, Qt.Vertical, QSizePolicy.Expanding, QSizePolicy.Minimum),
+])
+@pytest.mark.parametrize("initial_toolbar_orientation", [Qt.Horizontal, Qt.Vertical])
+@pytest.mark.parametrize("new_toolbar_orientation", [Qt.Horizontal, Qt.Vertical])
+def test_oriented_tool_button_does_not_automatically_react_to_toolbar_orientation(qtbot: QtBot, primary, secondary,
+                                                                                  initial_btn_orientation, expected_v,
+                                                                                  expected_h, initial_toolbar_orientation,
+                                                                                  new_toolbar_orientation):
+    toolbar = QToolBar()
+    qtbot.add_widget(toolbar)
+    toolbar.setOrientation(initial_toolbar_orientation)
+    widget = OrientedToolButton(primary=primary,
+                                secondary=secondary,
+                                orientation=initial_btn_orientation)
+    toolbar.addWidget(widget)
+    assert widget.sizePolicy() == QSizePolicy(expected_h, expected_v)
+    toolbar.setOrientation(new_toolbar_orientation)
+    assert widget.sizePolicy() == QSizePolicy(expected_h, expected_v)
