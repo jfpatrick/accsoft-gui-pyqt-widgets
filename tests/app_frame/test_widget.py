@@ -6,6 +6,7 @@ from qtpy.QtWidgets import QWidget, QDockWidget, QMenu, QWidgetAction, QToolBar,
 from accwidgets.app_frame import ApplicationFrame
 from accwidgets.log_console import LogConsoleDock, LogConsole
 from accwidgets.timing_bar import TimingBar
+from accwidgets.app_frame._frame import _strip_mnemonics
 
 
 @pytest.mark.parametrize("use_timing_bar,use_console,expect_timing_bar_exist,expect_log_console_exist", [
@@ -644,3 +645,24 @@ def test_app_frame_show_event_populates_toggle_view_actions(_, qtbot: QtBot, log
         widget.show()
     assert ("Toggle Primary Toolbar" in (a.text() for a in view_menu.actions())) == should_add_toolbar_action
     assert ("Toggle Log Console" in (a.text() for a in view_menu.actions())) == should_add_log_console_action
+
+
+@pytest.mark.parametrize("input,expected_output", [
+    ("View", "View"),
+    ("&View", "View"),
+    ("View&", "View"),
+    ("V&iew", "View"),
+    ("Vi&ew", "View"),
+    ("Vie&w", "View"),
+    ("&&View", "&&View"),
+    ("V&&iew", "V&&iew"),
+    ("Vi&&ew", "Vi&&ew"),
+    ("Vie&&w", "Vie&&w"),
+    ("View&&", "View&&"),
+    ("&& View", "&& View"),
+    ("& View", " View"),
+    ("&Vi&&ew", "Vi&&ew"),
+    ("V&&ie&w", "V&&iew"),
+])
+def test_strip_mnemonics(input, expected_output):
+    assert _strip_mnemonics(input) == expected_output
