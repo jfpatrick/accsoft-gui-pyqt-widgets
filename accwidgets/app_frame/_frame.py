@@ -1,3 +1,4 @@
+import re
 from typing import Optional, Union, overload, cast, Tuple, TYPE_CHECKING
 from pathlib import Path
 from qtpy.QtWidgets import (QMainWindow, QWidget, QDockWidget, QMenu, QAction, QMenuBar, QToolBar, QSpacerItem,
@@ -366,7 +367,7 @@ class ApplicationFrame(QMainWindow):
     def __get_menu_view(self) -> Optional[QMenu]:
         menu_bar: QMenuBar = self.menuBar()
         for action in menu_bar.actions():
-            if action.text() == "View" and action.menu() is not None:
+            if action.menu() is not None and _strip_mnemonics(action.text()) == "View":
                 return action.menu()
         return None
 
@@ -420,3 +421,7 @@ class ToolBarSpacer(QWidget):
 
 
 _DESIGNER_IMPORT_ERROR = r"accwidgets.\w+ (is intended|cannot reliably)"
+
+
+def _strip_mnemonics(input: str) -> str:
+    return re.sub(r"(?<=[^&])&(?=[^&])|^&$|(?<=[^&])&$|^&(?=[^&])", "", input)
