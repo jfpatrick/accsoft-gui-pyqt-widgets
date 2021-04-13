@@ -213,13 +213,13 @@ def test_rbac_dialog_animates_on_login_start(qtbot: QtBot, dialog_shown, should_
     if dialog_shown:
         with qtbot.wait_exposed(widget):
             widget.show()
-    with mock.patch.object(widget.activity_indicator, "setIcon") as setIcon:
+    with mock.patch.object(widget.activity_indicator, "startAnimation") as startAnimation:
         widget.on_login_started()
         if should_animate:
-            setIcon.assert_called_once()
+            startAnimation.assert_called_once()
             assert widget.activity_stack.currentIndex() == 1
         else:
-            setIcon.assert_not_called()
+            startAnimation.assert_not_called()
             assert widget.activity_stack.currentIndex() == 0
     widget.on_login_finished()
     assert widget.activity_stack.currentIndex() == 0

@@ -13,6 +13,7 @@ in similar use-cases.
    abstractqobjectmeta
    abstracttabledialog
    abstracttablemodel
+   activityindicator
    booleanbutton
    booleanpropertycolumndelegate
    colorbutton

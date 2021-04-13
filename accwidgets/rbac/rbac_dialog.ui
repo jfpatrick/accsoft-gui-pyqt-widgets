@@ -436,7 +436,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="activity_page">
+     <widget class="QWidget" name="widget_2">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <spacer name="spacer">
@@ -452,17 +452,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLabel" name="label_3">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Logging in...</string>
-         </property>
-        </widget>
+        <widget class="ActivityIndicator" name="activity_indicator" native="true"/>
        </item>
        <item>
         <spacer name="spacer_2">
@@ -483,6 +473,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ActivityIndicator</class>
+   <extends>QWidget</extends>
+   <header>accwidgets.qt</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

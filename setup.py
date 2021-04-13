@@ -39,6 +39,7 @@ SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 REQUIREMENTS: Dict[str, List[str]] = {
     CORE_OPTION: [
         "QtPy>=1.7,<2a0",
+        "qtawesome>=0.7.0,<2a0",
         "packaging>=20.4,<20.5a0",
         "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
     ],

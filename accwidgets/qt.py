@@ -1,15 +1,17 @@
 import warnings
+import qtawesome as qta
+from qtawesome import IconWidget
 from enum import IntEnum, auto
 from pathlib import Path
-from typing import Optional, Set, List, TypeVar, Generic, Any
+from typing import Optional, Set, List, TypeVar, Generic, Any, cast
 from abc import abstractmethod, ABCMeta
 from qtpy.QtWidgets import (QTableView, QWidget, QAbstractItemDelegate, QMessageBox, QPushButton, QDialog, QColorDialog,
                             QDialogButtonBox, QStyledItemDelegate, QStyleOptionViewItem, QSpacerItem, QSizePolicy,
                             QHBoxLayout, QToolButton, QCheckBox, QComboBox, QHeaderView, QGraphicsItem, QFrame,
-                            QApplication)
+                            QApplication, QLabel)
 from qtpy.QtCore import (Qt, QModelIndex, QAbstractItemModel, QAbstractTableModel, QObject, QVariant,
-                         QPersistentModelIndex, QLocale, Signal, Slot)
-from qtpy.QtGui import QFont, QColor, QIcon, QPixmap
+                         QPersistentModelIndex, QLocale, Signal, Slot, QTimer, Property)
+from qtpy.QtGui import QFont, QColor, QIcon, QPixmap, QPalette
 from qtpy.uic import loadUi
 from accwidgets._generics import GenericQtMeta
 from accwidgets._signal import attach_sigint
@@ -861,6 +863,98 @@ class OrientedToolButton(QToolButton):
             self.setSizePolicy(self._primary_policy, self._secondary_policy)
         else:
             self.setSizePolicy(self._secondary_policy, self._primary_policy)
+
+
+class ActivityIndicator(QWidget):
+
+    def __init__(self, parent: Optional[QWidget] = None):
+        """
+        Activity indicator is an animated spinning icon that can also display associated text on the side.
+
+        Args:
+            parent: Owning object.
+        """
+        super().__init__(parent)
+        # We must use composition over inheritance here, because inheritance causes cyclic reference
+        # (memory leak), because qta.Spin uses parent as a key in a strongly referenced dictionary
+        # Instead, in composition we give qta.Spin its sibling as a parent_widget
+        self._icon_widget = IconWidget(parent=self)
+        # Keeping separate, because animation can't be stopped natively once created
+        self._icon_animation: Optional[qta.Spin] = None
+        self._label: Optional[QLabel] = None
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._icon_widget)
+        self.setLayout(layout)
+
+    def _get_hint(self) -> str:
+        return self._label.text() if self._label else ""
+
+    @Slot(str)
+    def setHint(self, new_val: str):
+        """
+        Set text value to be shown beside the spinning icon.
+        This method can be used as a slot. Otherwise, it is possible to use :attr:`hint` property.
+
+        Args:
+            new_val: New text value.
+        """
+        if new_val:
+            if self._label is None:
+                self._label = QLabel()
+                layout = cast(QHBoxLayout, self.layout())
+                layout.addWidget(self._label)
+            self._label.setText(new_val)
+        else:
+            if self._label is not None:
+                self.layout().removeWidget(self._label)
+                self._label = None
+
+    # Unfortunately, can't call this a "text", because Sphinx does not pick it up for autodoc
+    hint: str = Property(str, fget=_get_hint, fset=setHint)
+    """Text value that is shown beside the spinning icon."""
+
+    @Slot()
+    def startAnimation(self):
+        """Begin animating spinning icon."""
+        if self._icon_animation is None:
+            # Note: this produces memory leak (not easily fixable even with custom qta.Spin implementation)
+            # qta.Spin -> strong ref to -> parent_widget never released (at least until spin is released)
+            # qta.icon -> caches Icon produced with all options, including spin -> strong reference, cache cannot be
+            # cleared
+            # TODO: Review if new qtawesome version appears
+            self._icon_animation = qta.Spin(parent_widget=self._icon_widget)
+            animated_icon = qta.icon("fa.spinner",
+                                     color=self.palette().color(QPalette.WindowText),
+                                     animation=self._icon_animation)
+            self._icon_widget.setIcon(animated_icon)
+        else:
+            try:
+                timer: QTimer = self._icon_animation.info[self._icon_widget][0]
+                timer.start(self._icon_animation.interval)
+            except Exception as e:  # noqa: B902
+                # Should not be a problem, but in case qta breaks API suddenly, here's an extra protection
+                warnings.warn(f"Cannot resume activity animation timer: {e!s}")
+
+    @Slot()
+    def stopAnimation(self):
+        """Stop animating spinning icon and stop associated timers."""
+        if self._icon_animation is not None:
+            try:
+                # Stop animation timers when not needed
+                timer: QTimer = self._icon_animation.info[self._icon_widget][0]
+                timer.stop()
+            except Exception as e:  # noqa: B902
+                # Should not be a problem, but in case qta breaks API suddenly, here's an extra protection
+                warnings.warn(f"Cannot stop activity animation timer: {e!s}")
+
+    @property
+    def animating(self) -> bool:
+        """Flag indicating if animation has been started."""
+        if self._icon_animation is None:
+            return False
+        timer: QTimer = self._icon_animation.info[self._icon_widget][0]
+        return timer.isActive()
 
 
 def make_icon(path: Path) -> QIcon:
