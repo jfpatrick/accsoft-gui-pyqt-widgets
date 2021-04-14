@@ -30,7 +30,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    style = Path(__file__).parent / "dark.qss"
+    style = Path(__file__).parent.parent / "_common" / "dark.qss"
     dark_mode = style.read_text()
     dark_mode += """
 RbaButton { qproperty-mcsColor: #ff0000; }

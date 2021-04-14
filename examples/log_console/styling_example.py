@@ -22,7 +22,9 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         self.centralWidget().setLayout(layout)
         layout.addWidget(LogConsole())
-        layout.addWidget(LogConsoleExampleButtons())
+        buttons = LogConsoleExampleButtons()
+        buttons.layout().setContentsMargins(9, 9, 9, 9)
+        layout.addWidget(buttons)
         self.resize(360, 223)
 
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    style = Path(__file__).parent / "dark.qss"
+    style = Path(__file__).parent.parent / "_common" / "dark.qss"
     dark_mode = style.read_text()
     dark_mode += """
 LogConsole {

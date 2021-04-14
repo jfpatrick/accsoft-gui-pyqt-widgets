@@ -5,12 +5,12 @@ For the sake of example, we are using custom model that does not require connect
 """
 
 import sys
+from pathlib import Path
 from qtpy.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
 from accwidgets.timing_bar import TimingBar
 from accwidgets.qt import exec_app_interruptable
-from dark_mode import dark_mode_style
 from sample_model import SampleTimingBarModel
 
 
@@ -19,7 +19,10 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("TimingBar palette example")
-        self.setStyleSheet(dark_mode_style)
+
+        style = Path(__file__).parent.parent / "_common" / "dark.qss"
+        dark_mode = style.read_text()
+        self.setStyleSheet(dark_mode)
 
         timing_bar = TimingBar(model=SampleTimingBarModel())
         timing_bar.highlightedUser = "USER2"

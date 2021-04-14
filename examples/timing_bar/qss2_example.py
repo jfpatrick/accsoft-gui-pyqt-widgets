@@ -4,16 +4,18 @@ Everything else stays the same.
 """
 
 import sys
+from pathlib import Path
 from qtpy.QtWidgets import QApplication
 from accwidgets.qt import exec_app_interruptable
 from qss_example import MainWindow
-from dark_mode import dark_mode_style
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
-    window.setStyleSheet(dark_mode_style + """
+    style = Path(__file__).parent.parent / "_common" / "dark.qss"
+    dark_mode = style.read_text()
+    window.setStyleSheet(dark_mode + """
 TimingBar {
     qproperty-timingMarkColor: red;
     qproperty-timingMarkTextColor: black;
