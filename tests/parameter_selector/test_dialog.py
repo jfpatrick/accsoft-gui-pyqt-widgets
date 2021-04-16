@@ -1,12 +1,13 @@
 import pytest
 import asyncio
+import functools
 from asyncio import CancelledError
 from unittest import mock
 from pytestqt.qtbot import QtBot
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QKeyEvent
 from qtpy.QtWidgets import QDialogButtonBox, QDialog
-from accwidgets.parameter_selector._dialog import ParameterSelector, ParameterSelectorDialog
+from accwidgets.parameter_selector._dialog import ParameterSelector, ParameterSelectorDialog, ParameterName
 from ..async_shim import AsyncMock
 
 
@@ -325,6 +326,100 @@ def test_widget_protocol_selection_affects_result(_, qtbot: QtBot, no_proto_text
 
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
+@pytest.mark.parametrize("enable_protocols,proto,selected_dev,selected_prop,selected_field,expected_dev,expected_prop,expected_field,expected_label", [
+    (False, None, 0, 0, -1, "dev1", "prop1", None, "dev1/prop1"),
+    (False, None, 1, 0, -1, "dev2", "prop2", None, "dev2/prop2"),
+    (False, None, 1, 0, 99, "dev2", "prop2", None, "dev2/prop2"),
+    (False, None, 1, 0, 0, "dev2", "prop2", "field2", "dev2/prop2#field2"),
+    (False, None, 2, 0, 0, "dev3", "prop3.1", "field3.1.1", "dev3/prop3.1#field3.1.1"),
+    (False, None, 2, 1, 0, "dev3", "prop3.2", "field3.2.1", "dev3/prop3.2#field3.2.1"),
+    (False, None, 2, 1, 1, "dev3", "prop3.2", "field3.2.2", "dev3/prop3.2#field3.2.2"),
+    (True, "", 0, 0, -1, "dev1", "prop1", None, "dev1/prop1"),
+    (True, "", 1, 0, -1, "dev2", "prop2", None, "dev2/prop2"),
+    (True, "", 1, 0, 99, "dev2", "prop2", None, "dev2/prop2"),
+    (True, "", 1, 0, 0, "dev2", "prop2", "field2", "dev2/prop2#field2"),
+    (True, "", 2, 0, 0, "dev3", "prop3.1", "field3.1.1", "dev3/prop3.1#field3.1.1"),
+    (True, "", 2, 1, 0, "dev3", "prop3.2", "field3.2.1", "dev3/prop3.2#field3.2.1"),
+    (True, "", 2, 1, 1, "dev3", "prop3.2", "field3.2.2", "dev3/prop3.2#field3.2.2"),
+    (True, "rda3", 0, 0, -1, "dev1", "prop1", None, "rda3:///dev1/prop1"),
+    (True, "rda3", 1, 0, -1, "dev2", "prop2", None, "rda3:///dev2/prop2"),
+    (True, "rda3", 1, 0, 99, "dev2", "prop2", None, "rda3:///dev2/prop2"),
+    (True, "rda3", 1, 0, 0, "dev2", "prop2", "field2", "rda3:///dev2/prop2#field2"),
+    (True, "rda3", 2, 0, 0, "dev3", "prop3.1", "field3.1.1", "rda3:///dev3/prop3.1#field3.1.1"),
+    (True, "rda3", 2, 1, 0, "dev3", "prop3.2", "field3.2.1", "rda3:///dev3/prop3.2#field3.2.1"),
+    (True, "rda3", 2, 1, 1, "dev3", "prop3.2", "field3.2.2", "rda3:///dev3/prop3.2#field3.2.2"),
+])
+async def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop, proto,
+                                                       expected_label, expected_field, expected_prop, expected_dev,
+                                                       enable_protocols):
+    data = [
+        ("dev1", [("prop1", [])]),
+        ("dev2", [("prop2", ["field2"])]),
+        ("dev3", [("prop3.1", ["field3.1.1"]), ("prop3.2", ["field3.2.1", "field3.2.2"])]),
+    ]
+    widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
+    qtbot.add_widget(widget)
+    if enable_protocols:
+        widget.protocol_combo.setCurrentText(proto.upper())
+        widget._on_protocol_selected()
+    assert widget.selector_label.text() == ""
+    widget._root_model.set_data(mock.MagicMock(), data)  # type: ignore
+    widget.dev_proxy.selected_idx = selected_dev
+    widget.prop_proxy.selected_idx = selected_prop
+    widget.field_proxy.selected_idx = selected_field
+    widget._on_result_changed()
+    assert widget._selected_value == ParameterName(device=expected_dev,
+                                                   prop=expected_prop,
+                                                   field=expected_field,
+                                                   service=None,
+                                                   protocol=proto or None)
+    assert widget.selector_label.text() == expected_label
+
+
+@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
+@pytest.mark.parametrize("enable_protocols,proto,selected_dev,selected_prop,selected_field", [
+    (False, None, -1, 0, -1),
+    (False, None, 0, -1, -1),
+    (False, None, -1, 0, 0),
+    (False, None, 0, -1, 0),
+    (False, None, 3, 0, -1),
+    (True, "", -1, 0, -1),
+    (True, "", 0, -1, -1),
+    (True, "", -1, 0, 0),
+    (True, "", 0, -1, 0),
+    (True, "", 3, 0, -1),
+    (True, "rda3", -1, 0, -1),
+    (True, "rda3", 0, -1, -1),
+    (True, "rda3", -1, 0, 0),
+    (True, "rda3", 0, -1, 0),
+    (True, "rda3", 3, 0, -1),
+])
+async def test_widget_on_result_changed_fails_to_set_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop,
+                                                               proto, enable_protocols):
+    data = [
+        ("dev1", [("prop1", [])]),
+        ("dev2", [("prop2", ["field2"])]),
+        ("dev3", [("prop3.1", ["field3.1.1"]), ("prop3.2", ["field3.2.1", "field3.2.2"])]),
+        ("#wrong#device#name", [("prop4", [])]),
+    ]
+    widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
+    qtbot.add_widget(widget)
+    if enable_protocols:
+        widget.protocol_combo.setCurrentText(proto.upper())
+        widget._on_protocol_selected()
+    assert widget.selector_label.text() == ""
+    widget._root_model.set_data(mock.MagicMock(), data)  # type: ignore
+    widget.dev_proxy.selected_idx = selected_dev
+    widget.prop_proxy.selected_idx = selected_prop
+    widget.field_proxy.selected_idx = selected_field
+    widget._on_result_changed()
+    assert widget._selected_value == ParameterName(device="",
+                                                   prop="",
+                                                   protocol=proto or None)
+    assert widget.selector_label.text() == ""
+
+
+@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("text", [
     "",
     "test",
@@ -533,19 +628,24 @@ async def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_
     ("TEST.DEV", 'Results for search query "TEST.DEV":'),
     ("test/prop#field ", 'Results for search query "test/prop#field":'),
 ])
+@pytest.mark.parametrize("results", [
+    [],
+    [("dev1", [])],
+    [("dev1", []), ("dev2", [("prop1", [])]), ("dev3", [("prop2", ["field1"])])],
+])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_protocols, search_string, prev_status,
-                                                          expected_group_name):
+                                                          expected_group_name, results):
     widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
     qtbot.add_widget(widget)
     widget.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
-    mocked_model = mock.MagicMock()
-    widget._search_results_model = mocked_model
+    root_model = mock.MagicMock()
+    widget._root_model = root_model
     widget._update_from_status(prev_status)  # Just check that this does not influence anything
     assert widget.err_label.text() == "Start by typing the device name into the field above!"
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=[]):
+    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=results):
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
             await widget._on_search_requested(search_string)
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
@@ -554,7 +654,7 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
                                                   mock.call(ParameterSelector.NetworkRequestStatus.COMPLETE)]
             assert widget.err_label.text() == "Start by typing the device name into the field above!"
             assert widget.results_group.title() == expected_group_name
-            mocked_model.set_data.assert_called_once_with([])
+            root_model.set_data.assert_called_once_with(results)
 
 
 @pytest.mark.asyncio
@@ -565,7 +665,8 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
 ])
 @pytest.mark.parametrize("results,expect_select_first", [
     ([], False),
-    (["dev1"], True),
+    ([("dev1", [])], True),
+    ([("dev1", []), ("dev2", [("prop1", [])]), ("dev3", [("prop2", ["field1"])])], False),
 ])
 @pytest.mark.parametrize("search_string", ["TEST.DEV", "test/prop#field "])
 @pytest.mark.parametrize("enable_protocols", [True, False])
@@ -574,8 +675,9 @@ async def test_widget_on_search_requested_success_selects_when_only_result(qtbot
     widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
     qtbot.add_widget(widget)
     widget.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
-    mocked_model = mock.MagicMock()
-    widget._search_results_model = mocked_model
+    mocked_proxy = mock.MagicMock()
+    widget.dev_proxy = mocked_proxy
+    widget._root_model = mock.MagicMock()  # Prevent set_data being called into the real model
     widget._update_from_status(prev_status)  # Just check that this does not influence anything
     assert widget.err_label.text() == "Start by typing the device name into the field above!"
 
@@ -583,9 +685,63 @@ async def test_widget_on_search_requested_success_selects_when_only_result(qtbot
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=results):
         await widget._on_search_requested(search_string)
         if expect_select_first:
-            mocked_model.select_device.assert_called_once_with(0)
+            mocked_proxy.update_selection.assert_called_once_with(0)
         else:
-            mocked_model.select_device.assert_not_called()
+            mocked_proxy.update_selection.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("search_string,expect_dev,expect_prop,expect_field", [
+    ("nonexisting", -1, -1, -1),
+    ("dev1", 0, -1, -1),
+    ("dev1/prop1", 0, 0, -1),
+    ("dev1/prop1#nonexistingfield", 0, 0, -1),
+    ("dev2", 1, -1, -1),
+    ("dev2/prop2", 1, 0, -1),
+    ("dev2/prop2#field2", 1, 0, 0),
+    ("dev3", 2, -1, -1),
+    ("dev3/prop3.1", 2, 0, -1),
+    ("dev3/prop3.2", 2, 1, -1),
+    ("dev3/prop3.1#field3.1.1", 2, 0, 0),
+    ("dev3/prop3.2#field3.2.1", 2, 1, 0),
+    ("dev3/prop3.2#field3.2.2", 2, 1, 1),
+    ("dev3/prop3.2#nonexisting", 2, 1, -1),
+])
+@pytest.mark.parametrize("enable_protocols", [True, False])
+async def test_widget_on_search_requested_success_selects_appropriate_result(qtbot: QtBot, enable_protocols,
+                                                                             search_string, expect_dev, expect_field,
+                                                                             expect_prop):
+    data = [
+        ("dev1", [("prop1", [])]),
+        ("dev2", [("prop2", ["field2"])]),
+        ("dev3", [("prop3.1", ["field3.1.1"]), ("prop3.2", ["field3.2.1", "field3.2.2"])]),
+    ]
+    widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
+    qtbot.add_widget(widget)
+    widget.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
+
+    def update_selection(val, proxy):
+        proxy.selected_idx = val
+
+    dev_proxy = mock.MagicMock()
+    dev_proxy.selected_idx = -1
+    prop_proxy = mock.MagicMock()
+    prop_proxy.selected_idx = -1
+    field_proxy = mock.MagicMock()
+    field_proxy.selected_idx = -1
+    dev_proxy.update_selection.side_effect = functools.partial(update_selection, proxy=dev_proxy)
+    prop_proxy.update_selection.side_effect = functools.partial(update_selection, proxy=prop_proxy)
+    field_proxy.update_selection.side_effect = functools.partial(update_selection, proxy=field_proxy)
+    widget.dev_proxy = dev_proxy
+    widget.prop_proxy = prop_proxy
+    widget.field_proxy = field_proxy
+    widget._root_model = mock.MagicMock()  # Prevent set_data being called into the real model
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=data):
+        await widget._on_search_requested(search_string)
+        for proxy, expected_idx in zip([dev_proxy, prop_proxy, field_proxy], [expect_dev, expect_prop, expect_field]):
+            assert proxy.selected_idx == expected_idx
 
 
 @pytest.mark.parametrize("enable_protocols", [True, False])

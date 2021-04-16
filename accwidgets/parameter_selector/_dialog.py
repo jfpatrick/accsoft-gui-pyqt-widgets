@@ -1,23 +1,18 @@
-import logging
-import functools
 import asyncio
 from asyncio import Future, CancelledError
 from enum import IntEnum
 from copy import copy
-from typing import Optional, List, cast
+from typing import Optional
 from pathlib import Path
 from qtpy.uic import loadUi
-from qtpy.QtCore import Qt, QStringListModel, QModelIndex, QItemSelectionModel
+from qtpy.QtCore import Qt
 from qtpy.QtGui import QKeyEvent, QHideEvent
 from qtpy.QtWidgets import (QWidget, QDialog, QVBoxLayout, QPushButton, QLineEdit, QLabel, QStackedWidget,
                             QGroupBox, QListView, QComboBox, QDialogButtonBox)
 from accwidgets._async_utils import install_asyncio_event_loop
 from accwidgets.qt import ActivityIndicator
 from ._name import ParameterName
-from ._model import DeviceListModel, NestedListRootItem, look_up_ccda
-
-
-logger = logging.getLogger(__name__)
+from ._model import look_up_ccda, SearchResultsModel, SearchProxyModel
 
 
 class ParameterSelector(QWidget):
@@ -50,16 +45,31 @@ class ParameterSelector(QWidget):
 
         loadUi(Path(__file__).parent / "selector.ui", self)
 
-        self._search_results_model = DeviceListModel(self)
+        self._root_model = SearchResultsModel(self)
         self._requested_device: str = ""
         self._curr_search_status = ParameterSelector.NetworkRequestStatus.FAILED
         self._prev_search_status = ParameterSelector.NetworkRequestStatus.FAILED
-        self._search_results: List[NestedListRootItem] = []
         self._active_ccda_task: Optional[Future] = None
 
-        self.device_list.setModel(QStringListModel(self))
-        self.prop_list.setModel(QStringListModel(self))
-        self.field_list.setModel(QStringListModel(self))
+        dev_proxy = SearchProxyModel(self)
+        dev_proxy.setObjectName("dev_proxy")
+        prop_proxy = SearchProxyModel(self)
+        prop_proxy.setObjectName("prop_proxy")
+        field_proxy = SearchProxyModel(self)
+        field_proxy.setObjectName("field_proxy")
+        dev_proxy.setSourceModel(self._root_model)
+        prop_proxy.setSourceModel(dev_proxy)
+        field_proxy.setSourceModel(prop_proxy)
+
+        dev_proxy.install(self.device_list)
+        prop_proxy.install(self.prop_list)
+        field_proxy.install(self.field_list)
+        dev_proxy.selection_changed.connect(self._on_result_changed)
+        prop_proxy.selection_changed.connect(self._on_result_changed)
+        field_proxy.selection_changed.connect(self._on_result_changed)
+        self.dev_proxy = dev_proxy
+        self.prop_proxy = prop_proxy
+        self.field_proxy = field_proxy
 
         # Protocol selector
         if enable_protocols:
@@ -71,18 +81,6 @@ class ParameterSelector(QWidget):
         else:
             self.protocol_group.hide()
 
-        # Parameter name selector
-        self.device_list.activated.connect(self._search_results_model.root_item_selection_changed)
-        self.device_list.clicked.connect(self._search_results_model.root_item_selection_changed)
-        self.prop_list.activated.connect(self._search_results_model.intermediate_item_selection_changed)
-        self.prop_list.clicked.connect(self._search_results_model.intermediate_item_selection_changed)
-        self.field_list.activated.connect(self._search_results_model.leaf_selection_changed)
-        self.field_list.clicked.connect(self._search_results_model.leaf_selection_changed)
-        self._search_results_model.root_items_changed.connect(functools.partial(self._on_list_changed, list_view=self.device_list))
-        self._search_results_model.intermediate_items_changed.connect(functools.partial(self._on_list_changed, list_view=self.prop_list))
-        self._search_results_model.leafs_changed.connect(functools.partial(self._on_list_changed, list_view=self.field_list))
-        self._search_results_model.result_changed.connect(self._on_result_changed)
-
         # Search
         self.search_edit.textChanged.connect(self._on_device_search_changed)
         self.search_edit.returnPressed.connect(self._start_search)
@@ -92,7 +90,7 @@ class ParameterSelector(QWidget):
         # Initially error page displays suggestion to start the search
         self._update_from_status(ParameterSelector.NetworkRequestStatus.FAILED)
         self._on_device_search_changed("")
-        self._search_results_model.set_data([])
+        self._on_result_changed()
 
     @property
     def value(self) -> str:
@@ -147,15 +145,22 @@ class ParameterSelector(QWidget):
         self._selected_value.protocol = text.lower() or None
         self.selector_label.setText(self.value)
 
-    def _on_list_changed(self, items: List[str], selected_index: QModelIndex, list_view: QListView):
-        cast(QStringListModel, list_view.model()).setStringList(items)
-        list_view.setEnabled(len(items) > 0)
-        list_view.setCurrentIndex(selected_index)
-        list_view.selectionModel().select(selected_index, QItemSelectionModel.Select)
-        list_view.setFocus(Qt.ActiveWindowFocusReason)
+    def _on_result_changed(self):
 
-    def _on_result_changed(self, result: str):
-        parsed = ParameterName.from_string(result)
+        device = self.dev_proxy.index(self.dev_proxy.selected_idx, 0).data()
+        if device is None:
+            return
+
+        prop = self.prop_proxy.index(self.prop_proxy.selected_idx, 0).data()
+        if prop is None:
+            return
+
+        param = f"{device}/{prop}"
+        field = self.field_proxy.index(self.field_proxy.selected_idx, 0).data()
+        if field:
+            param = f"{param}#{field}"
+
+        parsed = ParameterName.from_string(param)
         if parsed is None:
             return
 
@@ -181,10 +186,8 @@ class ParameterSelector(QWidget):
         self.search_edit.setEnabled(not in_progress)
         self.search_btn.setEnabled(not in_progress)
 
-        # Disable these to allow tab order jump directly to the cancel button
-        self.device_list.setEnabled(not in_progress)
-        self.prop_list.setEnabled(not in_progress)
-        self.field_list.setEnabled(not in_progress)
+        # Disable lists to allow tab order jump directly to the cancel button
+        self.results_group.setEnabled(not in_progress)
 
         self._prev_search_status = self._curr_search_status
         self._curr_search_status = status
@@ -205,37 +208,58 @@ class ParameterSelector(QWidget):
 
         device_addr = ParameterName.from_string(trimmed_search_string)
         search_device = device_addr.device if device_addr is not None and device_addr.valid else trimmed_search_string
+        search_prop = device_addr.prop if device_addr else None
+        search_field = device_addr.field if device_addr else None
 
         self.activity_indicator.hint = f"Searching {search_device}..."
         self._update_from_status(ParameterSelector.NetworkRequestStatus.IN_PROGRESS)
-        self._active_ccda_task = look_up_ccda(device_name=search_device,
-                                              searched_prop=device_addr.prop if device_addr else None,
-                                              searched_field=device_addr.field if device_addr else None)
+        self._active_ccda_task = look_up_ccda(search_device)
         self._reset_selected_value()
 
         try:
-            self._search_results = await self._active_ccda_task
+            search_results = await self._active_ccda_task
         except CancelledError:
             self._update_from_status(self._prev_search_status)
             return
         except BaseException as e:  # noqa: B902
             self.err_label.setText(str(e))
-            self._search_results.clear()
             self._update_from_status(ParameterSelector.NetworkRequestStatus.FAILED)
             return
 
         self._requested_device = search_device
         self.results_group.setTitle(f'Results for search query "{trimmed_search_string}":')
 
-        self._search_results_model.set_data(self._search_results)
+        self._root_model.set_data(search_results)
 
         # If device is the only one, auto select it
-        if len(self._search_results) == 1:
-            self._search_results_model.select_device(0)
+        if len(search_results) == 1:
+            self.dev_proxy.update_selection(0)
         else:
-            for idx, dev in enumerate(self._search_results):
-                if dev.name == self._requested_device:
-                    self._search_results_model.select_device(idx)
+            for idx, dev_data in enumerate(search_results):
+                name, _ = dev_data
+                if name == self._requested_device:
+                    self.dev_proxy.update_selection(idx)
+        if search_prop:
+            try:
+                props = search_results[self.dev_proxy.selected_idx][1]
+            except IndexError:
+                pass
+            else:
+                for idx, prop_data in enumerate(props):
+                    name, _ = prop_data
+                    if name == search_prop:
+                        self.prop_proxy.update_selection(idx)
+                        break
+        if search_field:
+            try:
+                fields = search_results[self.dev_proxy.selected_idx][1][self.prop_proxy.selected_idx][1]
+            except IndexError:
+                pass
+            else:
+                for idx, name in enumerate(fields):
+                    if name == search_field:
+                        self.field_proxy.update_selection(idx)
+                        break
 
         self._update_from_status(ParameterSelector.NetworkRequestStatus.COMPLETE)
 
