@@ -1,5 +1,6 @@
 import pytest
 import pyrbac
+import copy
 from datetime import datetime
 from unittest import mock
 from ipaddress import IPv4Address
@@ -140,3 +141,46 @@ def test_token_get_encoded(token_encoded, expected_result, login_method, auto_re
                      auto_renewable=auto_renewable)
 
     assert token.get_encoded() == expected_result
+
+
+@pytest.mark.parametrize("auto_renewable", [True, False])
+@pytest.mark.parametrize("login_method", [RbaToken.LoginMethod.LOCATION, RbaToken.LoginMethod.EXPLICIT, RbaToken.LoginMethod.UNKNOWN])
+@pytest.mark.parametrize("all_roles", [
+    [],
+    ["Role1"],
+    ["Role1", "MCS-Role2"],
+])
+@pytest.mark.parametrize("ll_roles", [
+    [],
+    ["Role1"],
+    ["MCS-Role2"],
+    ["Role1", "MCS-Role2"],
+])
+@pytest.mark.parametrize("valid", [True, False])
+def test_copy(auto_renewable, login_method, all_roles, ll_roles, valid):
+    ll_token = make_token(valid=valid,
+                          roles=ll_roles,
+                          auth_timestamp=datetime(2020, 1, 1, 12, 53, 23),
+                          expiration_timestamp=datetime(2020, 1, 1, 13, 0, 0))
+
+    token = RbaToken(original_token=ll_token,
+                     available_roles=all_roles,
+                     login_method=login_method,
+                     auto_renewable=auto_renewable)
+    token_copy = copy.copy(token)
+    assert token_copy.roles == token.roles
+    assert token_copy.username == token.username
+    assert token_copy.user_email == token.user_email
+    assert token_copy.user_full_name == token.user_full_name
+    assert token_copy.valid == token.valid
+    assert token_copy.empty == token.empty
+    assert token_copy.auth_timestamp == token.auth_timestamp
+    assert token_copy.expiration_timestamp == token.expiration_timestamp
+    assert token_copy.app_name == token.app_name
+    assert token_copy.location.name == token.location.name
+    assert token_copy.location.address == token.location.address
+    assert token_copy.location.auth_required == token.location.auth_required
+    assert token_copy.serial_id == token.serial_id
+    assert token_copy.login_method == token.login_method
+    assert token_copy.auto_renewable == token.auto_renewable
+    assert token_copy.get_encoded() == token.get_encoded()

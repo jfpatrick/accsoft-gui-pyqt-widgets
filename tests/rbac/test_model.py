@@ -256,24 +256,30 @@ def test_model_login_fails_when_no_role_callback_is_given(qtbot: QtBot, pyrbac_m
 static_token = Token.create_empty_token()
 
 
-@pytest.mark.parametrize("input,expected_token", [
-    (static_token, static_token),
-    (static_token.get_encoded(), static_token),
-    (base64.b64encode(static_token.get_encoded()).decode("utf-8"), static_token),
+@pytest.mark.parametrize("input,expected_encoded,expected_login_method,expected_auto_renewable", [
+    (static_token, static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (static_token.get_encoded(), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (base64.b64encode(static_token.get_encoded()).decode("utf-8"), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.UNKNOWN), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.UNKNOWN), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, True),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.EXPLICIT), static_token.get_encoded(), RbaToken.LoginMethod.EXPLICIT, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.EXPLICIT), static_token.get_encoded(), RbaToken.LoginMethod.EXPLICIT, True),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.LOCATION), static_token.get_encoded(), RbaToken.LoginMethod.LOCATION, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.LOCATION), static_token.get_encoded(), RbaToken.LoginMethod.LOCATION, True),
 ])
-def test_model_update_token_succeeds(qtbot: QtBot, input, expected_token):
+def test_model_update_token_succeeds(qtbot: QtBot, input, expected_encoded, expected_auto_renewable, expected_login_method):
     model = RbaButtonModel()
     with qtbot.wait_signals([model.login_succeeded, model.login_finished]) as blocker:
         model.update_token(input)
     for sig_args in blocker.all_signals_and_args:
         if sig_args.signal_name.startswith("login_succeeded"):
             assert len(sig_args.args) == 1
-            assert sig_args.args[0].get_encoded() == expected_token.get_encoded()
+            assert sig_args.args[0].get_encoded() == expected_encoded
 
     assert model.token is not None
-    assert model.token.get_encoded() == expected_token.get_encoded()
-    assert model.token.login_method == RbaToken.LoginMethod.UNKNOWN
-    assert model.token.auto_renewable is False
+    assert model.token.get_encoded() == expected_encoded
+    assert model.token.login_method == expected_login_method
+    assert model.token.auto_renewable == expected_auto_renewable
 
 
 @pytest.mark.parametrize("input,expected_error", [
@@ -288,28 +294,53 @@ def test_model_update_token_fails(input, expected_error):
         model.update_token(input)
 
 
-@pytest.mark.parametrize("login_service_exists,expect_logout", [
-    (True, True),
-    (False, False),
+@pytest.mark.parametrize("login_service_exists,input,expect_logout", [
+    (True, static_token, True),
+    (False, static_token, False),
+    (True, static_token.get_encoded(), True),
+    (False, static_token.get_encoded(), False),
+    (True, base64.b64encode(static_token.get_encoded()).decode("utf-8"), True),
+    (False, base64.b64encode(static_token.get_encoded()).decode("utf-8"), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.UNKNOWN), True),
+    (False, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.UNKNOWN), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.UNKNOWN), False),
+    (False, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.UNKNOWN), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.EXPLICIT), True),
+    (False, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.EXPLICIT), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.EXPLICIT), False),
+    (False, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.EXPLICIT), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.LOCATION), True),
+    (False, RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.LOCATION), False),
+    (True, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.LOCATION), False),
+    (False, RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.LOCATION), False),
 ])
-def test_model_removes_login_service(qtbot: QtBot, login_service_exists, expect_logout):
+def test_model_removes_login_service(qtbot: QtBot, login_service_exists, input, expect_logout):
     model = RbaButtonModel()
     if login_service_exists:
         model._login_service = mock.MagicMock()
     else:
         assert model._login_service is None
     with qtbot.wait_signal(model.logout_finished, raising=False, timeout=100) as blocker:
-        model.update_token(Token.create_empty_token())
+        model.update_token(input)
     blocker.signal_triggered == expect_logout
-    assert model._login_service is None
+    if not login_service_exists or (expect_logout and login_service_exists):
+        assert model._login_service is None
+    else:
+        assert model._login_service is not None
 
 
-@pytest.mark.parametrize("input,expected_token", [
-    (static_token, static_token),
-    (static_token.get_encoded(), static_token),
-    (base64.b64encode(static_token.get_encoded()).decode("utf-8"), static_token),
+@pytest.mark.parametrize("input,expected_encoded,expected_login_method,expected_auto_renewable", [
+    (static_token, static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (static_token.get_encoded(), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (base64.b64encode(static_token.get_encoded()).decode("utf-8"), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.UNKNOWN), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.UNKNOWN), static_token.get_encoded(), RbaToken.LoginMethod.UNKNOWN, True),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.EXPLICIT), static_token.get_encoded(), RbaToken.LoginMethod.EXPLICIT, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.EXPLICIT), static_token.get_encoded(), RbaToken.LoginMethod.EXPLICIT, True),
+    (RbaToken(original_token=static_token, auto_renewable=False, login_method=RbaToken.LoginMethod.LOCATION), static_token.get_encoded(), RbaToken.LoginMethod.LOCATION, False),
+    (RbaToken(original_token=static_token, auto_renewable=True, login_method=RbaToken.LoginMethod.LOCATION), static_token.get_encoded(), RbaToken.LoginMethod.LOCATION, True),
 ])
-def test_model_update_slot(qtbot: QtBot, input, expected_token):
+def test_model_update_slot(qtbot: QtBot, input, expected_encoded, expected_auto_renewable, expected_login_method):
 
     class Supplier(QObject):
         send_token = Signal("PyQt_PyObject")
@@ -323,12 +354,12 @@ def test_model_update_slot(qtbot: QtBot, input, expected_token):
     for sig_args in blocker.all_signals_and_args:
         if sig_args.signal_name.startswith("login_succeeded"):
             assert len(sig_args.args) == 1
-            assert sig_args.args[0].get_encoded() == expected_token.get_encoded()
+            assert sig_args.args[0].get_encoded() == expected_encoded
 
     assert model.token is not None
-    assert model.token.get_encoded() == expected_token.get_encoded()
-    assert model.token.login_method == RbaToken.LoginMethod.UNKNOWN
-    assert model.token.auto_renewable is False
+    assert model.token.get_encoded() == expected_encoded
+    assert model.token.login_method == expected_login_method
+    assert model.token.auto_renewable == expected_auto_renewable
 
 
 @pytest.mark.parametrize("login_method,kwargs", [
