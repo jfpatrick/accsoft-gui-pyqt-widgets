@@ -820,7 +820,7 @@ class ColorPropertyColumnDelegate(QStyledItemDelegate):
         index: Optional[QPersistentModelIndex] = getattr(editor, _STYLED_ITEM_DELEGATE_INDEX, None)
         if not index or not index.isValid():
             return
-        new_color = QColorDialog.getColor(QColor(str(index.data())))
+        new_color = QColorDialog.getColor(QColor(str(index.data())), editor)
         if not new_color.isValid():
             # User cancelled the selection
             return
