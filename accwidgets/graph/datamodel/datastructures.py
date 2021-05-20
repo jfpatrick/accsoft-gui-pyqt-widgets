@@ -72,7 +72,7 @@ class PlottingItemData(ABC):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in self.__dict__.items():
+        for k, v in self.__dict__.items():  # FIXME: Switch to vars(self)
             setattr(result, k, deepcopy(v, memo))
         return result
 
@@ -121,7 +121,7 @@ class PointData(PlottingItemData):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            self.__class__ == other.__class__
+            self.__class__ == other.__class__  # FIXME: Use type() instead of __class__, also in other places
             and self.x == other.x
             and self.y == other.y
         )
