@@ -593,9 +593,15 @@ def test_model_level_notice(modify_loggers, expected_message, expect_highlight):
     ("test_logger", "test_logger"),
     ("root", "root"),
 ])
-@pytest.mark.parametrize("orig_message,expected_message", [
-    ("Test message", "Test message"),
-    ("", ""),
+@pytest.mark.parametrize("orig_message,args,expected_message", [
+    ("Test message", None, "Test message"),
+    ("", None, ""),
+    ("Test message", (), "Test message"),
+    ("", (), ""),
+    ("Test message %d", (1,), "Test message 1"),
+    ("Test message %.2f", (2,), "Test message 2.00"),
+    ("Test message %s", ("test",), "Test message test"),
+    ("Test message %s %s", ("val1", "val2"), "Test message val1 val2"),
 ])
 @pytest.mark.parametrize("orig_level,expected_level", [
     (logging.NOTSET, LogLevel.NOTSET),
@@ -605,17 +611,28 @@ def test_model_level_notice(modify_loggers, expected_message, expect_highlight):
     (logging.CRITICAL, LogLevel.CRITICAL),
     (logging.INFO, LogLevel.INFO),
 ])
-@pytest.mark.parametrize("pathname", [
-    "/path/to/file.py",
-    "",
+@pytest.mark.parametrize("pathname,expected_pathname", [
+    ("/path/to/file.py", "/path/to/file.py"),
+    ("", ""),
 ])
-@pytest.mark.parametrize("lineno", [-1, 0, 1])
-@pytest.mark.parametrize("exc_info", [{}, None])
-@pytest.mark.parametrize("args", [None, [], [1]])
-@pytest.mark.parametrize("func", [None, "", "function_name"])
+@pytest.mark.parametrize("lineno,expected_lineno", [
+    (-1, -1),
+    (0, 0),
+    (1, 1),
+])
+@pytest.mark.parametrize("exc_info,expected_exc_info", [
+    ({}, {}),
+    (None, None),
+])
+@pytest.mark.parametrize("func,expected_func_name", [
+    (None, None),
+    ("", ""),
+    ("function_name", "function_name"),
+])
 @freeze_time(STATIC_TIME)
 def test_transform_record(orig_level, orig_message, orig_name, expected_level, expected_logger_name, expected_message,
-                          pathname, lineno, args, func, exc_info):
+                          pathname, lineno, func, exc_info, expected_lineno, expected_exc_info, args,
+                          expected_pathname, expected_func_name):
     record = logging.LogRecord(name=orig_name,
                                level=orig_level,
                                pathname=pathname,
@@ -630,6 +647,17 @@ def test_transform_record(orig_level, orig_message, orig_name, expected_level, e
     assert output.level == expected_level
     assert output.timestamp == 1577853785.214923
     assert round(output.millis, 3) == 214.923
+    assert output.lineno == expected_lineno
+    assert output.exc_info == expected_exc_info
+    assert output.pathname == expected_pathname
+    assert output.funcName == expected_func_name
+    assert not hasattr(output, "name")
+    assert not hasattr(output, "msg")
+    assert not hasattr(output, "levelname")
+    assert not hasattr(output, "levelno")
+    assert not hasattr(output, "created")
+    assert not hasattr(output, "msecs")
+    assert not hasattr(output, "args")
 
 
 @pytest.mark.parametrize("frozen,logger_level,should_emit", [
@@ -755,3 +783,77 @@ def test_python_log_handler_repr(name, level, expected_output, frozen, visible_l
     output = repr(handler)
     output = re.sub(r"0x[\da-fA-F]+", "0xADDRESS", output)
     assert output == expected_output
+
+
+@pytest.mark.parametrize("args", [
+    {"logger_name": "name", "message": "msg", "level": LogLevel.INFO},
+    {"logger_name": "name", "message": "msg", "timestamp": 0.5},
+    {"logger_name": "name", "level": LogLevel.INFO, "timestamp": 0.5},
+    {"message": "msg", "level": LogLevel.INFO, "timestamp": 0.5},
+    {"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "extras": {}},
+    {"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "test_attr": "test_val"},
+    {"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}, "test_attr": "test_val"},
+])
+def test_log_console_record_init_fails(args):
+    with pytest.raises(TypeError):
+        _ = LogConsoleRecord(**args)
+
+
+@pytest.mark.parametrize("args,expected_dir", [
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, ["level", "logger_name", "message", "millis", "timestamp"]),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 100}, ["level", "logger_name", "message", "millis", "timestamp"]),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, ["level", "logger_name", "message", "millis", "timestamp"]),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, ["level", "logger_name", "message", "millis", "test_attr", "timestamp"]),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val", "test_attr2": "test_val2"}},
+     ["level", "logger_name", "message", "millis", "test_attr", "test_attr2", "timestamp"]),
+])
+def test_log_console_record_dir(args, expected_dir):
+    record = LogConsoleRecord(**args)
+    non_private_members = list(filter(lambda s: "__" not in s, dir(record)))
+    assert non_private_members == expected_dir
+
+
+@pytest.mark.parametrize("args,expected_vars", [
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5},
+     {"_LogConsoleRecord__extra_args": {}, "logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 0}),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 100},
+     {"_LogConsoleRecord__extra_args": {}, "logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 100}),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}},
+     {"_LogConsoleRecord__extra_args": {}, "logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 0}),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}},
+     {"_LogConsoleRecord__extra_args": {"test_attr": "test_val"}, "logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 0}),
+])
+def test_log_console_record_vars(args, expected_vars):
+    record = LogConsoleRecord(**args)
+    assert vars(record) == expected_vars
+
+
+@pytest.mark.parametrize("args,attr,expected_res,expected_error", [
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "logger_name", "name", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "message", "msg", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "level", LogLevel.INFO, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "timestamp", 0.5, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "millis", 0, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5}, "test_attr", None, "'LogConsoleRecord' object has no attribute 'test_attr'"),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "millis": 100}, "millis", 100, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "logger_name", "name", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "message", "msg", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "level", LogLevel.INFO, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "timestamp", 0.5, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "millis", 0, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {}}, "test_attr", None, "'LogConsoleRecord' object has no attribute 'test_attr'"),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "logger_name", "name", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "message", "msg", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "level", LogLevel.INFO, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "timestamp", 0.5, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "millis", 0, None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "test_attr", "test_val", None),
+    ({"logger_name": "name", "message": "msg", "level": LogLevel.INFO, "timestamp": 0.5, "extras": {"test_attr": "test_val"}}, "test_attr2", None, "'LogConsoleRecord' object has no attribute 'test_attr2'"),
+])
+def test_log_console_record_attr_access(args, attr, expected_error, expected_res):
+    record = LogConsoleRecord(**args)
+    if expected_error:
+        with pytest.raises(AttributeError, match=expected_error):
+            getattr(record, attr)
+    else:
+        assert getattr(record, attr) == expected_res
