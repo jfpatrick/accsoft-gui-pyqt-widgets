@@ -178,6 +178,7 @@ class RbaButton(QWidget):
 
         new_layout = new_layout_type()
         new_layout.setContentsMargins(0, 0, 0, 0)
+        new_layout.setSpacing(0)
         new_layout.addWidget(self._auth_btn)
         new_layout.addWidget(self._user_btn)
 
