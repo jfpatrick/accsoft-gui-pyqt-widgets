@@ -114,10 +114,12 @@ class LogConsoleFormatter(AbstractLogConsoleFormatter):
         rec = logging.LogRecord(name=record.logger_name,
                                 msg=record.message,
                                 level=record.level.value,
-                                pathname="",
-                                lineno=0,
-                                args=(),
-                                exc_info=None)
+                                pathname=getattr(record, "pathname", ""),
+                                lineno=getattr(record, "lineno", 0),
+                                args=getattr(record, "args", ()),
+                                exc_info=getattr(record, "exc_info", None),
+                                func=getattr(record, "funcName", None),
+                                sinfo=getattr(record, "stack_info", None))
         rec.created = int(record.timestamp)
         rec.msecs = record.millis
 
