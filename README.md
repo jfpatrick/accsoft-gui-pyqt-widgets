@@ -118,14 +118,21 @@ Follow [this page](https://sphobjinv.readthedocs.io/en/v2.0/syntax.html) to unde
 format.
 
 ## Uploading package to CO package index
+
+**Note! Normally, this is done automatically by the CI pipeline, as long as there's a git tag pushed
+(tag must follow vX.X.X format, because it will influence the version reported by published package).
+No additional actions are needed! If you want to perform the sequence manually, follow the steps.**
+
 Make sure that you have tools installed
 ```bash
-pip install .[release]
+pip install twine wheel build
 ```
 Prepare the source distribution
 ```bash
-python setup.py sdist
-pip wheel -w ./dist .
+# Build sdist
+python -m build --sdist .
+# Build wheel
+mkdir -p dist && cd dist && pip wheel ../ --no-deps && cd ../
 ```
 
 Upload to the repository
