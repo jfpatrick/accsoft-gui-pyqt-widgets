@@ -9,6 +9,7 @@ from qtpy.QtGui import QColor, QIcon
 from qtpy.QtCore import QObject, Qt, QSize, QTimer, QPoint
 from qtpy.QtWidgets import (QToolButton, QToolBar, QVBoxLayout, QHBoxLayout, QWidget, QGridLayout, QSizePolicy,
                             QWidgetAction, QDialog, QApplication, QStackedWidget)
+from accwidgets.qt import make_icon
 from accwidgets.rbac import RbaButton, RbaButtonModel, RbaToken
 from accwidgets.rbac._widget import RbaUserButton, RbaAuthButton, RbaAuthPopupWidget, RbaRolePicker
 from .fixtures import make_token
@@ -383,6 +384,47 @@ def test_rba_button_decoration_for_login(qtbot: QtBot, initial_login):
     assert view._auth_btn.menu() is None
 
 
+@pytest.mark.parametrize("initial_online,new_online,expected_online", [
+    (None, "logout.gif", "logout.gif"),
+    (None, None, "DEFAULT"),
+    (None, QIcon(), "DEFAULT"),
+    ("logout.gif", "logout.gif", "logout.gif"),
+    ("logout.gif", None, "logout.gif"),
+    ("logout.gif", QIcon(), "DEFAULT"),
+])
+@pytest.mark.parametrize("initial_offline,new_offline,expected_offline", [
+    (None, "login.gif", "login.gif"),
+    (None, None, "DEFAULT"),
+    (None, QIcon(), "DEFAULT"),
+    ("login.gif", "login.gif", "login.gif"),
+    ("login.gif", None, "login.gif"),
+    ("login.gif", QIcon(), "DEFAULT"),
+])
+def test_rba_button_set_icons(qtbot: QtBot, initial_offline, initial_online, new_offline, new_online, expected_offline,
+                              expected_online):
+    view = RbaButton()
+    qtbot.add_widget(view)
+
+    def to_image(icon):
+        return icon.pixmap(32, 32).toImage()
+
+    default_online_icon = view._auth_btn._online_icon
+    default_offline_icon = view._auth_btn._offline_icon
+
+    def make_local_icon(icon):
+        if isinstance(icon, str):
+            return make_icon(Path(__file__).parent / "icons" / icon)
+        return icon
+
+    expected_online = default_online_icon if expected_online == "DEFAULT" else make_local_icon(expected_online)
+    expected_offline = default_offline_icon if expected_offline == "DEFAULT" else make_local_icon(expected_offline)
+
+    view.set_icons(online=make_local_icon(initial_online), offline=make_local_icon(initial_offline))
+    view.set_icons(online=make_local_icon(new_online), offline=make_local_icon(new_offline))
+    assert to_image(view._auth_btn._online_icon) == to_image(expected_online)
+    assert to_image(view._auth_btn._offline_icon) == to_image(expected_offline)
+
+
 def test_user_btn_init(qtbot: QtBot):
     btn = RbaUserButton()
     qtbot.add_widget(btn)
@@ -586,19 +628,37 @@ def test_auth_btn_init(qtbot: QtBot):
     assert isinstance(cast(QWidgetAction, btn.menu().actions()[0]).defaultWidget(), RbaAuthPopupWidget)
 
 
-@pytest.mark.parametrize("connected,expected_icon_filename,should_have_menu", [
-    (True, "online.ico", False),
-    (False, "offline.ico", True),
+@pytest.mark.parametrize("initial_connected,expected_initial_icon,expect_initial_menu,new_connected,expected_new_icon,expect_new_menu", [
+    (True, "online.ico", False, True, "online.ico", False),
+    (False, "offline.ico", True, True, "online.ico", False),
+    (None, "offline.ico", True, True, "online.ico", False),
+    (True, "online.ico", False, False, "offline.ico", True),
+    (False, "offline.ico", True, False, "offline.ico", True),
+    (None, "offline.ico", True, False, "offline.ico", True),
+    (True, "online.ico", False, None, "online.ico", False),
+    (False, "offline.ico", True, None, "offline.ico", True),
+    (None, "offline.ico", True, None, "offline.ico", True),
 ])
-@mock.patch("accwidgets.rbac._widget.make_icon", autospec=True, return_value=QIcon())
-def test_auth_btn_decorate(make_icon, qtbot: QtBot, connected, expected_icon_filename, should_have_menu):
+def test_auth_btn_decorate(qtbot: QtBot, initial_connected, expect_initial_menu, expect_new_menu, expected_initial_icon,
+                           expected_new_icon, new_connected):
     btn = RbaAuthButton()
     qtbot.add_widget(btn)
-    make_icon.reset_mock()
-    btn.decorate(connected)
-    import accwidgets.rbac
-    make_icon.assert_called_once_with(Path(accwidgets.rbac.__file__).parent / "icons" / expected_icon_filename)
-    assert (btn.menu() is not None) == should_have_menu
+
+    def expect_auth_btn_config(icon_name: str, expect_menu: bool):
+        import accwidgets.rbac
+        expected_icon = make_icon(Path(accwidgets.rbac.__file__).parent / "icons" / icon_name)
+
+        def to_image(icon):
+            return icon.pixmap(32, 32).toImage()
+
+        assert to_image(btn.icon()) == to_image(expected_icon)
+        assert (btn.menu() is not None) == expect_menu
+
+    expect_auth_btn_config("offline.ico", True)
+    btn.decorate(initial_connected)
+    expect_auth_btn_config(expected_initial_icon, expect_initial_menu)
+    btn.decorate(new_connected)
+    expect_auth_btn_config(expected_new_icon, expect_new_menu)
 
 
 @pytest.mark.parametrize("width,height,expected_width,expected_height", [
