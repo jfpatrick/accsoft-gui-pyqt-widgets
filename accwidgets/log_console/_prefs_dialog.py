@@ -268,10 +268,18 @@ class LogPreferencesDialog(QDialog):
     def _render_dummy_message(self):
         fmt_kwargs = {attr_name: config.value for attr_name, config in self.view_config.fmt_config.items()}
         fmt = self._sample_formatter_type.create(**fmt_kwargs)
+
+        class MyExceptionType(Exception):
+            __module__ = "my_module"
+            __qualname__ = "MyExceptionType"
+
+        exc = MyExceptionType("My Exception Body")
+        exc_info = (type(exc), exc, None)  # Follows the logic from logging Logger._log()
         msg = LogConsoleRecord(logger_name="My Logger",
-                               level=LogLevel.INFO,
+                               level=LogLevel.ERROR,
                                message="My Message",
-                               timestamp=datetime.now().timestamp())
+                               timestamp=datetime.now().timestamp(),
+                               extras={"exc_info": exc_info})
         formatted_msg = fmt.format(msg)
         self.sample_msg.setText(formatted_msg)
 
