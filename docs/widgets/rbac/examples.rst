@@ -16,6 +16,7 @@ packages needed to run examples, it is advised to install a special ``examples``
 - `PyRBAC example`_
 - `External token example`_
 - `QSS styling example`_
+- `Custom icons example`_
 
 
 Basic example
@@ -237,6 +238,35 @@ scheme that could be used in the dark mode style.
          Show contents of styling_example.py...
 
    .. literalinclude:: ../../../examples/rbac/styling_example.py
+
+.. raw:: html
+
+   <p />
+
+
+Custom icons example
+-------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/rbac/custom_icons_example.py
+
+This example shows the way of setting custom icons in a :class:`~accwidgets.rbac.RbaButton` widget.
+The rest of the logic is identical to `Basic example`_.
+
+.. image:: ../../img/examples_rbac_icons.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of custom_icons_example.py...
+
+   .. literalinclude:: ../../../examples/rbac/custom_icons_example.py
 
 .. raw:: html
 

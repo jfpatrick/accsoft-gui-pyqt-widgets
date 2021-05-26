@@ -83,6 +83,9 @@ QLabel py:class 1 qlabel.html -
 PyQt5.QtGui.QPen py:class 1 qpen.html QPen
 qtpy.QtGui.QPen py:class 1 qpen.html QPen
 QPen py:class 1 qpen.html -
+PyQt5.QtGui.QIcon py:class 1 qicon.html QIcon
+qtpy.QtGui.QIcon py:class 1 qicon.html QIcon
+QIcon py:class 1 qicon.html -
 PyQt5.QtWidgets.QAction py:class 1 qaction.html QAction
 qtpy.QtWidgets.QAction py:class 1 qaction.html QAction
 QAction py:class 1 qaction.html -

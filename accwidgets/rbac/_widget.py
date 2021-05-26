@@ -1,7 +1,7 @@
 import warnings
 from typing import Optional, List, cast, Union
 from pathlib import Path
-from qtpy.QtGui import QColor, QResizeEvent, QKeyEvent
+from qtpy.QtGui import QColor, QResizeEvent, QKeyEvent, QIcon
 from qtpy.QtWidgets import (QWidget, QToolButton, QMenu, QDialog, QVBoxLayout, QToolBar,
                             QWidgetAction, QSizePolicy, QHBoxLayout, QMessageBox)
 from qtpy.QtCore import Qt, Slot, Signal, Property, QObjectCleanupHandler, QEvent, QSize
@@ -95,6 +95,21 @@ class RbaButton(QWidget):
     """
     Font color for MSC roles in role picker. This property enables ability to restyle the widget with QSS.
     """
+
+    def set_icons(self,
+                  online: Optional[QIcon] = None,
+                  offline: Optional[QIcon] = None):
+        """
+        Set the icons indicating the connection status.
+
+        Passing an empty :class:`QIcon` will reset the default icon, while passing :obj:`None` will not
+        attempt to change that icon.
+
+        Args:
+            online: Icon to use when online (logged in).
+            offline: Icon to use when offline (logged out).
+        """
+        self._auth_btn.set_icons(online, offline)
 
     def event(self, event: QEvent) -> bool:
         if event.type() == QEvent.ParentAboutToChange:
@@ -370,33 +385,60 @@ class RbaAuthButton(RbaButtonBase):
         action = QWidgetAction(self)
         action.setDefaultWidget(login_dialog)
         self._menu.addAction(action)
-        self.decorate(connected=False)
+        self._connected = False
+        self._online_icon: QIcon
+        self._offline_icon: QIcon
+        self.set_icons(QIcon(), QIcon())
 
-    def decorate(self, connected: bool):
+    def set_icons(self,
+                  online: Optional[QIcon] = None,
+                  offline: Optional[QIcon] = None):
+        """
+        Set the icons indicating the connection status.
+
+        Passing an empty :class:`QIcon` will reset the default icon, while passing :obj:`None` will not
+        attempt to change that icon.
+
+        Args:
+            online: Icon to use when online (logged in).
+            offline: Icon to use when offline (logged out).
+        """
+        if online is not None:
+            if online.isNull():
+                self._online_icon = make_icon(Path(__file__).parent.absolute() / "icons" / "online.ico")
+            else:
+                self._online_icon = online
+        if offline is not None:
+            if offline.isNull():
+                self._offline_icon = make_icon(Path(__file__).parent.absolute() / "icons" / "offline.ico")
+            else:
+                self._offline_icon = offline
+        self.decorate()
+
+    def decorate(self, connected: Optional[bool] = None):
         """
         Decorate the button in accordance with the RBAC status.
 
         Args:
-            connected: User is online.
+            connected: User is online. Passing this as :obj:`None` will decorate according to the previous known state.
         """
-        icon_name: str
-        if connected:
-            icon_name = "online.ico"
+        if connected is not None:
+            self._connected = connected
+        if self._connected:
+            self.setIcon(self._online_icon)
             menu = self.menu()
             if menu:  # Avoid initial error, when menu might not be created
                 menu.hide()
             self.setMenu(None)
             self.clicked.connect(self._on_clicked_when_connected)
         else:
-            icon_name = "offline.ico"
+            self.setIcon(self._offline_icon)
             self.setMenu(self._menu)
             try:
                 self.clicked.disconnect()
             except TypeError:
                 # Was not connected (happens during initial setup)
                 pass
-
-        self.setIcon(make_icon(Path(__file__).parent.absolute() / "icons" / icon_name))
 
     def set_margin_icon_size(self, size: QSize):
         return self.setIconSize(size - QSize(_ICON_MARGIN * 2, _ICON_MARGIN * 2))
