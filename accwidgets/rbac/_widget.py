@@ -369,6 +369,9 @@ class RbaAuthButton(RbaButtonBase):
         """
         super().__init__(parent)
         self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self._online_icon: QIcon
+        self._offline_icon: QIcon
+        self._connected = False
         self._menu = TabFocusPreservingMenu(self)
         login_dialog = RbaAuthPopupWidget(parent=self)
         login_dialog.location_login[bool].connect(self._request_location_login)
@@ -385,9 +388,6 @@ class RbaAuthButton(RbaButtonBase):
         action = QWidgetAction(self)
         action.setDefaultWidget(login_dialog)
         self._menu.addAction(action)
-        self._connected = False
-        self._online_icon: QIcon
-        self._offline_icon: QIcon
         self.set_icons(QIcon(), QIcon())
 
     def set_icons(self,
