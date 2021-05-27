@@ -5,7 +5,9 @@ This chapter will guide you through everything you need to know to contribute yo
 showing you the structure of the repository and the process of integrating your changes.
 
 **Sharing is caring** and we encourage sharing with Acc-Py community! However, make sure your widgets are not
-too specific for your scenario, otherwise you might be better off providing your own repository.
+too specific for your scenario, otherwise you might be better off providing your own repository. With such independent
+repositories, feel free to advertise them to the community on the
+`Community Widgets wiki page <https://wikis.cern.ch/display/ACCPY/Community+Widgets>`__.
 
 Good widget checklist
 ---------------------
