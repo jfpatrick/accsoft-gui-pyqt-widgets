@@ -419,6 +419,38 @@ async def test_widget_on_result_changed_fails_to_set_new_value(qtbot: QtBot, sel
     assert widget.selector_label.text() == ""
 
 
+@pytest.mark.parametrize("loading,expect_shown", [
+    (True, True),
+    (False, False),
+])
+@pytest.mark.parametrize("initially_shown", [True, False])
+@pytest.mark.parametrize("enable_protocols", [True, False])
+def test_widget_on_model_loading_changed_controls_aux_indicator(qtbot: QtBot, loading, expect_shown, enable_protocols,
+                                                                initially_shown):
+    widget = ParameterSelector(enable_protocols=enable_protocols, no_protocol_option="")
+    qtbot.add_widget(widget)
+    with qtbot.wait_exposed(widget):
+        widget.show()
+    start = mock.Mock()
+    stop = mock.Mock()
+    widget.aux_activity_indicator.startAnimation = start
+    widget.aux_activity_indicator.stopAnimation = stop
+    if initially_shown:
+        widget.aux_activity_indicator.show()
+    start.assert_not_called()
+    stop.assert_not_called()
+    widget.stack_widget.setCurrentIndex(ParameterSelector.NetworkRequestStatus.COMPLETE.value)  # To expose aux indicator
+    widget._on_model_loading_changed(loading)
+    if expect_shown:
+        assert widget.aux_activity_indicator.isVisible()
+        start.assert_called_once_with()
+        stop.assert_not_called()
+    else:
+        assert widget.aux_activity_indicator.isHidden()
+        start.assert_not_called()
+        stop.assert_called_once_with()
+
+
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("text", [
     "",
@@ -497,11 +529,14 @@ def test_widget_cancel_running_tasks(qtbot: QtBot, should_cancel, task_exists, e
     qtbot.add_widget(widget)
     task_mock = mock.Mock()
     widget._active_ccda_task = task_mock if task_exists else None
+    root_model_mock = mock.MagicMock()
+    widget._root_model = root_model_mock
     widget._cancel_running_tasks()
     if should_cancel:
         task_mock.cancel.assert_called_once_with()
     else:
         task_mock.cancel.assert_not_called()
+    root_model_mock.cancel_active_requests.assert_called_once_with()
 
 
 @pytest.mark.asyncio
@@ -643,9 +678,10 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
     widget._root_model = root_model
     widget._update_from_status(prev_status)  # Just check that this does not influence anything
     assert widget.err_label.text() == "Start by typing the device name into the field above!"
+    mocked_iterator = mock.MagicMock()
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=results):
+    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, results)):
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
             await widget._on_search_requested(search_string)
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
@@ -654,7 +690,7 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
                                                   mock.call(ParameterSelector.NetworkRequestStatus.COMPLETE)]
             assert widget.err_label.text() == "Start by typing the device name into the field above!"
             assert widget.results_group.title() == expected_group_name
-            root_model.set_data.assert_called_once_with(results)
+            root_model.set_data.assert_called_once_with(mocked_iterator, results)
 
 
 @pytest.mark.asyncio
@@ -680,9 +716,10 @@ async def test_widget_on_search_requested_success_selects_when_only_result(qtbot
     widget._root_model = mock.MagicMock()  # Prevent set_data being called into the real model
     widget._update_from_status(prev_status)  # Just check that this does not influence anything
     assert widget.err_label.text() == "Start by typing the device name into the field above!"
+    mocked_iterator = mock.MagicMock()
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=results):
+    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, results)):
         await widget._on_search_requested(search_string)
         if expect_select_first:
             mocked_proxy.update_selection.assert_called_once_with(0)
@@ -736,9 +773,10 @@ async def test_widget_on_search_requested_success_selects_appropriate_result(qtb
     widget.prop_proxy = prop_proxy
     widget.field_proxy = field_proxy
     widget._root_model = mock.MagicMock()  # Prevent set_data being called into the real model
+    mocked_iterator = mock.MagicMock()
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=data):
+    with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, data)):
         await widget._on_search_requested(search_string)
         for proxy, expected_idx in zip([dev_proxy, prop_proxy, field_proxy], [expect_dev, expect_prop, expect_field]):
             assert proxy.selected_idx == expected_idx

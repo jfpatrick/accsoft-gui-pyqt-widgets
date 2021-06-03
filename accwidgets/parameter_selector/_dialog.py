@@ -12,7 +12,7 @@ from qtpy.QtWidgets import (QWidget, QDialog, QVBoxLayout, QPushButton, QLineEdi
 from accwidgets._async_utils import install_asyncio_event_loop
 from accwidgets.qt import ActivityIndicator
 from ._name import ParameterName
-from ._model import look_up_ccda, SearchResultsModel, SearchProxyModel
+from ._model import look_up_ccda, SearchResultsModel, SearchProxyModel, ExtendableProxyModel
 
 
 class ParameterSelector(QWidget):
@@ -42,16 +42,18 @@ class ParameterSelector(QWidget):
         self.protocol_combo: QComboBox = None
         self.protocol_group: QGroupBox = None
         self.activity_indicator: ActivityIndicator = None  # type: ignore
+        self.aux_activity_indicator: ActivityIndicator = None  # type: ignore
 
         loadUi(Path(__file__).parent / "selector.ui", self)
 
+        self.aux_activity_indicator.hide()
         self._root_model = SearchResultsModel(self)
         self._requested_device: str = ""
         self._curr_search_status = ParameterSelector.NetworkRequestStatus.FAILED
         self._prev_search_status = ParameterSelector.NetworkRequestStatus.FAILED
         self._active_ccda_task: Optional[Future] = None
 
-        dev_proxy = SearchProxyModel(self)
+        dev_proxy = ExtendableProxyModel(self)
         dev_proxy.setObjectName("dev_proxy")
         prop_proxy = SearchProxyModel(self)
         prop_proxy.setObjectName("prop_proxy")
@@ -67,6 +69,7 @@ class ParameterSelector(QWidget):
         dev_proxy.selection_changed.connect(self._on_result_changed)
         prop_proxy.selection_changed.connect(self._on_result_changed)
         field_proxy.selection_changed.connect(self._on_result_changed)
+        self._root_model.loading_state_changed.connect(self._on_model_loading_changed)
         self.dev_proxy = dev_proxy
         self.prop_proxy = prop_proxy
         self.field_proxy = field_proxy
@@ -173,6 +176,14 @@ class ParameterSelector(QWidget):
             self._selected_value.service = None
         self.selector_label.setText(self.value)
 
+    def _on_model_loading_changed(self, loading: bool):
+        if loading:
+            self.aux_activity_indicator.show()
+            self.aux_activity_indicator.startAnimation()
+        else:
+            self.aux_activity_indicator.stopAnimation()
+            self.aux_activity_indicator.hide()
+
     def _start_search(self):
         asyncio.create_task(self._on_search_requested(self.search_edit.text()))
 
@@ -200,6 +211,7 @@ class ParameterSelector(QWidget):
         if self._active_ccda_task is not None:
             self._active_ccda_task.cancel()
             self._active_ccda_task = None
+        self._root_model.cancel_active_requests()
 
     async def _on_search_requested(self, search_string: str):
         trimmed_search_string = search_string.strip()
@@ -217,7 +229,7 @@ class ParameterSelector(QWidget):
         self._reset_selected_value()
 
         try:
-            search_results = await self._active_ccda_task
+            search_iterator, first_batch = await self._active_ccda_task
         except CancelledError:
             self._update_from_status(self._prev_search_status)
             return
@@ -229,19 +241,19 @@ class ParameterSelector(QWidget):
         self._requested_device = search_device
         self.results_group.setTitle(f'Results for search query "{trimmed_search_string}":')
 
-        self._root_model.set_data(search_results)
+        self._root_model.set_data(search_iterator, first_batch)
 
         # If device is the only one, auto select it
-        if len(search_results) == 1:
+        if len(first_batch) == 1:
             self.dev_proxy.update_selection(0)
         else:
-            for idx, dev_data in enumerate(search_results):
+            for idx, dev_data in enumerate(first_batch):
                 name, _ = dev_data
                 if name == self._requested_device:
                     self.dev_proxy.update_selection(idx)
         if search_prop:
             try:
-                props = search_results[self.dev_proxy.selected_idx][1]
+                props = first_batch[self.dev_proxy.selected_idx][1]
             except IndexError:
                 pass
             else:
@@ -252,7 +264,7 @@ class ParameterSelector(QWidget):
                         break
         if search_field:
             try:
-                fields = search_results[self.dev_proxy.selected_idx][1][self.prop_proxy.selected_idx][1]
+                fields = first_batch[self.dev_proxy.selected_idx][1][self.prop_proxy.selected_idx][1]
             except IndexError:
                 pass
             else:
