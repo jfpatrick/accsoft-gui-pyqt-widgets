@@ -1,5 +1,5 @@
 import operator
-from asyncio import Future
+from asyncio import Future, gather
 try:
     from asyncio import create_task
 except ImportError:
@@ -279,26 +279,26 @@ async def _look_up_ccda(device_name: str) -> Tuple[AsyncIterator[SearchResultsMo
     device_pages = await get_ccda().Device.search('name=="*{dev}*"'.format(dev=device_name))
 
     async def wrapper() -> AsyncGenerator[SearchResultsModelTree, None]:
+        pagination_iter = device_pages.__aiter__()
 
-        def map_result(dev: CCDA.Device, dev_class: CCDA.DeviceClass) -> Tuple[str, SearchResultsModelSubTree]:
+        async def get_next_device() -> Optional[Tuple[str, SearchResultsModelSubTree]]:
             subtree = []
+            try:
+                dev = await pagination_iter.__anext__()
+            except StopAsyncIteration:
+                return None
+            dev_class = await dev.device_class()
             for prop in sorted(dev_class.device_class_properties, key=operator.attrgetter("name")):
                 fields = sorted((field.name for field in prop.data_fields))
                 subtree.append((prop.name, fields))
-
             return (dev.name, subtree)
 
-        cnt = 0
-        results = []
-        async for device in device_pages:
-            results.append(map_result(dev=device, dev_class=await device.device_class()))
-            cnt += 1
-            if cnt >= _CCDA_PAGINATION_SIZE:
-                cnt = 0
-                yield results
-                results = []
-        else:
-            yield results
+        while True:
+            new_results = await gather(*[get_next_device() for _ in range(_CCDA_PAGINATION_SIZE)])
+            new_results = list(filter(lambda r: r is not None, new_results))
+            yield new_results
+            if not new_results:
+                break
 
     generator = wrapper()
     iter = generator.__aiter__()

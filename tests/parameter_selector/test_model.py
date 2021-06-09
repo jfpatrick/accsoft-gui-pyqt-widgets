@@ -987,6 +987,57 @@ async def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expec
 
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
+async def test_look_up_ccda_batches_in_parallel(get_ccda_mock):
+    pagination_iter, _ = get_ccda_mock
+
+    returned_devices = []
+    for name in ["dev1", "dev2"]:
+        class_mock = mock.MagicMock(device_class_properties=[])
+        device_mock = mock.MagicMock(device_class=AsyncMock(return_value=class_mock))
+        device_mock.name = name
+        returned_devices.append(device_mock)
+
+    curr_request_state = {
+        "dev1": None,
+        "dev2": None,
+    }
+
+    # Expecting the following sequence:
+    # 1. Device 1 starts
+    # 2. Device 2 starts
+    # 3. Device 1 finishes
+    # 4. Device 2 finishes
+    # Each device will verify the state before updating it
+    # None -> Not started
+    # True -> In progress
+    # False -> Finished
+    expected_request_states = iter([
+        {"dev1": None, "dev2": None},
+        {"dev1": True, "dev2": None},
+        {"dev1": True, "dev2": True},
+        {"dev1": False, "dev2": True},
+    ])
+
+    device_iter = iter(returned_devices)
+
+    async def process_next_request():
+        try:
+            next_device = next(device_iter)
+        except StopIteration:
+            raise StopAsyncIteration
+
+        assert curr_request_state == next(expected_request_states)
+        curr_request_state[next_device.name] = True
+        await asyncio.sleep(0.1)
+        assert curr_request_state == next(expected_request_states)
+        curr_request_state[next_device.name] = False
+        return next_device
+
+    pagination_iter.__anext__ = process_next_request
+    await look_up_ccda("test_device")
+
+
+@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("error_type", [TypeError, ValueError])
 async def test_look_up_ccda_does_not_catch_api_exceptions(get_ccda_mock, error_type):
     pagination_iter, _ = get_ccda_mock
