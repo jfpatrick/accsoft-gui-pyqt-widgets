@@ -197,9 +197,16 @@ class ExPlotItem(pg.PlotItem):
         :meth:`pyqtgraph.PlotItem.plot`, or from a data source that handles communication
         between the curve and a source data is coming from.
 
-        * To create a bar graph attached to *live data*, pass a matching ``data_source``
+        * To create a bar graph attached to *live data*, pass a matching ``data_source``.
         * To create a bar graph from a static data array, pass keyword arguments from the :class:`~pyqtgraph.BarGraphItem`
-          (as ``**bargraph_kwargs``)
+          (as ``**bargraph_kwargs``).
+        * In case of static bar graph without ``data_source`` one the following combinations of arguments is required
+          inside ``**bargraph_kwargs``. For ``x`` position it should be either ``(x, width)``, ``(x0, width)``,
+          ``(x1, width)`` or ``(x0, x1)`` where: ``x`` is center position of the bar; ``x0``, ``x1`` are left and rigth position
+          of the bar respectively; ``width`` is a distance between ``x0`` and ``x1``.
+          For ``y`` position it should be either ``height``, ``y1``, ``(y0, height)`` or ``(y0, y1)`` where:
+          ``y0`` is a bottom position of the bar, 0 by default; ``y1`` is a top position of the bar;
+          ``height`` is a distance between ``y0`` and ``y1``.
 
         Args:
             data_source: Source for the incoming data that the bar graph should represent.
@@ -210,6 +217,16 @@ class ExPlotItem(pg.PlotItem):
         Returns:
             :class:`~pyqtgraph.BarGraphItem` or :class:`LiveBarGraphItem` instance, depending on the input arguments.
         """
+        if data_source is None:
+            if not (("x" in bargraph_kwargs and "width" in bargraph_kwargs)
+                    or ("x0" in bargraph_kwargs and "width" in bargraph_kwargs)
+                    or ("x1" in bargraph_kwargs and "width" in bargraph_kwargs)
+                    or ("x0" in bargraph_kwargs and "x1" in bargraph_kwargs)):
+                raise ValueError("addBarGraph requires one of the set of arguments: "
+                                 "(x, width), (x0, width), (x1, width), (x0, x1)")
+            if not ("y1" in bargraph_kwargs or "height" in bargraph_kwargs):
+                raise ValueError("addBarGraph requires height or y1")
+
         new_plot = pg.BarGraphItem(**bargraph_kwargs) if data_source is None else \
             AbstractBaseBarGraphItem.from_plot_item(plot_item=self,
                                                     data_source=data_source,

@@ -253,3 +253,32 @@ def test_bargraph_cache_reset(qtbot: QtBot, widget_type, axis, call_fn, args):
     assert isinstance(bar_graph._boundsCache[axis], tuple)
     getattr(bar_graph, call_fn)(**args)
     assert bar_graph._boundsCache[axis] is None
+
+
+@pytest.mark.parametrize("bargraph_kwargs, expect_is_correct", (
+    ({"x": [1], "width": [2], "height": [1]}, True),
+    ({"x": [1], "width": [2], "y1": [1]}, True),
+    ({"x0": [1], "width": [2], "y1": [1]}, True),
+    ({"x1": [1], "width": [2], "y1": [1]}, True),
+    ({"x0": [1], "x1": [2], "y1": [1]}, True),
+    ({"x0": [1], "x1": [2], "y1": [1], "height": [2]}, True),
+    ({"x0": [1], "x1": [2], "width": [3], "y1": [1]}, True),
+    ({"x": [0], "x0": [1], "x1": [2], "width": [3], "y1": [1]}, True),
+    ({"x0": [1], "x1": [2], "y0": [-1], "y1": [1]}, True),
+    ({"x": [1], "width": [2]}, False),
+    ({"x1": [1], "width": [2]}, False),
+    ({"x": [1], "height": [2]}, False),
+    ({"x": [1], "y1": [2]}, False),
+    ({"x0": [1], "y1": [2]}, False),
+    ({"x1": [1], "y1": [2]}, False),
+))
+def test_bargraph_no_source_requires_correct_kwargs(qtbot, bargraph_kwargs, expect_is_correct):
+    plot_config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.STATIC_PLOT)
+    window = PlotWidgetTestWindow(plot_config, should_create_timing_source=False)
+    qtbot.add_widget(window)
+
+    if expect_is_correct:
+        _ = window.plot.addBarGraph(**bargraph_kwargs)
+    else:
+        with pytest.raises(ValueError):
+            _ = window.plot.addBarGraph(**bargraph_kwargs)
