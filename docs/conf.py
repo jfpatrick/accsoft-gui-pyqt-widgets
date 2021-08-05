@@ -783,7 +783,7 @@ intersphinx_mapping = {
     "Qt": (f"https://doc.qt.io/qt-{qt_major}/", "./qt.inv"),
     f"PyQt{pyqt_major}": (f"https://www.riverbankcomputing.com/static/Docs/PyQt{pyqt_major}/", "./pyqt.inv"),
     "numpy": ("http://docs.scipy.org/doc/numpy/", None),
-    "pyqtgraph": ("http://www.pyqtgraph.org/documentation/", None),
+    "pyqtgraph": ("https://pyqtgraph.readthedocs.io/en/latest/", None),  # TODO: Switch to concrete version, when updated to 0.11+ (0.10.0 does not exist)
     "comrad": ("https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/rad/accsoft-gui-rad-comrad/docs/stable/", None),
     "pyjapc": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pyjapc/docs/v{pyjapc.__version__}/", None),
     "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
