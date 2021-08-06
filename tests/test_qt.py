@@ -2,11 +2,11 @@ import pytest
 from pytestqt.qtbot import QtBot
 from typing import Optional, cast, Type
 from unittest import mock
-from qtpy.QtCore import Qt, QVariant, QAbstractListModel, QObject, QPersistentModelIndex, QLocale
+from qtpy.QtCore import Qt, QVariant, QAbstractListModel, QObject, QPersistentModelIndex, QLocale, Signal
 from qtpy.QtWidgets import QDialogButtonBox, QStyleOptionViewItem, QComboBox, QWidget, QSizePolicy, QToolBar
 from PyQt5.QtTest import QAbstractItemModelTester
 from accwidgets.qt import (AbstractListModel, AbstractTableModel, AbstractTableDialog, OrientedToolButton,
-                           PersistentEditorTableView, BooleanPropertyColumnDelegate, BooleanButton,
+                           PersistentEditorTableView, BooleanPropertyColumnDelegate, BooleanButton, ActivityIndicator,
                            AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX, exec_app_interruptable)
 
 
@@ -926,3 +926,193 @@ def test_oriented_tool_button_does_not_automatically_react_to_toolbar_orientatio
     assert widget.sizePolicy() == QSizePolicy(expected_h, expected_v)
     toolbar.setOrientation(new_toolbar_orientation)
     assert widget.sizePolicy() == QSizePolicy(expected_h, expected_v)
+
+
+@pytest.mark.parametrize("animation_started", [False, True])
+@pytest.mark.parametrize("initial_hint,expect_label_exists,expected_hint", [
+    ("", False, ""),
+    ("Test", True, "Test"),
+    ("---...", True, "---..."),
+])
+def test_activity_indicator_hint_getter(qtbot: QtBot, animation_started, initial_hint, expect_label_exists, expected_hint):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    widget.hint = initial_hint
+    assert (widget._label is not None) == expect_label_exists
+    assert widget.hint == expected_hint
+
+
+@pytest.mark.parametrize("animation_started", [False, True])
+@pytest.mark.parametrize("initial_hint,expect_initial_label_text,new_hint,expect_new_label_text", [
+    (None, None, None, None),
+    (None, None, "", None),
+    ("", None, None, None),
+    ("", None, "", None),
+    ("test", "test", None, None),
+    ("test", "test", "", None),
+    ("test", "test", "another", "another"),
+    (None, None, "test", "test"),
+    ("", None, "test", "test"),
+    ("test", "test", "test", "test"),
+])
+def test_activity_indicator_hint_setter(qtbot: QtBot, animation_started, expect_initial_label_text, initial_hint,
+                                        expect_new_label_text, new_hint):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    widget.hint = initial_hint
+    if expect_initial_label_text is None:
+        assert widget._label is None
+    else:
+        assert widget._label is not None
+        assert widget._label.text() == expect_initial_label_text
+    widget.hint = new_hint
+    if expect_new_label_text is None:
+        assert widget._label is None
+    else:
+        assert widget._label is not None
+        assert widget._label.text() == expect_new_label_text
+
+
+@pytest.mark.parametrize("animation_started", [False, True])
+@pytest.mark.parametrize("initial_hint,expect_initial_label_text,new_hint,expect_new_label_text", [
+    (None, None, None, None),
+    (None, None, "", None),
+    ("", None, None, None),
+    ("", None, "", None),
+    ("test", "test", None, None),
+    ("test", "test", "", None),
+    ("test", "test", "another", "another"),
+    (None, None, "test", "test"),
+    ("", None, "test", "test"),
+    ("test", "test", "test", "test"),
+])
+def test_activity_indicator_hint_slot(qtbot: QtBot, animation_started, expect_initial_label_text, initial_hint,
+                                      expect_new_label_text, new_hint):
+    class Sender(QObject):
+        send_val = Signal(str)
+
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    sender = Sender()
+    sender.send_val.connect(widget.setHint)
+    widget.hint = initial_hint
+    if expect_initial_label_text is None:
+        assert widget._label is None
+    else:
+        assert widget._label is not None
+        assert widget._label.text() == expect_initial_label_text
+    with qtbot.wait_signal(sender.send_val):
+        sender.send_val.emit(new_hint)
+    if expect_new_label_text is None:
+        assert widget._label is None
+    else:
+        assert widget._label is not None
+        assert widget._label.text() == expect_new_label_text
+
+
+@mock.patch("qtawesome.Spin")
+@mock.patch("qtawesome.icon")
+@mock.patch("qtawesome.IconWidget.setPixmap")
+def test_activity_indicator_start_animation_sets_icon_first_time(_, icon, Spin, qtbot: QtBot):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    icon.reset_mock()  # icon was called in IconWidget constructor
+    assert widget._icon_animation is None
+    Spin.assert_not_called()
+    with mock.patch.object(widget._icon_widget, "setIcon") as setIcon:
+        widget.startAnimation()
+        Spin.assert_called_once()
+        icon.assert_called_once_with(mock.ANY, color=mock.ANY, animation=Spin.return_value)
+        setIcon.assert_called_once_with(icon.return_value)
+
+
+@mock.patch("qtawesome.icon")
+@mock.patch("qtawesome.IconWidget.setPixmap")
+def test_activity_indicator_start_animation_does_not_recreate_icon_multiple_times(_, icon, qtbot: QtBot):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    icon.reset_mock()  # icon was called in IconWidget constructor
+    widget.startAnimation()
+    icon.assert_called_once()
+    icon.reset_mock()
+    with pytest.warns(UserWarning):
+        widget.startAnimation()
+    icon.assert_not_called()
+
+
+@mock.patch("qtawesome.animation.QTimer")
+def test_activity_indicator_start_animation_restarts_existing_timer(QTimer, qtbot: QtBot):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    QTimer.assert_not_called()
+    widget.startAnimation()
+    QTimer.assert_called_once()
+    QTimer.return_value.start.assert_called_once_with(10)
+    QTimer.reset_mock()
+    QTimer.return_value.start.reset_mock()
+    widget.startAnimation()
+    QTimer.assert_not_called()
+    QTimer.return_value.start.assert_called_once_with(10)
+
+
+@mock.patch("qtawesome.animation.QTimer")
+def test_activity_indicator_stop_animation_stops_existing_timer(QTimer, qtbot: QtBot):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    QTimer.assert_not_called()
+    widget.startAnimation()
+    QTimer.assert_called_once()
+    QTimer.return_value.stop.assert_not_called()
+    QTimer.reset_mock()
+    QTimer.return_value.stop.reset_mock()
+    widget.stopAnimation()
+    QTimer.assert_not_called()
+    QTimer.return_value.stop.assert_called_once_with()
+    QTimer.return_value.stop.reset_mock()
+    widget.stopAnimation()
+    QTimer.assert_not_called()
+    QTimer.return_value.stop.assert_called_once_with()
+
+
+@pytest.mark.parametrize("error_type,expected_error_message", [
+    (IndexError, "Cannot resume activity animation timer: Test message"),
+    (KeyError, "Cannot resume activity animation timer: 'Test message'"),
+    (RuntimeError, "Cannot resume activity animation timer: Test message"),
+    (AttributeError, "Cannot resume activity animation timer: Test message"),
+])
+@mock.patch("qtawesome.animation.QTimer")
+def test_activity_indicator_warns_on_start_problem(QTimer, qtbot: QtBot, error_type, expected_error_message):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    QTimer.assert_not_called()
+    widget.startAnimation()
+    QTimer.return_value.start.side_effect = error_type("Test message")
+    with pytest.warns(UserWarning, match=expected_error_message):
+        widget.startAnimation()
+
+
+@pytest.mark.parametrize("error_type,expected_error_message", [
+    (IndexError, "Cannot stop activity animation timer: Test message"),
+    (KeyError, "Cannot stop activity animation timer: 'Test message'"),
+    (RuntimeError, "Cannot stop activity animation timer: Test message"),
+    (AttributeError, "Cannot stop activity animation timer: Test message"),
+])
+@mock.patch("qtawesome.animation.QTimer")
+def test_activity_indicator_warns_on_stop_problem(QTimer, qtbot: QtBot, error_type, expected_error_message):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    QTimer.assert_not_called()
+    widget.startAnimation()
+    QTimer.return_value.stop.side_effect = error_type("Test message")
+    with pytest.warns(UserWarning, match=expected_error_message):
+        widget.stopAnimation()
+
+
+def test_activity_indicator_animating_prop(qtbot: QtBot):
+    widget = ActivityIndicator()
+    qtbot.add_widget(widget)
+    assert widget.animating is False
+    widget.startAnimation()
+    assert widget.animating is True
+    widget.stopAnimation()
+    assert widget.animating is False

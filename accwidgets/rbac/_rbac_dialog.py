@@ -1,14 +1,13 @@
 import logging
-import qtawesome as qta
-from typing import Optional, List, cast
+from typing import Optional, List
 from pathlib import Path
 from enum import IntEnum, auto
-from qtawesome import IconWidget
 from qtpy import uic
-from qtpy.QtGui import QPalette, QHideEvent, QKeyEvent, QShowEvent
-from qtpy.QtCore import QEvent, QSignalBlocker, Qt, Signal, QTimer
+from qtpy.QtGui import QHideEvent, QKeyEvent, QShowEvent
+from qtpy.QtCore import QEvent, QSignalBlocker, Qt, Signal
 from qtpy.QtWidgets import (QWidget, QPushButton, QLineEdit, QLabel, QTabWidget, QCheckBox, QVBoxLayout,
-                            QDialogButtonBox, QDialog, QStackedWidget, QBoxLayout)
+                            QDialogButtonBox, QDialog, QStackedWidget)
+from accwidgets.qt import ActivityIndicator
 from ._token import RbaToken
 
 
@@ -90,7 +89,7 @@ class RbaAuthDialogWidget(QWidget):
         self.roles_explicit: QCheckBox = None
         self.roles_loc: QCheckBox = None
         self.activity_stack: QStackedWidget = None
-        self.activity_page: QWidget = None
+        self.activity_indicator: ActivityIndicator = None  # type: ignore
 
         uic.loadUi(Path(__file__).parent / "rbac_dialog.ui", self)
 
@@ -103,11 +102,7 @@ class RbaAuthDialogWidget(QWidget):
         self.user_auto_info.setProperty("qss-role", "info")
         self.loc_auto_info.setProperty("qss-role", "info")
         self.activity_stack.setCurrentIndex(self._STACK_NORMAL)
-
-        self.activity_indicator = IconWidget(parent=self)
-        # Keeping separate, because animation can't be stopped natively once created
-        self._icon_animation: Optional[qta.Spin] = None
-        cast(QBoxLayout, self.activity_page.layout()).insertWidget(1, self.activity_indicator)
+        self.activity_indicator.hint = "Logging in..."
 
         if initial_username:
             self.username.setText(initial_username)
@@ -183,30 +178,11 @@ class RbaAuthDialogWidget(QWidget):
             # Do not react to events that may be coming from the model triggered by another auth widget,
             # e.g. when logging in to apply new roles
             return
-        if self._icon_animation is None:
-            self._icon_animation = qta.Spin(parent_widget=self.activity_indicator)
-            animated_icon = qta.icon("fa.spinner",
-                                     color=self.palette().color(QPalette.WindowText),
-                                     animation=self._icon_animation)
-            self.activity_indicator.setIcon(animated_icon)
-        else:
-            try:
-                timer: QTimer = self._icon_animation.info[self.activity_indicator][0]
-                timer.start(self._icon_animation.interval)
-            except Exception as e:  # noqa: B902
-                # Should not be a problem, but in case qta breaks API suddenly, here's an extra protection
-                logger.debug(f"Cannot resume animation timer: {e!s}")
+        self.activity_indicator.startAnimation()
         self.activity_stack.setCurrentIndex(self._STACK_ACTIVITY)
 
     def on_login_finished(self):
-        if self._icon_animation is not None:
-            try:
-                # Stop animation timers when not needed
-                timer: QTimer = self._icon_animation.info[self.activity_indicator][0]
-                timer.stop()
-            except Exception as e:  # noqa: B902
-                # Should not be a problem, but in case qta breaks API suddenly, here's an extra protection
-                logger.debug(f"Cannot stop animation timer: {e!s}")
+        self.activity_indicator.stopAnimation()
         self.activity_stack.setCurrentIndex(self._STACK_NORMAL)
 
     def hideEvent(self, event: QHideEvent):

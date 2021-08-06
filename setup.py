@@ -39,6 +39,7 @@ SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 REQUIREMENTS: Dict[str, List[str]] = {
     CORE_OPTION: [
         "QtPy>=1.7,<2a0",
+        "qtawesome>=0.7.0,<2a0",
         "packaging>=20.4,<20.5a0",
         "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
     ],
@@ -61,6 +62,8 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "pytest-qt>=3.2.0,<3.3a0",
         "pytest-random-order>=1.0.4,<1.1a0",
         "pytest-cov>=2.5.1,<2.6a0",
+        "pytest-asyncio",
+        "qasync>=0.13.0,<1a0",
     ],
     DOC_OPTION: [
         "Sphinx>=3.2.1,<3.3a0",

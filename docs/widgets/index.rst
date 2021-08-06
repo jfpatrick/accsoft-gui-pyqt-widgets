@@ -27,7 +27,6 @@ The following is a list of widgets that are requested (implemented ones have sta
                                                               :attr:`~accwidgets.led.Led.Status.ERROR`,
                                                               :attr:`~accwidgets.led.Led.Status.NONE`
    |spinner-link|         |spinner-status|  |spinner|
-   |device-sel-link|      |na|              |devicesel|
    |toggle-trigger-link|  |na|              |toggle-trigger|  For JAPC context
    |status-led-link|      |na|                                Changes its state only when all linked
                                                               properties change to a specific state
@@ -37,6 +36,7 @@ The following is a list of widgets that are requested (implemented ones have sta
                                                               RDA device based timing
    |rbac-link|            |done|            |rbac|            :mod:`pyrbac`-backed component. Needs manual
                                                               synchronization with Java RBAC libraries.
+   |param-selector-link|  |done|            |param-selector|  Discover devices and properties from CCDB
    =====================  ================  ================  ===============================================
 
 In addition to explicitly requested widgets, those available in
@@ -51,8 +51,6 @@ their usage statistics gathered from existing Inspector projects.
 .. |livecharts-link| replace:: :doc:`Live Charts <graphs/index>`
 
 .. |lsa-link| replace:: :doc:`LSA Selector <lsa_selector/index>`
-
-.. |device-sel-link| replace:: `Device selector <https://issues.cern.ch/browse/ACCPY-44>`__
 
 .. |app-frame-link| replace:: :doc:`Application frame <app_frame/index>`
 
@@ -78,6 +76,8 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |led-link| replace:: :doc:`LED <led/index>`
 
+.. |param-selector-link| replace:: :doc:`Parameter selector <parameter_selector/index>`
+
 .. |done| replace:: :green:`Available`
 
 .. |na| replace:: N/A
@@ -86,8 +86,6 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |livecharts| image:: ../img/live-charts.png
    :width: 250px
-
-.. |devicesel| image:: ../img/ascdevicecontrolbox.png
 
 .. |logconsole| image:: ../img/logconsole.png
    :width: 250px
@@ -113,6 +111,9 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |led| image:: ../img/led.png
 
+.. |param-selector| image:: ../img/paramselector.png
+   :width: 250px
+
 
 Explore individual widgets
 --------------------------
@@ -128,4 +129,5 @@ Explore individual widgets
    log_console/index
    timing_bar/index
    rbac/index
+   parameter_selector/index
    qt/modules

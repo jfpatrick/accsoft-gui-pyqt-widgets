@@ -571,7 +571,6 @@ autodoc_default_options = {
                        "isUndoAvailable,"
                        "maxLength,"
                        "paste,"
-                       "placeholderText,"
                        "returnPressed,"
                        "selectAll,"
                        "selectionChanged,"
@@ -789,6 +788,7 @@ intersphinx_mapping = {
     "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
     "papc": (f"https://acc-py.web.cern.ch/gitlab/pelson/papc/docs/v{papc.__version__}/", None),
     "pyrbac": (f"https://acc-py.web.cern.ch/gitlab-mono/acc-co/cmw/cmw-core/docs/pyrbac/master/", None),
+    "pyCCDA": (f"https://acc-py.web.cern.ch/gitlab/controls-configuration-service/controls-configuration-data-api/accsoft-ccs-ccda/docs/stable/", None),
 }
 
 
