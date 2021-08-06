@@ -71,6 +71,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "sphinxcontrib-napoleon2>=1.0,<2a0",
         "sphinx-autodoc-typehints>=1.10.3,<1.11a0",
         "acc-py-sphinx>=0.9,<0.10a0",
+        "sphinx-copybutton>=0.4,<1a0",
         # These are simply here to provide package version in conf.py
         # If any of the widgets requires specific versions, it is expected to narrow this down
         "papc",
