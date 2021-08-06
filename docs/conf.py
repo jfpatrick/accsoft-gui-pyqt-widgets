@@ -49,6 +49,7 @@ extensions = [
     "acc_py_sphinx.utils.exclude",  # Exclude members per-class
     "acc_py_sphinx.utils.autocontent",  # Smarter merge of __init__ and class docstring
     "acc_py_sphinx.utils.attrdoc",  # Fix propagation of attribute docstrings
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
