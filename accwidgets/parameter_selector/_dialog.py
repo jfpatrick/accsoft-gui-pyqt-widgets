@@ -1,5 +1,8 @@
-import asyncio
 from asyncio import Future, CancelledError
+try:
+    from asyncio import create_task
+except ImportError:
+    from asyncio import ensure_future as create_task  # type: ignore
 from enum import IntEnum
 from copy import copy
 from typing import Optional
@@ -185,7 +188,7 @@ class ParameterSelector(QWidget):
             self.aux_activity_indicator.hide()
 
     def _start_search(self):
-        asyncio.create_task(self._on_search_requested(self.search_edit.text()))
+        create_task(self._on_search_requested(self.search_edit.text()))
 
     def _update_from_status(self, status: "ParameterSelector.NetworkRequestStatus"):
         in_progress = status == ParameterSelector.NetworkRequestStatus.IN_PROGRESS
