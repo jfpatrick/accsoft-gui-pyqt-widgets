@@ -1,14 +1,10 @@
 include:
-  - project: 'acc-co/devops/python/acc-py-devtools'
+  - project: 'isinkare/acc-py-devtools'
+    ref: feature/prevent-fork-jobs
     file: 'acc_py_devtools/templates/gitlab-ci/python.yml'
-
 
 stages:
   - Code Quality
-  - Unit Tests
-  - Build Wheel
-  - Documentation
-  - Upload Release
 
 variables:
   ACCPY_PYQT_DOCKER_IMAGE: gitlab-registry.cern.ch/acc-co/devops/python/distribution/ci/pyqt:v2020-11rc2
@@ -20,96 +16,31 @@ variables:
 
 before_script:
   - *init_sequence
+  - env
 
-flake8:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+run in all:
   stage: Code Quality
   script:
-    - pip install .[lint]
-    - export LANG=en_US.UTF-8  # Otherwise, flake8 might fail with UnicodeDecodeError: 'ascii' codec can't decode byte
-    - flake8
+    - echo "I run in all"
 
-mypy:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+run in both:
   stage: Code Quality
+  extends: .acc_py_exclude_forks
   script:
-    - pip install .[lint]
-    - mypy . docs examples
+    - echo "I run in both"
 
-pytest:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Unit Tests
+run in both 2:
+  stage: Code Quality
+  extends: .acc_py_exclude_forks
+  variables:
+    ACC_PY_PRIMARY_NS: ""
   script:
-    - pip install .[test]
-    - OMP_NUM_THREADS=1 run_headless python -m pytest --random-order --junitxml=report.xml --cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets -vx --color=yes tests/
-  artifacts:
-    name: coverage-report
-    paths:
-      - coverage
-    when: on_success
-    expire_in: 1 month
-    reports:
-      junit: report.xml
+    - echo "I run in both"
 
-build wheel:
-  extends: .acc_py_build_wheel
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Build Wheel
-
-.sphinx_custom:
-  stage: Documentation
-  before_script:
-      - *init_sequence
-      - yum install -y -q graphviz  # Required to generate inheritance diagrams
-      - pip install .[doc]  # Need to install it here, as sphobjinv should be available
-      - python -c "import sphobjinv as soi; [soi.fileops.writebytes(path=f'docs/{f}.inv', contents=soi.zlib.compress(soi.Inventory(plaintext=soi.fileops.readbytes(f'docs/{f}.txt')).data_file())) for f in ['qt', 'pyqt', 'pjlsa']]" # Prepare custom intersphinx inventory files
-
-sphinx:
-  extends:
-    - .acc_py_build_docs
-    - .sphinx_custom
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  only:
-    refs:
-      - master
-      - develop
-
-sphinx on tag:
-  extends:
-    - .acc_py_build_docs_on_tag_v2
-    - .sphinx_custom
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-
-release wheel on tag:
-  extends: .acc_py_release_wheel
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Upload Release
-
-release sdist on tag:
-  extends: .acc_py_release_sdist_v2
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Upload Release
-
-anybadge:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
-  stage: Documentation
+run in main:
+  stage: Code Quality
+  extends: .acc_py_exclude_forks
+  variables:
+    ACC_PY_PRIMARY_NS: "acc-co/accsoft/gui"
   script:
-    - pip install anybadge
-    - pip install .[lint,doc]
-    - mkdir -p badges
-    - BADGE_MYPY_VERSION="$(read -a mypy_output <<< "$(pip list | grep -E mypy[\t\ ])" && echo ${mypy_output[1]})"
-    - BADGE_FLAKE8_VERSION="$(read -a flake8_output <<< "$(pip list | grep -E flake8[\t\ ])" && echo ${flake8_output[1]})"
-    - BADGE_SPHINX_VERSION="$(read -a sphinx_output <<< "$(pip list | grep -E Sphinx[\t\ ])" && echo ${sphinx_output[1]})"
-    - BADGE_ACCWIDGETS_VERSION="$(python -c 'import accwidgets; print(accwidgets.__version__)' | awk '{split($0,ver,"+");print ver[1]}')"
-    - anybadge -l mypy -v "v${BADGE_MYPY_VERSION}" -f badges/mypy.svg -c olive -o
-    - anybadge -l flake8 -v "v${BADGE_FLAKE8_VERSION}" -f badges/flake8.svg -c olive -o
-    - anybadge -l acc-py-repo -v "accwidgets v${BADGE_ACCWIDGETS_VERSION}" -f badges/repo.svg -c purple -o
-    - anybadge -l documentation -v "sphinx v${BADGE_SPHINX_VERSION}" -f badges/docs.svg -c teal -o
-  artifacts:
-    paths:
-      - badges
-    when: on_success
-    expire_in: 1 day
-  only:
-    refs:
-      - develop
+    - echo "I run in main"
