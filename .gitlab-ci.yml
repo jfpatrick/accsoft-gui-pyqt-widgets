@@ -25,68 +25,22 @@ run in all:
 
 run in both:
   stage: Code Quality
-  extends: .acc_py_only_on_primary_repo
+  extends: .acc_py_only_primary_repo
   script:
     - echo "I run in both"
 
 run in both 2:
   stage: Code Quality
-  extends: .acc_py_only_on_primary_repo
+  extends: .acc_py_only_primary_repo
   variables:
-    ACC_PY_PRIMARY_NS: ""
+    ACC_PY_PRIMARY_ROOT_NS: ""
   script:
     - echo "I run in both"
 
 run in main:
   stage: Code Quality
-  extends: .acc_py_only_on_primary_repo
+  extends: .acc_py_only_primary_repo
   variables:
-    ACC_PY_PRIMARY_NS: "acc-co/accsoft/gui"
+    ACC_PY_PRIMARY_ROOT_NS: "acc-co"
   script:
     - echo "I run in main"
-
-.conditional:
-  rules:
-    - if: '$CONDITION'
-
-run in main with condition true:
-  stage: Code Quality
-  extends:
-    - .acc_py_only_on_primary_repo
-    - .conditional
-  variables:
-    ACC_PY_PRIMARY_NS: "acc-co/accsoft/gui"
-    CONDITION: 1
-  script:
-    - echo "I run in main"
-
-run in main with condition false:
-  stage: Code Quality
-  extends:
-    - .acc_py_only_on_primary_repo
-    - .conditional
-  variables:
-    ACC_PY_PRIMARY_NS: "acc-co/accsoft/gui"
-    CONDITION: 0
-  script:
-    - echo "I do NOT run in any"
-
-run in both in condition true:
-  stage: Code Quality
-  extends:
-    - .acc_py_only_on_primary_repo
-    - .conditional
-  variables:
-    CONDITION: 1
-  script:
-    - echo "I run in both"
-
-run in both in condition false:
-  stage: Code Quality
-  extends:
-    - .acc_py_only_on_primary_repo
-    - .conditional
-  variables:
-    CONDITION: 0
-  script:
-    - echo "I do NOT run in any"
