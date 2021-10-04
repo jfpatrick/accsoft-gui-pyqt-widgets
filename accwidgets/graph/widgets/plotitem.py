@@ -1364,7 +1364,7 @@ class ExPlotItem(pg.PlotItem):
             - the small auto range button on the lower left corner of the plot does
               not simply activate auto range but behaves as 'View All'
         """
-        scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap("auto"), 14, self)
+        scrolling_range_reset_button = pg.ButtonItem(pg.icons.getGraphPixmap("auto"), 14, self)
         scrolling_range_reset_button.mode = "auto"
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
         self.vb.sig_xrange_changed.connect(self._stop_scrolling_plot_auto_xrange)
