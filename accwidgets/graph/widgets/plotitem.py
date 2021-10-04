@@ -1895,7 +1895,10 @@ class ExViewBox(pg.ViewBox):
             self.sig_xrange_changed.emit()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().wheelEvent(ev=ev, axis=axis)
-        self.sigRangeChanged.emit(self, self.state["viewRange"])
+        changed = [True, True]
+        if axis is not None:
+            changed[abs(axis - 1)] = False
+        self.sigRangeChanged.emit(self, self.state["viewRange"], changed)
 
     def mouseDragEvent(self, ev: MouseDragEvent, axis: Optional[int] = None):
         """
@@ -1917,7 +1920,10 @@ class ExViewBox(pg.ViewBox):
                 self.sig_xrange_changed.emit()
             self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
             super().mouseDragEvent(ev=ev, axis=axis)
-            self.sigRangeChanged.emit(self, self.state["viewRange"])
+            changed = [True, True]
+            if axis is not None:
+                changed[abs(axis - 1)] = False
+            self.sigRangeChanged.emit(self, self.state["viewRange"], changed)
 
     def set_range_manually(self, **kwargs):
         """
