@@ -15,8 +15,14 @@ def assert_view_box_range_similar(actual_range: Iterable[Union[Tuple[float, floa
                           because of padding on ranges. This tolerance factor influences
                           the range in which the actual range is seen as right.
     """
+    __tracebackhide__ = True  # Hide from stack trace in pytest
+
     def assert_within_tolerance(a, b, atol):
-        assert abs(b - a) <= atol
+        __tracebackhide__ = True  # Hide from stack trace in pytest
+        assert abs(b - a) <= atol, f"""{actual_range} != {expected_range}
+  Actual: {actual_range}
+    Expected: {expected_range}
+      Tolerance: {tolerance_factor}"""
 
     for actual, expected in list(zip(actual_range, expected_range)):
         abs_tolerance = (expected[1] - expected[0]) * tolerance_factor
