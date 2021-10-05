@@ -295,18 +295,16 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
     assert_view_box_range_similar(plot_item.vb.targetRange(), expected, tolerance_factor=0.4)
 
 
-@pytest.mark.parametrize("config_style_change", [
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT),
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT),
+@pytest.mark.parametrize("orig_style,new_style,orig_item_types,new_item_types", [
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT, [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine], [CyclicPlotCurve, pg.PlotDataItem, pg.InfiniteLine]),
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT, [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine], [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine]),
 ])
-def test_static_items_config_change(qtbot, config_style_change):
+def test_static_items_config_change(qtbot, orig_style, new_style, orig_item_types, new_item_types):
     """
     Test if live data items as well as pure pyqtgraph items are still
     present after switching the plot-items configuration
     """
-    config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[0],
-    )
+    config = ExPlotWidgetConfig(plotting_style=orig_style)
     window = MinimalTestWindow(plot=config)
     window.show()
     qtbot.wait_for_window_shown(window)
@@ -318,17 +316,18 @@ def test_static_items_config_change(qtbot, config_style_change):
         pg.PlotDataItem([0.0, 1.0, 2.0]),
         pg.InfiniteLine(pos=0.0, angle=0),
     ]
-    for item in items:
+    for item in items[1:]:
         plot_item.addItem(item)
+
+    def assert_item_types(expected_types):
+        __tracebackhide__ = True  # Hide from stack trace in pytest
+        assert {type(i) for i in plot_item.vb.addedItems} == set(expected_types)
+
     source.send_data(PointData(0.0, 0.0))
-    for item in items:
-        assert item in plot_item.vb.addedItems
-    config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[1],
-    )
+    assert_item_types(orig_item_types)
+    config = ExPlotWidgetConfig(plotting_style=new_style)
     plot_item.update_config(config=config)
-    for item in items:
-        assert item in plot_item.vb.addedItems
+    assert_item_types(new_item_types)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
