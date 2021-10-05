@@ -1859,14 +1859,14 @@ class ExViewBox(pg.ViewBox):
             other_viewboxes = [vb for vb in self.layers.view_boxes if vb is not primary_vb and vb.addedItems]
             target_bounds = primary_vb.childrenBoundingRect(items=items)
 
-            primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
-            for vb in other_viewboxes:
-                vb.enableAutoRange(x=auto_range_x_axis, y=True)
-
             # Get common bounding rectangle for all items in all layers
             for vb in other_viewboxes:
                 bounds = vb._bounding_rect_from(another_vb=primary_vb, items=items)
                 target_bounds = target_bounds.united(bounds)
+
+            primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
+            for vb in other_viewboxes:
+                vb.enableAutoRange(x=auto_range_x_axis, y=True)
 
             # Setting the range with the manual signal will move all other layers accordingly
             if auto_range_x_axis:
