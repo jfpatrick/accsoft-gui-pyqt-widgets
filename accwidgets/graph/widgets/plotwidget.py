@@ -109,10 +109,7 @@ class ExPlotWidget(pg.PlotWidget):
         """
         super().__init__(parent=parent, background=background)
         config = config or ExPlotWidgetConfig()
-        if axis_items is None:
-            axis_items = {}
         self.timing_source = timing_source
-        axis_items = axis_items or {}
         # From base class
         self.plotItem: ExPlotItem
         self._init_ex_plot_item(axis_items=axis_items,
@@ -559,8 +556,6 @@ class ExPlotWidget(pg.PlotWidget):
         Replace the plot item created by the base class with an instance
         of the extended plot item.
         """
-        if axis_items is None:
-            axis_items = {}
         old_plot_item = self.plotItem
         self.plotItem = ExPlotItem(
             axis_items=axis_items,
@@ -1235,7 +1230,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             background: Background color configuration for the widget. This can be any single argument accepted by
                         :func:`~pyqtgraph.mkColor`. By default, the background color is determined using the
                         ``backgroundColor`` configuration option (see :func:`~pyqtgraph.setConfigOptions`).
-            time_span: Lenght of the cycle in seconds.
+            time_span: Length of the cycle in seconds.
             time_progress_line: If :obj:`True`, the current timestamp will be marked by a vertical line.
             axis_items: If the standard plot axes should be replaced, pass a dictionary
                         with axes mapped to the position in which they should be put.

@@ -94,22 +94,17 @@ class ExPlotItem(pg.PlotItem):
         """
         # Pass modified axis for the multilayer movement to function properly
         config = config or ExPlotWidgetConfig()
-        if axis_items is None:
-            axis_items = {}
-        # TODO: Why do we force create these? What if user passed it from the outside? Why if we don't need right one?
-        axis_items["left"] = ExAxisItem(orientation="left")
-        axis_items["right"] = ExAxisItem(orientation="right")
-        # FIXME: Create_firrint_axis_items called even when it's not needed
-        axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item(
-            config_style=config.plotting_style,
-            orientation="bottom",
-        ))
-        axis_items["top"] = axis_items.get("top", self._create_fitting_axis_item(
-            config_style=config.plotting_style,
-            orientation="top",
-        ))
+        replaced_axes = axis_items or {}
+        if axis_items is None or ("left" in axis_items and not isinstance(axis_items.get("left"), ExAxisItem)):
+            replaced_axes["left"] = ExAxisItem(orientation="left")
+        if axis_items is None or ("bottom" not in axis_items):
+            replaced_axes["bottom"] = self._create_fitting_axis_item(
+                config_style=config.plotting_style,
+                orientation="bottom",
+            )
+
         viewbox = ExViewBox()
-        super().__init__(axisItems=axis_items,
+        super().__init__(axisItems=replaced_axes,
                          viewBox=viewbox,
                          **plotitem_kwargs)
         viewbox.sig_selection.connect(self.select)
