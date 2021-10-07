@@ -183,22 +183,24 @@ class LivePlotCurve(AbstractBasePlotCurve):
             y: y values that are passed to the items
         """
         # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
-        curve_arguments: Dict = {}
-        for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
-            curve_arguments[curve_key] = self.opts[orig_key]
-        scatter_arguments: Dict = {}
-        for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
-            if orig_key in self.opts:
-                scatter_arguments[scatter_key] = self.opts[orig_key]
         if (self.opts.get("pen") is not None
                 or (self.opts.get("brush") is not None
                     and self.opts.get("fillLevel") is not None)):
+            curve_arguments: Dict = {}
+            for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
+                curve_arguments[curve_key] = self.opts[orig_key]
             self.curve.setData(x=x, y=y, **curve_arguments)
             self.curve.show()
         else:
             self.curve.hide()
         if self.opts.get("symbol") is not None:
             data_x_wo_nans, data_y_wo_nans = LivePlotCurve._without_nan_values(x_values=x, y_values=y)
+            scatter_arguments: Dict = {}
+            for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
+                try:
+                    scatter_arguments[scatter_key] = self.opts[orig_key]
+                except KeyError:
+                    pass
             self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans, **scatter_arguments)
             self.scatter.show()
         else:
