@@ -22,17 +22,21 @@ if TYPE_CHECKING:
 
 
 # params accepted by the plotdataitem and their fitting params in the curve-item
+# (see PlotDataItem.updateItems updateItems for reference)
 _PLOTDATAITEM_CURVE_PARAM_MAPPING = [
     ("pen", "pen"),
     ("shadowPen", "shadowPen"),
     ("fillLevel", "fillLevel"),
+    ("fillOutline", "fillOutline"),
     ("fillBrush", "brush"),
     ("antialias", "antialias"),
     ("connect", "connect"),
     ("stepMode", "stepMode"),
+    ("skipFiniteCheck", "skipFiniteCheck"),
 ]
 
 # params accepted by the plotdataitem and their fitting params in the scatter-plot-item
+# (see PlotDataItem.updateItems updateItems for reference)
 _PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
     ("symbolPen", "pen"),
     ("symbolBrush", "brush"),
@@ -184,7 +188,7 @@ class LivePlotCurve(AbstractBasePlotCurve):
         """
         # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
         if (self.opts.get("pen") is not None
-                or (self.opts.get("brush") is not None
+                or (self.opts.get("fillBrush") is not None
                     and self.opts.get("fillLevel") is not None)):
             curve_arguments: Dict = {}
             for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
