@@ -87,7 +87,7 @@ class ExLegendItem(pg.LegendItem):
         """
         Updates legend's geometry to fit the items.
 
-        **Note!** This implementation is copied from ``pyqtgraph==0.11.0rc1``.
+        ..note:: This implementation is copied from ``pyqtgraph==0.11.0rc1``.
         """
         if self.size is not None:
             return

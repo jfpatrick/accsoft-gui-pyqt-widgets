@@ -297,6 +297,9 @@ class ExPlotItem(pg.PlotItem):
         Add a generic item to the plot. If ``layer`` is provided, the item
         will be added to the layer's :class:`~pyqtgraph.ViewBox`, otherwise - to the default
         :class:`~pyqtgraph.ViewBox` of this object.
+        If the item has plot data (:class:`~pyqtgraph.PlotDataItem`, :class:`~pyqtgraph.PlotCurveItem`,
+        :class:`~pyqtgraph.ScatterPlotItem`), it may be included in analysis performed by the
+        :class:`~pyqtrgaph.PlotItem`.
 
         Args:
             item: Item that should be added to the plot.
@@ -895,8 +898,8 @@ class ExPlotItem(pg.PlotItem):
             xRange: The range that should be visible along the x-axis.
             yRange: The range that should be visible along the y-axis.
             padding: Expand the view by a fraction of the requested range.
-                     By default, this value is set between 0.02 and 0.1 depending on
-                     the size of the viewbox.
+                     By default, this value is set between the default padding value
+                     and 0.1 depending on the size of the viewbox.
             update: If :obj:`True`, update the range of the viewbox immediately.
                     Otherwise, the update is deferred until before the next render.
             disableAutoRange: If :obj:`True`, auto-ranging is disabled. Otherwise, it is left
@@ -944,7 +947,7 @@ class ExPlotItem(pg.PlotItem):
                                                update=update)
 
     def invertY(self,
-                b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
+                b: bool,
                 layer: Optional["LayerIdentification"] = None):
         """
         Allows inverting a y-axis of the ``layer``. If :obj:`None` layer is passed, the default y-axis
@@ -1061,12 +1064,12 @@ class ExPlotItem(pg.PlotItem):
                   size: Optional[Tuple[float, float]] = None,
                   offset: Tuple[float, float] = (30, 30)) -> ExLegendItem:
         """
-        Create a new legend item and anchor it over the internal viewbox.
+        Create a new :class:`~pyqtgraph.LegendItem` and anchor it over the internal viewbox.
         Plots will be automatically displayed in the legend if they
         are created with the ``name`` argument.
 
         This implementation extends :meth:`~pyqtgraph.PlotItem.addLegend` to
-        allow configuring text and background color.
+        create instances of :class:`~accwidgets.graph.ExLegendItem` instead of :class:`~pyqtgraph.LegendItem`.
 
         Args:
             size: Fixed size for the legend item (width, height).

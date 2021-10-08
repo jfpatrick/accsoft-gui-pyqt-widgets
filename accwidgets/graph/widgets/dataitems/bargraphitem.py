@@ -78,8 +78,8 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
             frac: Specifies what fraction (0.0-1.0) of the total data range to return.
                   By default, the entire range is returned. This allows the :class:`~pyqtgraph.ViewBox`
                   to ignore large spikes in the data when auto-scaling.
-            orthoRange: Specifies that only the data within the given range (orthogonal to ``ax``)
-                        should be measured when returning the data range. (For example, a
+            orthoRange: (``[min,max]`` or :obj:`None`) Specifies that only the data within the given range
+                        (orthogonal to ``ax``) should be measured when returning the data range. (For example, a
                         :class:`~pyqtgraph.ViewBox` might ask what is the y-range of all data
                         with x-values between min and max).
 
@@ -214,7 +214,7 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
         Update dynamic options and invalidate bounds of the item.
 
         Args:
-            **opts: Ketword arguments for any options stored in :attr:`self.opts <opts>`.
+            **opts: Keyword arguments for any options stored in :attr:`self.opts <opts>`.
         """
         self.invalidateBounds()
         super().setOpts(**opts)
