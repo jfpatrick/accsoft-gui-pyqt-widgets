@@ -292,6 +292,8 @@ class ExPlotItem(pg.PlotItem):
                 item: Union[pg.GraphicsObject, DataModelBasedItem],
                 layer: Optional["LayerIdentification"] = None,
                 ignoreBounds: bool = False,
+                params: Dict[Any, Any] = None,
+                skipAverage: Optional[bool] = None,
                 **kwargs):
         """
         Add a generic item to the plot. If ``layer`` is provided, the item
@@ -307,10 +309,16 @@ class ExPlotItem(pg.PlotItem):
                    corresponding layer will be used to accommodate the item.
             ignoreBounds: Identifies, whether the bounding rectangle of the item should be respected
                           when auto-ranging the plot.
+            params: Meta-parameters to associate with item's data.
+            skipAverage: Do not use averaging for this item when it's globally enabled.
             kwargs: Additional arguments for the original method (:meth:`~pyqtgraph.PlotItem.addItem`), in case the
                     original API changes.
         """
         # Super implementation can be used if layer is not defined
+        if skipAverage is True:
+            kwargs["skipAverage"] = skipAverage
+        if params is not None:
+            kwargs["params"] = params
         if self.is_standard_layer(layer=layer):
             super().addItem(item, ignoreBounds=ignoreBounds, **kwargs)
             try:
