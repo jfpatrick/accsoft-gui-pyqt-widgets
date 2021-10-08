@@ -21,33 +21,6 @@ if TYPE_CHECKING:
     from accwidgets.graph import ExPlotItem
 
 
-# params accepted by the plotdataitem and their fitting params in the curve-item
-# (see PlotDataItem.updateItems updateItems for reference)
-_PLOTDATAITEM_CURVE_PARAM_MAPPING = [
-    ("pen", "pen"),
-    ("shadowPen", "shadowPen"),
-    ("fillLevel", "fillLevel"),
-    ("fillOutline", "fillOutline"),
-    ("fillBrush", "brush"),
-    ("antialias", "antialias"),
-    ("connect", "connect"),
-    ("stepMode", "stepMode"),
-    ("skipFiniteCheck", "skipFiniteCheck"),
-]
-
-# params accepted by the plotdataitem and their fitting params in the scatter-plot-item
-# (see PlotDataItem.updateItems updateItems for reference)
-_PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
-    ("symbolPen", "pen"),
-    ("symbolBrush", "brush"),
-    ("symbol", "symbol"),
-    ("symbolSize", "size"),
-    ("data", "data"),
-    ("pxMode", "pxMode"),
-    ("antialias", "antialias"),
-]
-
-
 class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(self,
@@ -173,70 +146,6 @@ class LivePlotCurve(AbstractBasePlotCurve):
         """Last timestamp received by the curve."""
         return self._parent_plot_item.last_timestamp
 
-    def _set_data(self, x: np.ndarray, y: np.ndarray):
-        """ Set data of the inner curve and scatter plot
-
-        PyQtGraph prints RuntimeWarning when the data that is passed to the
-        ScatterPlotItem contains NaN values -> for this purpose we strip
-        all indices containing NaNs, since it won't make any visual difference,
-        because nans won't appear as symbols in the scatter plot.
-        The CurvePlotItem will receive the data as usual.
-
-        Args:
-            x: x values that are passed to the items
-            y: y values that are passed to the items
-        """
-        # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
-        if (self.opts.get("pen") is not None
-                or (self.opts.get("fillBrush") is not None
-                    and self.opts.get("fillLevel") is not None)):
-            curve_arguments: Dict = {}
-            for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
-                curve_arguments[curve_key] = self.opts[orig_key]
-            self.curve.setData(x=x, y=y, **curve_arguments)
-            self.curve.show()
-        else:
-            self.curve.hide()
-        if self.opts.get("symbol") is not None:
-            data_x_wo_nans, data_y_wo_nans = LivePlotCurve._without_nan_values(x_values=x, y_values=y)
-            scatter_arguments: Dict = {}
-            for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
-                try:
-                    scatter_arguments[scatter_key] = self.opts[orig_key]
-                except KeyError:
-                    pass
-            self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans, **scatter_arguments)
-            self.scatter.show()
-        else:
-            self.scatter.hide()
-
-    @staticmethod
-    def _without_nan_values(x_values: np.ndarray, y_values: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """ Get (if necessary) copies of the array without NaNs
-
-        Strip arrays of x and y values from nan values. If one of the arrays
-        has the value nan at the index n, in both arrays the value at index n
-        will be removed. This will make sure both arrays will have the same
-        length at the end again.
-
-        Args:
-            x_values: x-values that should be stripped from NaNs
-            y_values: y-values that should be stripped from NaNs
-
-        Returns:
-            Copies of the arrays without any nans. If no NaN's are contained,
-            the original arrays are returned.
-        """
-        if x_values.size != y_values.size:
-            raise ValueError("The passed arrays have to be the same length.")
-        x_nans = np.isnan(x_values)
-        y_nans = np.isnan(y_values)
-        combined_nans = x_nans | y_nans
-        if True in combined_nans:
-            return x_values[~combined_nans], y_values[~combined_nans]
-        else:
-            return x_values, y_values
-
 
 class CyclicPlotCurve(LivePlotCurve):
 
@@ -314,7 +223,7 @@ class CyclicPlotCurve(LivePlotCurve):
             data_y = np.concatenate((data_y, self._clipped_curve_old.y))
         if data_x.size != 0 and data_y.size != 0:
             self.clear()
-            self._set_data(x=data_x, y=data_y)
+            self.setData(x=data_x, y=data_y)
 
     def _update_new_curve_data_item(self):
         """Update the displayed new curve with clipping
@@ -371,7 +280,8 @@ class ScrollingPlotCurve(LivePlotCurve):
             # Clipping is not used for scatter plot
             curve_x, curve_y = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
                                                                   end=self._parent_plot_item.time_span.end)
-        self._set_data(x=curve_x, y=curve_y)
+
+        self.setData(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x=curve_x,
                                          y=curve_y,
                                          check_validity=False)
