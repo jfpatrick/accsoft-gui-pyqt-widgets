@@ -820,31 +820,45 @@ class DataSelectionMarker(pg.ScatterPlotItem):
 
         Args:
             spots: Optional list of dicts. Each dict specifies parameters for a single spot:
-                   {'pos': (x,y), 'size', 'pen', 'brush', 'symbol'}. This is just an alternate method
+                   ``{'pos': (x,y), 'size', 'pen', 'brush', 'symbol'}``. This is just an alternate method
                    of passing in data for the corresponding arguments.
             x: 1D arrays of x values.
             y: 1D arrays of y values.
             pos: 2D structure of x,y pairs (such as Nx2 array or list of tuples)
-            pxMode: If True, spots are always the same size regardless of scaling, and size is given in px.
+            pxMode: If :obj:`True`, spots are always the same size regardless of scaling, and size is given in px.
                     Otherwise, size is in scene coordinates and the spots scale with the view.
-                    Default is True
+                    Default is :obj:`True`.
             symbol: can be one (or a list) of:
                     * 'o'  circle (default)
                     * 's'  square
                     * 't'  triangle
                     * 'd'  diamond
                     * '+'  plus
-                    * any QPainterPath to specify custom symbol shapes. To properly obey the position and size,
+                    * any :class:`QPainterPath` to specify custom symbol shapes. To properly obey the position and size,
                       custom symbols should be centered at (0,0) and width and height of 1.0. Note that it is also
-                      possible to 'install' custom shapes by setting ScatterPlotItem.Symbols[key] = shape.
+                      possible to 'install' custom shapes by setting ``ScatterPlotItem.Symbols[key] = shape``.
             pen: The pen (or list of pens) to use for drawing spot outlines.
             brush: The brush (or list of brushes) to use for filling spots.
-            size: The size (or list of sizes) of spots. If *pxMode* is True, this value is in pixels. Otherwise,
-                  it is in the item's local coordinate system.
+            size: The size (or list of sizes) of spots. If ``pxMode`` is :obj:`True`, this value is in pixels.
+                  Otherwise, it is in the item's local coordinate system.
             data: a list of python objects used to uniquely identify each spot.
-            antialias: Whether to draw symbols with antialiasing. Note that if pxMode is True, symbols are
+            hoverable: If :obj:``True``, :attr:`sigHovered` is emitted with a list of hovered points,
+                       a tool tip is shown containing information about them, and an optional separate style for
+                       them is used. Default is :obj:`False`.
+            tip: A string-valued function of a spot's (x, y, data) values. Set to :obj:`None` to prevent a tool tip
+                 from being shown.
+            hoverSymbol: A single symbol to use for hovered spots. Set to :obj:`None` to keep symbol unchanged.
+                         Default is :obj:`None`.
+            hoverSize: A single size to use for hovered spots. Set to -1 to keep size unchanged. Default is -1.
+            hoverPen: A single pen to use for hovered spots. Set to :obj:`None` to keep pen unchanged.
+                      Default is :obj:`None`.
+            hoverBrush: A single brush to use for hovered spots. Set to :obj:`None` to keep brush unchanged.
+                        Default is :obj:`None`.
+            antialias: Whether to draw symbols with antialiasing. Note that if ``pxMode`` is :obj:`True`, symbols are
                        always rendered with antialiasing (since the rendered symbols can be cached, this
                        incurs very little performance cost)
+            compositionMode: If specified, this sets the composition mode used when drawing the
+                             scatter plot (see :class:`QPainter.CompositionMode` in the Qt documentation).
             name: The name of this item. Names are used for automatically
                   generating LegendItem entries and by some exporters.
         """
