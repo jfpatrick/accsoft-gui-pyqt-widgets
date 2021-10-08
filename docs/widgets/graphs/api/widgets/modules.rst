@@ -8,7 +8,6 @@ Views
    plotitem
    widget
    editingbar
-   legend
    timespan
    config
 

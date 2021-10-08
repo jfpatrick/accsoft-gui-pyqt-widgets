@@ -14,7 +14,7 @@ from qtpy.QtWidgets import QGraphicsSceneWheelEvent, QGraphicsRectItem
 from qtpy.QtGui import QPen, QPainter
 
 from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, ExAxisItem, RelativeTimeAxisItem, TimeAxisItem,
-                              ExLegendItem, LiveBarGraphItem, AbstractBaseBarGraphItem, DataModelBasedItem,
+                              LiveBarGraphItem, AbstractBaseBarGraphItem, DataModelBasedItem,
                               AbstractBaseTimestampMarker, LiveTimestampMarker, AbstractBaseInjectionBarGraphItem,
                               LiveInjectionBarGraphItem, LivePlotCurve, AbstractBasePlotCurve, EditablePlotCurve,
                               ExPlotWidgetConfig, PlotWidgetStyle, CurveData, PlottingItemData, ScrollingPlotTimeSpan,
@@ -1059,28 +1059,6 @@ class ExPlotItem(pg.PlotItem):
                 self.autoBtn.hide()
         except RuntimeError:
             pass  # this can happen if the plot has been deleted.
-
-    def addLegend(self,
-                  size: Optional[Tuple[float, float]] = None,
-                  offset: Tuple[float, float] = (30, 30)) -> ExLegendItem:
-        """
-        Create a new :class:`~pyqtgraph.LegendItem` and anchor it over the internal viewbox.
-        Plots will be automatically displayed in the legend if they
-        are created with the ``name`` argument.
-
-        This implementation extends :meth:`~pyqtgraph.PlotItem.addLegend` to
-        create instances of :class:`~accwidgets.graph.ExLegendItem` instead of :class:`~pyqtgraph.LegendItem`.
-
-        Args:
-            size: Fixed size for the legend item (width, height).
-            offset: Static offset for the legend item (x, y).
-
-        Returns:
-            Legend item instance that was added to the plot item's default viewbox.
-        """
-        self.legend: Optional[ExLegendItem] = ExLegendItem(size=size, offset=offset)
-        self.legend.setParentItem(self.getViewBox())
-        return self.legend
 
     @property
     def timing_source_compatible(self) -> bool:
