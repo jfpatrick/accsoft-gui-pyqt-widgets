@@ -805,7 +805,11 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             curr_legend = cast(Optional[pg.LegendItem], cast(ExPlotWidget, self).plotItem.legend)
             if new_val:
                 if curr_legend is None:
-                    cast(ExPlotWidget, self).addLegend(size=None, offset=None)
+                    cast(ExPlotWidget, self).addLegend(size=None,
+                                                       offset=None,
+                                                       pen=(255, 255, 255, 100),
+                                                       brush=(0, 0, 0, 100),
+                                                       labelTextColor=(255, 255, 255, 100))
                     old_pos = self._get_legend_position()
                     self._set_legend_position(
                         x_alignment=old_pos[0],
