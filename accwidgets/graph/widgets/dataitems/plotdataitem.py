@@ -849,7 +849,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
                   generating LegendItem entries and by some exporters.
         """
         kwargs.update({
-            "pos": pen,
+            "pos": pos,  # type: ignore
             "pxMode": pxMode,
             "symbol": symbol,
             "pen": pen,
