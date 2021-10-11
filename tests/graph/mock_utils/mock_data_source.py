@@ -1,7 +1,7 @@
 """Update Source for Data for Testing purposes"""
 
 from typing import List, Union, Type, Any
-from accwidgets.graph import UpdateSource, PointData, BarData
+from accwidgets.graph import UpdateSource, PointData, BarData, PlottingItemData
 
 
 class MockDataSource(UpdateSource):
@@ -20,6 +20,7 @@ class MockDataSource(UpdateSource):
             value: value to emit
             type_to_emit: Type of the data that is supposed to be emitted
         """
+        new_data: PlottingItemData
         if type_to_emit == PointData and isinstance(value, float):
             new_data = PointData(x=timestamp,
                                  y=value,

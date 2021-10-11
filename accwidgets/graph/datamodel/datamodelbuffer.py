@@ -9,7 +9,6 @@ import numpy as np
 from typing import Optional, Tuple, List, Union
 from abc import ABC, abstractmethod
 from accwidgets.graph import PointData, DEFAULT_BUFFER_SIZE
-from accwidgets._deprecations import deprecated_param_alias
 from .datamodelclipping import calc_intersection
 
 
@@ -532,7 +531,6 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists.append(np.empty(self._size))
         self._secondary_values_lists[0].fill(np.nan)
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def add_entry(self, x: float, y: float):
         """
         Add a single point to the buffer.
@@ -546,7 +544,6 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y])
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def add_list_of_entries(self, x: np.ndarray, y: np.ndarray):
         """
         Add an array of points to the buffer.
@@ -612,7 +609,6 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         return x[start_index:end_index], y[start_index:end_index]
 
     @staticmethod
-    @deprecated_param_alias(x_values="x", y_values="y")
     def _clip_at_boundaries_if_possible(
             x: np.ndarray,
             y: np.ndarray,
@@ -718,7 +714,6 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         self._secondary_values_lists.append(np.empty(self._size))
         self._secondary_values_lists[1].fill(np.nan)
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def add_entry(self, x: float, y: float, height: float):
         """
         Add a single bar to the buffer.
@@ -733,7 +728,6 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[y, height])
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def add_list_of_entries(self, x: np.ndarray, y: np.ndarray, heights: np.ndarray):
         """
         Add a list of bars to the buffer.
@@ -803,7 +797,6 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         # Label
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def add_entry(self, x: float, y: float, height: float, width: float, label: str):
         """
         Add a single injection bar to the buffer.
@@ -823,7 +816,6 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
             secondary_values=[y, height, width, label],
         )
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def add_list_of_entries(
         self,
         x: np.ndarray,
@@ -908,7 +900,6 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         # Label
         self._secondary_values_lists.append(np.empty(self._size, dtype="<U100"))
 
-    @deprecated_param_alias(x_value="x")
     def add_entry(self, x: float, color: str, label: str):
         """
         Add a single timestamp marker to the buffer.
@@ -923,7 +914,6 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         """
         super().add_entry_to_buffer(primary_value=x, secondary_values=[color, label])
 
-    @deprecated_param_alias(x_values="x")
     def add_list_of_entries(self, x: np.ndarray, colors: np.ndarray, labels: np.ndarray):
         """
         Add a list of timestamp markers to the buffer.
