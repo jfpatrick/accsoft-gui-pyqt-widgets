@@ -11,19 +11,11 @@ from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent
 
 
-def __axis_item_init__(self, *args, **kwargs):
-    AxisItem.__init__(self, *args, **kwargs)
-    # Prevent axis to not have padding, which looks quite ugly
-    self.style["autoReduceTextSpace"] = False
-
-
 class ExAxisItem(AxisItem):
     """Axis item that notifies about wheel events through a dedicated signal."""
 
     sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
     """Mouse event was executed on this axis (and not the :class:`~pyqtgraph.ViewBox`)."""
-
-    __init__ = __axis_item_init__
 
     def mouseDragEvent(self, event: MouseDragEvent):
         """
@@ -48,8 +40,6 @@ class ExAxisItem(AxisItem):
 
 class TimeAxisItem(AxisItem):
     """Axis item that shows timestamps as strings in format ``HH:MM:SS``."""
-
-    __init__ = __axis_item_init__
 
     def tickStrings(self, values: List[float], scale: float, spacing: float) -> List[str]:
         """
@@ -101,8 +91,6 @@ class RelativeTimeAxisItem(AxisItem):
             **kwargs: Arguments for base class :class:`~pyqtgraph.AxisItem`.
         """
         super().__init__(*args, **kwargs)
-        # Prevent axis to not have padding, which looks quite ugly
-        self.style["autoReduceTextSpace"] = False
         self._start = 0.0
 
     def tickStrings(self, values: Iterable[float], scale: float, spacing: float) -> List[str]:
