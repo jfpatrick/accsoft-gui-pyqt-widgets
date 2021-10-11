@@ -209,7 +209,7 @@ class PlottingItemDataFactory:
             x=PlottingItemDataFactory._or_now(index=1,
                                               args=arguments,
                                               acq_timestamp=timestamp),
-            y=arguments[0],  # mandatory
+            y=cast(float, arguments[0]),  # mandatory
         )
 
     @staticmethod
@@ -222,7 +222,7 @@ class PlottingItemDataFactory:
             y=PlottingItemDataFactory._or(index=1,
                                           args=arguments,
                                           default=0),
-            height=arguments[0],  # mandatory
+            height=cast(float, arguments[0]),  # mandatory
         )
 
     @staticmethod
@@ -249,7 +249,7 @@ class PlottingItemDataFactory:
             width=PlottingItemDataFactory._or(index=2,
                                               args=arguments,
                                               default=np.nan),
-            height=arguments[0],  # mandatory
+            height=cast(float, arguments[0]),  # mandatory
             label=label,
         )
 

@@ -523,8 +523,10 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         Args:
             data: data to apply to this curve from the selection marker
         """
-        self._editable_model.handle_editing(CurveData(*self.getData(),
-                                                      check_validity=False))
+        _ = data
+        x, y = self.getData()
+        curve = CurveData(x=x, y=y, check_validity=False)
+        self._editable_model.handle_editing(curve)
 
     def _reconnect_to_selection(self):
         """Disconnect and connect to selection marker."""

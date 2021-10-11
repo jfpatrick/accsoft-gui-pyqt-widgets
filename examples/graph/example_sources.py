@@ -12,7 +12,8 @@ from typing import List, Optional, Callable, Any
 from enum import IntEnum, auto
 from qtpy.QtCore import QTimer, Qt
 from accwidgets.graph import (UpdateSource, PointData, BarData, InjectionBarData, TimestampMarkerData, CurveData,
-                              BarCollectionData, InjectionBarCollectionData, TimestampMarkerCollectionData)
+                              BarCollectionData, InjectionBarCollectionData, TimestampMarkerCollectionData,
+                              PlottingItemData)
 
 
 class SinusCurveSourceEmitTypes(IntEnum):
@@ -55,6 +56,7 @@ class SinusCurveSource(UpdateSource):
             self.create_new_value(emit_type)
 
     def create_new_value(self, emit_type: SinusCurveSourceEmitTypes):
+        new_data: PlottingItemData
         if emit_type == SinusCurveSourceEmitTypes.POINT:
             new_data = PointData(x=datetime.now().timestamp() + self.x_offset,
                                  y=math.sin(datetime.now().timestamp()) + self.y_offset,
