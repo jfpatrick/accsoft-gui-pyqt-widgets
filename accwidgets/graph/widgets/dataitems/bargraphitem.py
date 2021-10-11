@@ -7,7 +7,6 @@ from typing import Type, Dict, Union, cast, List, Tuple, Optional, TYPE_CHECKING
 from accwidgets.graph import (UpdateSource, LiveBarGraphDataModel, StaticBarGraphDataModel, AbstractBaseDataModel,
                               DEFAULT_BUFFER_SIZE, DataModelBasedItem, PlotWidgetStyle)
 from accwidgets.qt import AbstractQGraphicsItemMeta
-from accwidgets._deprecations import deprecated_param_alias
 
 if TYPE_CHECKING:
     from accwidgets.graph import ExPlotItem
@@ -233,7 +232,6 @@ class LiveBarGraphItem(AbstractBaseBarGraphItem):
 
     data_model_type = LiveBarGraphDataModel
 
-    @deprecated_param_alias(data_source="data_model")
     def __init__(self,
                  plot_item: "ExPlotItem",
                  data_model: Union[LiveBarGraphDataModel, UpdateSource],

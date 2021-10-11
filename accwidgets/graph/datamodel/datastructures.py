@@ -10,7 +10,6 @@ import pyqtgraph as pg
 from abc import ABC, abstractmethod
 from typing import List, Union, Any, Sequence, Dict
 from copy import deepcopy
-from accwidgets._deprecations import deprecated_param_alias
 from accwidgets.graph import DEFAULT_COLOR
 
 
@@ -81,7 +80,6 @@ class PointData(PlottingItemData):
 
     is_collection = False
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(self,
                  x: float = np.nan,
                  y: float = np.nan,
@@ -134,7 +132,6 @@ class CurveData(PlottingItemData):
 
     is_collection = True
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(self,
                  x: Sequence[float],
                  y: Sequence[float],
@@ -199,7 +196,6 @@ class BarData(PlottingItemData):
 
     is_collection = False
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(self,
                  height: float,
                  x: float = np.nan,
@@ -256,7 +252,6 @@ class BarCollectionData(PlottingItemData):
 
     is_collection = True
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(self,
                  x: Sequence[float],
                  y: Sequence[float],
@@ -324,7 +319,6 @@ class InjectionBarData(PlottingItemData):
 
     is_collection = False
 
-    @deprecated_param_alias(x_value="x", y_value="y")
     def __init__(self,
                  x: float,
                  y: float,
@@ -390,7 +384,6 @@ class InjectionBarCollectionData(PlottingItemData):
 
     is_collection = True
 
-    @deprecated_param_alias(x_values="x", y_values="y")
     def __init__(self,
                  x: Sequence[float],
                  y: Sequence[float],
@@ -474,7 +467,6 @@ class TimestampMarkerData(PlottingItemData):
 
     is_collection = False
 
-    @deprecated_param_alias(x_value="x")
     def __init__(self,
                  x: float,
                  color: str = DEFAULT_COLOR,
@@ -536,7 +528,6 @@ class TimestampMarkerCollectionData(PlottingItemData):
 
     is_collection = True
 
-    @deprecated_param_alias(x_values="x")
     def __init__(self,
                  x: Sequence[float],
                  colors: Sequence[str],

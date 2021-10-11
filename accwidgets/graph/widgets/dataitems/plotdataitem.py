@@ -8,7 +8,6 @@ from typing import Tuple, Dict, cast, Type, Union, Optional, List, TYPE_CHECKING
 
 import numpy as np
 import pyqtgraph as pg
-from accwidgets._deprecations import deprecated_param_alias
 from accwidgets.graph import (UpdateSource, LiveCurveDataModel, StaticCurveDataModel, EditableCurveDataModel,
                               DEFAULT_BUFFER_SIZE, DEFAULT_COLOR, DataModelBasedItem, AbstractBaseDataModel,
                               CurveData, PlotWidgetStyle, CyclicPlotTimeSpan)
@@ -81,7 +80,6 @@ class LivePlotCurve(AbstractBasePlotCurve):
 
     data_model_type = LiveCurveDataModel
 
-    @deprecated_param_alias(data_source="data_model")
     def __init__(self,
                  plot_item: "ExPlotItem",
                  data_model: Union[UpdateSource, LiveCurveDataModel],
@@ -151,7 +149,6 @@ class CyclicPlotCurve(LivePlotCurve):
 
     supported_plotting_style = PlotWidgetStyle.CYCLIC_PLOT
 
-    @deprecated_param_alias(data_source="data_model")
     def __init__(self,
                  plot_item: "ExPlotItem",
                  data_model: Union[UpdateSource, LiveCurveDataModel],
