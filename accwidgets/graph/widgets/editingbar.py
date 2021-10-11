@@ -210,8 +210,6 @@ class StandardTransformations:
         curve = deepcopy(curve)
         if dy is None:
             dy_spinbox = pg.SpinBox()
-            val_range = max(curve.y) - min(curve.y)
-            val_range = val_range if val_range > 0 else 1
             dialog = QDialog()
             dialog.setWindowTitle("Move Points in Y direction")
             dialog.setLayout(QGridLayout())
