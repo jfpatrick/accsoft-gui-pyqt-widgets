@@ -158,6 +158,12 @@ QRectF py:class 1 qrectf.html -
 qtpy.QtGui.QPainter py:class 1 qpainter.html QPainter
 PyQt5.QtGui.QPainter py:class 1 qpainter.html QPainter
 QPainter py:class 1 qpainter.html -
+qtpy.QtGui.QPainter.CompositionMode py:class 1 qpainter.html#CompositionMode-enum QPainter.CompositionMode
+PyQt5.QtGui.QPainter.CompositionMode py:class 1 qpainter.html#CompositionMode-enum QPainter.CompositionMode
+QPainter.CompositionMode py:class 1 qpainter.html#CompositionMode-enum -
+qtpy.QtGui.QPainterPath py:class 1 qpainterpath.html QPainterPath
+PyQt5.QtGui.QPainterPath py:class 1 qpainterpath.html QPainterPath
+QPainterPath py:class 1 qpainterpath.html -
 qtpy.QtGui.QBrush py:class 1 qbrush.html QBrush
 PyQt5.QtGui.QBrush py:class 1 qbrush.html QBrush
 QBrush py:class 1 qbrush.html -

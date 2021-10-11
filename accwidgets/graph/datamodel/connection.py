@@ -1,7 +1,7 @@
 """Implementation of the signal-based updates to the graph."""
 
 import warnings
-import collections
+import collections.abc
 import numpy as np
 from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict
 from datetime import datetime
@@ -161,7 +161,7 @@ class PlottingItemDataFactory:
         Returns:
             Whether the values should be unwrapped.
         """
-        seqs = (collections.Sequence, np.ndarray)
+        seqs = (collections.abc.Sequence, np.ndarray)
         if isinstance(value, seqs) and not isinstance(value, str):
             if dtype.is_collection:
                 return isinstance(value[0], seqs) and not isinstance(value, str)

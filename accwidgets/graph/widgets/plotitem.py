@@ -14,7 +14,7 @@ from qtpy.QtWidgets import QGraphicsSceneWheelEvent, QGraphicsRectItem
 from qtpy.QtGui import QPen, QPainter
 
 from accwidgets.graph import (UpdateSource, DEFAULT_BUFFER_SIZE, ExAxisItem, RelativeTimeAxisItem, TimeAxisItem,
-                              ExLegendItem, LiveBarGraphItem, AbstractBaseBarGraphItem, DataModelBasedItem,
+                              LiveBarGraphItem, AbstractBaseBarGraphItem, DataModelBasedItem,
                               AbstractBaseTimestampMarker, LiveTimestampMarker, AbstractBaseInjectionBarGraphItem,
                               LiveInjectionBarGraphItem, LivePlotCurve, AbstractBasePlotCurve, EditablePlotCurve,
                               ExPlotWidgetConfig, PlotWidgetStyle, CurveData, PlottingItemData, ScrollingPlotTimeSpan,
@@ -94,22 +94,17 @@ class ExPlotItem(pg.PlotItem):
         """
         # Pass modified axis for the multilayer movement to function properly
         config = config or ExPlotWidgetConfig()
-        if axis_items is None:
-            axis_items = {}
-        # TODO: Why do we force create these? What if user passed it from the outside? Why if we don't need right one?
-        axis_items["left"] = ExAxisItem(orientation="left")
-        axis_items["right"] = ExAxisItem(orientation="right")
-        # FIXME: Create_firrint_axis_items called even when it's not needed
-        axis_items["bottom"] = axis_items.get("bottom", self._create_fitting_axis_item(
-            config_style=config.plotting_style,
-            orientation="bottom",
-        ))
-        axis_items["top"] = axis_items.get("top", self._create_fitting_axis_item(
-            config_style=config.plotting_style,
-            orientation="top",
-        ))
+        replaced_axes = axis_items or {}
+        if axis_items is None or ("left" in axis_items and not isinstance(axis_items.get("left"), ExAxisItem)):
+            replaced_axes["left"] = ExAxisItem(orientation="left")
+        if axis_items is None or ("bottom" not in axis_items):
+            replaced_axes["bottom"] = self._create_fitting_axis_item(
+                config_style=config.plotting_style,
+                orientation="bottom",
+            )
+
         viewbox = ExViewBox()
-        super().__init__(axisItems=axis_items,
+        super().__init__(axisItems=replaced_axes,
                          viewBox=viewbox,
                          **plotitem_kwargs)
         viewbox.sig_selection.connect(self.select)
@@ -297,11 +292,16 @@ class ExPlotItem(pg.PlotItem):
                 item: Union[pg.GraphicsObject, DataModelBasedItem],
                 layer: Optional["LayerIdentification"] = None,
                 ignoreBounds: bool = False,
+                params: Dict[Any, Any] = None,
+                skipAverage: Optional[bool] = None,
                 **kwargs):
         """
         Add a generic item to the plot. If ``layer`` is provided, the item
         will be added to the layer's :class:`~pyqtgraph.ViewBox`, otherwise - to the default
         :class:`~pyqtgraph.ViewBox` of this object.
+        If the item has plot data (:class:`~pyqtgraph.PlotDataItem`, :class:`~pyqtgraph.PlotCurveItem`,
+        :class:`~pyqtgraph.ScatterPlotItem`), it may be included in analysis performed by the
+        :class:`~pyqtrgaph.PlotItem`.
 
         Args:
             item: Item that should be added to the plot.
@@ -309,10 +309,16 @@ class ExPlotItem(pg.PlotItem):
                    corresponding layer will be used to accommodate the item.
             ignoreBounds: Identifies, whether the bounding rectangle of the item should be respected
                           when auto-ranging the plot.
+            params: Meta-parameters to associate with item's data.
+            skipAverage: Do not use averaging for this item when it's globally enabled.
             kwargs: Additional arguments for the original method (:meth:`~pyqtgraph.PlotItem.addItem`), in case the
                     original API changes.
         """
         # Super implementation can be used if layer is not defined
+        if skipAverage is True:
+            kwargs["skipAverage"] = skipAverage
+        if params is not None:
+            kwargs["params"] = params
         if self.is_standard_layer(layer=layer):
             super().addItem(item, ignoreBounds=ignoreBounds, **kwargs)
             try:
@@ -900,8 +906,8 @@ class ExPlotItem(pg.PlotItem):
             xRange: The range that should be visible along the x-axis.
             yRange: The range that should be visible along the y-axis.
             padding: Expand the view by a fraction of the requested range.
-                     By default, this value is set between 0.02 and 0.1 depending on
-                     the size of the viewbox.
+                     By default, this value is set between the default padding value
+                     and 0.1 depending on the size of the viewbox.
             update: If :obj:`True`, update the range of the viewbox immediately.
                     Otherwise, the update is deferred until before the next render.
             disableAutoRange: If :obj:`True`, auto-ranging is disabled. Otherwise, it is left
@@ -949,7 +955,7 @@ class ExPlotItem(pg.PlotItem):
                                                update=update)
 
     def invertY(self,
-                b: bool,  # TODO: Convert to positional only when PEP-570 is implemented
+                b: bool,
                 layer: Optional["LayerIdentification"] = None):
         """
         Allows inverting a y-axis of the ``layer``. If :obj:`None` layer is passed, the default y-axis
@@ -1061,28 +1067,6 @@ class ExPlotItem(pg.PlotItem):
                 self.autoBtn.hide()
         except RuntimeError:
             pass  # this can happen if the plot has been deleted.
-
-    def addLegend(self,
-                  size: Optional[Tuple[float, float]] = None,
-                  offset: Tuple[float, float] = (30, 30)) -> ExLegendItem:
-        """
-        Create a new legend item and anchor it over the internal viewbox.
-        Plots will be automatically displayed in the legend if they
-        are created with the ``name`` argument.
-
-        This implementation extends :meth:`~pyqtgraph.PlotItem.addLegend` to
-        allow configuring text and background color.
-
-        Args:
-            size: Fixed size for the legend item (width, height).
-            offset: Static offset for the legend item (x, y).
-
-        Returns:
-            Legend item instance that was added to the plot item's default viewbox.
-        """
-        self.legend: Optional[ExLegendItem] = ExLegendItem(size=size, offset=offset)
-        self.legend.setParentItem(self.getViewBox())
-        return self.legend
 
     @property
     def timing_source_compatible(self) -> bool:
@@ -1364,7 +1348,7 @@ class ExPlotItem(pg.PlotItem):
             - the small auto range button on the lower left corner of the plot does
               not simply activate auto range but behaves as 'View All'
         """
-        scrolling_range_reset_button = pg.ButtonItem(pg.pixmaps.getPixmap("auto"), 14, self)
+        scrolling_range_reset_button = pg.ButtonItem(pg.icons.getGraphPixmap("auto"), 14, self)
         scrolling_range_reset_button.mode = "auto"
         scrolling_range_reset_button.clicked.connect(self._auto_range_with_scrolling_plot_fixed_xrange)
         self.vb.sig_xrange_changed.connect(self._stop_scrolling_plot_auto_xrange)
@@ -1858,12 +1842,15 @@ class ExViewBox(pg.ViewBox):
             primary_vb = self.layers.get(identifier=PlotItemLayer.default_layer_id).view_box
             other_viewboxes = [vb for vb in self.layers.view_boxes if vb is not primary_vb and vb.addedItems]
             target_bounds = primary_vb.childrenBoundingRect(items=items)
+
             # Get common bounding rectangle for all items in all layers
             for vb in other_viewboxes:
                 bounds = vb._bounding_rect_from(another_vb=primary_vb, items=items)
                 target_bounds = target_bounds.united(bounds)
 
             primary_vb.enableAutoRange(x=auto_range_x_axis, y=True)
+            for vb in other_viewboxes:
+                vb.enableAutoRange(x=auto_range_x_axis, y=True)
 
             # Setting the range with the manual signal will move all other layers accordingly
             if auto_range_x_axis:
@@ -1871,6 +1858,9 @@ class ExViewBox(pg.ViewBox):
             else:
                 y_range = target_bounds.bottom(), target_bounds.top()
                 primary_vb.set_range_manually(yRange=y_range, padding=padding, disableAutoRange=False)
+        else:
+            self.getViewBox().autoRange(padding=padding,
+                                        items=items)
 
     def wheelEvent(self, ev: QGraphicsSceneWheelEvent, axis: Optional[int] = None):
         """
@@ -1889,7 +1879,10 @@ class ExViewBox(pg.ViewBox):
             self.sig_xrange_changed.emit()
         self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
         super().wheelEvent(ev=ev, axis=axis)
-        self.sigRangeChanged.emit(self, self.state["viewRange"])
+        changed = [True, True]
+        if axis is not None:
+            changed[abs(axis - 1)] = False
+        self.sigRangeChanged.emit(self, self.state["viewRange"], changed)
 
     def mouseDragEvent(self, ev: MouseDragEvent, axis: Optional[int] = None):
         """
@@ -1911,7 +1904,10 @@ class ExViewBox(pg.ViewBox):
                 self.sig_xrange_changed.emit()
             self.sigRangeChangedManually.emit(self.state["mouseEnabled"])
             super().mouseDragEvent(ev=ev, axis=axis)
-            self.sigRangeChanged.emit(self, self.state["viewRange"])
+            changed = [True, True]
+            if axis is not None:
+                changed[abs(axis - 1)] = False
+            self.sigRangeChanged.emit(self, self.state["viewRange"], changed)
 
     def set_range_manually(self, **kwargs):
         """
@@ -1958,7 +1954,7 @@ class ExViewBox(pg.ViewBox):
                             another_vb: "ExViewBox",
                             items: Optional[List[pg.GraphicsItem]]) -> QRectF:
         """
-        Map a view box bounding rectangle to the coordinates of an other one.
+        Map a view box bounding rectangle to the coordinates of another one.
         It is expected that both ViewBoxes have synchronized x ranges, so the
         x range of the mapped bounding rectangle will be the same.
 

@@ -38,7 +38,7 @@ def sim_selection_moved(marker: DataSelectionMarker,
     This is a workaround for qttest api for movemouse being buggy:
     https://bugreports.qt.io/browse/QTBUG-5232
     So instead of actually dragging the mouse we will simulate it here
-    TODO: switch to proper mouse events as soon as this is fixed
+    TODO: switch to proper mouse events as soon as this is fixed (promised in Qt 6)
 
     Args:
         marker: Data Selection Marker of an editable curve
@@ -73,6 +73,7 @@ def sim_selection_moved(marker: DataSelectionMarker,
 
 def assert_qcolor_equals(color_1: QColor, color_2: QColor):
     """Compare two QColors by their r,g,b,a values"""
+    __tracebackhide__ = True  # Hide from stack trace in pytest
     assert color_1.red() == color_2.red()
     assert color_1.green() == color_2.green()
     assert color_1.blue() == color_2.blue()
@@ -81,6 +82,7 @@ def assert_qcolor_equals(color_1: QColor, color_2: QColor):
 
 def assert_qpen_equals(pen_1: QPen, pen_2: QPen):
     """Compare the styling of two qpens"""
+    __tracebackhide__ = True  # Hide from stack trace in pytest
     assert_qcolor_equals(pen_1.color(), pen_2.color())
     assert pen_1.width() == pen_2.width()
     assert pen_1.style() == pen_2.style()
@@ -88,5 +90,6 @@ def assert_qpen_equals(pen_1: QPen, pen_2: QPen):
 
 def assert_qbrush_equals(brush_1: QBrush, brush_2: QBrush):
     """Compare the styling of two qbrushs"""
+    __tracebackhide__ = True  # Hide from stack trace in pytest
     assert_qcolor_equals(brush_1.color(), brush_2.color())
     assert brush_1.style() == brush_2.style()

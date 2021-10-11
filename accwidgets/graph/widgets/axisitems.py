@@ -11,11 +11,19 @@ from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QGraphicsSceneWheelEvent
 
 
+def __axis_item_init__(self, *args, **kwargs):
+    AxisItem.__init__(self, *args, **kwargs)
+    # Prevent axis to not have padding, which looks quite ugly
+    self.style["autoReduceTextSpace"] = False
+
+
 class ExAxisItem(AxisItem):
     """Axis item that notifies about wheel events through a dedicated signal."""
 
     sig_vb_mouse_event_triggered_by_axis: Signal = Signal(bool)
     """Mouse event was executed on this axis (and not the :class:`~pyqtgraph.ViewBox`)."""
+
+    __init__ = __axis_item_init__
 
     def mouseDragEvent(self, event: MouseDragEvent):
         """
@@ -41,13 +49,23 @@ class ExAxisItem(AxisItem):
 class TimeAxisItem(AxisItem):
     """Axis item that shows timestamps as strings in format ``HH:MM:SS``."""
 
+    __init__ = __axis_item_init__
+
     def tickStrings(self, values: List[float], scale: float, spacing: float) -> List[str]:
         """
         Translate timestamps to human readable format ``HH:MM:SS``.
 
+        The method is called with a list of tick values, a scaling factor (see below), and the
+        spacing between ticks (this is required since, in some instances, there may be only
+        one tick and thus no other way to determine the tick spacing)
+
         Args:
             values: Positions on the axis that are supposed to be labeled.
-            scale: See :class:`~pyqtgraph.AxisItem` documentation.
+            scale: Used when the axis label is displaying units which may have an SI scaling prefix.
+                   When determining the text to display, use ``value*scale`` to correctly account for this prefix.
+                   For example, if the axis label's units are set to 'V', then a tick value of 0.001 might
+                   be accompanied by a scale value of 1000. This indicates that the label is displaying 'mV', and
+                   thus the tick should display 0.001 * 1000 = 1.
             spacing: See :class:`~pyqtgraph.AxisItem` documentation.
 
         Returns:
@@ -83,15 +101,25 @@ class RelativeTimeAxisItem(AxisItem):
             **kwargs: Arguments for base class :class:`~pyqtgraph.AxisItem`.
         """
         super().__init__(*args, **kwargs)
+        # Prevent axis to not have padding, which looks quite ugly
+        self.style["autoReduceTextSpace"] = False
         self._start = 0.0
 
     def tickStrings(self, values: Iterable[float], scale: float, spacing: float) -> List[str]:
         """
         Translate timestamps to offsets from the given start time (:attr:`~RelativeTimeAxisItem.start`) in seconds.
 
+        The method is called with a list of tick values, a scaling factor (see below), and the
+        spacing between ticks (this is required since, in some instances, there may be only
+        one tick and thus no other way to determine the tick spacing)
+
         Args:
             values: Positions on the axis that are supposed to be labeled.
-            scale: See :class:`~pyqtgraph.AxisItem` documentation.
+            scale: Used when the axis label is displaying units which may have an SI scaling prefix.
+                   When determining the text to display, use ``value*scale`` to correctly account for this prefix.
+                   For example, if the axis label's units are set to 'V', then a tick value of 0.001 might
+                   be accompanied by a scale value of 1000. This indicates that the label is displaying 'mV', and
+                   thus the tick should display 0.001 * 1000 = 1.
             spacing: See :class:`~pyqtgraph.AxisItem` documentation.
 
         Returns:

@@ -21,29 +21,6 @@ if TYPE_CHECKING:
     from accwidgets.graph import ExPlotItem
 
 
-# params accepted by the plotdataitem and their fitting params in the curve-item
-_PLOTDATAITEM_CURVE_PARAM_MAPPING = [
-    ("pen", "pen"),
-    ("shadowPen", "shadowPen"),
-    ("fillLevel", "fillLevel"),
-    ("fillBrush", "brush"),
-    ("antialias", "antialias"),
-    ("connect", "connect"),
-    ("stepMode", "stepMode"),
-]
-
-# params accepted by the plotdataitem and their fitting params in the scatter-plot-item
-_PLOTDATAITEM_SCATTER_PARAM_MAPPING = [
-    ("symbolPen", "pen"),
-    ("symbolBrush", "brush"),
-    ("symbol", "symbol"),
-    ("symbolSize", "size"),
-    ("data", "data"),
-    ("pxMode", "pxMode"),
-    ("antialias", "antialias"),
-]
-
-
 class AbstractBasePlotCurve(DataModelBasedItem, pg.PlotDataItem, metaclass=AbstractQGraphicsItemMeta):
 
     def __init__(self,
@@ -169,68 +146,6 @@ class LivePlotCurve(AbstractBasePlotCurve):
         """Last timestamp received by the curve."""
         return self._parent_plot_item.last_timestamp
 
-    def _set_data(self, x: np.ndarray, y: np.ndarray):
-        """ Set data of the inner curve and scatter plot
-
-        PyQtGraph prints RuntimeWarning when the data that is passed to the
-        ScatterPlotItem contains NaN values -> for this purpose we strip
-        all indices containing NaNs, since it won't make any visual difference,
-        because nans won't appear as symbols in the scatter plot.
-        The CurvePlotItem will receive the data as usual.
-
-        Args:
-            x: x values that are passed to the items
-            y: y values that are passed to the items
-        """
-        # For arguments like symbolPen which have to be transformed to pen and send to the ScatterPlot
-        curve_arguments: Dict = {}
-        for orig_key, curve_key in _PLOTDATAITEM_CURVE_PARAM_MAPPING:
-            curve_arguments[curve_key] = self.opts[orig_key]
-        scatter_arguments: Dict = {}
-        for orig_key, scatter_key in _PLOTDATAITEM_SCATTER_PARAM_MAPPING:
-            if orig_key in self.opts:
-                scatter_arguments[scatter_key] = self.opts[orig_key]
-        if (self.opts.get("pen") is not None
-                or (self.opts.get("brush") is not None
-                    and self.opts.get("fillLevel") is not None)):
-            self.curve.setData(x=x, y=y, **curve_arguments)
-            self.curve.show()
-        else:
-            self.curve.hide()
-        if self.opts.get("symbol") is not None:
-            data_x_wo_nans, data_y_wo_nans = LivePlotCurve._without_nan_values(x_values=x, y_values=y)
-            self.scatter.setData(x=data_x_wo_nans, y=data_y_wo_nans, **scatter_arguments)
-            self.scatter.show()
-        else:
-            self.scatter.hide()
-
-    @staticmethod
-    def _without_nan_values(x_values: np.ndarray, y_values: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """ Get (if necessary) copies of the array without NaNs
-
-        Strip arrays of x and y values from nan values. If one of the arrays
-        has the value nan at the index n, in both arrays the value at index n
-        will be removed. This will make sure both arrays will have the same
-        length at the end again.
-
-        Args:
-            x_values: x-values that should be stripped from NaNs
-            y_values: y-values that should be stripped from NaNs
-
-        Returns:
-            Copies of the arrays without any nans. If no NaN's are contained,
-            the original arrays are returned.
-        """
-        if x_values.size != y_values.size:
-            raise ValueError("The passed arrays have to be the same length.")
-        x_nans = np.isnan(x_values)
-        y_nans = np.isnan(y_values)
-        combined_nans = x_nans | y_nans
-        if True in combined_nans:
-            return x_values[~combined_nans], y_values[~combined_nans]
-        else:
-            return x_values, y_values
-
 
 class CyclicPlotCurve(LivePlotCurve):
 
@@ -308,7 +223,7 @@ class CyclicPlotCurve(LivePlotCurve):
             data_y = np.concatenate((data_y, self._clipped_curve_old.y))
         if data_x.size != 0 and data_y.size != 0:
             self.clear()
-            self._set_data(x=data_x, y=data_y)
+            self.setData(x=data_x, y=data_y)
 
     def _update_new_curve_data_item(self):
         """Update the displayed new curve with clipping
@@ -365,7 +280,8 @@ class ScrollingPlotCurve(LivePlotCurve):
             # Clipping is not used for scatter plot
             curve_x, curve_y = self._data_model.subset_for_xrange(start=self._parent_plot_item.time_span.start,
                                                                   end=self._parent_plot_item.time_span.end)
-        self._set_data(x=curve_x, y=curve_y)
+
+        self.setData(x=curve_x, y=curve_y)
         self._data_item_data = CurveData(x=curve_x,
                                          y=curve_y,
                                          check_validity=False)
@@ -777,8 +693,8 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             self.sig_selection_edited.emit(np.array(self.getData()))
         else:
             data = np.copy(self._original_data)
-            apply_x = self._drag_direction & DragDirection.X
-            apply_y = self._drag_direction & DragDirection.Y
+            apply_x = self._drag_start is not None and self._drag_direction & DragDirection.X
+            apply_y = self._drag_start is not None and self._drag_direction & DragDirection.Y
             x_offset = ev.pos().x() + cast(QPointF, self._drag_start).x() if apply_x else 0.0
             y_offset = ev.pos().y() + cast(QPointF, self._drag_start).y() if apply_y else 0.0
             if x_offset or y_offset:
@@ -814,36 +730,50 @@ class DataSelectionMarker(pg.ScatterPlotItem):
 
         Args:
             spots: Optional list of dicts. Each dict specifies parameters for a single spot:
-                   {'pos': (x,y), 'size', 'pen', 'brush', 'symbol'}. This is just an alternate method
+                   ``{'pos': (x,y), 'size', 'pen', 'brush', 'symbol'}``. This is just an alternate method
                    of passing in data for the corresponding arguments.
             x: 1D arrays of x values.
             y: 1D arrays of y values.
             pos: 2D structure of x,y pairs (such as Nx2 array or list of tuples)
-            pxMode: If True, spots are always the same size regardless of scaling, and size is given in px.
+            pxMode: If :obj:`True`, spots are always the same size regardless of scaling, and size is given in px.
                     Otherwise, size is in scene coordinates and the spots scale with the view.
-                    Default is True
+                    Default is :obj:`True`.
             symbol: can be one (or a list) of:
                     * 'o'  circle (default)
                     * 's'  square
                     * 't'  triangle
                     * 'd'  diamond
                     * '+'  plus
-                    * any QPainterPath to specify custom symbol shapes. To properly obey the position and size,
+                    * any :class:`QPainterPath` to specify custom symbol shapes. To properly obey the position and size,
                       custom symbols should be centered at (0,0) and width and height of 1.0. Note that it is also
-                      possible to 'install' custom shapes by setting ScatterPlotItem.Symbols[key] = shape.
+                      possible to 'install' custom shapes by setting ``ScatterPlotItem.Symbols[key] = shape``.
             pen: The pen (or list of pens) to use for drawing spot outlines.
             brush: The brush (or list of brushes) to use for filling spots.
-            size: The size (or list of sizes) of spots. If *pxMode* is True, this value is in pixels. Otherwise,
-                  it is in the item's local coordinate system.
+            size: The size (or list of sizes) of spots. If ``pxMode`` is :obj:`True`, this value is in pixels.
+                  Otherwise, it is in the item's local coordinate system.
             data: a list of python objects used to uniquely identify each spot.
-            antialias: Whether to draw symbols with antialiasing. Note that if pxMode is True, symbols are
+            hoverable: If :obj:``True``, :attr:`sigHovered` is emitted with a list of hovered points,
+                       a tool tip is shown containing information about them, and an optional separate style for
+                       them is used. Default is :obj:`False`.
+            tip: A string-valued function of a spot's (x, y, data) values. Set to :obj:`None` to prevent a tool tip
+                 from being shown.
+            hoverSymbol: A single symbol to use for hovered spots. Set to :obj:`None` to keep symbol unchanged.
+                         Default is :obj:`None`.
+            hoverSize: A single size to use for hovered spots. Set to -1 to keep size unchanged. Default is -1.
+            hoverPen: A single pen to use for hovered spots. Set to :obj:`None` to keep pen unchanged.
+                      Default is :obj:`None`.
+            hoverBrush: A single brush to use for hovered spots. Set to :obj:`None` to keep brush unchanged.
+                        Default is :obj:`None`.
+            antialias: Whether to draw symbols with antialiasing. Note that if ``pxMode`` is :obj:`True`, symbols are
                        always rendered with antialiasing (since the rendered symbols can be cached, this
                        incurs very little performance cost)
+            compositionMode: If specified, this sets the composition mode used when drawing the
+                             scatter plot (see :class:`QPainter.CompositionMode` in the Qt documentation).
             name: The name of this item. Names are used for automatically
                   generating LegendItem entries and by some exporters.
         """
         kwargs.update({
-            "pos": pen,
+            "pos": pos,  # type: ignore
             "pxMode": pxMode,
             "symbol": symbol,
             "pen": pen,

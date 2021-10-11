@@ -12,6 +12,7 @@ from accwidgets.graph import (LiveBarGraphItem, LiveTimestampMarker, LiveInjecti
                               ScrollingPlotCurve, CyclicPlotCurve, TimeAxisItem, UpdateSource, TimeSpan)
 from .mock_utils.mock_data_source import MockDataSource
 from .mock_utils.widget_test_window import PlotWidgetTestWindow, MinimalTestWindow
+from .asserts import assert_view_box_range_similar
 
 
 def check_axis_strings(plot_item: ExPlotItem, style: PlotWidgetStyle) -> bool:
@@ -291,22 +292,19 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
             (0.0, 3.0),
         )
     source.send_data(PointData(4.0, 4.0))
-    actual = plot_item.vb.targetRange()
-    assert np.allclose(np.array(actual), np.array(expected), atol=0.1)
+    assert_view_box_range_similar(plot_item.vb.targetRange(), expected, tolerance_factor=0.4)
 
 
-@pytest.mark.parametrize("config_style_change", [
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT),
-    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT),
+@pytest.mark.parametrize("orig_style,new_style,orig_item_types,new_item_types", [
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.CYCLIC_PLOT, [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine], [CyclicPlotCurve, pg.PlotDataItem, pg.InfiniteLine]),
+    (PlotWidgetStyle.SCROLLING_PLOT, PlotWidgetStyle.SCROLLING_PLOT, [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine], [ScrollingPlotCurve, pg.PlotDataItem, pg.InfiniteLine]),
 ])
-def test_static_items_config_change(qtbot, config_style_change):
+def test_static_items_config_change(qtbot, orig_style, new_style, orig_item_types, new_item_types):
     """
     Test if live data items as well as pure pyqtgraph items are still
     present after switching the plot-items configuration
     """
-    config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[0],
-    )
+    config = ExPlotWidgetConfig(plotting_style=orig_style)
     window = MinimalTestWindow(plot=config)
     window.show()
     qtbot.wait_for_window_shown(window)
@@ -318,17 +316,18 @@ def test_static_items_config_change(qtbot, config_style_change):
         pg.PlotDataItem([0.0, 1.0, 2.0]),
         pg.InfiniteLine(pos=0.0, angle=0),
     ]
-    for item in items:
+    for item in items[1:]:
         plot_item.addItem(item)
+
+    def assert_item_types(expected_types):
+        __tracebackhide__ = True  # Hide from stack trace in pytest
+        assert {type(i) for i in plot_item.vb.addedItems} == set(expected_types)
+
     source.send_data(PointData(0.0, 0.0))
-    for item in items:
-        assert item in plot_item.vb.addedItems
-    config = ExPlotWidgetConfig(
-        plotting_style=config_style_change[1],
-    )
+    assert_item_types(orig_item_types)
+    config = ExPlotWidgetConfig(plotting_style=new_style)
     plot_item.update_config(config=config)
-    for item in items:
-        assert item in plot_item.vb.addedItems
+    assert_item_types(new_item_types)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -345,21 +344,10 @@ def check_scrolling_plot_with_fixed_xrange(
     """Check (if the config fits) if the fixed x range on the scrolling plot is set right."""
     if plotting_style_change == PlotWidgetStyle.SCROLLING_PLOT:
         for view_box in plotwidget.plotItem.view_boxes:
-            check_range(actual_range=view_box.targetRange(), expected_range=[
+            assert_view_box_range_similar(view_box.targetRange(), [
                 [(30.0 + x_offset_change) - time_span_change, 30.0 + x_offset_change],
                 [np.nan, np.nan],
             ])
-
-
-def check_range(actual_range: List[List[float]], expected_range: List[List[float]]):
-    """Compare a view boxes range with an expected range"""
-    for actual, expected in list(zip(actual_range, expected_range)):
-        # a bit of tolerance
-        absolute_tolerance = 0.0025 * (expected[1] - expected[0])
-        if not np.isnan(expected[0]):
-            assert np.isclose(actual[0], expected[0], atol=absolute_tolerance)
-        if not np.isnan(expected[1]):
-            assert np.isclose(actual[1], expected[1], atol=absolute_tolerance)
 
 
 def check_decorators(
