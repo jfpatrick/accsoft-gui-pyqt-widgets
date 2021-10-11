@@ -23,6 +23,7 @@ Implemented features are check-marked.
 - |check| Support for different data representations (found in LEIR Vistar): lines, bar graphs, injection bars, timing marks, etc.
 - |check| Multiple Y-axes on the same chart.
 - |check| Function editor (dragging points up and down in editable chart and apply functions to them) [Based on Contribution by Kevin Li]
+- |missing| Live image (heatmap) item
 - |missing| Improved performance (see :doc:`perf`)
 - |missing| Ability to render HDF5 files (currently, matplotlib is being used for this use-case)
 - |missing| Polar plot (low priority)
