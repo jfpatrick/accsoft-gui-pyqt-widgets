@@ -26,7 +26,7 @@ from accwidgets._api import REAL_MODULE_NAME_VAR
 # -- Project information -----------------------------------------------------
 
 project = "accwidgets"
-copyright = f"{datetime.now().year}, BE-CO, CERN"
+copyright = f"{datetime.now().year}, BE-CSS, CERN"
 author = "Ivan Sinkarenko, Fabian Sorn"
 
 
