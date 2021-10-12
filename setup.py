@@ -41,6 +41,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "QtPy>=1.7,<2a0",
         "qtawesome>=0.7.0,<2a0",
         "packaging>=20.4,<20.5a0",
+        "deprecated>=1.2.13,<1.5a0",
         "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
     ],
     LINT_OPTION: [
