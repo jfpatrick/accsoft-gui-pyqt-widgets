@@ -939,7 +939,7 @@ class ExPlotItem(pg.PlotItem):
                                                update=update)
 
     def invertY(self,
-                b: bool,
+                b: bool = True,
                 layer: Optional["LayerIdentification"] = None):
         """
         Allows inverting a y-axis of the ``layer``. If :obj:`None` layer is passed, the default y-axis
