@@ -363,10 +363,6 @@ class ExPlotItem(pg.PlotItem):
                               will become completely empty.
         """
         super().clear()
-        if hasattr(self, "legend") and self.legend is not None:
-            items = [*self.legend.items]  # Copy to prevent mutation inside the loop
-            for item in items:
-                self.legend.remove_item_from_legend(item)
         if not clear_decorators and self._time_span is not None:
             self._init_time_line_decorator(timestamp=self.last_timestamp, force=True)
 
@@ -385,16 +381,21 @@ class ExPlotItem(pg.PlotItem):
         self.items.remove(item)
         if item in self.dataItems:
             self.dataItems.remove(item)
+
         if item.scene() is not None:
             try:
                 view_box = next(vb for vb in self.view_boxes if item in vb.addedItems)
             except StopIteration:
                 view_box = self.vb
             view_box.removeItem(item)
+
         if item in self.curves:
             self.curves.remove(item)
             self.updateDecimation()
             self.updateParamList()
+
+        if self.legend is not None:
+            self.legend.removeItem(item)
 
     def plot(self, *args, clear: bool = False, params: Optional[Dict[str, Any]] = None) -> pg.PlotDataItem:
         """
