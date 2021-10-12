@@ -319,7 +319,7 @@ class ExPlotItem(pg.PlotItem):
             kwargs["skipAverage"] = skipAverage
         if params is not None:
             kwargs["params"] = params
-        if self.is_standard_layer(layer=layer):
+        if PlotItemLayer.is_standard(layer):
             super().addItem(item, ignoreBounds=ignoreBounds, **kwargs)
             try:
                 item.layer_id = ""
@@ -681,23 +681,6 @@ class ExPlotItem(pg.PlotItem):
         self.single_data_item_slot_source.send_data(data)
 
     # ~~~~~~~~~~ Layers ~~~~~~~~~
-
-    @staticmethod
-    def is_standard_layer(layer: Optional["LayerIdentification"]) -> bool:
-        """
-        Check if layer identifier is referencing the standard.
-
-        Args:
-            layer: Layer identifier. If :obj:`None` is given, the layer is assumed to be standard.
-
-        Returns:
-            Layer identifier refers to the standard layer.
-        """
-        if isinstance(layer, str):
-            return layer in ("", PlotItemLayer.default_layer_id)
-        if isinstance(layer, PlotItemLayer):
-            return layer.id in ("", PlotItemLayer.default_layer_id)
-        return layer is None
 
     def add_layer(self,
                   layer_id: str,
@@ -1497,6 +1480,23 @@ class PlotItemLayer:
         """Axis item of the layer."""
         return self._axis_item
 
+    @classmethod
+    def is_standard(cls, layer: Optional["LayerIdentification"]) -> bool:
+        """
+        Check if layer identifier is referencing the standard.
+
+        Args:
+            layer: Layer identifier. If :obj:`None` is given, the layer is assumed to be standard.
+
+        Returns:
+            Layer identifier refers to the standard layer.
+        """
+        if isinstance(layer, str):
+            return layer in ("", cls.default_layer_id)
+        if isinstance(layer, cls):
+            return layer.id in ("", cls.default_layer_id)
+        return layer is None
+
     def __eq__(self, other: Any) -> bool:
         """Check equality of layers by their identifier."""
         if isinstance(other, str):
@@ -1663,7 +1663,7 @@ class PlotItemLayerCollection:
     def _update_view_box_geometries(self, plot_item: pg.PlotItem):
         for layer in self:
             # plot item view box has to be excluded to keep autoRange settings
-            if not self._plot_item.is_standard_layer(layer=layer):
+            if not PlotItemLayer.is_standard(layer):
                 layer.view_box.setGeometry(plot_item.vb.sceneBoundingRect())
                 layer.view_box.linkedViewChanged(plot_item.vb, layer.view_box.XAxis)
 
