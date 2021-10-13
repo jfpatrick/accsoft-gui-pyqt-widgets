@@ -256,6 +256,8 @@ class EnumOptionsDialog(AbstractTableDialog[EnumItemConfig, EnumEditorTableModel
         table_model = EnumEditorTableModel(data=list(map(EnumTableData.from_enum_item_config, options)))
         super().__init__(table_model=table_model, parent=parent)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.add_btn.setToolTip("Add enum option")
+        self.remove_btn.setToolTip("Remove enum option")
         self._on_save = on_save
 
         self.setWindowTitle("Configure enum options")
