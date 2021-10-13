@@ -35,7 +35,7 @@ class AccGraphLiveCurve(widgetmark.UseCase):
         for i, s in enumerate(self._sources):
             x = np.linspace(0, 10, self.size)
             y = np.sin(x) + i
-            s.new_data(accgraph.CurveData(x, y))
+            s.send_data(accgraph.CurveData(x, y))
         return self._widget
 
     def operate(self):
@@ -43,7 +43,7 @@ class AccGraphLiveCurve(widgetmark.UseCase):
         y = np.sin(x)
         for i, s in enumerate(self._sources):
             point = accgraph.PointData(x, y + i)
-            s.new_data(data=point)
+            s.send_data(data=point)
 
 
 class PyQtGraphLiveCurve(widgetmark.UseCase):

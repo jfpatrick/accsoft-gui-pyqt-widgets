@@ -1,6 +1,5 @@
 """Implementation of the signal-based updates to the graph."""
 
-import warnings
 import collections.abc
 import numpy as np
 from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict
@@ -47,13 +46,6 @@ class UpdateSource(QObject):
             data: Complete data set containing user changes.
         """
         pass
-
-    def new_data(self, data: PlottingItemData):
-        """Deprecated, use :meth:`send_data` instead."""
-        warnings.warn("UpdateSource.new_data is deprecated. "
-                      "Use UpdateSource.send_data instead.",
-                      DeprecationWarning)
-        self.send_data(data)
 
     def send_data(self, data: PlottingItemData):
         """Convenience function for sending data through :attr:`sig_new_data`
