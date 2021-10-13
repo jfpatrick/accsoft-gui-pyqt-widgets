@@ -197,7 +197,6 @@ class EditableSinusCurveDataSource(UpdateSource):
 
 class LocalTimerTimingSource(UpdateSource):
 
-    # FIXME: ScrollingPlot example spins up CPU usage to 100% (maybe others do too?) Is it localtimingsource problem?
     def __init__(self, offset: float = 0.0):
         """
         Class for sending timing-update signals based on a QTimer instance.
