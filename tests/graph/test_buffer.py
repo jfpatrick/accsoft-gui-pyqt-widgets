@@ -5,7 +5,31 @@ import pytest
 from typing import List, Tuple
 from accwidgets.graph import (BaseSortedDataBuffer, SortedCurveDataBuffer, UpdateSource, LivePlotCurve,
                               LiveBarGraphItem, LiveTimestampMarker, LiveInjectionBarGraphItem, DataModelBasedItem)
+from accwidgets.graph.datamodel.datamodelbuffer import searchsorted_with_nans
 
+# ~~~ Search Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+@pytest.mark.parametrize("data,val,side,contains_nan,expected_res", [
+    (np.array([1, 2, 3]), 2, "left", False, 1),
+    (np.array([1, 2, 3]), 2, "right", False, 2),
+    (np.array([1, 3]), 2, "left", False, 1),
+    (np.array([1, 3]), 2, "right", False, 1),
+    (np.array([1, 2, 3]), 2, "left", True, 1),
+    (np.array([1, 2, 3]), 2, "right", True, 2),
+    (np.array([1, 3]), 2, "left", True, 1),
+    (np.array([1, 3]), 2, "right", True, 1),
+    (np.array([1, np.nan, 2, 3]), 2, "left", True, 2),
+    (np.array([1, np.nan, 2, 3]), 2, "right", True, 3),
+    (np.array([1, np.nan, 3]), 2, "left", True, 2),
+    (np.array([1, np.nan, 3]), 2, "right", True, 2),
+])
+def test_searchsorted_with_nans(data, val, side, contains_nan, expected_res):
+    res = searchsorted_with_nans(array=data,
+                                 value=val,
+                                 side=side,
+                                 contains_nan=contains_nan)
+    assert res == expected_res
 
 # ~~~ Sorting Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
