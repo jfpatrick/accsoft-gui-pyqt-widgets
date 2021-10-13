@@ -1,6 +1,7 @@
 import pytest
 from pytestqt.qtbot import QtBot
 from unittest import mock
+from asyncio import CancelledError
 from typing import List
 from qtpy.QtCore import QVariant, Qt
 from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QPushButton, QDialogButtonBox, QFormLayout
@@ -14,6 +15,7 @@ from accwidgets.property_edit.designer.designer_extensions import (
     EnumTableData,
     NumericFieldDialog,
 )
+from ..async_shim import AsyncMock
 
 
 @pytest.fixture
@@ -285,6 +287,186 @@ def test_field_dialog_disabled_buttons(qtbot: QtBot, initial_fields, initial_ena
     assert dialog.remove_btn.isEnabled() is False
     assert dialog.all_rw.isEnabled() is False
     assert dialog.all_ro.isEnabled() is False
+
+
+@pytest.mark.parametrize("initial_animation_started", [True, False])
+@pytest.mark.parametrize("loading,expect_animation_started,expected_page_idx", [
+    (False, False, 0),
+    (True, True, 1),
+])
+def test_field_dialog_update_ui_for_loading(qtbot: QtBot, loading, expect_animation_started, expected_page_idx,
+                                            initial_animation_started):
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    if initial_animation_started:
+        dialog.activity_indicator.startAnimation()
+    dialog._update_ui_for_loading(loading)
+    assert dialog.activity_indicator.animating == expect_animation_started
+    assert dialog.stack.currentIndex() == expected_page_idx
+    # Stop timers running inside animation so that consecutive tests don't break
+    dialog.activity_indicator.stopAnimation()
+
+
+@pytest.mark.parametrize("task_exists,should_cancel", [
+    (True, True),
+    (False, False),
+])
+def test_field_dialog_cancel_running_tasks(qtbot: QtBot, should_cancel, task_exists):
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    task_mock = mock.Mock()
+    dialog._active_ccda_task = task_mock if task_exists else None
+    dialog._cancel_running_tasks()
+    if should_cancel:
+        task_mock.cancel.assert_called_once_with()
+    else:
+        task_mock.cancel.assert_not_called()
+
+
+@mock.patch("accwidgets.property_edit.designer.designer_extensions.FieldsDialog._cancel_running_tasks")
+def test_field_dialog_stops_active_task_on_hide(cancel_running_tasks, qtbot: QtBot):
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        dialog.show()
+    cancel_running_tasks.assert_not_called()
+    dialog.hide()
+    cancel_running_tasks.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("param_name,expected_hint", [
+    ("test/prop", 'Resolving "test/prop" property structure...'),
+    ("rda3:///test/prop", 'Resolving "rda3:///test/prop" property structure...'),
+])
+async def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot, param_name, expected_hint):
+
+    class TestException(Exception):
+        pass
+
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    assert dialog.activity_indicator.hint == ""
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+                    new_callable=AsyncMock,
+                    side_effect=TestException) as resolve_from_param:
+        resolve_from_param.assert_not_called()
+        with mock.patch.object(dialog, "_update_ui_for_loading") as update_ui_for_loading:
+            with mock.patch.object(dialog, "_show_info"):  # Prevent error model dialog from blocking UI
+                await dialog._populate_from_param(param_name)
+                # The second call is expected to be a failure, because we purposefully throw an exception for early exit,
+                # so it will re-render the UI to failure.
+                update_ui_for_loading.call_args_list == [mock.call(True),
+                                                         mock.call(False)]
+                resolve_from_param.assert_called_once_with(param_name)
+                assert dialog.activity_indicator.hint == expected_hint
+                assert dialog._active_ccda_task is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("return_any_fields", [True, False])
+async def test_field_dialog_populate_from_param_success_sets_ui(qtbot: QtBot, some_fields, return_any_fields):
+
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+
+    results = some_fields if return_any_fields else []
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+                    new_callable=AsyncMock,
+                    return_value=(results, set())) as resolve_from_param:
+        resolve_from_param.assert_not_called()
+        with mock.patch.object(dialog, "_show_info") as show_info:  # Prevent error model dialog from blocking UI
+            await dialog._populate_from_param("dev/prop")
+            resolve_from_param.assert_called_once_with("dev/prop")
+            assert dialog._table_model.raw_data == results
+            assert dialog._active_ccda_task is not None
+            assert not dialog.activity_indicator.animating
+            assert dialog.stack.currentIndex() == 0
+            show_info.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("skipped_items,expected_error", [
+    (set(), None),
+    ({"f2", "f1"}, "The following fields were not mapped, as their types are unsupported:\n\n- f1\n- f2"),
+])
+@pytest.mark.parametrize("return_any_fields", [True, False])
+async def test_field_dialog_populate_from_param_success_notifies_skipped_items(qtbot: QtBot, some_fields,
+                                                                               return_any_fields, skipped_items,
+                                                                               expected_error):
+
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+
+    results = some_fields if return_any_fields else []
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+                    new_callable=AsyncMock,
+                    return_value=(results, skipped_items)) as resolve_from_param:
+        resolve_from_param.assert_not_called()
+        with mock.patch("qtpy.QtWidgets.QMessageBox.information") as mocked_warning:
+            await dialog._populate_from_param("dev/prop")
+            if expected_error is None:
+                mocked_warning.assert_not_called()
+            else:
+                mocked_warning.assert_called_once_with(dialog, "Some items were skipped", expected_error)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error,expected_message", [
+    (TypeError, ""),
+    (ValueError, ""),
+    (ValueError("Some error"), "Some error"),
+])
+async def test_field_dialog_populate_from_param_sets_ui_on_error(qtbot: QtBot, expected_message, error):
+
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+                    new_callable=AsyncMock,
+                    side_effect=error) as resolve_from_param:
+        resolve_from_param.assert_not_called()
+        with mock.patch("qtpy.QtWidgets.QMessageBox.warning") as mocked_warning:
+            await dialog._populate_from_param("dev/prop")
+            mocked_warning.assert_called_once_with(dialog, "Error occurred", expected_message)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prev_loading", [False, True])
+async def test_field_dialog_populate_from_param_rolls_back_ui_on_cancel(qtbot: QtBot, prev_loading):
+
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
+    dialog._update_ui_for_loading(prev_loading)
+
+    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
+    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+                    new_callable=AsyncMock,
+                    side_effect=CancelledError) as resolve_from_param:
+        with mock.patch.object(dialog, "_update_ui_for_loading") as update_ui_for_loading:
+            with mock.patch.object(dialog, "_show_info") as show_info:  # Prevent error model dialog from blocking UI
+                resolve_from_param.assert_not_called()
+                await dialog._populate_from_param("dev/prop")
+                resolve_from_param.assert_called_once()
+                update_ui_for_loading.call_args_list == [mock.call(True),
+                                                         mock.call(False)]
+                show_info.assert_not_called()
 
 
 @pytest.mark.parametrize("editable", [True, False])

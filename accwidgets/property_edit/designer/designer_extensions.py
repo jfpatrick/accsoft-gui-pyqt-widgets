@@ -4,17 +4,26 @@ from dataclasses import dataclass
 from typing import Optional, List, cast, Callable, Dict, Any
 from pathlib import Path
 from collections import OrderedDict
+from asyncio import Future, CancelledError
+try:
+    from asyncio import create_task
+except ImportError:
+    from asyncio import ensure_future as create_task  # type: ignore
 from qtpy.uic import loadUi
 from qtpy.QtCore import QObject, QModelIndex, Qt, QPersistentModelIndex
+from qtpy.QtGui import QHideEvent
 from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget, QDialogButtonBox, QCheckBox, QLineEdit,
                             QStyleOptionViewItem, QComboBox, QDialog, QSpinBox, QFormLayout, QMessageBox, QDoubleSpinBox,
-                            QHeaderView)
+                            QHeaderView, QStackedWidget)
+from accwidgets.parameter_selector import ParameterSelectorDialog
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, EnumItemConfig
 from accwidgets.property_edit.propedit import (_pack_designer_fields, _unpack_designer_fields, _ENUM_OPTIONS_KEY,
                                                _NUM_MAX_KEY, _NUM_MIN_KEY, _NUM_UNITS_KEY, _NUM_PRECISION_KEY)
+from accwidgets.property_edit.designer.ccda_resolver import resolve_from_param
 from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableDialog, AbstractTableModel, BooleanPropertyColumnDelegate,
-                           AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX)
+                           AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX, ActivityIndicator)
+from accwidgets._async_utils import install_asyncio_event_loop
 
 
 class FieldEditorTableModel(AbstractTableModel[PropertyEditField]):
@@ -401,15 +410,22 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         """
         self.all_rw: QPushButton = None
         self.all_ro: QPushButton = None
+        self.ccdb_btn: QPushButton = None
+        self.stack: QStackedWidget = None
+        self.activity_indicator: ActivityIndicator = None  # type: ignore
         table_model = FieldEditorTableModel(_unpack_designer_fields(cast(str, widget.fields)))
         super().__init__(file_path=Path(__file__).absolute().parent / "field_editor.ui", table_model=table_model, parent=parent)
         self._widget = widget
+        self._last_ccdb_res: Optional[str] = None
+        self._active_ccda_task: Optional[Future] = None
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        install_asyncio_event_loop()
 
         self.setWindowTitle("Define PropertyEdit fields")
 
         self.all_rw.clicked.connect(functools.partial(self._table_model.set_fields_editable, True))
         self.all_ro.clicked.connect(functools.partial(self._table_model.set_fields_editable, False))
+        self.ccdb_btn.clicked.connect(self._present_ccdb)
 
         # This will be connected by default, but we do want to do additional validation,
         # so we need to prevent automatic closing
@@ -433,10 +449,70 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         if cursor:
             cursor.setProperty("fields", _pack_designer_fields(self._table_model.raw_data))
 
+    def hideEvent(self, event: QHideEvent):
+        super().hideEvent(event)
+        self._cancel_running_tasks()
+
     def _on_data_change(self):
         data_prefilled = len(self._table_model.raw_data) > 0
         self.all_ro.setEnabled(data_prefilled)
         self.all_rw.setEnabled(data_prefilled)
+
+    def _present_ccdb(self):
+        dialog = ParameterSelectorDialog(initial_value=self._last_ccdb_res or "",
+                                         enable_fields=False,
+                                         parent=self)
+        if dialog.exec_() == ParameterSelectorDialog.Accepted:
+            param = dialog.value
+            self._last_ccdb_res = param
+            if param:
+                create_task(self._populate_from_param(param))
+
+    async def _populate_from_param(self, param: str):
+        self._update_ui_for_loading(True)
+        self.activity_indicator.hint = f'Resolving "{param}" property structure...'
+        self._active_ccda_task = resolve_from_param(param)
+        try:
+            items, skipped_items = await self._active_ccda_task
+        except CancelledError:
+            pass
+        except BaseException as e:  # noqa: B902
+            self._show_info(title="Error occurred",
+                            msg=str(e),
+                            critical=True)
+        else:
+            self._table_model.beginResetModel()
+            self._table_model._data = items
+            self._table_model.endResetModel()
+            self._on_data_change()
+            # Force redraw controls (not becoming persistent by themselves)
+            self.table.set_persistent_editor_for_column(1)
+            self.table.set_persistent_editor_for_column(2)
+            self.table.set_persistent_editor_for_column(4)
+            if skipped_items:
+                msg = "\n".join(f"- {f}" for f in sorted(skipped_items))
+                self._show_info(title="Some items were skipped",
+                                msg="The following fields were not mapped, "
+                                    f"as their types are unsupported:\n\n{msg}",
+                                critical=False)
+        finally:
+            self._update_ui_for_loading(False)
+
+    def _cancel_running_tasks(self):
+        if self._active_ccda_task is not None:
+            self._active_ccda_task.cancel()
+            self._active_ccda_task = None
+
+    def _update_ui_for_loading(self, loading: bool):
+        if loading:
+            self.activity_indicator.startAnimation()
+        else:
+            self.activity_indicator.stopAnimation()
+        self.stack.setCurrentIndex(int(loading))
+
+    def _show_info(self, title: str, msg: str, critical: bool):
+        dialog = QMessageBox.warning if critical else QMessageBox.information
+        dialog(self, title, msg)
 
 
 class PropertyFieldExtension(WidgetsTaskMenuExtension):

@@ -6,3 +6,4 @@ FieldsDialog
    :members:
    :undoc-members:
    :show-inheritance:
+   :additional-exclusions: hideEvent
