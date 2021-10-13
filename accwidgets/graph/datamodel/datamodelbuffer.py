@@ -289,12 +289,10 @@ class BaseSortedDataBuffer(ABC):
                 distance = np.inf
         else:
             i = self.occupied_size
-            write_index = self._searchsorted_with_nans(
-                array=self._primary_values[:i],
-                value=primary_value,
-                side="right",
-                contains_nan=self._contains_nan,
-            )
+            write_index = searchsorted_with_nans(array=self._primary_values[:i],
+                                                 value=primary_value,
+                                                 side="right",
+                                                 contains_nan=self._contains_nan)
             self._primary_values = np.insert(self._primary_values, write_index, primary_value)
             # inserting lengthens the array -> cut last value
             self._primary_values = self._primary_values[:-1]
@@ -499,21 +497,6 @@ class BaseSortedDataBuffer(ABC):
             return False
         return any(secondary_values.size for secondary_values in secondary_values_list)
 
-    @staticmethod
-    def _searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_nan: bool = True) -> int:
-        """np.searchsorted with nan support. This function can be sped up by quite a lot, if the user knows,
-        the array does not contain nan values"""
-        if not contains_nan:
-            return np.searchsorted(array, value, side=side)
-        sorting_indices = np.argsort(array)
-        index = np.searchsorted(array, value, side=side, sorter=sorting_indices)
-        if index <= 0:
-            return index
-        count_nan_values = np.count_nonzero(~np.isnan(array))
-        if index >= count_nan_values:
-            return array.size
-        return sorting_indices[index]
-
 
 class SortedCurveDataBuffer(BaseSortedDataBuffer):
     """
@@ -589,8 +572,8 @@ class SortedCurveDataBuffer(BaseSortedDataBuffer):
         i = self.occupied_size
         x: np.ndarray = self._primary_values[:i]
         y: np.ndarray = self._secondary_values_lists[0][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
+        start_index = searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         # Clipping for a lot of points does not make much sense
         if interpolated and (end_index - start_index) < interpolation_max:
             return self._clip_at_boundaries_if_possible(
@@ -759,8 +742,8 @@ class SortedBarGraphDataBuffer(BaseSortedDataBuffer):
         x: np.ndarray = self._primary_values[:i]
         y: np.ndarray = self._secondary_values_lists[0][:i]
         height: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
+        start_index = searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
             start_index=start_index,
@@ -867,8 +850,8 @@ class SortedInjectionBarsDataBuffer(BaseSortedDataBuffer):
         heights: np.ndarray = self._secondary_values_lists[1][:i]
         widths: np.ndarray = self._secondary_values_lists[2][:i]
         labels: np.ndarray = self._secondary_values_lists[3][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
+        start_index = searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
             start_index=start_index,
@@ -945,8 +928,8 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
         x: np.ndarray = self._primary_values[:i]
         color: np.ndarray = self._secondary_values_lists[0][:i]
         label: np.ndarray = self._secondary_values_lists[1][:i]
-        start_index = self._searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
-        end_index = self._searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
+        start_index = searchsorted_with_nans(array=x, value=start, side="left", contains_nan=self._contains_nan)
+        end_index = searchsorted_with_nans(array=x, value=end, side="right", contains_nan=self._contains_nan)
         # indices for removing leading/trailing entries that have NaN as their primary value
         start_index, end_index = super()._get_indices_for_cutting_leading_and_trailing_nans(
             primary_values=x,
@@ -958,3 +941,20 @@ class SortedTimestampMarkerDataBuffer(BaseSortedDataBuffer):
             color[start_index:end_index],
             label[start_index:end_index],
         )
+
+
+def searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_nan: bool = True) -> int:
+    """
+    np.searchsorted with nan support. This function can be sped up by quite a lot, if the user knows,
+    the array does not contain nan values.
+    """
+    if not contains_nan:
+        return np.searchsorted(array, value, side=side)
+    sorting_indices = np.argsort(array)
+    index = np.searchsorted(array, value, side=side, sorter=sorting_indices)
+    if index <= 0:
+        return index
+    count_nan_values = np.count_nonzero(~np.isnan(array))
+    if index >= count_nan_values:
+        return array.size
+    return sorting_indices[index]
