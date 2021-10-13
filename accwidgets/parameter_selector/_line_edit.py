@@ -25,6 +25,7 @@ class ParameterLineEdit(QWidget):
         """
         super().__init__(parent)
         self._enable_protocols = False
+        self._enable_fields = True
         layout = QHBoxLayout()
         self._line_edit = QLineEdit(value)
         self._line_edit.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -74,6 +75,18 @@ class ParameterLineEdit(QWidget):
     enableProtocols = Property(bool, fget=_get_enable_protocols, fset=_set_enable_protocols)
     """Display protocol combobox in the :class:`ParameterSelectorDialog` dialog."""
 
+    def _get_enable_fields(self) -> bool:
+        return self._enable_fields
+
+    def _set_enable_fields(self, new_val: bool):
+        self._enable_fields = new_val
+
+    enableFields = Property(bool, fget=_get_enable_fields, fset=_set_enable_fields)
+    """
+    Enable selection of fields in the :class:`ParameterSelectorDialog` dialog. When :obj:`False`, parameter
+    selection happens only down to device property granularity.
+    """
+
     def _get_placeholder_text(self) -> str:
         return self._line_edit.placeholderText()
 
@@ -86,6 +99,7 @@ class ParameterLineEdit(QWidget):
     def _open_dialog(self):
         dialog = ParameterSelectorDialog(initial_value=self._line_edit.text(),
                                          enable_protocols=self.enableProtocols,
+                                         enable_fields=self.enableFields,
                                          parent=self)
         if dialog.exec_() == QDialog.Accepted:
             self._line_edit.setText(dialog.value)
@@ -121,6 +135,7 @@ class ParameterLineEditColumnDelegate(QStyledItemDelegate):
 
     def __init__(self, parent: Optional[QObject] = None,
                  enable_protocols: bool = False,
+                 enable_fields: bool = True,
                  placeholder: Optional[str] = None):
         """
         Delegate to render a  :class:`ParameterLineEdit` widget in the cell.
@@ -128,16 +143,19 @@ class ParameterLineEditColumnDelegate(QStyledItemDelegate):
         Args:
             parent: Owning object.
             enable_protocols: Allow selecting protocols.
+            enable_fields: Allow selecting fields.
             placeholder: Placeholder text for the :class:`ParameterLineEdit`. :obj:`None` will leave the default value.
         """
         super().__init__(parent)
         self._enable_protocols = enable_protocols
+        self._enable_fields = enable_fields
         self._placeholder = placeholder
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
         editor = ParameterLineEdit(parent)
         editor.valueChanged.connect(self._val_changed)
         editor.enableProtocols = self._enable_protocols
+        editor.enableFields = self._enable_fields
         if self._placeholder is not None:
             editor.placeholderText = self._placeholder
         setattr(editor, _STYLED_ITEM_DELEGATE_INDEX, QPersistentModelIndex(index))

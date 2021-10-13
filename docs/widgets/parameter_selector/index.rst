@@ -25,6 +25,15 @@ from CCDB. This dialog is accessible via multiple ways and helper widgets.
 Regardless of whether you search for a device name, or input other formats, such as "device/property" or
 "device/property#field", the dialog will contact CCDB looking for a respective device.
 
+.. note:: When ``enable_fields`` is set to :obj:`False`, ``#field`` component will be stripped from the search
+          request (see :ref:`widgets/parameter_selector/examples:No fields example`).
+
+.. figure:: ../../img/paramsel_no_field.png
+   :align: center
+   :alt: ParameterSelectorDialog with field selection disabled
+
+   ParameterSelectorDialog with field selection disabled
+
 Asynchronous operation
 ----------------------
 

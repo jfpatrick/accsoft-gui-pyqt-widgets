@@ -25,11 +25,16 @@ class ParameterSelector(QWidget):
         IN_PROGRESS = 1
         FAILED = 2
 
-    def __init__(self, enable_protocols: bool, no_protocol_option: str, parent: Optional[QWidget] = None):
+    def __init__(self,
+                 enable_protocols: bool,
+                 enable_fields: bool,
+                 no_protocol_option: str,
+                 parent: Optional[QWidget] = None):
         super().__init__(parent)
         install_asyncio_event_loop()
 
         self._enable_protocols = enable_protocols
+        self._enable_fields = enable_fields
         self._selected_value = make_empty_addr()
 
         self.search_btn: QPushButton = None
@@ -42,6 +47,7 @@ class ParameterSelector(QWidget):
         self.prop_list: QListView = None
         self.cancel_btn: QPushButton = None
         self.err_label: QLabel = None
+        self.field_title: QLabel = None
         self.protocol_combo: QComboBox = None
         self.protocol_group: QGroupBox = None
         self.activity_indicator: ActivityIndicator = None  # type: ignore
@@ -71,7 +77,8 @@ class ParameterSelector(QWidget):
         field_proxy.install(self.field_list)
         dev_proxy.selection_changed.connect(self._on_result_changed)
         prop_proxy.selection_changed.connect(self._on_result_changed)
-        field_proxy.selection_changed.connect(self._on_result_changed)
+        if self._enable_fields:
+            field_proxy.selection_changed.connect(self._on_result_changed)
         self._root_model.loading_state_changed.connect(self._on_model_loading_changed)
         self.dev_proxy = dev_proxy
         self.prop_proxy = prop_proxy
@@ -86,6 +93,10 @@ class ParameterSelector(QWidget):
             self.protocol_combo.activated.connect(self._on_protocol_selected)
         else:
             self.protocol_group.hide()
+
+        if not enable_fields:
+            self.field_list.hide()
+            self.field_title.hide()
 
         # Search
         self.search_edit.textChanged.connect(self._on_device_search_changed)
@@ -126,6 +137,9 @@ class ParameterSelector(QWidget):
         else:
             self._selected_value.protocol = None
 
+        if not self._enable_fields:
+            self._selected_value.field = None
+
         device_addr = copy(self._selected_value)
         device_addr.protocol = None
         final_addr = str(device_addr)
@@ -162,9 +176,10 @@ class ParameterSelector(QWidget):
             return
 
         param = f"{device}/{prop}"
-        field = self.field_proxy.index(self.field_proxy.selected_idx, 0).data()
-        if field:
-            param = f"{param}#{field}"
+        if self._enable_fields:
+            field = self.field_proxy.index(self.field_proxy.selected_idx, 0).data()
+            if field:
+                param = f"{param}#{field}"
 
         parsed = ParameterName.from_string(param)
         if parsed is None:
@@ -224,7 +239,7 @@ class ParameterSelector(QWidget):
         device_addr = ParameterName.from_string(trimmed_search_string)
         search_device = device_addr.device if device_addr is not None and device_addr.valid else trimmed_search_string
         search_prop = device_addr.prop if device_addr else None
-        search_field = device_addr.field if device_addr else None
+        search_field = device_addr.field if self._enable_fields and device_addr else None
 
         self.activity_indicator.hint = f"Searching {search_device}..."
         self._update_from_status(ParameterSelector.NetworkRequestStatus.IN_PROGRESS)
@@ -284,7 +299,11 @@ class ParameterSelectorDialog(QDialog):
     no_protocol_option = "Omit protocol"
     """This can be overridden to display a different label in protocol combobox, when no protocol is selected."""
 
-    def __init__(self, initial_value: str = "", enable_protocols: bool = False, parent: Optional[QWidget] = None):
+    def __init__(self,
+                 initial_value: str = "",
+                 enable_protocols: bool = False,
+                 enable_fields: bool = True,
+                 parent: Optional[QWidget] = None):
         """
         Dialog for choosing parameters (device/property#field) interactively from CCDB.
 
@@ -298,6 +317,7 @@ class ParameterSelectorDialog(QDialog):
         layout = QVBoxLayout()
         self._widget = ParameterSelector(parent=self,
                                          enable_protocols=enable_protocols,
+                                         enable_fields=enable_fields,
                                          no_protocol_option=self.no_protocol_option)
         self._widget.value = initial_value
         layout.addWidget(self._widget)

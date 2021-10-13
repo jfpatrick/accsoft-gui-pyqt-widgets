@@ -27,20 +27,25 @@ def test_widget_default_config(qtbot: QtBot):
     qtbot.add_widget(widget)
     assert widget.placeholderText == "device/property#field"
     assert widget.enableProtocols is False
+    assert widget.enableFields is True
 
 
 @pytest.mark.parametrize("enable_protocols", [True, False])
+@pytest.mark.parametrize("enable_fields", [True, False])
 @pytest.mark.parametrize("initial_val", ["", "test"])
 @mock.patch("accwidgets.parameter_selector._line_edit.ParameterSelectorDialog")
-def test_widget_btn_click_opens_dialog(ParameterSelectorDialog, qtbot: QtBot, enable_protocols, initial_val):
+def test_widget_btn_click_opens_dialog(ParameterSelectorDialog, qtbot: QtBot, enable_protocols, enable_fields,
+                                       initial_val):
     widget = ParameterLineEdit()
     qtbot.add_widget(widget)
     widget.enableProtocols = enable_protocols
+    widget.enableFields = enable_fields
     widget.value = initial_val
     ParameterSelectorDialog.assert_not_called()
     widget._btn.click()
     ParameterSelectorDialog.assert_called_once_with(initial_value=initial_val,
                                                     enable_protocols=enable_protocols,
+                                                    enable_fields=enable_fields,
                                                     parent=widget)
     ParameterSelectorDialog.return_value.exec_.assert_called_once()
 
@@ -116,15 +121,18 @@ def test_widget_placeholder_prop(qtbot: QtBot, initial_val, expected_initial, ne
 
 
 @pytest.mark.parametrize("enable_protocols", [True, False])
+@pytest.mark.parametrize("enable_fields", [True, False])
 @pytest.mark.parametrize("placeholder,expected_placeholder", [
     (None, "device/property#field"),
     ("", ""),
     ("Custom placeholder", "Custom placeholder"),
 ])
 def test_delegate_create_editor_configuration(qtbot: QtBot, concrete_list_model_impl, placeholder, enable_protocols,
-                                              expected_placeholder):
+                                              expected_placeholder, enable_fields):
     model = concrete_list_model_impl([True, False])
-    delegate = ParameterLineEditColumnDelegate(enable_protocols=enable_protocols, placeholder=placeholder)
+    delegate = ParameterLineEditColumnDelegate(enable_protocols=enable_protocols,
+                                               enable_fields=enable_fields,
+                                               placeholder=placeholder)
 
     widget = QWidget()
     qtbot.add_widget(widget)
@@ -132,6 +140,7 @@ def test_delegate_create_editor_configuration(qtbot: QtBot, concrete_list_model_
     editor = delegate.createEditor(widget, QStyleOptionViewItem(), model.createIndex(3, 5))
     assert isinstance(editor, ParameterLineEdit)
     assert editor.enableProtocols == enable_protocols
+    assert editor.enableFields == enable_fields
     assert editor.placeholderText == expected_placeholder
 
 
