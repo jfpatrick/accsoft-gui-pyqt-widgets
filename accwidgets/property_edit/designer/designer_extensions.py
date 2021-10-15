@@ -228,7 +228,6 @@ class UserDataColumnDelegate(QStyledItemDelegate):
                                             on_save=functools.partial(self._save_from_numeric_dialog, index=regular_index),
                                             use_precision=field_type == PropertyEdit.ValueType.REAL,
                                             parent=self.parent())
-            dialog.show()
             dialog.exec_()
 
     def _save_from_enum_dialog(self, data: List[EnumItemConfig], index: QModelIndex):
