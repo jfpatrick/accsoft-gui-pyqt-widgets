@@ -1,6 +1,7 @@
 import pytest
 from pytestqt.qtbot import QtBot
 from unittest import mock
+from typing import List
 from qtpy.QtCore import QVariant, Qt
 from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QPushButton, QDialogButtonBox, QFormLayout
 from PyQt5.QtTest import QAbstractItemModelTester
@@ -22,6 +23,14 @@ def some_fields():
         PropertyEditField(field="f2", type=PropertyEdit.ValueType.STRING, editable=True),
         PropertyEditField(field="f3", type=PropertyEdit.ValueType.STRING, editable=True),
     ]
+
+
+def mock_property_edit(config: List[PropertyEditField]) -> mock.MagicMock:
+    property_edit = mock.MagicMock(spec=PropertyEdit)
+    # Because designer always expects JSON, we need to "pack" it.
+    # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
+    property_edit.fields = _pack_designer_fields(config)
+    return property_edit
 
 
 @pytest.fixture
@@ -105,18 +114,13 @@ def test_enum_editor_table_model_flags(editable):
 ])
 @mock.patch("qtpy.QtDesigner.QDesignerFormWindowInterface.findFormWindow")
 def test_dialog_updates_fields_as_JSON(find_form_mock, qtbot: QtBot, fields, expected_string):
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(fields)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        property_edit.show()
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        dialog._save()
-        find_form_mock().cursor().setProperty.assert_called_with("fields", expected_string)
+    property_edit = mock_property_edit(fields)
+    qtbot.add_widget(property_edit)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    dialog._save()
+    find_form_mock().cursor().setProperty.assert_called_with("fields", expected_string)
 
 
 @mock.patch("accwidgets.property_edit.designer.designer_extensions.FieldsDialog.show")
@@ -152,23 +156,18 @@ def test_render_enum_configure_btn(qtbot: QtBot, calls_parent, draws_control, ex
         PropertyEditField(field="f6", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1"), (2, "test2")]}),
     ]
 
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(config)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        dialog.table.selectRow(row)
-        user_data_column = 4
-        delegate = dialog.table.itemDelegateForColumn(user_data_column)
-        index = dialog.table.model().createIndex(row, user_data_column)
-        editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
-        assert isinstance(editor, QPushButton)
-        delegate.setEditorData(editor, index)
-        assert editor.text() == expected_title
+    property_edit = mock_property_edit(config)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    dialog.table.selectRow(row)
+    user_data_column = 4
+    delegate = dialog.table.itemDelegateForColumn(user_data_column)
+    index = dialog.table.model().createIndex(row, user_data_column)
+    editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
+    assert isinstance(editor, QPushButton)
+    delegate.setEditorData(editor, index)
+    assert editor.text() == expected_title
 
 
 @pytest.mark.parametrize("row, handles_single_click, handles_dbl_click, editor_options", [
@@ -188,23 +187,18 @@ def test_enum_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_click, 
         PropertyEditField(field="f6", type=PropertyEdit.ValueType.ENUM, editable=True, user_data={"options": [(1, "test1"), (2, "test2")]}),
     ]
 
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(config)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        user_data_column = 4
-        delegate = dialog.table.itemDelegateForColumn(user_data_column)
-        index = dialog.table.model().createIndex(row, user_data_column)
-        editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
-        assert isinstance(editor, QPushButton)
-        editor.click()
-        opt_dialog.assert_called_once_with(options=editor_options, on_save=mock.ANY, parent=mock.ANY)
-        opt_dialog.return_value.exec_.assert_called_once()
+    property_edit = mock_property_edit(config)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    user_data_column = 4
+    delegate = dialog.table.itemDelegateForColumn(user_data_column)
+    index = dialog.table.model().createIndex(row, user_data_column)
+    editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
+    assert isinstance(editor, QPushButton)
+    editor.click()
+    opt_dialog.assert_called_once_with(options=editor_options, on_save=mock.ANY, parent=mock.ANY)
+    opt_dialog.return_value.exec_.assert_called_once()
 
 
 @pytest.mark.parametrize("row, handles_single_click, handles_dbl_click, use_precision, editor_options", [
@@ -244,23 +238,18 @@ def test_numeric_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_clic
         PropertyEditField(field="f16", type=PropertyEdit.ValueType.INTEGER, editable=True, user_data={"min": -0.1, "max": 0.1, "units": "TST"}),
     ]
 
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(config)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        user_data_column = 4
-        delegate = dialog.table.itemDelegateForColumn(user_data_column)
-        index = dialog.table.model().createIndex(row, user_data_column)
-        editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
-        assert isinstance(editor, QPushButton)
-        editor.click()
-        opt_dialog.assert_called_once_with(config=editor_options, on_save=mock.ANY, use_precision=use_precision, parent=mock.ANY)
-        opt_dialog.return_value.exec_.assert_called_once()
+    property_edit = mock_property_edit(config)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    user_data_column = 4
+    delegate = dialog.table.itemDelegateForColumn(user_data_column)
+    index = dialog.table.model().createIndex(row, user_data_column)
+    editor = delegate.createEditor(dialog.table, QStyleOptionViewItem(), index)
+    assert isinstance(editor, QPushButton)
+    editor.click()
+    opt_dialog.assert_called_once_with(config=editor_options, on_save=mock.ANY, use_precision=use_precision, parent=mock.ANY)
+    opt_dialog.return_value.exec_.assert_called_once()
 
 
 @pytest.mark.parametrize("initial_fields, initial_enabled", [
@@ -271,36 +260,31 @@ def test_numeric_user_data_event(opt_dialog, qtbot: QtBot, row, handles_dbl_clic
     ([], False),
 ])
 def test_field_dialog_disabled_buttons(qtbot: QtBot, initial_fields, initial_enabled):
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(initial_fields)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        assert dialog.add_btn.isEnabled() is True
-        assert dialog.remove_btn.isEnabled() is False
-        assert dialog.all_rw.isEnabled() is initial_enabled
-        assert dialog.all_ro.isEnabled() is initial_enabled
-        dialog.add_btn.click()
-        assert dialog.add_btn.isEnabled() is True
-        assert dialog.remove_btn.isEnabled() is False
-        assert dialog.all_rw.isEnabled() is True
-        assert dialog.all_ro.isEnabled() is True
+    property_edit = mock_property_edit(initial_fields)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    assert dialog.add_btn.isEnabled() is True
+    assert dialog.remove_btn.isEnabled() is False
+    assert dialog.all_rw.isEnabled() is initial_enabled
+    assert dialog.all_ro.isEnabled() is initial_enabled
+    dialog.add_btn.click()
+    assert dialog.add_btn.isEnabled() is True
+    assert dialog.remove_btn.isEnabled() is False
+    assert dialog.all_rw.isEnabled() is True
+    assert dialog.all_ro.isEnabled() is True
+    dialog.table.selectRow(0)
+    assert dialog.add_btn.isEnabled() is True
+    assert dialog.remove_btn.isEnabled() is True
+    assert dialog.all_rw.isEnabled() is True
+    assert dialog.all_ro.isEnabled() is True
+    for _ in range(len(initial_fields) + 1):
         dialog.table.selectRow(0)
-        assert dialog.add_btn.isEnabled() is True
-        assert dialog.remove_btn.isEnabled() is True
-        assert dialog.all_rw.isEnabled() is True
-        assert dialog.all_ro.isEnabled() is True
-        for _ in range(len(initial_fields) + 1):
-            dialog.table.selectRow(0)
-            dialog.remove_btn.click()
-        assert dialog.add_btn.isEnabled() is True
-        assert dialog.remove_btn.isEnabled() is False
-        assert dialog.all_rw.isEnabled() is False
-        assert dialog.all_ro.isEnabled() is False
+        dialog.remove_btn.click()
+    assert dialog.add_btn.isEnabled() is True
+    assert dialog.remove_btn.isEnabled() is False
+    assert dialog.all_rw.isEnabled() is False
+    assert dialog.all_ro.isEnabled() is False
 
 
 @pytest.mark.parametrize("editable", [True, False])
@@ -727,24 +711,19 @@ def test_mark_all_editable(qtbot: QtBot, editable, button_name):
     for idx, rw in enumerate(initial_editable):
         fields.append(PropertyEditField(field=f"f{idx}", type=PropertyEdit.ValueType.STRING, editable=rw))
 
-    with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
-        # Because designer always expects JSON, we need to "pack" it.
-        # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
-        mock_prop.return_value = _pack_designer_fields(fields)
-        property_edit = PropertyEdit()
-        qtbot.add_widget(property_edit)
-        dialog = FieldsDialog(widget=property_edit)
-        qtbot.add_widget(dialog)
-        dialog.show()
-        table_model = dialog.table.model()
-        get_dialog_editables = lambda: [table_model.data(table_model.createIndex(row, 2))
-                                        for row in range(table_model.rowCount())]
-        actual_editable = get_dialog_editables()
-        assert actual_editable == initial_editable
-        getattr(dialog, button_name).click()
-        expected_editable = [editable] * len(initial_editable)
-        actual_editable = get_dialog_editables()
-        assert actual_editable == expected_editable
+    property_edit = mock_property_edit(fields)
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    dialog.show()
+    table_model = dialog.table.model()
+    get_dialog_editables = lambda: [table_model.data(table_model.createIndex(row, 2))
+                                    for row in range(table_model.rowCount())]
+    actual_editable = get_dialog_editables()
+    assert actual_editable == initial_editable
+    getattr(dialog, button_name).click()
+    expected_editable = [editable] * len(initial_editable)
+    actual_editable = get_dialog_editables()
+    assert actual_editable == expected_editable
 
 
 @pytest.mark.parametrize("editable", [True, False])
