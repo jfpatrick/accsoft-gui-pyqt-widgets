@@ -1,7 +1,7 @@
 import copy
 import functools
 from dataclasses import dataclass
-from typing import Optional, List, cast, Callable, Dict, Any
+from typing import Optional, List, cast, Callable, Dict, Any, Type
 from pathlib import Path
 from collections import OrderedDict
 from asyncio import Future, CancelledError
@@ -15,11 +15,9 @@ from qtpy.QtGui import QHideEvent
 from qtpy.QtWidgets import (QPushButton, QAction, QStyledItemDelegate, QWidget, QDialogButtonBox, QCheckBox, QLineEdit,
                             QStyleOptionViewItem, QComboBox, QDialog, QSpinBox, QFormLayout, QMessageBox, QDoubleSpinBox,
                             QHeaderView, QStackedWidget)
-from accwidgets.parameter_selector import ParameterSelectorDialog
 from accwidgets.property_edit import PropertyEdit, PropertyEditField, EnumItemConfig
 from accwidgets.property_edit.propedit import (_pack_designer_fields, _unpack_designer_fields, _ENUM_OPTIONS_KEY,
                                                _NUM_MAX_KEY, _NUM_MIN_KEY, _NUM_UNITS_KEY, _NUM_PRECISION_KEY)
-from accwidgets.property_edit.designer.ccda_resolver import resolve_from_param
 from accwidgets._designer_base import WidgetsTaskMenuExtension, get_designer_cursor
 from accwidgets.qt import (AbstractTableDialog, AbstractTableModel, BooleanPropertyColumnDelegate,
                            AbstractComboBoxColumnDelegate, _STYLED_ITEM_DELEGATE_INDEX, ActivityIndicator)
@@ -411,6 +409,7 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         self.all_rw: QPushButton = None
         self.all_ro: QPushButton = None
         self.ccdb_btn: QPushButton = None
+        self.ccdb_view: QWidget = None
         self.stack: QStackedWidget = None
         self.activity_indicator: ActivityIndicator = None  # type: ignore
         table_model = FieldEditorTableModel(_unpack_designer_fields(cast(str, widget.fields)))
@@ -425,7 +424,22 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
 
         self.all_rw.clicked.connect(functools.partial(self._table_model.set_fields_editable, True))
         self.all_ro.clicked.connect(functools.partial(self._table_model.set_fields_editable, False))
-        self.ccdb_btn.clicked.connect(self._present_ccdb)
+
+        self._ParameterSelectorDialog: Optional[Type] = None
+        self._resolve_from_param: Optional[Callable[[str], Future]] = None
+        try:
+            from accwidgets.parameter_selector import ParameterSelectorDialog
+            from accwidgets.property_edit.designer.ccda_resolver import resolve_from_param
+        except ImportError:
+            # Likely accwidgets[parameter_selector] has not been installed (which also brings pyccda)
+            # In this case we should not fail, but to not display CCDA button
+            # resolve_from_param can fail if parameter_selector import fails because it uses ParameterName
+            # data structure internally.
+            self.ccdb_view.hide()
+        else:
+            self._ParameterSelectorDialog = ParameterSelectorDialog
+            self._resolve_from_param = resolve_from_param
+            self.ccdb_btn.clicked.connect(self._present_ccdb)
 
         # This will be connected by default, but we do want to do additional validation,
         # so we need to prevent automatic closing
@@ -459,19 +473,21 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         self.all_rw.setEnabled(data_prefilled)
 
     def _present_ccdb(self):
-        dialog = ParameterSelectorDialog(initial_value=self._last_ccdb_res or "",
-                                         enable_fields=False,
-                                         parent=self)
-        if dialog.exec_() == ParameterSelectorDialog.Accepted:
+        dialog = self._ParameterSelectorDialog(initial_value=self._last_ccdb_res or "",
+                                               enable_fields=False,
+                                               parent=self)
+        if dialog.exec_() == self._ParameterSelectorDialog.Accepted:
             param = dialog.value
             self._last_ccdb_res = param
             if param:
                 create_task(self._populate_from_param(param))
 
     async def _populate_from_param(self, param: str):
+        if not self._resolve_from_param:
+            return
         self._update_ui_for_loading(True)
         self.activity_indicator.hint = f'Resolving "{param}" property structure...'
-        self._active_ccda_task = resolve_from_param(param)
+        self._active_ccda_task = self._resolve_from_param(param)
         try:
             items, skipped_items = await self._active_ccda_task
         except CancelledError:

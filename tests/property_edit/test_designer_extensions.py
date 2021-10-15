@@ -1,3 +1,4 @@
+import sys
 import pytest
 from pytestqt.qtbot import QtBot
 from unittest import mock
@@ -348,14 +349,12 @@ async def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot
         pass
 
     property_edit = mock_property_edit([])
-    dialog = FieldsDialog(widget=property_edit)
-    qtbot.add_widget(dialog)
-    assert dialog.activity_indicator.hint == ""
-
-    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
                     new_callable=AsyncMock,
                     side_effect=TestException) as resolve_from_param:
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
+        assert dialog.activity_indicator.hint == ""
         resolve_from_param.assert_not_called()
         with mock.patch.object(dialog, "_update_ui_for_loading") as update_ui_for_loading:
             with mock.patch.object(dialog, "_show_info"):  # Prevent error model dialog from blocking UI
@@ -374,15 +373,12 @@ async def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot
 async def test_field_dialog_populate_from_param_success_sets_ui(qtbot: QtBot, some_fields, return_any_fields):
 
     property_edit = mock_property_edit([])
-    dialog = FieldsDialog(widget=property_edit)
-    qtbot.add_widget(dialog)
-
     results = some_fields if return_any_fields else []
-
-    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
                     new_callable=AsyncMock,
                     return_value=(results, set())) as resolve_from_param:
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
         resolve_from_param.assert_not_called()
         with mock.patch.object(dialog, "_show_info") as show_info:  # Prevent error model dialog from blocking UI
             await dialog._populate_from_param("dev/prop")
@@ -405,15 +401,12 @@ async def test_field_dialog_populate_from_param_success_notifies_skipped_items(q
                                                                                expected_error):
 
     property_edit = mock_property_edit([])
-    dialog = FieldsDialog(widget=property_edit)
-    qtbot.add_widget(dialog)
-
     results = some_fields if return_any_fields else []
-
-    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
                     new_callable=AsyncMock,
                     return_value=(results, skipped_items)) as resolve_from_param:
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
         resolve_from_param.assert_not_called()
         with mock.patch("qtpy.QtWidgets.QMessageBox.information") as mocked_warning:
             await dialog._populate_from_param("dev/prop")
@@ -432,13 +425,11 @@ async def test_field_dialog_populate_from_param_success_notifies_skipped_items(q
 async def test_field_dialog_populate_from_param_sets_ui_on_error(qtbot: QtBot, expected_message, error):
 
     property_edit = mock_property_edit([])
-    dialog = FieldsDialog(widget=property_edit)
-    qtbot.add_widget(dialog)
-
-    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
                     new_callable=AsyncMock,
                     side_effect=error) as resolve_from_param:
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
         resolve_from_param.assert_not_called()
         with mock.patch("qtpy.QtWidgets.QMessageBox.warning") as mocked_warning:
             await dialog._populate_from_param("dev/prop")
@@ -450,15 +441,13 @@ async def test_field_dialog_populate_from_param_sets_ui_on_error(qtbot: QtBot, e
 async def test_field_dialog_populate_from_param_rolls_back_ui_on_cancel(qtbot: QtBot, prev_loading):
 
     property_edit = mock_property_edit([])
-    dialog = FieldsDialog(widget=property_edit)
-    qtbot.add_widget(dialog)
-    dialog.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
-    dialog._update_ui_for_loading(prev_loading)
-
-    # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
-    with mock.patch("accwidgets.property_edit.designer.designer_extensions.resolve_from_param",
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
                     new_callable=AsyncMock,
                     side_effect=CancelledError) as resolve_from_param:
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
+        dialog.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
+        dialog._update_ui_for_loading(prev_loading)
         with mock.patch.object(dialog, "_update_ui_for_loading") as update_ui_for_loading:
             with mock.patch.object(dialog, "_show_info") as show_info:  # Prevent error model dialog from blocking UI
                 resolve_from_param.assert_not_called()
@@ -467,6 +456,45 @@ async def test_field_dialog_populate_from_param_rolls_back_ui_on_cancel(qtbot: Q
                 update_ui_for_loading.call_args_list == [mock.call(True),
                                                          mock.call(False)]
                 show_info.assert_not_called()
+
+
+@pytest.mark.parametrize("import_fails,expect_show_button", [
+    (False, True),
+    (True, False),
+])
+def test_field_dialog_hides_ccdb_button_when_parameter_selector_cant_be_imported(qtbot: QtBot, import_fails,
+                                                                                 expect_show_button, monkeypatch):
+    if import_fails:
+        monkeypatch.setitem(sys.modules, "accwidgets.parameter_selector", None)
+    property_edit = mock_property_edit([])
+    dialog = FieldsDialog(widget=property_edit)
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        dialog.show()
+    assert dialog.ccdb_btn.isVisible() == expect_show_button
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("import_fails,expect_calls_inner", [
+    (False, True),
+    (True, False),
+])
+async def test_field_dialog_noop_ccda_resolve_when_function_cant_be_imported(qtbot: QtBot, import_fails,
+                                                                             expect_calls_inner, monkeypatch):
+    if import_fails:
+        monkeypatch.setitem(sys.modules, "accwidgets.property_edit.designer.ccda_resolver", None)
+    property_edit = mock_property_edit([])
+    with mock.patch("accwidgets.property_edit.designer.ccda_resolver.resolve_from_param",
+                    new_callable=AsyncMock,
+                    side_effect=CancelledError) as resolve_from_param:  # Finish quickly with cancelled error
+        dialog = FieldsDialog(widget=property_edit)
+        qtbot.add_widget(dialog)
+        resolve_from_param.assert_not_called()
+        await dialog._populate_from_param("dev/prop")
+        if expect_calls_inner:
+            resolve_from_param.assert_called_once_with("dev/prop")
+        else:
+            resolve_from_param.assert_not_called()
 
 
 @pytest.mark.parametrize("editable", [True, False])
