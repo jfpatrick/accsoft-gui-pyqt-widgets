@@ -127,8 +127,8 @@ def test_dialog_updates_fields_as_JSON(find_form_mock, qtbot: QtBot, fields, exp
 
 
 @mock.patch("accwidgets.property_edit.designer.designer_extensions.FieldsDialog.show")
-@mock.patch("accwidgets.property_edit.designer.designer_extensions.FieldsDialog.exec_")
-def test_edit_contents_opens_dialog(show_mock, exec_mock, qtbot: QtBot):
+@mock.patch("accwidgets.property_edit.designer.designer_extensions.FieldsDialog.open")
+def test_edit_contents_opens_dialog(show_mock, open_mock, qtbot: QtBot):
     with mock.patch("accwidgets.property_edit.PropertyEdit.fields", new_callable=mock.PropertyMock) as mock_prop:
         # Because designer always expects JSON, we need to "pack" it.
         # We also cannot simply assign it to the ``fields``, because they will be unpacked internally.
@@ -140,7 +140,7 @@ def test_edit_contents_opens_dialog(show_mock, exec_mock, qtbot: QtBot):
         act = ext.actions()[0]
         act.activate(QAction.Trigger)
         show_mock.assert_called_once()
-        exec_mock.assert_called_once()
+        open_mock.assert_called_once()
 
 
 @pytest.mark.parametrize("row, calls_parent, draws_control, expected_title", [

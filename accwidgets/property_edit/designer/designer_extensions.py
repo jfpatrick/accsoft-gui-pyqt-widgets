@@ -548,6 +548,8 @@ class PropertyFieldExtension(WidgetsTaskMenuExtension):
         return [self.action]
 
     def _open_dialog(self):
+        key = self.action.text()
+        if self.focus_dialog(key):
+            return
         dialog = FieldsDialog(widget=self.widget, parent=self.widget)
-        dialog.show()
-        dialog.exec_()
+        self.present_non_modal_dialog(key=key, dialog=dialog)
