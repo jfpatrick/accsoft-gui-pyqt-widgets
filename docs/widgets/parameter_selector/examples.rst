@@ -12,6 +12,7 @@ packages needed to run examples, it is advised to install a special ``examples``
 - `Basic example`_
 - `Qt Designer example`_
 - `Protocols example`_
+- `No fields example`_
 - `Bare dialog example`_
 - `Table view example`_
 - `QSS styling example`_
@@ -100,6 +101,35 @@ addresses. The newly selected parameter name is printed to the console.
          Show contents of protocol_example.py...
 
    .. literalinclude:: ../../../examples/parameter_selector/protocol_example.py
+
+.. raw:: html
+
+   <p />
+
+
+No fields example
+-----------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/parameter_selector/no_field_example.py
+
+This example is similar to `Basic example`_ in terms of widget configuration, but adds an additional option
+to only select devices and properties, but not fields. The newly selected parameter name is printed to the console.
+
+.. image:: ../../img/examples_paramsel_no_field.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of no_field_example.py...
+
+   .. literalinclude:: ../../../examples/parameter_selector/no_field_example.py
 
 .. raw:: html
 
