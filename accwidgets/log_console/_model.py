@@ -39,7 +39,7 @@ class LogConsoleRecord:
     timestamp: float
     """Unix epoch timestamp of the message creation."""
 
-    millis: int = 0
+    millis: float = 0.0
     """Milliseconds of the timestamp, complimentary to :attr:`timestamp`."""
 
     extras: InitVar[Optional[Dict[str, Any]]] = None

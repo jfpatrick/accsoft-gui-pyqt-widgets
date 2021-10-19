@@ -9,7 +9,7 @@ try:
     from importlib.metadata import PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
     # Python <3.8
-    from importlib_metadata import PackageNotFoundError
+    from importlib_metadata import PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.9
 
 
 @pytest.fixture(scope="function", autouse=True)

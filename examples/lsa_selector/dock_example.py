@@ -9,7 +9,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QDockWidget, QLabel
 from accwidgets.lsa_selector import LsaSelector, AbstractLsaSelectorContext
 from accwidgets.qt import exec_app_interruptable
-from sample_model import SampleLsaSelectorModel
+from sample_model import SampleLsaSelectorModel  # type: ignore
 
 
 class MainWindow(QMainWindow):

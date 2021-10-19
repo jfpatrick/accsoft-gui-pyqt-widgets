@@ -8,7 +8,7 @@ import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel
 from accwidgets.lsa_selector import LsaSelector, LsaSelectorAccelerator
 from accwidgets.qt import exec_app_interruptable
-from sample_model import SampleLsaSelectorModel
+from sample_model import SampleLsaSelectorModel  # type: ignore
 from simulated_pyjapc import PyJapc
 
 

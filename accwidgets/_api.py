@@ -13,7 +13,7 @@ try:
     from importlib.metadata import distribution, PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
     # Python <3.8
-    from importlib_metadata import distribution, PackageNotFoundError
+    from importlib_metadata import distribution, PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.9
 
 
 REAL_MODULE_NAME_VAR = "__accwidgets_real_module__"

@@ -45,8 +45,11 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
     ],
     LINT_OPTION: [
-        "mypy==0.761",
+        "mypy==0.910",
         "numpy>=1.21",
+        "types-freezegun",
+        "types-Deprecated",
+        "types-python-dateutil",
         "flake8>=3.7.8,<3.8a0",
         "flake8-quotes>=2.1.0,<3a0",
         "flake8-commas>=2,<3a0",
@@ -92,7 +95,10 @@ def combine_reqs() -> Tuple[List[str], Dict[str, List[str]]]:
 
     def get_reqs_file(file: Path, attr_name: str) -> Optional[Any]:
         pkg_name = f"accwidgets.{file.parent.name}.{file.stem}"
-        spec: importlib.machinery.ModuleSpec = importlib.util.spec_from_file_location(name=pkg_name, location=file)
+        spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.spec_from_file_location(name=pkg_name,
+                                                                                                location=file)
+        if spec is None:
+            return None
         mod: types.ModuleType = importlib.util.module_from_spec(spec)
         loader = cast(importlib.machinery.SourceFileLoader, spec.loader)
 

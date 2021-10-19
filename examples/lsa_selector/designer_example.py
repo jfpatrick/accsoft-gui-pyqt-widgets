@@ -12,7 +12,7 @@ from qtpy.uic import loadUi
 from accwidgets.designer_check import set_designer
 from accwidgets.lsa_selector import LsaSelector
 from accwidgets.qt import exec_app_interruptable
-from sample_model import SampleLsaSelectorModel
+from sample_model import SampleLsaSelectorModel  # type: ignore
 
 
 class MainWindow(QMainWindow):

@@ -9,7 +9,7 @@ import numpy as np
 import pyqtgraph as pg
 from numpy.typing import ArrayLike
 from abc import ABC, abstractmethod
-from typing import List, Union, Any, Sequence, Dict
+from typing import List, Union, Any, Dict, Sequence
 from copy import deepcopy
 from accwidgets.graph import DEFAULT_COLOR
 

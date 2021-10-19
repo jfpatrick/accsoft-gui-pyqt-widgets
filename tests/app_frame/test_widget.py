@@ -353,7 +353,7 @@ def test_app_frame_set_timing_bar_removes_old_widget(qtbot: QtBot, old_widget_ty
     timing_bar_widget = old_widget_type()
 
     def timing_bar_widget_is_in_toolbar() -> bool:
-        for action in widget.main_toolbar(create=True).actions():
+        for action in widget.main_toolbar().actions():
             if isinstance(action, QWidgetAction) and cast(QWidgetAction, action).defaultWidget() == timing_bar_widget:
                 return True
         return False
@@ -374,6 +374,7 @@ def test_app_frame_set_timing_bar_adds_new_widget_when_toolbar_does_not_exist(qt
     widget.timing_bar = new_timing_bar
     assert widget.main_toolbar(create=False) is not None
     main_toolbar = widget.main_toolbar(create=False)
+    assert main_toolbar is not None
     assert len(main_toolbar.actions()) == 1
     assert isinstance(main_toolbar.actions()[0], QWidgetAction)
     assert cast(QWidgetAction, main_toolbar.actions()[0]).defaultWidget() == new_timing_bar
@@ -404,7 +405,7 @@ def test_app_frame_set_timing_bar_adds_toggle_action_when_toolbar_gets_created(q
 def test_app_frame_set_timing_bar_adds_new_widget_when_only_main_toolbar_exists(qtbot: QtBot, widget_type):
     widget = ApplicationFrame(use_timing_bar=False)
     qtbot.add_widget(widget)
-    main_toolbar = widget.main_toolbar(create=True)
+    main_toolbar = widget.main_toolbar()
     assert len(main_toolbar.actions()) == 0
     new_timing_bar = widget_type()
     widget.timing_bar = new_timing_bar
@@ -418,7 +419,7 @@ def test_app_frame_set_timing_bar_adds_new_widget_when_multiple_toolbars_exist(q
     widget = ApplicationFrame(use_timing_bar=False)
     qtbot.add_widget(widget)
     another_toolbar = widget.addToolBar("Another toolbar")
-    main_toolbar = widget.main_toolbar(create=True)
+    main_toolbar = widget.main_toolbar()
     assert len(main_toolbar.actions()) == 0
     assert len(another_toolbar.actions()) == 0
     new_timing_bar = widget_type()
@@ -433,7 +434,7 @@ def test_app_frame_set_timing_bar_adds_new_widget_when_multiple_toolbars_exist(q
 def test_app_frame_set_timing_bar_adds_new_widget_when_main_toolbar_is_not_empty(qtbot: QtBot, widget_type):
     widget = ApplicationFrame(use_timing_bar=False)
     qtbot.add_widget(widget)
-    main_toolbar = widget.main_toolbar(create=True)
+    main_toolbar = widget.main_toolbar()
     main_toolbar.addAction("Test action")
     assert len(main_toolbar.actions()) == 1
     assert not isinstance(main_toolbar.actions()[0], QWidgetAction)
@@ -465,8 +466,8 @@ def test_app_frame_set_timing_bar_to_none_deletes_main_toolbar_if_last_widget(qt
     if has_additional_widgets:
         widget.main_toolbar().addAction("Test action")
     widget.timing_bar = widget_type()
-    assert widget.main_toolbar(create=False) is not None
     main_toolbar = widget.main_toolbar(create=False)
+    assert main_toolbar is not None
     with qtbot.wait_signal(main_toolbar.destroyed, raising=False, timeout=100) as blocker:
         widget.timing_bar = None if new_widget_type is None else new_widget_type()
     if should_remove_toolbar:

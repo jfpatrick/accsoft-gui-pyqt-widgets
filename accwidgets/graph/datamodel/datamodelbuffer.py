@@ -10,7 +10,7 @@ from typing import Optional, Tuple, List, Union, cast
 try:
     from typing import Literal  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # type: ignore  # mypy fails this in Python 3.9
 from abc import ABC, abstractmethod
 from accwidgets.graph import PointData, DEFAULT_BUFFER_SIZE
 from .datamodelclipping import calc_intersection
@@ -953,7 +953,7 @@ def searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_
     the array does not contain nan values.
     """
     def call_native_impl(**kwargs):
-        casted_side = cast(Union[Literal["left"], Literal["right"]], side)  # Prevent mypy errors
+        casted_side = cast(Literal["left", "right"], side)  # Prevent mypy errors
         res = np.searchsorted(array, value, side=casted_side, **kwargs)
         if isinstance(res, np.ndarray):
             raise ValueError("value must be a scalar, not an array")
@@ -964,7 +964,7 @@ def searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_
     sorting_indices = np.argsort(array)
     index = call_native_impl(sorter=sorting_indices)
     if index <= 0:
-        return index
+        return int(index)
     count_nan_values = np.count_nonzero(~np.isnan(array))
     if index >= count_nan_values:
         return array.size

@@ -378,7 +378,7 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
 
     def _set_domain(self, new_val: TimingBarDomain):
         if isinstance(new_val, int) or isinstance(new_val, _QtDesignerDomain):
-            val = list(TimingBarDomain.__members__.values())[new_val]
+            val = list(TimingBarDomain.__members__.values())[cast(int, new_val)]
             new_val = TimingBarDomain(val)
         self.model.domain = new_val
 
