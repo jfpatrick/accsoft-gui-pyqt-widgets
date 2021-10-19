@@ -1,3 +1,4 @@
+import functools
 from codecs import decode
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -5,7 +6,7 @@ from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 from typing import Type, Optional, List, TypeVar, Union, Dict, cast
-from qtpy.QtWidgets import QWidget, QAction, QMessageBox, QApplication
+from qtpy.QtWidgets import QWidget, QAction, QMessageBox, QApplication, QDialog
 from qtpy.QtGui import QIcon
 from qtpy.QtCore import QObject, QMetaMethod, QByteArray
 from qtpy.QtDesigner import (
@@ -61,6 +62,7 @@ class WidgetsTaskMenuExtension(ABC):
             widget: Related widget.
         """
         self.widget = widget
+        self._open_dialogs: Dict[str, QDialog] = {}
 
     @abstractmethod
     def actions(self) -> List[QAction]:
@@ -69,6 +71,47 @@ class WidgetsTaskMenuExtension(ABC):
         will make the Extension compatible to PyDM Task Menu extensions.
         """
         pass
+
+    def present_non_modal_dialog(self, key: str, dialog: QDialog):
+        """
+        Action to display a dialog in a non-modal way. (Because modal dialogs are annoying in Qt Designer,
+        sticking in the center without possibility to move the freely). If you want to have this freedom,
+        and yet forbid more than one dialog open at a time, consider :meth:`focus_dialog` which will allow
+        focusing an existing open dialog rather than creating a new one.
+
+        Args:
+            key: Dialog key (title is a good candidate)
+            dialog: Instance.
+        """
+        if key in self._open_dialogs:
+            raise ValueError("Cannot overwrite an already open dialog")
+        self._open_dialogs[key] = dialog
+
+        dialog.finished.connect(functools.partial(self._on_dialog_close, key=key))
+        dialog.show()
+        dialog.open()
+
+    def focus_dialog(self, key: str) -> bool:
+        """
+        Focus on a dialog if it is already open instead of opening another one.
+
+        Args:
+            key: Key of the dialog used in :meth:present_non_modal_dialog`.
+
+        Returns:
+            Whether dialog was focused.
+        """
+        try:
+            dialog = self._open_dialogs[key]
+        except KeyError:
+            return False
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+        return True
+
+    def _on_dialog_close(self, key: str):
+        del self._open_dialogs[key]
 
 
 class WidgetsMemberSheetExtension(QPyDesignerMemberSheetExtension):  # Cannot inherit multiple classes, because low-level PyQt breaks

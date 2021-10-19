@@ -1,7 +1,23 @@
 import pytest
 from unittest import mock
+from pytestqt.qtbot import QtBot
+from qtpy.QtWidgets import QDialog, QApplication
+from qtpy.QtCore import Qt
 import accwidgets._api
-from accwidgets._designer_base import designer_user_error, DesignerUserError
+from accwidgets._designer_base import designer_user_error, DesignerUserError, WidgetsTaskMenuExtension
+
+
+@pytest.fixture
+def task_ext():
+    class ExtSubclass(WidgetsTaskMenuExtension):
+
+        def __init__(self):
+            super().__init__(mock.MagicMock())
+
+        def actions(self):
+            return []
+
+    return ExtSubclass()
 
 
 @pytest.mark.parametrize("is_designer_value,gui_available,thrown_error,captured_error,captured_msg,expected_final_error,expect_gui_error", [
@@ -136,3 +152,83 @@ def test_designer_user_error_does_not_use_assert_cache_in_designer(is_designer, 
     with designer_user_error(ImportError):
         assert accwidgets._api._ASSERT_CACHE_ENABLED != should_disable_cache
     assert accwidgets._api._ASSERT_CACHE_ENABLED
+
+
+def test_task_ext_non_modal_window_focuses_the_same_instance_when_exists(task_ext, qtbot: QtBot):
+    dialog = QDialog()
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        task_ext.present_non_modal_dialog(key="test_key", dialog=dialog)
+    assert dialog.isActiveWindow()
+    another_dialog = QDialog()
+    qtbot.add_widget(another_dialog)
+    with qtbot.wait_exposed(another_dialog):
+        another_dialog.show()
+        another_dialog.open()
+    assert not dialog.isActiveWindow()
+    assert another_dialog.isActiveWindow()
+    with qtbot.wait_exposed(dialog):
+        res = task_ext.focus_dialog(key="test_key")
+    assert res is True
+    QApplication.instance().processEvents()  # Make sure that active window is properly re-assigned
+    assert not another_dialog.isActiveWindow()
+    assert dialog.isActiveWindow()
+
+
+@pytest.mark.parametrize("key,should_focus", [
+    ("key-1", True),
+    ("key-2", False),
+])
+def test_task_ext_focus_dialog(task_ext, qtbot: QtBot, key, should_focus):
+    dialog = QDialog()
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        task_ext.present_non_modal_dialog(key="key-1", dialog=dialog)
+    res = task_ext.focus_dialog(key)
+    assert should_focus == res
+
+
+def test_task_ext_non_modal_window_is_non_modal(task_ext, qtbot: QtBot):
+    dialog = QDialog()
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        task_ext.present_non_modal_dialog(key="test_key", dialog=dialog)
+    assert dialog.windowModality() == Qt.WindowModal
+    task_ext.focus_dialog(key="test_key")
+    assert dialog.windowModality() == Qt.WindowModal
+
+
+def test_task_ext_non_modal_window_creates_new_instance_after_closing_old_one(task_ext, qtbot: QtBot):
+    dialog = QDialog()
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        task_ext.present_non_modal_dialog(key="test_key", dialog=dialog)
+    assert task_ext.focus_dialog("test_key") is True
+    assert task_ext._open_dialogs["test_key"] is dialog
+    dialog.reject()
+    assert task_ext.focus_dialog("test_key") is False
+    assert "test_key" not in task_ext._open_dialogs
+    another_dialog = QDialog()
+    qtbot.add_widget(another_dialog)
+    with qtbot.wait_exposed(another_dialog):
+        task_ext.present_non_modal_dialog(key="test_key", dialog=another_dialog)
+    assert task_ext.focus_dialog("test_key") is True
+    assert task_ext._open_dialogs["test_key"] is another_dialog
+    assert another_dialog != dialog
+
+
+def test_task_ext_non_modal_window_different_keys_do_not_interfere(task_ext, qtbot: QtBot):
+    dialog = QDialog()
+    qtbot.add_widget(dialog)
+    with qtbot.wait_exposed(dialog):
+        task_ext.present_non_modal_dialog(key="key-1", dialog=dialog)
+    assert task_ext.focus_dialog("key-1") is True
+    assert task_ext._open_dialogs["key-1"] is dialog
+    another_dialog = QDialog()
+    qtbot.add_widget(another_dialog)
+    with qtbot.wait_exposed(another_dialog):
+        task_ext.present_non_modal_dialog(key="key-2", dialog=another_dialog)
+    assert task_ext._open_dialogs["key-2"] is another_dialog
+    assert task_ext._open_dialogs["key-1"] is dialog
+    assert task_ext.focus_dialog("key-2") is True
+    assert task_ext.focus_dialog("key-1") is True

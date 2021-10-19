@@ -307,5 +307,8 @@ class PlotLayerExtension(WidgetsTaskMenuExtension):
         return [self.edit_layer_action]
 
     def _edit_curves(self, _):
+        key = self.edit_layer_action.text()
+        if self.focus_dialog(key):
+            return
         dialog = PlotLayerEditingDialog(self.widget, parent=self.widget)
-        dialog.exec_()
+        self.present_non_modal_dialog(key=key, dialog=dialog)
