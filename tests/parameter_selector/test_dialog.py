@@ -1,5 +1,5 @@
+import sys
 import pytest
-import asyncio
 import functools
 from asyncio import CancelledError
 from unittest import mock
@@ -16,6 +16,14 @@ def retain_no_protocol_option():
     orig_option = ParameterSelectorDialog.no_protocol_option
     yield
     ParameterSelectorDialog.no_protocol_option = orig_option
+
+
+@pytest.fixture
+def empty_coro():
+    # Signature differs between versions, how they like to process things
+    if sys.version_info.major == 3 and sys.version_info.minor <= 7:
+        return AsyncMock()()
+    return AsyncMock()
 
 
 @pytest.mark.parametrize("enable,no_proto_name,expect_visible,expected_items", [
@@ -331,12 +339,12 @@ def test_widget_value_setter_succeeds_sets_ui(_, qtbot: QtBot, enable_protocols,
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 async def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, value, expected_search_string,
-                                                                enable_protocols, enable_fields):
+                                                                enable_protocols, enable_fields, empty_coro):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
     qtbot.add_widget(widget)
-    with mock.patch.object(widget, "_on_search_requested", return_value=asyncio.coroutine(lambda: None)()) as on_search_requested:
+    with mock.patch.object(widget, "_on_search_requested", return_value=empty_coro) as on_search_requested:
         assert widget.search_edit.text() == ""
         on_search_requested.assert_not_called()
         widget.value = value
@@ -349,12 +357,12 @@ async def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, va
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
 async def test_widget_value_setter_fails_search_not_requested(qtbot: QtBot, initial_val, enable_protocols,
-                                                              enable_fields):
+                                                              enable_fields, empty_coro):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
     qtbot.add_widget(widget)
-    with mock.patch.object(widget, "_on_search_requested", return_value=asyncio.coroutine(lambda: None)()) as on_search_requested:
+    with mock.patch.object(widget, "_on_search_requested", return_value=empty_coro) as on_search_requested:
         widget.value = initial_val
         assert widget.search_edit.text() == initial_val
         on_search_requested.reset_mock()
@@ -637,13 +645,14 @@ def test_widget_on_model_loading_changed_controls_aux_indicator(qtbot: QtBot, lo
 ])
 @pytest.mark.parametrize("enable_fields", [True, False])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields):
+async def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields,
+                                                          empty_coro):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
     qtbot.add_widget(widget)
     widget.search_edit.setText(text)
-    with mock.patch.object(widget, "_on_search_requested", return_value=asyncio.coroutine(lambda: None)()) as on_search_requested:
+    with mock.patch.object(widget, "_on_search_requested", return_value=empty_coro) as on_search_requested:
         # Originally, it was attempted to use widget.search_btn.click(),
         # but the button click signal does not get propagated inside the test, so using target slot instead
         widget._start_search()

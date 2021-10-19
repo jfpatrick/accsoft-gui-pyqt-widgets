@@ -63,11 +63,11 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "flake8-bugbear>=19.8.0,<20a0",
     ],
     TEST_OPTION: [
-        "pytest>=4.4.0,<4.5a0",
-        "pytest-qt>=3.2.0,<3.3a0",
+        "pytest>=6.2.5,<7a0",
+        "pytest-qt>=4.0.2,<5a0",
         "pytest-random-order>=1.0.4,<1.1a0",
-        "pytest-cov>=2.5.1,<2.6a0",
-        "pytest-asyncio",
+        "pytest-cov>=3.0.0,<4a0",
+        "pytest-asyncio>=0.16",
         "qasync>=0.13.0,<1a0",
     ],
     DOC_OPTION: [

@@ -40,7 +40,7 @@ class LogSearchDialog(QDialog):
             flags |= QTextDocument.FindWholeWords
         if self.check_reverse.isChecked():
             flags |= QTextDocument.FindBackward
-        self.search_requested.emit(self.search_edit.text(), flags)
+        self.search_requested.emit(self.search_edit.text(), int(flags))
 
     def _on_search_direction_change(self):
         self.search_direction_changed.emit(self.check_reverse.isChecked())
