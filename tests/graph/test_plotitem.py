@@ -1,6 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
 import pytest
+from pytestqt.qtbot import QtBot
 from typing import List
 from enum import Enum
 from qtpy import QtCore, QtWidgets, QtGui
@@ -53,7 +54,8 @@ def _resume_to_orig_range(plot_item: ExPlotItem, reset_operation: ResumeRangeOpe
         raise ValueError(f"{reset_operation} is not a known operation for resetting the view range in the plot.")
 
 
-def _prepare_scrolling_plot_test_window(qtbot, time_span: TimeSpan, should_create_timing_source: bool = True):
+@pytest.fixture
+def scrolling_plot_test_window(qtbot: QtBot):
     """
     Prepare a window for testing
 
@@ -61,19 +63,20 @@ def _prepare_scrolling_plot_test_window(qtbot, time_span: TimeSpan, should_creat
         qtbot: qtbot pytest fixture
         time_span: time span size, how much data should be shown
     """
-    plot_config = ExPlotWidgetConfig(
-        plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
-        time_span=time_span,
-        time_progress_line=True,
-    )
-    window = PlotWidgetTestWindow(
-        plot_config,
-        item_to_add=LivePlotCurve,
-        should_create_timing_source=should_create_timing_source,
-    )
-    window.show()
-    qtbot.add_widget(window)
-    return window
+
+    def _wrapper(time_span: TimeSpan, should_create_timing_source: bool = True):
+        plot_config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.SCROLLING_PLOT,
+                                         time_span=time_span,
+                                         time_progress_line=True)
+        window = PlotWidgetTestWindow(plot_config,
+                                      item_to_add=LivePlotCurve,
+                                      should_create_timing_source=should_create_timing_source)
+        qtbot.add_widget(window)
+        with qtbot.wait_exposed(window):
+            window.show()
+        return window
+
+    return _wrapper
 
 
 def check_range(actual_range: List[List[float]], expected_range: List[List[float]]):
@@ -90,17 +93,9 @@ def check_range(actual_range: List[List[float]], expected_range: List[List[float
 # ~~~~~~~~~~~~~~~~~~~~~~ Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
-    """ Test the fixed x range option on the scrolling plot
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_scrolling_plot_test_window(
-        qtbot=qtbot,
-        time_span=TimeSpan(left=5.0, right=0.0),
-        should_create_timing_source=True,
-    )
+def test_scrolling_plot_fixed_scrolling_xrange(scrolling_plot_test_window):
+    window = scrolling_plot_test_window(time_span=TimeSpan(left=5.0, right=0.0),
+                                        should_create_timing_source=True)
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
     data = window.data_source_mock
@@ -136,18 +131,10 @@ def test_scrolling_plot_fixed_scrolling_xrange(qtbot):
     (False, True),
     (True, True),
 ])
-def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: ResumeRangeOperation,
+def test_scrolling_plot_fixed_scrolling_xrange_zoom(scrolling_plot_test_window, resume_operation: ResumeRangeOperation,
                                                     transform_x, transform_y):
-    """
-    Test handling of transformation operations if the fixed x range option is
-    activated.
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_scrolling_plot_test_window(qtbot=qtbot,
-                                                 should_create_timing_source=True,
-                                                 time_span=TimeSpan(left=20.0, right=0.0))
+    window = scrolling_plot_test_window(should_create_timing_source=True,
+                                        time_span=TimeSpan(left=20.0, right=0.0))
     plot_item: pg.PlotItem = window.plot.plotItem
     time = window.time_source_mock
     data = window.data_source_mock
@@ -155,7 +142,6 @@ def test_scrolling_plot_fixed_scrolling_xrange_zoom(qtbot, resume_operation: Res
     data.create_new_value(timestamp=15.0, value=-15.0)
     data.create_new_value(timestamp=20.0, value=0.0)
     data.create_new_value(timestamp=25.0, value=15.0)
-    qtbot.wait_for_window_shown(window)
     # Auto range y axis and scrolling fixed range
     assert check_range(actual_range=plot_item.vb.targetRange(),
                        expected_range=[[10.0, 30.0], [np.nan, np.nan]])

@@ -50,11 +50,11 @@ class SampleCurveDataWithTime:
             return False
 
 
-def test_simple_linear_data_append(qtbot):
+def test_simple_linear_data_append(cyclic_plot_test_window):
     timestamps = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
     datasets_delta = 0.25
     current_dataset_timestamp = 0.0
-    window = _prepare_cyclic_plot_test_window(qtbot, 5.0)
+    window = cyclic_plot_test_window(5.0)
     _simple_linear_update(
         window.time_source_mock,
         window.data_source_mock,
@@ -73,8 +73,8 @@ def test_simple_linear_data_append(qtbot):
     assert np.allclose(buffer.y, expected_data)
 
 
-def test_plot_after_first_timing_update(qtbot):
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+def test_plot_after_first_timing_update(cyclic_plot_test_window):
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -88,8 +88,8 @@ def test_plot_after_first_timing_update(qtbot):
     assert _check_plot_data_items_data(plot_item, [], [], [], [])
 
 
-def test_plot_before_first_timing_update(qtbot):
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+def test_plot_before_first_timing_update(cyclic_plot_test_window):
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -115,13 +115,13 @@ def test_plot_before_first_timing_update(qtbot):
 # ================================================================
 
 
-def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot):
+def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(cyclic_plot_test_window):
     """Test the handling of data with timestamps that are bigger than the
     currently known one. The expected behavior is that the curve is clipped at
     the current timeline and as time progresses, more of the "future" line is
     revealed.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -179,14 +179,14 @@ def test_clipping_of_points_with_time_stamps_in_front_of_current_time_line(qtbot
     )
 
 
-def test_clipping_points_ranging_into_next_time_span(qtbot):
+def test_clipping_points_ranging_into_next_time_span(cyclic_plot_test_window):
     """Test connection between old and new curve
 
     1. Points in front and after time span end
 
     2. Last point in curve is exactly on the time span end
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -251,8 +251,8 @@ def test_clipping_points_ranging_into_next_time_span(qtbot):
     )
 
 
-def test_clipping_old_curve_with_progressing_time(qtbot):
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+def test_clipping_old_curve_with_progressing_time(cyclic_plot_test_window):
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -408,13 +408,13 @@ def test_clipping_old_curve_with_progressing_time(qtbot):
     )
 
 
-def test_time_and_data_update_order(qtbot):
+def test_time_and_data_update_order(cyclic_plot_test_window):
     """Compare the outcome of timing-update after data-update to the opposite
     order. Both should lead to the same result if the sent timestamps and data
     is the same.
     """
-    window_1 = _prepare_cyclic_plot_test_window(qtbot, 2.0)
-    window_2 = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window_1 = cyclic_plot_test_window(2.0)
+    window_2 = cyclic_plot_test_window(2.0)
     plot_item_1 = window_1.plot.plotItem.live_curves[0]
     plot_item_2 = window_2.plot.plotItem.live_curves[0]
     time_1 = window_1.time_source_mock
@@ -442,13 +442,13 @@ def test_time_and_data_update_order(qtbot):
     assert equals(plot_item_1, plot_item_2)
 
 
-def test_data_delivered_in_wrong_order(qtbot):
+def test_data_delivered_in_wrong_order(cyclic_plot_test_window):
     """Test if a sent dataset with an timestamp older than an already added one
     will be inserted at the right index. It is expected, that they are inserted
     in the way, that the internal saved data is always ordered by the timestamps
     of the datasets.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -527,11 +527,11 @@ def test_data_delivered_in_wrong_order(qtbot):
     )
 
 
-def test_timestamp_delivered_in_wrong_order(qtbot):
+def test_timestamp_delivered_in_wrong_order(cyclic_plot_test_window):
     """Test the handling of timestamps that are older than an already received
     one. It is to expected that the timing update is ignored.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0)
+    window = cyclic_plot_test_window(2.0)
     plot_item = window.plot.plotItem.live_curves[0]
     time = window.time_source_mock
     data = window.data_source_mock
@@ -603,11 +603,11 @@ def test_timestamp_delivered_in_wrong_order(qtbot):
     )
 
 
-def test_no_timing_source_attached(qtbot):
+def test_no_timing_source_attached(cyclic_plot_test_window):
     """Test the handling of timestamps that are older than an already received
     one. It is to expected that the timing update is ignored.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 2.0, should_create_timing_source=False)
+    window = cyclic_plot_test_window(2.0, should_create_timing_source=False)
     plot_item = window.plot.plotItem.live_curves[0]
     data = window.data_source_mock
     data.create_new_value(0.5, 0.5)
@@ -635,7 +635,7 @@ def test_no_timing_source_attached(qtbot):
     ({"pen": None, "symbol": "o"}),
     ({"pen": None}),
 ])
-def test_plotdataitem_components_visible(qtbot, params):
+def test_plotdataitem_components_visible(minimal_test_window, params):
     """
     Test if passing nan to a curve and especially scatter plot
     raises an error.
@@ -646,7 +646,7 @@ def test_plotdataitem_components_visible(qtbot, params):
     works, we look for any warnings coming from the ScatterPlotItem when passing data
     containing NaN's.
     """
-    window = _prepare_minimal_test_window(qtbot)
+    window = minimal_test_window()
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     item: LivePlotCurve = window.plot.addCurve(data_source=source, **params)
@@ -682,7 +682,7 @@ def test_plotdataitem_components_visible(qtbot, params):
                                       "other than NaN as a y-value is not valid."),
     ]),
 ])
-def test_nan_values_in_scatter_plot(qtbot, recwarn, data_sequence, expected_warnings):
+def test_nan_values_in_scatter_plot(minimal_test_window, qtbot, recwarn, data_sequence, expected_warnings):
     """ Test if passing nan to a curve and especially scatter plot
     raises an error.
 
@@ -692,7 +692,7 @@ def test_nan_values_in_scatter_plot(qtbot, recwarn, data_sequence, expected_warn
     works, we look for any warnings coming from the ScatterPlotItem when passing data
     containing NaN's.
     """
-    window = _prepare_minimal_test_window(qtbot)
+    window = minimal_test_window()
     source = UpdateSource()
     # symbol -> pass data to symbol as well
     window.plot.addCurve(data_source=source, symbol="o")
@@ -711,54 +711,42 @@ def test_nan_values_in_scatter_plot(qtbot, recwarn, data_sequence, expected_warn
 # ~~~~~~~~~~~~~~ Helper Functions ~~~~~~~~~~~~~~~
 
 
-def _prepare_cyclic_plot_test_window(
-        qtbot,
-        time_span: float,
-        should_create_timing_source: bool = True,
-) -> PlotWidgetTestWindow:
-    """
-    Prepare a window for testing. A curve and optionally a timing source
-    can be directly integrated in the window.
+@pytest.fixture
+def cyclic_plot_test_window(qtbot):
 
-    Args:
-        qtbot: qtbot pytest fixture
-        time_span (int): time span size, how much data should be shown
-    """
-    plot_config = ExPlotWidgetConfig(
-        plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
-        time_span=time_span,
-        time_progress_line=True,
-    )
-    window = PlotWidgetTestWindow(plot_config, item_to_add=LivePlotCurve, should_create_timing_source=should_create_timing_source)
-    window.show()
-    qtbot.add_widget(window)
-    return window
+    def _wrapper(time_span: float, should_create_timing_source: bool = True):
+        plot_config = ExPlotWidgetConfig(
+            plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
+            time_span=time_span,
+            time_progress_line=True,
+        )
+        window = PlotWidgetTestWindow(plot_config,
+                                      item_to_add=LivePlotCurve,
+                                      should_create_timing_source=should_create_timing_source)
+        qtbot.add_widget(window)
+        with qtbot.wait_exposed(window):
+            window.show()
+        return window
+
+    return _wrapper
 
 
-def _prepare_minimal_test_window(
-        qtbot,
-        plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
-        time_span: Optional[float] = None,
-        time_progress_line: Optional[bool] = None,
-) -> PlotWidgetTestWindow:
-    """
-    Prepare a window for testing. This window won't create any curves or timing
-    sources etc. but only a window with an empty plot.
+@pytest.fixture
+def minimal_test_window(qtbot):
 
-    Args:
-        qtbot: qtbot pytest fixture
-        time_span (int): time span size, how much data should be shown
-    """
-    plot_config = ExPlotWidgetConfig(
-        plotting_style=plotting_style,
-        time_span=time_span or 10,
-        time_progress_line=time_progress_line or False,
-    )
-    window = MinimalTestWindow(plot_config)
-    window.show()
-    qtbot.add_widget(window)
-    qtbot.wait_for_window_shown(window)
-    return window
+    def _wrapper(plotting_style: PlotWidgetStyle = PlotWidgetStyle.SCROLLING_PLOT,
+                 time_span: Optional[float] = None,
+                 time_progress_line: Optional[bool] = None):
+        plot_config = ExPlotWidgetConfig(plotting_style=plotting_style,
+                                         time_span=time_span or 10,
+                                         time_progress_line=time_progress_line or False)
+        window = MinimalTestWindow(plot_config)
+        qtbot.add_widget(window)
+        with qtbot.wait_exposed(window):
+            window.show()
+        return window
+
+    return _wrapper
 
 
 def _check_curves(

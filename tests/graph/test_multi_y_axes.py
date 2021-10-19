@@ -26,12 +26,12 @@ all_axes_names = standard_axes_names + not_existing_axes_names + additional_axes
     ExPlotItem,
     ExPlotWidget,
 })
-def test_set_y_range(qtbot, method: classmethod, item_to_test):
+def test_set_y_range(cyclic_plot_test_window, method: classmethod, item_to_test):
     """
     Test addition of the layer parameter in the setRange and setYRange
     function of the ExPlotItem
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -85,12 +85,12 @@ def test_set_y_range(qtbot, method: classmethod, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_invert_y(qtbot, item_to_test):
+def test_invert_y(cyclic_plot_test_window, item_to_test):
     """
     Test addition of the layer parameter in the setYRange
     function of the ExPlotItem
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -114,15 +114,8 @@ def test_invert_y(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_link_y_layers(qtbot, item_to_test):
-    """ test_simple_adding_two_new_layers(qtbot)
-
-    - Are new layers created and accessible by their layer_id
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_link_y_layers(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -147,15 +140,8 @@ def test_link_y_layers(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_get_view_box(qtbot, item_to_test):
-    """ test_simple_adding_two_new_layers(qtbot)
-
-    - Are new layers created and accessible by their layer_id
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_get_view_box(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -175,12 +161,12 @@ def test_get_view_box(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_get_axis(qtbot, item_to_test):
+def test_get_axis(cyclic_plot_test_window, item_to_test):
     """
     Test get axes by their name as well as axes from additional
     layers by their layer identifier.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -200,9 +186,9 @@ def test_get_axis(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_show_axis(qtbot, name, item_to_test):
+def test_show_axis(cyclic_plot_test_window, name, item_to_test):
     """Test show axes by their name."""
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -223,9 +209,9 @@ def test_show_axis(qtbot, name, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_add_axes_label(qtbot, name, item_to_test):
+def test_add_axes_label(cyclic_plot_test_window, name, item_to_test):
     """Test adding labels to axes by their name."""
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -246,9 +232,9 @@ def test_add_axes_label(qtbot, name, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_add_axes_labels(qtbot, item_to_test):
+def test_add_axes_labels(cyclic_plot_test_window, item_to_test):
     """Test convenience function for adding labels to axes 'addLabels'"""
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -267,15 +253,8 @@ def test_add_axes_labels(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_simple_adding_two_new_layers(qtbot, item_to_test):
-    """ test_simple_adding_two_new_layers(qtbot)
-
-    - Are new layers created and accessible by their layer_id
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_simple_adding_two_new_layers(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -295,14 +274,8 @@ def test_simple_adding_two_new_layers(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
-    """ Test the optional parameters when adding a new layer
-    for setting the y range as well as inverting the axis.
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_adding_layer_with_view_ranges_and_invert(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -333,15 +306,8 @@ def test_adding_layer_with_view_ranges_and_invert(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_removal_of_layer(qtbot, item_to_test):
-    """ test_simple_adding_two_new_layers(qtbot)
-
-    - Are new layers created and accessible by their layer_id
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_removal_of_layer(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -369,15 +335,8 @@ def test_removal_of_layer(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_get_all_layers_viewboxes(qtbot, item_to_test):
-    """ test_simple_adding_two_new_layers(qtbot)
-
-    - Are new layers created and accessible by their layer_id
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_get_all_layers_viewboxes(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -398,16 +357,13 @@ def test_get_all_layers_viewboxes(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_new_layer_viewbox_and_axis(qtbot, item_to_test):
+def test_new_layer_viewbox_and_axis(cyclic_plot_test_window, item_to_test):
     """test_new_layer_viewbox_and_axis
 
     - Has new layer its own viewbox and axis?
     - Is the axis label properly set?
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -423,15 +379,8 @@ def test_new_layer_viewbox_and_axis(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_plot_item_default_layer(qtbot, item_to_test):
-    """ test_plot_item_default_layer
-
-    - Is the "default" PlotItem Layer correctly added to the Layer Collection
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_plot_item_default_layer(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -447,15 +396,8 @@ def test_plot_item_default_layer(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_draw_add_plotdataitem_to_specific_layer(qtbot, item_to_test):
-    """ test_draw_add_plotdataitem_to_specific_layer
-
-    - Is the PlotDataItem correctly added to the right layer?
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_draw_add_plotdataitem_to_specific_layer(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -477,16 +419,8 @@ def test_draw_add_plotdataitem_to_specific_layer(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_layers_with_new_plotting_style(qtbot, item_to_test):
-    """ test_draw_add_plotdataitem_to_specific_layer
-
-    - Is the PlotDataItem correctly added to the right layer?
-    - Are all decorators drawn in the correct layer?
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_layers_with_new_plotting_style(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -534,15 +468,8 @@ def test_layers_with_new_plotting_style(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_set_axis_range(qtbot, item_to_test):
-    """ test_set_axis_range
-
-    - Are the viewboxes's axes properly connected to each other?
-
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-    """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_set_axis_range(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -607,8 +534,8 @@ def test_set_axis_range(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_auto_range_all_layers_at_same_range(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -631,8 +558,8 @@ def test_auto_range_all_layers_at_same_range(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_auto_range_all_layers_at_different_range(qtbot, item_to_test):
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+def test_auto_range_all_layers_at_different_range(cyclic_plot_test_window, item_to_test):
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -657,13 +584,13 @@ def test_auto_range_all_layers_at_different_range(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_auto_button_visibility(qtbot, item_to_test):
+def test_auto_button_visibility(cyclic_plot_test_window, item_to_test):
     """
     Check if the small autoBtn [A] is properly visible if any
     layer is not in the auto scaling mode anymore and a mouse
     pointer is hovering over the plot.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -694,13 +621,13 @@ def test_auto_button_visibility(qtbot, item_to_test):
     ExPlotItem,
     ExPlotWidget,
 })
-def test_auto_button_functionality(qtbot, item_to_test):
+def test_auto_button_functionality(cyclic_plot_test_window, item_to_test):
     """
     Check if the small autoBtn [A] is properly visible if any
     layer is not in the auto scaling mode anymore and a mouse
     pointer is hovering over the plot.
     """
-    window = _prepare_cyclic_plot_test_window(qtbot, 5)
+    window = cyclic_plot_test_window(5)
     plot: Union[ExPlotWidget, ExPlotItem] = window.plot.plotItem
     if item_to_test == ExPlotWidget:
         plot = window.plot
@@ -715,7 +642,6 @@ def test_auto_button_functionality(qtbot, item_to_test):
     assert_view_box_range_similar(layer_1.view_box.targetRange(), [[0.0, 200.0], [-20.0, 20.0]])
     # Press the small [A] button in the plot
     plot.autoBtnClicked()
-    qtbot.wait_for_window_shown(window)
     assert_view_box_range_similar(layer_0.view_box.targetRange(), [[-10, 150], [0, 1]])
     assert_view_box_range_similar(layer_1.view_box.targetRange(), [[-10, 150], [1.0, 3.0]])
 
@@ -755,21 +681,20 @@ def manual_range_change(layer: PlotItemLayer, **kwargs):
     layer.view_box.setRange(**kwargs)
 
 
-def _prepare_cyclic_plot_test_window(qtbot, time_span: int):
-    """ Create a simple test window
-    Args:
-        qtbot: pytest-qt fixture to control pyqt applications
-        time_span (int): time span size for the PlotItem
-    """
-    plot_config = ExPlotWidgetConfig(
-        plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
-        time_span=time_span,
-        time_progress_line=True,
-    )
-    window = PlotWidgetTestWindow(plot_config)
-    window.show()
-    qtbot.add_widget(window)
-    return window
+@pytest.fixture
+def cyclic_plot_test_window(qtbot):
+
+    def _wrapper(time_span: int):
+        plot_config = ExPlotWidgetConfig(plotting_style=PlotWidgetStyle.CYCLIC_PLOT,
+                                         time_span=time_span,
+                                         time_progress_line=True)
+        window = PlotWidgetTestWindow(plot_config)
+        qtbot.add_widget(window)
+        with qtbot.wait_exposed(window):
+            window.show()
+        return window
+
+    return _wrapper
 
 
 def _create_values(amount: int = 20):
