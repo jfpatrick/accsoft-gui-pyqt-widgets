@@ -38,7 +38,7 @@ SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 
 REQUIREMENTS: Dict[str, List[str]] = {
     CORE_OPTION: [
-        "QtPy>=1.7,<2a0",
+        "QtPy>=1.10.0,<2a0",
         "qtawesome>=0.7.0,<2a0",
         "packaging>=20.4,<20.5a0",
         "deprecated>=1.2.13,<1.5a0",
