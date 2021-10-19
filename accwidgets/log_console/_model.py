@@ -520,6 +520,8 @@ def _record_name_can_be_handled(record_name: str, handler_name: str) -> bool:
 
 
 def _get_logger(name: Optional[str] = None) -> logging.Logger:
+    # TODO: This is default behavior as of Python 3.9. Remove when Python 3.9 because min version
+    # https://docs.python.org/3/whatsnew/3.9.html#changes-in-the-python-api
     # This is a wrapper method, because if we request logging.getLogger("root"), we are not getting the
     # RootLogger instance, but rather a new Logger instance. It becomes confusing and out-of-sync.
     # e.g. when we want to access level, we may receive an unexpected value, because not a root logger is
