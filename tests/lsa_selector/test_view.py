@@ -727,7 +727,7 @@ def test_lsa_selector_name_filter_typing_updates_model(qtbot: QtBot, sample_mode
     widget = LsaSelector(model=sample_model())
     qtbot.add_widget(widget)
     widget.showNameFilter = True
-    widget.model.filter_title is None
+    assert widget.model.filter_title == ""
     assert isinstance(widget._name_filter, QLineEdit)
     qtbot.keyClicks(widget._name_filter, typed_text)
     assert widget.model.filter_title == expected_filter
