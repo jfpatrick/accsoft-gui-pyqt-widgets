@@ -83,7 +83,7 @@ class ApproximateSinusSource(UpdateSource):
         super().__init__()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._create_new_values)
-        self.timer.start(1000 / 60)
+        self.timer.start(int(1000 / 60))
 
     def _create_new_values(self):
         """Simulate sinus values with random error."""

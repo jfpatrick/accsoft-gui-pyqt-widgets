@@ -43,7 +43,7 @@ class HybridCurveDataSource(UpdateSource):
     def __init__(self, updates_per_second: int = 60):
         super().__init__()
         self.updates_per_second = updates_per_second
-        self.timer_interval_ms = 1000 / updates_per_second
+        self.timer_interval_ms = int(1000 / updates_per_second)
         self.y_values_live: List[float] = list(np.sin(
             np.array(np.arange(start=0.0, stop=720.0, step=60 / self.updates_per_second)) * np.pi / 180.0,
         ))

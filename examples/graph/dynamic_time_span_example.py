@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Graph dynamic time span example")
         # Plot will initially show 10 seconds of data
-        time_span = 10.0
+        time_span = 10
         data_source_curve = SinusCurveSource(x_offset=0.0,
                                              y_offset=0,
                                              updates_per_second=20,
@@ -60,8 +60,8 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(QLabel("Left Boundary"))
         # Offset for the above mentioned time span.
         self.offset_input = QSpinBox()
-        self.offset_input.setRange(-10.0, 10.0)
-        self.offset_input.setValue(0.0)
+        self.offset_input.setRange(-10, 10)
+        self.offset_input.setValue(0)
         self.offset_input.setSuffix(" s")
         main_layout.addWidget(self.offset_input)
         main_layout.addWidget(QLabel("s Right Boundary"))

@@ -34,7 +34,7 @@ class BackgroundSinusCurveSource(SinusCurveSource):
 
     def start(self):
         print(f"BackgroundSinusCurveSource.start: {threading.currentThread().getName()}")
-        self.timer.start(1000 / self.UPDATE_FREQ)
+        self.timer.start(int(1000 / self.UPDATE_FREQ))
 
 
 class MainWindow(QMainWindow):
