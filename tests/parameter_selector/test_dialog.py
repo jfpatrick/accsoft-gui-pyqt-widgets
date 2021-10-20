@@ -788,8 +788,10 @@ async def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enab
                 await widget._on_search_requested(search_string)
                 # The second call is expected to be a failure, because we purposefully throw an exception for early exit,
                 # so it will re-render the UI to failure.
-                update_from_status.call_args_list == [mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
-                                                      mock.call(ParameterSelector.NetworkRequestStatus.FAILED)]
+                assert update_from_status.call_args_list == [
+                    mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
+                    mock.call(ParameterSelector.NetworkRequestStatus.FAILED),
+                ]
                 reset_selected_value.assert_called_once_with()
                 look_up_ccda.assert_called_once_with(expected_lookup)
                 assert widget.activity_indicator.hint == expected_hint
@@ -811,7 +813,8 @@ async def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, 
                                no_protocol_option="")
     qtbot.add_widget(widget)
     widget.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
-    widget._update_from_status(prev_status)
+    widget._update_from_status(prev_status)  # Sets to curr_search_status
+    widget._update_from_status(ParameterSelector.NetworkRequestStatus.COMPLETE)  # Elevates to prev_search_status
     assert widget.err_label.text() == "Start by typing the device name into the field above!"
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
@@ -820,8 +823,10 @@ async def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, 
             await widget._on_search_requested(search_string)
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
-            update_from_status.call_args_list == [mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
-                                                  mock.call(expected_new_status)]
+            assert update_from_status.call_args_list == [
+                mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
+                mock.call(expected_new_status),
+            ]
             assert widget.err_label.text() == "Start by typing the device name into the field above!"
 
 
@@ -854,8 +859,10 @@ async def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_
             await widget._on_search_requested(search_string)
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
-            update_from_status.call_args_list == [mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
-                                                  mock.call(ParameterSelector.NetworkRequestStatus.FAILED)]
+            assert update_from_status.call_args_list == [
+                mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
+                mock.call(ParameterSelector.NetworkRequestStatus.FAILED),
+            ]
             assert widget.err_label.text() == "test error message"
             assert widget.results_group.title() == orig_results_name
 
@@ -896,8 +903,10 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
             await widget._on_search_requested(search_string)
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
-            update_from_status.call_args_list == [mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
-                                                  mock.call(ParameterSelector.NetworkRequestStatus.COMPLETE)]
+            assert update_from_status.call_args_list == [
+                mock.call(ParameterSelector.NetworkRequestStatus.IN_PROGRESS),
+                mock.call(ParameterSelector.NetworkRequestStatus.COMPLETE),
+            ]
             assert widget.err_label.text() == "Start by typing the device name into the field above!"
             assert widget.results_group.title() == expected_group_name
             root_model.set_data.assert_called_once_with(mocked_iterator, results)
