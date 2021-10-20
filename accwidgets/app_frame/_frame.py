@@ -262,7 +262,7 @@ class ApplicationFrame(QMainWindow):
         ...
 
     @overload  # noqa: F811
-    def main_toolbar(self, create: bool) -> Optional[QToolBar]:
+    def main_toolbar(self, create: bool) -> Optional[QToolBar]:  # noqa: F811
         ...
 
     def main_toolbar(self, create: bool = True) -> Optional[QToolBar]:  # noqa: F811
