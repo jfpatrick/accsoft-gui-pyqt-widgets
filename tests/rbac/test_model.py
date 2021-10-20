@@ -219,7 +219,7 @@ def test_model_several_logins_allowed(qtbot: QtBot):
         login_callback(["Role1", "Role2", "MCS-Role3"])
         return returned_token
 
-    with mock.patch(f"accwidgets.rbac._model.AuthenticationClient.login_location", side_effect=side_effect):
+    with mock.patch("accwidgets.rbac._model.AuthenticationClient.login_location", side_effect=side_effect):
         assert model.token is None
         with qtbot.wait_signals([model.login_started, model.login_finished, model.login_succeeded]):
             model.login_by_location_with_roles(preselected_roles=[])
@@ -322,7 +322,7 @@ def test_model_removes_login_service(qtbot: QtBot, login_service_exists, input, 
         assert model._login_service is None
     with qtbot.wait_signal(model.logout_finished, raising=False, timeout=100) as blocker:
         model.update_token(input)
-    blocker.signal_triggered == expect_logout
+    assert blocker.signal_triggered == expect_logout
     if not login_service_exists or (expect_logout and login_service_exists):
         assert model._login_service is None
     else:
