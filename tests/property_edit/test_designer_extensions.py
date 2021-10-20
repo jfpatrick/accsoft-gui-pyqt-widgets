@@ -1,13 +1,14 @@
 import sys
-import pytest
-from pytestqt.qtbot import QtBot
-from unittest import mock
 from asyncio import CancelledError
 from typing import List
+from unittest import mock
+
+import pytest
+from PyQt5.QtTest import QAbstractItemModelTester
+from pytestqt.qtbot import QtBot
 from qtpy.QtCore import QVariant, Qt
 from qtpy.QtWidgets import QStyleOptionViewItem, QAction, QPushButton, QDialogButtonBox, QFormLayout
-from PyQt5.QtTest import QAbstractItemModelTester
-from accwidgets.property_edit.propedit import PropertyEdit, PropertyEditField, _pack_designer_fields
+
 from accwidgets.property_edit.designer.designer_extensions import (
     FieldsDialog,
     EnumEditorTableModel,
@@ -16,6 +17,7 @@ from accwidgets.property_edit.designer.designer_extensions import (
     EnumTableData,
     NumericFieldDialog,
 )
+from accwidgets.property_edit.propedit import PropertyEdit, PropertyEditField, _pack_designer_fields
 from ..async_shim import AsyncMock
 
 
@@ -361,8 +363,8 @@ async def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot
                 await dialog._populate_from_param(param_name)
                 # The second call is expected to be a failure, because we purposefully throw an exception for early exit,
                 # so it will re-render the UI to failure.
-                update_ui_for_loading.call_args_list == [mock.call(True),
-                                                         mock.call(False)]
+                assert update_ui_for_loading.call_args_list == [mock.call(True),
+                                                                mock.call(False)]
                 resolve_from_param.assert_called_once_with(param_name)
                 assert dialog.activity_indicator.hint == expected_hint
                 assert dialog._active_ccda_task is not None
@@ -453,8 +455,8 @@ async def test_field_dialog_populate_from_param_rolls_back_ui_on_cancel(qtbot: Q
                 resolve_from_param.assert_not_called()
                 await dialog._populate_from_param("dev/prop")
                 resolve_from_param.assert_called_once()
-                update_ui_for_loading.call_args_list == [mock.call(True),
-                                                         mock.call(False)]
+                assert update_ui_for_loading.call_args_list == [mock.call(True),
+                                                                mock.call(False)]
                 show_info.assert_not_called()
 
 
