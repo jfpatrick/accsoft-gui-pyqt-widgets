@@ -21,14 +21,14 @@ def test_simple_undo_and_redo():
     for i in states:
         his.save_state(state=i)
         assert his._states == list(range(1, i + 1))
-    for i in reversed(states):
-        his.undo() == i
+    for i in reversed(states[1:]):
+        assert his.undo() == (i - 1)
         # History is preserved for redo
         assert his._states == states
     # No more undos are possible
     assert his.undo() is None
-    for i in states:
-        his.redo() == i
+    for i in states[:-1]:
+        assert his.redo() == (i + 1)
         assert his._states == states
     # No more redos are possible
     assert his.redo() is None
