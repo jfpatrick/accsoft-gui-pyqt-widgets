@@ -167,7 +167,7 @@ class EditableSinusCurveDataSource(UpdateSource):
         **What is the QTimer doing?**
         When we call this constructor, the curve is not yet connected to the
         signal emitting our data. To make sure, that the curve exists at the
-        time of calling self.new_data(...), we will use a timer that postpones
+        time of calling self.send_data(...), we will use a timer that postpones
         this call until the event loop is running.
 
         If we want to avoid using QTimer, we can simply move the new_data call

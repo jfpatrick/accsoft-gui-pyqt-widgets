@@ -182,7 +182,7 @@ the update data.
            y = np.sin(x)
            data = accgraph.CurveData(x, y)
            self._timer = QTimer()
-           self._timer.singleShot(0, lambda: self.new_data(data))
+           self._timer.singleShot(0, lambda: self.send_data(data))
 
        def handle_data_model_edit(self, data: accgraph.CurveData):
            print("~~~~~~~~~~~ Received Update ~~~~~~~~~~~\n"
