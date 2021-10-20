@@ -107,7 +107,7 @@ class ExPlotWidgetConfig:
         return f"PlotWidgetStyle: ( " \
             f"time span: {self.time_span}, " \
             f"time progress line: {self.time_progress_line}, " \
-            f"plotting style: {self.plotting_style}, " \
+            f"plotting style: {self.plotting_style})"
 
     @property
     def plotting_style(self) -> PlotWidgetStyle:
