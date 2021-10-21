@@ -1,9 +1,5 @@
+# flake8: noqa: F401
 try:
-    from unittest.mock import AsyncMock  # type: ignore  # this is py3.8+ code, fails in 3.7 mypy
+    from unittest.mock import AsyncMock  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
-    from unittest.mock import Mock
-
-    class AsyncMock(Mock):  # type: ignore  # mypy thinks it's already defined above
-
-        async def __call__(self, *args, **kwargs):
-            return super().__call__(*args, **kwargs)
+    from mock import AsyncMock  # type: ignore  # mypy fails this in Python 3.7

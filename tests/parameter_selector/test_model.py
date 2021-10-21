@@ -137,11 +137,11 @@ async def test_root_model_fetch_more(is_loading, expect_task_created):
     model._is_loading = is_loading
     with mock.patch.object(model, "_do_fetch_more", new_callable=AsyncMock) as do_fetch_more:
         model.fetchMore(QModelIndex())
-        do_fetch_more.assert_not_called()
+        do_fetch_more.assert_not_awaited()
         if expect_task_created:
             assert model._active_task is not None
             await model._active_task
-            do_fetch_more.assert_called_once_with()
+            do_fetch_more.assert_awaited_once()
         else:
             assert model._active_task is None
 
@@ -1020,7 +1020,7 @@ async def test_look_up_ccda_batches_in_parallel(get_ccda_mock):
 
     device_iter = iter(returned_devices)
 
-    async def process_next_request():
+    async def process_next_request(*_):
         try:
             next_device = next(device_iter)
         except StopIteration:
