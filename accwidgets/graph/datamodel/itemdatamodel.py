@@ -261,7 +261,7 @@ class LiveCurveDataModel(AbstractLiveDataModel):
                 y=data.y,
             )
             self.sig_data_model_changed.emit()
-        elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, CurveData) and np.all(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x=data.x,
                 y=data.y,
@@ -306,7 +306,7 @@ class LiveBarGraphDataModel(AbstractLiveDataModel):
         if isinstance(data, BarData) and data.is_valid():
             self._full_data_buffer.add_entry(x=data.x, y=data.y, height=data.height)
             self.sig_data_model_changed.emit()
-        elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, BarCollectionData) and np.all(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x=data.x,
                 y=data.y,
@@ -350,7 +350,7 @@ class LiveInjectionBarDataModel(AbstractLiveDataModel):
                 label=data.label,
             )
             self.sig_data_model_changed.emit()
-        elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, InjectionBarCollectionData) and np.all(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x=data.x,
                 y=data.y,
@@ -390,7 +390,7 @@ class LiveTimestampMarkerDataModel(AbstractLiveDataModel):
         if isinstance(data, TimestampMarkerData) and data.is_valid():
             self._full_data_buffer.add_entry(x=data.x, color=data.color, label=data.label)
             self.sig_data_model_changed.emit()
-        elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, TimestampMarkerCollectionData) and np.all(data.is_valid()):
             self._full_data_buffer.add_list_of_entries(
                 x=data.x,
                 colors=data.colors,
@@ -436,7 +436,7 @@ class StaticCurveDataModel(AbstractBaseDataModel):
             self._x_values = np.array([data.x])
             self._y_values = np.array([data.y])
             return True
-        elif isinstance(data, CurveData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, CurveData) and np.all(data.is_valid()):
             self._x_values = data.x
             self._y_values = data.y
             return True
@@ -485,7 +485,7 @@ class StaticBarGraphDataModel(AbstractBaseDataModel):
             self._y_values = np.array([data.y])
             self._heights = np.array([data.height])
             self.sig_data_model_changed.emit()
-        elif isinstance(data, BarCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, BarCollectionData) and np.all(data.is_valid()):
             self._x_values = data.x
             self._y_values = data.y
             self._heights = data.heights
@@ -535,7 +535,7 @@ class StaticInjectionBarDataModel(AbstractBaseDataModel):
             self._widths = np.array([data.width])
             self._labels = np.array([data.label])
             self.sig_data_model_changed.emit()
-        elif isinstance(data, InjectionBarCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, InjectionBarCollectionData) and np.all(data.is_valid()):
             self._x_values = data.x
             self._y_values = data.y
             self._heights = data.heights
@@ -583,7 +583,7 @@ class StaticTimestampMarkerDataModel(AbstractBaseDataModel):
             self._colors = np.array([data.color])
             self._labels = np.array([data.label])
             self.sig_data_model_changed.emit()
-        elif isinstance(data, TimestampMarkerCollectionData) and np.alltrue(data.is_valid()):
+        elif isinstance(data, TimestampMarkerCollectionData) and np.all(data.is_valid()):
             self._x_values = data.x
             self._colors = data.colors
             self._labels = data.labels
