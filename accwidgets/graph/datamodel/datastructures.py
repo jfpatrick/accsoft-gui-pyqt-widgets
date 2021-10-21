@@ -285,7 +285,7 @@ class BarCollectionData(PlottingItemData):
         if check_validity:
             self.is_valid(warn=True)
 
-    def is_valid(self, warn: bool = False) -> bool:
+    def is_valid(self, warn: bool = False) -> np.ndarray:
         problems: List[str] = []
         valid_indices = np.ones(self.x.size, dtype=bool)
         for index, (x_data, y_data, height) in enumerate(zip(self.x, self.y, self.heights)):
@@ -429,7 +429,7 @@ class InjectionBarCollectionData(PlottingItemData):
         if check_validity:
             self.is_valid(warn=True)
 
-    def is_valid(self, warn: bool = False) -> bool:
+    def is_valid(self, warn: bool = False) -> np.ndarray:
         problems: List[str] = []
         valid_indices = np.ones(self.x.size, dtype=bool)
         for index, (x_data, y_data, height, width, label) in enumerate(zip(self.x, self.y, self.heights, self.widths, self.labels)):

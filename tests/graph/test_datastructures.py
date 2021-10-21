@@ -6,6 +6,7 @@ The tests rely on warnings being emitted on creating the data structures.
 import pytest
 import numpy as np
 import itertools
+from numpy.testing import assert_array_equal
 from typing import NamedTuple, Union, List, Sequence, Optional, cast
 from accwidgets.graph import (TimestampMarkerCollectionData, InvalidDataStructureWarning, PointData, CurveData,
                               BarData, BarCollectionData, InjectionBarData, InjectionBarCollectionData,
@@ -90,7 +91,7 @@ def test_valid_curve_data(recwarn, combinations: PointNamedTuple):
         y=cast(List[float], combinations.y),
     )
     assert len(recwarn) == 0
-    assert np.allclose(curve.is_valid(), np.array([True, True, True, True, True]))
+    assert_array_equal(curve.is_valid(), np.array([True, True, True, True, True]))
 
 
 @pytest.mark.parametrize("combinations", [
@@ -105,7 +106,7 @@ def test_invalid_curve_data(recwarn, combinations: PointNamedTuple):
     )
     assert len(recwarn) == 1
     assert recwarn.pop(InvalidDataStructureWarning)
-    assert np.allclose(curve.is_valid(), np.array([True, False, True, True]))
+    assert_array_equal(curve.is_valid(), np.array([True, False, True, True]))
 
 
 @pytest.mark.parametrize("combinations", [
