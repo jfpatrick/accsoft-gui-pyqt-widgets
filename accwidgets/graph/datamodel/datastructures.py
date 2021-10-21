@@ -7,6 +7,7 @@ Data structures also validate that they are used for appropriate plot types.
 import warnings
 import numpy as np
 import pyqtgraph as pg
+from numpy.typing import ArrayLike
 from abc import ABC, abstractmethod
 from typing import List, Union, Any, Sequence, Dict
 from copy import deepcopy
@@ -133,8 +134,8 @@ class CurveData(PlottingItemData):
     is_collection = True
 
     def __init__(self,
-                 x: Sequence[float],
-                 y: Sequence[float],
+                 x: Union[ArrayLike, Sequence[float]],
+                 y: Union[ArrayLike, Sequence[float]],
                  check_validity: bool = True):
         """
         Collection of data points representing a curve.
@@ -253,9 +254,9 @@ class BarCollectionData(PlottingItemData):
     is_collection = True
 
     def __init__(self,
-                 x: Sequence[float],
-                 y: Sequence[float],
-                 heights: Sequence[float],
+                 x: Union[ArrayLike, Sequence[float]],
+                 y: Union[ArrayLike, Sequence[float]],
+                 heights: Union[ArrayLike, Sequence[float]],
                  check_validity: bool = True):
         """
         Collection of data items representing multiple bars.
@@ -385,11 +386,11 @@ class InjectionBarCollectionData(PlottingItemData):
     is_collection = True
 
     def __init__(self,
-                 x: Sequence[float],
-                 y: Sequence[float],
-                 heights: Sequence[float],
-                 widths: Sequence[float],
-                 labels: Sequence[str],
+                 x: Union[ArrayLike, Sequence[float]],
+                 y: Union[ArrayLike, Sequence[float]],
+                 heights: Union[ArrayLike, Sequence[float]],
+                 widths: Union[ArrayLike, Sequence[float]],
+                 labels: Union[ArrayLike, Sequence[str]],
                  check_validity: bool = True):
         """
         Collection of data items representing multiple injection bars.
@@ -529,9 +530,9 @@ class TimestampMarkerCollectionData(PlottingItemData):
     is_collection = True
 
     def __init__(self,
-                 x: Sequence[float],
-                 colors: Sequence[str],
-                 labels: Sequence[str],
+                 x: Union[ArrayLike, Sequence[float]],
+                 colors: Union[ArrayLike, Sequence[str]],
+                 labels: Union[ArrayLike, Sequence[str]],
                  check_validity: bool = True):
         """
         Collection of data items representing a timestamp in the time series (infinite vertical colored lines).

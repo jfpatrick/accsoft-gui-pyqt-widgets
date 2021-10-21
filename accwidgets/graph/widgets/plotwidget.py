@@ -6,6 +6,7 @@ import json
 import warnings
 import numpy as np
 import pyqtgraph as pg
+from numpy.typing import ArrayLike
 from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -1311,7 +1312,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     @Slot(list)
     @Slot(np.ndarray)
     @Slot(PointData)
-    def pushData(self, data: Union[int, float, Tuple, List, np.ndarray, PointData]):
+    def pushData(self, data: Union[int, float, ArrayLike, PointData]):
         """
         This slot exposes the possibility to draw data on a
         single curve in the plot by using conventional PyQt signal-slot connection,

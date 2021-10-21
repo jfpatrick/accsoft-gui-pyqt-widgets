@@ -2,7 +2,8 @@
 
 import collections.abc
 import numpy as np
-from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict
+from numpy.typing import ArrayLike
+from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict, Iterable
 from datetime import datetime
 from qtpy.QtCore import QObject, Signal, Slot
 from accwidgets.graph import (DEFAULT_COLOR, BarCollectionData, BarData, CurveData, TimestampMarkerCollectionData,
@@ -63,7 +64,7 @@ class SignalBoundDataSource(UpdateSource):
             sig: Signal,
             data_type: Optional[Type[PlottingItemData]] = None,
             transformation: Optional[
-                Callable[[Sequence[Union[float, str]]], PlottingItemData]
+                Callable[[Union[ArrayLike, Sequence[Union[float, str]]]], PlottingItemData]
             ] = None,
     ):
         """
@@ -93,7 +94,7 @@ class SignalBoundDataSource(UpdateSource):
         sig.connect(self._emit_point)
 
     def _emit_point(self,
-                    *args: Union[float, str, Sequence[float], Sequence[str]]):
+                    *args: Union[float, str, Union[ArrayLike, Sequence[float]], Union[ArrayLike, Sequence[str]]]):
         if (
             self._data_type is not None
             and len(args) == 1
@@ -118,7 +119,7 @@ class PlottingItemDataFactory:
     @staticmethod
     def transform(
         dtype: Type[PlottingItemData],
-        *values: Union[float, str, Sequence[float], Sequence[str]],
+        *values: Union[float, str, Union[ArrayLike, Sequence[float]], Union[ArrayLike, Sequence[str]]],
     ) -> PlottingItemData:
         """
         Transform the values into the given type.
@@ -264,7 +265,7 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_curve(
-        *args: Sequence[float],
+        *args: Iterable[float],
     ) -> CurveData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return CurveData(
@@ -275,7 +276,7 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_bar_collection(
-        *args: Sequence[float],
+        *args: Iterable[float],
     ) -> BarCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return BarCollectionData(
@@ -289,7 +290,7 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_injection_bar_collection(
-            *args: Sequence[Union[float, str]],
+            *args: Iterable[Union[float, str]],
     ) -> InjectionBarCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         label = np.zeros(len(arguments[0]), str)
@@ -313,11 +314,11 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _to_ts_marker_collection(
-            *args: Sequence[Union[float, str]],
+            *args: Iterable[Union[float, str]],
     ) -> TimestampMarkerCollectionData:  # last argument can be header dict
         arguments, _ = PlottingItemDataFactory._extract_header(list(args))
         return TimestampMarkerCollectionData(
-            x=cast(Sequence[float], arguments[0]),  # mandatory
+            x=cast(Union[ArrayLike, Sequence[float]], arguments[0]),  # mandatory
             colors=PlottingItemDataFactory._or_array(index=2,
                                                      args=arguments,
                                                      default=DEFAULT_COLOR),
@@ -340,7 +341,7 @@ class PlottingItemDataFactory:
 
     @staticmethod
     def _or_num_range(index: int,
-                      args: List[Sequence[float]]) -> Sequence[float]:
+                      args: List[Union[ArrayLike, Sequence[float]]]) -> Union[ArrayLike, Sequence[float]]:
         """Either the value at the given index or a range from 0 to the length
         as one of the entries in args."""
         return PlottingItemDataFactory._or(index,

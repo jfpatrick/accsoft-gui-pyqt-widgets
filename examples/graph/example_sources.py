@@ -8,6 +8,7 @@ passed frequency.
 import math
 import numpy as np
 from datetime import datetime
+from numpy.typing import ArrayLike
 from typing import List, Optional, Callable, Any
 from enum import IntEnum, auto
 from qtpy.QtCore import QTimer, Qt
@@ -135,8 +136,9 @@ class WaveformSinusSource(UpdateSource):
                              y=y + self.y_offset,
                              check_validity=False)
         elif self.type == SinusCurveSourceEmitTypes.BAR:
+            y_vals: np.ndarray = np.zeros(len(self.x)) + (0.5 * y)
             return BarCollectionData(x=self.x,
-                                     y=np.zeros(len(self.x)) + self.y_offset + 0.5 * y,
+                                     y=y_vals + self.y_offset,
                                      heights=y,
                                      check_validity=False)
         elif self.type == SinusCurveSourceEmitTypes.INJECTION_BAR:
@@ -160,7 +162,7 @@ class WaveformSinusSource(UpdateSource):
 
 class EditableSinusCurveDataSource(UpdateSource):
 
-    def __init__(self, edit_callback: Callable[[np.ndarray], Any] = lambda x: print(x)):
+    def __init__(self, edit_callback: Callable[[ArrayLike], Any] = lambda x: print(x)):
         """
         Update source that emits a sinus curve and allows editing.
 

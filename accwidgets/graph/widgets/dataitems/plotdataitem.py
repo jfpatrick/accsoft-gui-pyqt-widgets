@@ -394,7 +394,7 @@ class EditablePlotCurve(AbstractBasePlotCurve):
         Args:
             replacement: Data which should replace the current selection.
         """
-        indices = np.nonzero(self._selected_indices)
+        indices = np.flatnonzero(self._selected_indices)
         self._editable_model.replace_selection(indices, replacement)
         self.unselect()
 

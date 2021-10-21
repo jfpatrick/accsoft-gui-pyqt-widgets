@@ -46,6 +46,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
     ],
     LINT_OPTION: [
         "mypy==0.761",
+        "numpy>=1.21",
         "flake8>=3.7.8,<3.8a0",
         "flake8-quotes>=2.1.0,<3a0",
         "flake8-commas>=2,<3a0",

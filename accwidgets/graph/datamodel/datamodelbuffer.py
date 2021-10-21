@@ -6,7 +6,11 @@ Data buffers store the actual visualized data that is managed by a model.
 import math
 import warnings
 import numpy as np
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List, Union, cast
+try:
+    from typing import Literal  # type: ignore  # mypy fails this in Python 3.7
+except ImportError:
+    from typing_extensions import Literal
 from abc import ABC, abstractmethod
 from accwidgets.graph import PointData, DEFAULT_BUFFER_SIZE
 from .datamodelclipping import calc_intersection
@@ -948,10 +952,17 @@ def searchsorted_with_nans(array: np.ndarray, value: float, side: str, contains_
     np.searchsorted with nan support. This function can be sped up by quite a lot, if the user knows,
     the array does not contain nan values.
     """
+    def call_native_impl(**kwargs):
+        casted_side = cast(Union[Literal["left"], Literal["right"]], side)  # Prevent mypy errors
+        res = np.searchsorted(array, value, side=casted_side, **kwargs)
+        if isinstance(res, np.ndarray):
+            raise ValueError("value must be a scalar, not an array")
+        return int(res)
+
     if not contains_nan:
-        return np.searchsorted(array, value, side=side)
+        return call_native_impl()
     sorting_indices = np.argsort(array)
-    index = np.searchsorted(array, value, side=side, sorter=sorting_indices)
+    index = call_native_impl(sorter=sorting_indices)
     if index <= 0:
         return index
     count_nan_values = np.count_nonzero(~np.isnan(array))
