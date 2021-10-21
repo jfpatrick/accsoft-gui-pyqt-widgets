@@ -721,7 +721,7 @@ def test_model_get_logger_without_args():
     (None, "root", logging.RootLogger),
     ("", "root", logging.RootLogger),
     ("root", "root", logging.RootLogger),
-    ("test_logger", "test_logger", logging.Logger),
+    ("test_logger", "test_logger", logging.getLoggerClass()),
 ])
 def test_model_get_logger_with_args(logger_name, expected_name, expected_type):
     logger = _get_logger(logger_name)
