@@ -1044,7 +1044,7 @@ class ExPlotItem(pg.PlotItem):
                            and self.mouseHovering
                            and not self.buttonsHidden
                            and (not all(self.vb.autoRangeEnabled())
-                                or not all(l.view_box.autoRangeEnabled()[1] for l in self.non_default_layers)))
+                                or not all(layer.view_box.autoRangeEnabled()[1] for layer in self.non_default_layers)))
             if show_button:
                 self.autoBtn.show()
             else:

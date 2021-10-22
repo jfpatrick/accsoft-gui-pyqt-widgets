@@ -9,7 +9,7 @@ try:
     from importlib.metadata import PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
     # Python <3.8
-    from importlib_metadata import PackageNotFoundError
+    from importlib_metadata import PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.9
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -145,7 +145,7 @@ def test_assert_requirement_throws_on_package_not_found(distribution, environ, o
                                           "Please specify this widget as an extra of your accwidgets dependency, "
                                           r"e.g. accwidgets\[test_widget\] in order to keep using the widget. To "
                                           "quickly install it in the environment, use: 'pip install "
-                                          r"accwidgets\[test_widget\]'.\n\nNo package metadata was found for test_req"):
+                                          r"accwidgets\[test_widget\]'."):
         assert_requirement(req=req, widget_name="test_widget")
 
 

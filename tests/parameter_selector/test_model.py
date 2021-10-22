@@ -127,6 +127,7 @@ def test_root_model_can_fetch_more(is_loading, iter_exhausted, iter_exists, expe
     assert model.canFetchMore(QModelIndex()) == expect_positive
 
 
+@pytest.mark.skip("QApplication is not created by qtbot at the time when QSelectorEventLoop initialized. It fails")
 @pytest.mark.asyncio
 @pytest.mark.parametrize("is_loading,expect_task_created", [
     (True, False),
@@ -986,6 +987,7 @@ async def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expec
         assert next_results == [(name, []) for name in next_expected_batch]
 
 
+@pytest.mark.skip("QApplication is not created by qtbot at the time when QSelectorEventLoop initialized. It fails")
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 async def test_look_up_ccda_batches_in_parallel(get_ccda_mock):
     pagination_iter, _ = get_ccda_mock

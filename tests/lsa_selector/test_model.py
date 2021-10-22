@@ -565,7 +565,7 @@ def test_model_find_stored_categories(_, contexts_for_accelerator, ctx_categorie
                 user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL,
             ),
             LsaSelectorNonMultiplexedResidentContext(
-                name=f"_NON_MULTIPLEXED_LHC",
+                name="_NON_MULTIPLEXED_LHC",
                 category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
             ),
             LsaSelectorMultiplexedResidentContext(
@@ -595,7 +595,7 @@ def test_model_find_stored_categories(_, contexts_for_accelerator, ctx_categorie
                 user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
             )),
             LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-                name=f"_NON_MULTIPLEXED_LHC",
+                name="_NON_MULTIPLEXED_LHC",
                 category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
             )),
         ],
@@ -615,7 +615,7 @@ def test_model_find_stored_categories(_, contexts_for_accelerator, ctx_categorie
                 user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL,
             ),
             LsaSelectorNonMultiplexedResidentContext(
-                name=f"_NON_MULTIPLEXED_LHC",
+                name="_NON_MULTIPLEXED_LHC",
                 category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
             ),
             LsaSelectorMultiplexedResidentContext(
@@ -667,7 +667,7 @@ def test_model_find_stored_categories(_, contexts_for_accelerator, ctx_categorie
                 user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
             )),
             LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-                name=f"_NON_MULTIPLEXED_LHC",
+                name="_NON_MULTIPLEXED_LHC",
                 category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
             )),
             LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -725,7 +725,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -749,7 +749,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_SPS",
+            name="_NON_MULTIPLEXED_SPS",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -773,7 +773,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -797,7 +797,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_SPS",
+            name="_NON_MULTIPLEXED_SPS",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -843,7 +843,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -873,7 +873,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_SPS",
+            name="_NON_MULTIPLEXED_SPS",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
     ]),
@@ -915,7 +915,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -961,7 +961,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_SPS",
+            name="_NON_MULTIPLEXED_SPS",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
 
@@ -1008,7 +1008,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -1054,7 +1054,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
             user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_SPS",
+            name="_NON_MULTIPLEXED_SPS",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         )),
         LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -1133,7 +1133,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
              user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
          )),
          LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-             name=f"_NON_MULTIPLEXED_LHC",
+             name="_NON_MULTIPLEXED_LHC",
              category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
          )),
          LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -1191,7 +1191,7 @@ def test_model_rows_on_success_real(_, __, contexts_for_accelerator, real_contex
              user_type=LsaSelectorMultiplexedResidentContext.UserType.INACTIVE,
          )),
          LsaSelectorRowViewModel(ctx=LsaSelectorNonMultiplexedResidentContext(
-             name=f"_NON_MULTIPLEXED_SPS",
+             name="_NON_MULTIPLEXED_SPS",
              category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
          )),
          LsaSelectorRowViewModel(ctx=LsaSelectorNonResidentContext(
@@ -1681,7 +1681,7 @@ def test_table_model_headers(role, orientation, section, expected_label):
             user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL,
         ),
         LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         ),
         LsaSelectorMultiplexedResidentContext(
@@ -1951,7 +1951,7 @@ def test_table_model_table_colors(color_map_mod, row, column, role, expected_col
             user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL,
         ),
         LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         ),
         LsaSelectorMultiplexedResidentContext(
@@ -2026,7 +2026,7 @@ def test_table_model_table_cell_text(ctxs, row, column, expected_text):
             user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL,
         ),
         LsaSelectorNonMultiplexedResidentContext(
-            name=f"_NON_MULTIPLEXED_LHC",
+            name="_NON_MULTIPLEXED_LHC",
             category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL,
         ),
         LsaSelectorMultiplexedResidentContext(
@@ -2142,7 +2142,7 @@ def test_table_model_table_fonts(row, column, resident_font, non_resident_font, 
                                            id=1237),
         ),
         LsaSelectorRowViewModel(
-            ctx=LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+            ctx=LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                          category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
             tooltip=LsaSelectorTooltipInfo(users={"TEST.USER.TWO"},
                                            name="name3",
@@ -2377,7 +2377,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.MD,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",
@@ -2393,7 +2393,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.OPERATIONAL,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",
@@ -2425,7 +2425,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.MD,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",
@@ -2445,7 +2445,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.MD,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",
@@ -2475,7 +2475,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.OPERATIONAL,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",
@@ -2521,7 +2521,7 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                               user="LEI.USER.LIN3MEAS",
                                               category=LsaSelectorMultiplexedResidentContext.Category.MD,
                                               user_type=LsaSelectorMultiplexedResidentContext.UserType.ACTIVE_NORMAL),
-        LsaSelectorNonMultiplexedResidentContext(name=f"_NON_MULTIPLEXED_LHC",
+        LsaSelectorNonMultiplexedResidentContext(name="_NON_MULTIPLEXED_LHC",
                                                  category=LsaSelectorNonMultiplexedResidentContext.Category.OPERATIONAL),
         LsaSelectorMultiplexedResidentContext(name="_ZERO_",
                                               user="LEI.USER.ZERO",

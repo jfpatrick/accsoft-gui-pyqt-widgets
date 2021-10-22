@@ -1085,7 +1085,7 @@ def test_unpack_fields_succeeds(input, fields):
     ('[{"type": 1, "rw": false}]', False, KeyError, r"field"),
     ('[{"field": "f1", "rw": false}]', False, KeyError, r"type"),
     ('[{"field": "f1", "type": 1, "label": "l1"}]', False, KeyError, r"rw"),
-    ('[{"field": "f1", "type": 0, "label": "l1"}]', False, ValueError, r"0 is not a valid ValueType"),
+    ('[{"field": "f1", "type": 0, "label": "l1"}]', False, ValueError, r"0 is not a valid (PropertyEdit\.)?ValueType"),
 ])
 def test_unpack_fields_fails(input, is_warning, error_type, error_msg):
     trap = pytest.warns if is_warning else pytest.raises

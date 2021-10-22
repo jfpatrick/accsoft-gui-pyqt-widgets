@@ -1043,8 +1043,8 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             new: list of new layer identifiers, which will be added to the plot
         """
         old = self._get_layer_ids()
-        removed_layer_ids = [l for l in self._get_layer_ids() if l not in new]
-        added_layer_ids = [l for l in new if l not in self._get_layer_ids()]
+        removed_layer_ids = [layer for layer in self._get_layer_ids() if layer not in new]
+        added_layer_ids = [layer for layer in new if layer not in self._get_layer_ids()]
         items_to_move: List[DataModelBasedItem] = []
         if removed_layer_ids or added_layer_ids:
             # Any layer change at all

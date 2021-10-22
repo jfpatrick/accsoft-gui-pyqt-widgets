@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
             thread.started.connect(emitter.start)
             self.bkg_emitters.append(emitter)
             self.bkg_threads.append(thread)
-            QTimer.singleShot((float(i + 1) / float(NUM_THREADS + 1)) * FIRE_INTERVAL, thread.start)
+            QTimer.singleShot(int((float(i + 1) / float(NUM_THREADS + 1)) * FIRE_INTERVAL), thread.start)
 
         model = LogConsoleModel(loggers=[logging.getLogger(self.main_emitter.name)] + [logging.getLogger(log.name) for log in self.bkg_emitters], buffer_size=30)
         layout.addWidget(LogConsole(model=model))

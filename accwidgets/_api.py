@@ -13,7 +13,7 @@ try:
     from importlib.metadata import distribution, PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.7
 except ImportError:
     # Python <3.8
-    from importlib_metadata import distribution, PackageNotFoundError
+    from importlib_metadata import distribution, PackageNotFoundError  # type: ignore  # mypy fails this in Python 3.9
 
 
 REAL_MODULE_NAME_VAR = "__accwidgets_real_module__"
@@ -114,12 +114,12 @@ def assert_requirement(req: Requirement, widget_name: str):
 
     try:
         installed_pkg = distribution(req.name)
-    except PackageNotFoundError as e:
+    except PackageNotFoundError:
         raise ImportError(
             f'accwidgets.{widget_name} is intended to be used with "{req.name}" package. '
             f"Please specify this widget as an extra of your accwidgets dependency, e.g. accwidgets[{widget_name}] in "
             "order to keep using the widget. To quickly install it in the environment, use: "
-            f"'pip install accwidgets[{widget_name}]'.\n\n{str(e)}")
+            f"'pip install accwidgets[{widget_name}]'.")
 
     try:
         override = int(os.environ.get("ACCWIDGETS_OVERRIDE_DEPENDENCIES", 0))

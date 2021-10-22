@@ -98,7 +98,10 @@ class AbstractBaseBarGraphItem(DataModelBasedItem, pg.BarGraphItem, metaclass=Ab
                 return x
             return np.array(x)
 
-        out_min_x, out_max_x, out_min_y, out_max_y = None, None, None, None
+        out_min_x: Optional[float] = None
+        out_max_x: Optional[float] = None
+        out_min_y: Optional[float] = None
+        out_max_y: Optional[float] = None
 
         x = asarray(self.opts.get("x"))
         x0 = asarray(self.opts.get("x0"))

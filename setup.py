@@ -38,33 +38,36 @@ SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 
 REQUIREMENTS: Dict[str, List[str]] = {
     CORE_OPTION: [
-        "QtPy>=1.7,<2a0",
+        "QtPy>=1.10.0,<2a0",
         "qtawesome>=0.7.0,<2a0",
-        "packaging>=20.4,<20.5a0",
+        "packaging>=20.5,<22a0",
         "deprecated>=1.2.13,<1.5a0",
         "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
     ],
     LINT_OPTION: [
-        "mypy==0.761",
+        "mypy==0.910",
         "numpy>=1.21",
-        "flake8>=3.7.8,<3.8a0",
-        "flake8-quotes>=2.1.0,<3a0",
-        "flake8-commas>=2,<3a0",
-        "flake8-colors>=0.1.6,<0.1.9a0",
-        "flake8-rst>=0.7.1,<2a0",
+        "types-freezegun",
+        "types-Deprecated",
+        "types-python-dateutil",
+        "flake8>=4.0.1,<4.2a0",
+        "flake8-quotes>=3.3.1,<4a0",
+        "flake8-commas>=2.1.0,<3a0",
+        "flake8-colors>=0.1.9,<2a0",
+        "flake8-rst>=0.8.0,<2a0",
         "flake8-breakpoint>=1.1.0,<2a0",
-        "flake8-pyi>=19.3.0,<20a0",
-        "flake8-comprehensions>=2.2.0,<3a0",
+        "flake8-pyi>=20.10.0,<21a0",
+        "flake8-comprehensions>=3.7.0,<4a0",
         "flake8-builtins-unleashed>=1.3.1,<2a0",
-        "flake8-blind-except>=0.1.1,<2a0",
-        "flake8-bugbear>=19.8.0,<20a0",
+        "flake8-blind-except>=0.2.0,<1a0",
+        "flake8-bugbear>=21.9.2,<22a0",
     ],
     TEST_OPTION: [
-        "pytest>=4.4.0,<4.5a0",
-        "pytest-qt>=3.2.0,<3.3a0",
+        "pytest>=6.2.5,<7a0",
+        "pytest-qt>=4.0.2,<5a0",
         "pytest-random-order>=1.0.4,<1.1a0",
-        "pytest-cov>=2.5.1,<2.6a0",
-        "pytest-asyncio",
+        "pytest-cov>=3.0.0,<4a0",
+        "pytest-asyncio>=0.16",
         "qasync>=0.13.0,<1a0",
     ],
     DOC_OPTION: [
@@ -92,7 +95,10 @@ def combine_reqs() -> Tuple[List[str], Dict[str, List[str]]]:
 
     def get_reqs_file(file: Path, attr_name: str) -> Optional[Any]:
         pkg_name = f"accwidgets.{file.parent.name}.{file.stem}"
-        spec: importlib.machinery.ModuleSpec = importlib.util.spec_from_file_location(name=pkg_name, location=file)
+        spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.spec_from_file_location(name=pkg_name,
+                                                                                                location=file)
+        if spec is None:
+            return None
         mod: types.ModuleType = importlib.util.module_from_spec(spec)
         loader = cast(importlib.machinery.SourceFileLoader, spec.loader)
 
@@ -183,12 +189,15 @@ this library, a widget may shortly become available in comrad.""",
     url="https://wikis.cern.ch/display/ACCPY/Widgets",
     install_requires=install_requires,
     extras_require=extras_require,
+    python_requires=">=3.6,<=3.10",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: X11 Applications :: Qt",
         "Intended Audience :: Developers",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Typing :: Typed",
     ],

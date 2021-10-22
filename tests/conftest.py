@@ -18,7 +18,7 @@ time.tzset()
 # 1. From pytest-asyncio (when used with @pytest.mark.asyncio)
 # 2. QEventLoop Inside the widget, when it calls install_asyncio_event_loop()
 @pytest.fixture(scope="function")
-def event_loop(request):
+def event_loop(request, qtbot):
     _ = request
     try:
         # This may fail, if QApplication was not instantiated, e.g. in the tests, where qtbot is not used

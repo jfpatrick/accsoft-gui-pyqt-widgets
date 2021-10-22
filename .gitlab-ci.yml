@@ -34,8 +34,8 @@ mypy:
   image: $ACCPY_PYQT_DOCKER_IMAGE
   stage: Code Quality
   script:
-    - pip install .[lint]
-    - mypy . docs examples
+    - pip install -e .[lint]
+    - mypy .
 
 pytest:
   image: $ACCPY_PYQT_DOCKER_IMAGE

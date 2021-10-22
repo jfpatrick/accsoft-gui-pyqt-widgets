@@ -166,7 +166,9 @@ def test_change_plot_config_on_running_plot(
     window = MinimalTestWindow(
         plot=plot_config_before_change,
     )
-    qtbot.wait_for_window_shown(window)
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     plotwidget: ExPlotWidget = window.plot
     ds_curve = MockDataSource()
     ds_bar = MockDataSource()
@@ -247,8 +249,9 @@ def test_set_view_range(qtbot, plotting_style: PlotWidgetStyle):
         plotting_style=plotting_style,
     )
     window = MinimalTestWindow(plot=config)
-    window.show()
-    qtbot.wait_for_window_shown(window)
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     plot_widget = window.plot
     plot_item = plot_widget.plotItem
     source = UpdateSource()
@@ -306,8 +309,9 @@ def test_static_items_config_change(qtbot, orig_style, new_style, orig_item_type
     """
     config = ExPlotWidgetConfig(plotting_style=orig_style)
     window = MinimalTestWindow(plot=config)
-    window.show()
-    qtbot.wait_for_window_shown(window)
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     plot_widget = window.plot
     plot_item = plot_widget.plotItem
     source = UpdateSource()
