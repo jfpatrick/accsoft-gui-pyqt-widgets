@@ -52,4 +52,3 @@ Wiki contents
 .. _acc-py: https://mattermost.web.cern.ch/acc-py
 .. |mailing-list| image:: img/mailing-list.png
 .. |mattermost| image:: img/mattermost.png
-.. |thumbs-up| image:: img/thumbs-up.png

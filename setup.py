@@ -68,10 +68,10 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "qasync>=0.13.0,<1a0",
     ],
     DOC_OPTION: [
-        "Sphinx>=3.2.1,<3.3a0",
-        "sphobjinv>=2.0,<2.1a0",
+        "Sphinx>=3.2.1,<3.5a0",
+        "sphobjinv>=2.1,<3a0",
         "sphinxcontrib-napoleon2>=1.0,<2a0",
-        "sphinx-autodoc-typehints>=1.10.3,<1.11a0",
+        "sphinx-autodoc-typehints>=1.12.0,<1.13a0",
         "acc-py-sphinx>=0.9,<0.10a0",
         "sphinx-copybutton>=0.4,<1a0",
         # These are simply here to provide package version in conf.py
@@ -79,6 +79,8 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "papc",
         "pyjapc",
         "pjlsa",
+        "numpy",
+        "pyqtgraph",
     ],
 }
 

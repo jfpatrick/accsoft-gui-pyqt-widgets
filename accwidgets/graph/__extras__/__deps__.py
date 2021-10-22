@@ -9,6 +9,6 @@ extras = {
         "widgetmark==0.1",
     ],
     "doc": [
-        "Sphinx>=3.2.1,<3.3a0",
+        "Sphinx>=3.2.1,<3.5a0",
     ],
 }

@@ -21,6 +21,8 @@ import pyjapc
 import pjlsa
 import accwidgets
 import papc
+import numpy
+import pyqtgraph
 from accwidgets._api import REAL_MODULE_NAME_VAR
 
 # -- Project information -----------------------------------------------------
@@ -776,20 +778,21 @@ set_type_checking_flag = True
 
 qt_major = qVersion().split(".")[0]
 pyqt_major = PYQT_VERSION_STR.split(".")[0]
+np_major_and_minor = ".".join(numpy.__version__.split(".")[0:2])
 
 
 intersphinx_mapping = {
     "python": (f"https://docs.python.org/{py_version.major}.{py_version.minor}", None),
     "Qt": (f"https://doc.qt.io/qt-{qt_major}/", "./qt.inv"),
     f"PyQt{pyqt_major}": (f"https://www.riverbankcomputing.com/static/Docs/PyQt{pyqt_major}/", "./pyqt.inv"),
-    "numpy": ("http://docs.scipy.org/doc/numpy/", None),
-    "pyqtgraph": ("https://pyqtgraph.readthedocs.io/en/latest/", None),  # TODO: Switch to concrete version, when updated to 0.11+ (0.10.0 does not exist)
+    "numpy": (f"https://numpy.org/doc/{np_major_and_minor}/", None),
+    "pyqtgraph": (f"https://pyqtgraph.readthedocs.io/en/pyqtgraph-{pyqtgraph.__version__}/", None),
     "comrad": ("https://acc-py.web.cern.ch/gitlab/acc-co/accsoft/gui/rad/accsoft-gui-rad-comrad/docs/stable/", None),
     "pyjapc": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pyjapc/docs/v{pyjapc.__version__}/", None),
     "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
-    "papc": (f"https://acc-py.web.cern.ch/gitlab/pelson/papc/docs/v{papc.__version__}/", None),
-    "pyrbac": (f"https://acc-py.web.cern.ch/gitlab-mono/acc-co/cmw/cmw-core/docs/pyrbac/master/", None),
-    "pyCCDA": (f"https://acc-py.web.cern.ch/gitlab/controls-configuration-service/controls-configuration-data-api/accsoft-ccs-ccda/docs/stable/", None),
+    "papc": (f"https://acc-py.web.cern.ch/gitlab/acc-co/devops/python/incubator/papc/docs/v{papc.__version__}/", None),
+    "pyrbac": ("https://acc-py.web.cern.ch/gitlab-mono/acc-co/cmw/cmw-core/docs/pyrbac/master/", None),
+    "pyCCDA": ("https://acc-py.web.cern.ch/gitlab/controls-configuration-service/controls-configuration-data-api/accsoft-ccs-ccda/docs/stable/", None),
 }
 
 

@@ -245,7 +245,7 @@ scheme that could be used in the dark mode style.
 
 
 Custom icons example
--------------------
+--------------------
 
 To launch this example from the project root, run:
 

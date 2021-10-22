@@ -5,6 +5,6 @@ extras = {
         "freezegun>=0.3.13,<0.4a0",
     ],
     "doc": [
-        "Sphinx>=3.2.1,<3.3a0",
+        "Sphinx>=3.2.1,<3.5a0",
     ],
 }

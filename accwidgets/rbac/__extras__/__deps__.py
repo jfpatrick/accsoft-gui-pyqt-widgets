@@ -4,7 +4,7 @@ extras = {
         "pytest-qt>=3.2.0,<3.3a0",
     ],
     "doc": [
-        "Sphinx>=3.2.1,<3.3a0",
+        "Sphinx>=3.2.1,<3.5a0",
     ],
     "examples": [
         "pyjapc>=2.0.6,<3a0",

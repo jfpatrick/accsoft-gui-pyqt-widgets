@@ -6,6 +6,6 @@ extras = {
         "python-dateutil>=2.8.1,<3a0",
     ],
     "doc": [
-        "Sphinx>=3.2.1,<3.3a0",
+        "Sphinx>=3.2.1,<3.5a0",
     ],
 }
