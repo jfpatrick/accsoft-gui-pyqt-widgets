@@ -38,7 +38,7 @@ class UpdateSource(QObject):
     """Publishes a new data sample wrapped in an appropriate data structure."""
 
     @Slot(CurveData)
-    def handle_data_model_edit(data: CurveData):
+    def handle_data_model_edit(self, data: CurveData):
         """
         Handler for changes made to the data model from the view. It is meant
         to propagate data edited by user to the source, where the data originally came from.
