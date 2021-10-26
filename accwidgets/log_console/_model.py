@@ -270,8 +270,7 @@ class LogConsoleModel(AbstractLogConsoleModel):
         all_handler_names = [logger.name for logger in loggers_list]
 
         for logger in loggers_list:
-            handler = PythonLoggingHandler(parent=self,
-                                           name=logger.name,
+            handler = PythonLoggingHandler(name=logger.name,
                                            frozen=self._frozen,
                                            level=logger.level,
                                            all_handler_names=all_handler_names,
@@ -294,6 +293,7 @@ class LogConsoleModel(AbstractLogConsoleModel):
                     handler.release()
                 logger = _get_logger(name)
                 logger.removeHandler(handler)
+                handler.deleteLater()
         except Exception:  # noqa: B902
             # Avoid crashing at the clean-up phase for any reason
             pass
