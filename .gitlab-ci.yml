@@ -52,6 +52,16 @@ pytest:
     reports:
       junit: report.xml
 
+test install:
+  image: $ACCPY_PYQT_DOCKER_IMAGE
+  stage: Unit Tests
+  script:
+    - pip install .[$CATEGORIES]
+  parallel:
+    matrix:
+      - CATEGORIES: app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar
+      - CATEGORIES: all-widgets,tests,lint,doc,examples,bench
+
 build wheel:
   extends: .acc_py_build_wheel
   image: $ACCPY_PYQT_DOCKER_IMAGE
