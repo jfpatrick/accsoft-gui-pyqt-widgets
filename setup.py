@@ -42,7 +42,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "qtawesome>=0.7.0,<2a0",
         "packaging>=20.5,<22a0",
         "deprecated>=1.2.13,<1.5a0",
-        "importlib-metadata>=1.7.0,<4.0a0;python_version<'3.8'",
+        "importlib-metadata>=1.7.0,<5.0a0;python_version<'3.8'",
     ],
     LINT_OPTION: [
         "mypy==0.910",
