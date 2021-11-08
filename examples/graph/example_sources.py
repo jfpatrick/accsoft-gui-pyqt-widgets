@@ -8,8 +8,13 @@ passed frequency.
 import math
 import numpy as np
 from datetime import datetime
-from numpy.typing import ArrayLike
 from typing import List, Optional, Callable, Any
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    # numpy.typing not available in numpy < 1.20, which we have to support
+    # because of the acc-py distro bundled numpy
+    ArrayLike = Any
 from enum import IntEnum, auto
 from qtpy.QtCore import QTimer, Qt
 from accwidgets.graph import (UpdateSource, PointData, BarData, InjectionBarData, TimestampMarkerData, CurveData,

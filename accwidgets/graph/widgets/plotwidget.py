@@ -6,8 +6,13 @@ import json
 import warnings
 import numpy as np
 import pyqtgraph as pg
-from numpy.typing import ArrayLike
 from typing import Dict, Optional, Any, Set, List, Tuple, Union, cast, Sequence
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    # numpy.typing not available in numpy < 1.20, which we have to support
+    # because of the acc-py distro bundled numpy
+    ArrayLike = Any
 from copy import deepcopy
 from dataclasses import dataclass
 from qtpy.QtCore import Signal, Slot, Property, Q_ENUM, Qt

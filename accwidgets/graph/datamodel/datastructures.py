@@ -7,9 +7,14 @@ Data structures also validate that they are used for appropriate plot types.
 import warnings
 import numpy as np
 import pyqtgraph as pg
-from numpy.typing import ArrayLike
-from abc import ABC, abstractmethod
 from typing import List, Union, Any, Dict, Sequence
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    # numpy.typing not available in numpy < 1.20, which we have to support
+    # because of the acc-py distro bundled numpy
+    ArrayLike = Any
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from accwidgets.graph import DEFAULT_COLOR
 
