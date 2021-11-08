@@ -46,7 +46,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
     ],
     LINT_OPTION: [
         "mypy==0.910",
-        "numpy>=1.21",
+        "numpy>=1.21",  # 1.21 required for numpy.typing.mypy_plugin
         "types-freezegun",
         "types-Deprecated",
         "types-python-dateutil",

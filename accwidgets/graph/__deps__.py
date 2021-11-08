@@ -1,5 +1,5 @@
 core = [
-    "numpy>=1.20,<=1.50a0",
+    "numpy",
     "scipy>=1.1,<2a0",
     "QtPy>=1.10.0,<2a0",
     "pyqtgraph>=0.12.3",

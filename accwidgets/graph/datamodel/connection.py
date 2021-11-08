@@ -2,8 +2,13 @@
 
 import collections.abc
 import numpy as np
-from numpy.typing import ArrayLike
 from typing import Optional, Callable, cast, Type, Sequence, Union, Any, Tuple, List, Dict, Iterable
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    # numpy.typing not available in numpy < 1.20, which we have to support
+    # because of the acc-py distro bundled numpy
+    ArrayLike = Any
 from datetime import datetime
 from qtpy.QtCore import QObject, Signal, Slot
 from accwidgets.graph import (DEFAULT_COLOR, BarCollectionData, BarData, CurveData, TimestampMarkerCollectionData,
