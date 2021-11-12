@@ -934,7 +934,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
             if (self._points_labeled == PointLabelOptions.HOVER
                     and (self._current_hover is None
                          or self._current_hover.x() != data["x"]
-                         and self._current_hover.y() != data["y"])):
+                         or self._current_hover.y() != data["y"])):
                 continue
             text = self._point_label(x=data["x"],
                                      y=data["y"])
