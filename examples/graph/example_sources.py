@@ -16,7 +16,7 @@ except ImportError:
     # because of the acc-py distro bundled numpy
     ArrayLike = Any
 from enum import IntEnum, auto
-from qtpy.QtCore import QTimer, Qt
+from qtpy.QtCore import QTimer, Qt, QObject
 from accwidgets.graph import (UpdateSource, PointData, BarData, InjectionBarData, TimestampMarkerData, CurveData,
                               BarCollectionData, InjectionBarCollectionData, TimestampMarkerCollectionData,
                               PlottingItemData)
@@ -165,11 +165,11 @@ class WaveformSinusSource(UpdateSource):
                                                  check_validity=False)
 
 
-class EditableSinusCurveDataSource(UpdateSource):
+class EditableDataSource(UpdateSource):
 
-    def __init__(self, edit_callback: Callable[[ArrayLike], Any] = lambda x: print(x)):
+    def __init__(self, x: np.ndarray, y: np.ndarray, parent: Optional[QObject] = None):
         """
-        Update source that emits a sinus curve and allows editing.
+        Update source that emits a curve and allows editing.
 
         **What is the QTimer doing?**
         When we call this constructor, the curve is not yet connected to the
@@ -182,16 +182,31 @@ class EditableSinusCurveDataSource(UpdateSource):
         curve and passed the update source instance to it.
 
         Args:
+            x: Points' x-values.
+            y: Points' y-values.
+            parent: Owning object.
+        """
+
+        super().__init__(parent)
+        curve = CurveData(x, y, check_validity=False)
+        QTimer.singleShot(0, lambda: self.send_data(curve))
+
+
+class EditableSinusCurveDataSource(EditableDataSource):
+
+    def __init__(self, edit_callback: Callable[[ArrayLike], Any] = lambda x: print(x), parent: Optional[QObject] = None):
+        """
+        Update source that emits a sinus curve and allows editing.
+
+        Args:
             edit_callback: Function which should be called as soon as the view
                            sends back a value through this update source.
+            parent: Owning object.
         """
-        super().__init__()
-        self.edit_callback = edit_callback
         x = np.linspace(0, 2 * math.pi, 10)
         y = np.sin(x)
-        curve = CurveData(x, y, check_validity=False)
-        self._timer = QTimer()
-        self._timer.singleShot(0, lambda: self.send_data(curve))
+        self.edit_callback = edit_callback
+        super().__init__(x=x, y=y, parent=parent)
 
     def handle_data_model_edit(self, data: CurveData):
         """
