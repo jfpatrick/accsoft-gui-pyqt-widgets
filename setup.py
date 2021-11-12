@@ -64,6 +64,8 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "pytest-cov>=2.5.1,<2.6a0",
         "pytest-asyncio",
         "qasync>=0.13.0,<1a0",
+        # FIXME: Remove when upstream library is fixed
+        "pyparsing!=3.0.5",  # Breaks tests, see https://github.com/pyparsing/pyparsing/issues/329
     ],
     DOC_OPTION: [
         "Sphinx>=3.2.1,<3.3a0",
