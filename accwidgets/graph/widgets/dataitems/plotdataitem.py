@@ -727,7 +727,7 @@ class DataSelectionMarker(pg.ScatterPlotItem):
         if self._points_labeled != PointLabelOptions.HOVER:
             return
         points = self.pointsAt(ev.pos())
-        if points:
+        if len(points) > 0:
             self._current_hover = points[0].pos()
             self._add_labels()
         else:
