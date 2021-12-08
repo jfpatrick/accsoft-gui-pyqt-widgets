@@ -11,9 +11,12 @@ stages:
   - Upload Release
 
 variables:
-  ACCPY_PYQT_DOCKER_IMAGE: gitlab-registry.cern.ch/acc-co/devops/python/distribution/ci/pyqt:v2020-11rc2
+  ACCPY_IMAGE_CC7_2020_11: registry.cern.ch/acc/acc-py_cc7_openjdk11_gui_ci:2020.11
+  ACCPY_IMAGE_CC7_2021_12: registry.cern.ch/acc/acc-py_cc7_openjdk11_gui_ci:2021.12
+  ACCPY_IMAGE_CS8_2020_11: registry.cern.ch/acc/acc-py_cs8_openjdk11_gui_ci:2020.11
+  ACCPY_IMAGE_CS8_2021_12: registry.cern.ch/acc/acc-py_cs8_openjdk11_gui_ci:2021.12
+  ACCPY_IMAGE_INFRASTRUCTURE: registry.cern.ch/acc/acc-py_cc7_openjdk11_gui_ci:pro
   project_name: accwidgets  # Required by acc-py templates
-  PY_VERSION: "3.7"  # Set expectations of the base templates to our assumed Python version
 
 .init_sequence: &init_sequence
 - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch".insteadOf ssh://git@gitlab.cern.ch:7999
@@ -22,8 +25,17 @@ variables:
 before_script:
   - *init_sequence
 
+.matrix_job:
+  image: $CURRENT_BASE_IMAGE
+  parallel:
+    matrix:
+      - CURRENT_BASE_IMAGE: $ACCPY_IMAGE_CC7_2020_11
+      - CURRENT_BASE_IMAGE: $ACCPY_IMAGE_CC7_2021_12
+      - CURRENT_BASE_IMAGE: $ACCPY_IMAGE_CS8_2020_11
+      - CURRENT_BASE_IMAGE: $ACCPY_IMAGE_CS8_2021_12
+
 flake8:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  extends: .matrix_job
   stage: Code Quality
   script:
     - pip install .[lint]
@@ -31,14 +43,14 @@ flake8:
     - flake8
 
 mypy:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  extends: .matrix_job
   stage: Code Quality
   script:
     - pip install -e .[lint]
     - mypy .
 
 pre-commit:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Code Quality
   script:
     - pip install -e .[lint]
@@ -47,7 +59,7 @@ pre-commit:
     - pre-commit run --from-ref ${CI_MERGE_REQUEST_DIFF_BASE_SHA:-HEAD~1} --to-ref $CI_COMMIT_SHA
 
 pytest:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  extends: .matrix_job
   stage: Unit Tests
   script:
     - pip install .[test]
@@ -62,18 +74,24 @@ pytest:
       junit: report.xml
 
 test install:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $CURRENT_BASE_IMAGE
   stage: Unit Tests
   script:
     - pip install .[$CATEGORIES]
   parallel:
     matrix:
-      - CATEGORIES: app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar,screenshot
-      - CATEGORIES: all-widgets,tests,lint,doc,examples,bench
+      - CATEGORIES:
+          - app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar,screenshot
+          - all-widgets,tests,lint,doc,examples,bench
+        CURRENT_BASE_IMAGE:
+          - $ACCPY_IMAGE_CC7_2020_11
+          - $ACCPY_IMAGE_CC7_2021_12
+          - $ACCPY_IMAGE_CS8_2020_11
+          - $ACCPY_IMAGE_CS8_2021_12
 
 build wheel:
   extends: .acc_py_build_wheel
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Build Wheel
 
 .sphinx_custom:
@@ -88,7 +106,7 @@ sphinx:
   extends:
     - .acc_py_build_docs
     - .sphinx_custom
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   only:
     refs:
       - master
@@ -98,20 +116,20 @@ sphinx on tag:
   extends:
     - .acc_py_build_docs_on_tag_v2
     - .sphinx_custom
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
 
 release wheel on tag:
   extends: .acc_py_release_wheel
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Upload Release
 
 release sdist on tag:
   extends: .acc_py_release_sdist_v2
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Upload Release
 
 anybadge:
-  image: $ACCPY_PYQT_DOCKER_IMAGE
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Documentation
   script:
     - pip install anybadge
