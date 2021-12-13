@@ -1,31 +1,40 @@
 import datetime
-
-from typing import Optional, Union, List
+import operator
+import functools
+from typing import Optional, Union, Tuple, Iterable
 from pathlib import Path
-from accwidgets.qt import make_icon
-from functools import partial
+from qtpy.QtCore import Signal, QTimer, QByteArray, QBuffer, QIODevice, Property
+from qtpy.QtWidgets import QWidget, QMenu, QAction, QApplication, QToolButton, QMainWindow, QInputDialog
+from qtpy.QtGui import QShowEvent
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
 from pylogbook.models import Activity, ActivitiesType
+from accwidgets.qt import make_icon
 
-from qtpy.QtCore import Signal, QTimer, QEvent, QByteArray, QBuffer, QIODevice
-from qtpy.QtWidgets import QWidget, QMenu, QAction, QApplication, QToolButton, QMainWindow, QInputDialog
+
+ScreenshotButtonSource = Union[QWidget, Iterable[QWidget]]
+"""Alias for the possible types of the widgets that can be captured in a screenshot."""
 
 
 class ScreenshotButton(QToolButton):
 
-    capture_succeeded = Signal(int)
-    capture_failed = Signal(str)
+    captureFinished = Signal(int)
+    """
+    Notification of the successful registration of the screenshot.
+    The argument is the event ID within e-logbook system.
+    """
+
+    captureFailed = Signal(str)
+    """Notification of the problem taking a screenshot. The argument is the error message."""
 
     def __init__(self,
                  parent: Optional[QWidget] = None,
-                 widget: Optional[Union[QWidget, List[QWidget]]] = None,
+                 source: Optional[ScreenshotButtonSource] = None,
                  message: Optional[str] = None,
                  activities: Optional[ActivitiesType] = None,
                  server_url: Union[str, NamedServer] = NamedServer.PRO,
-                 rbac_token: Optional[Token] = None,
-                 chrome: bool = True):
+                 rbac_token: Optional[Token] = None):
         """
         A button to take application's screenshot and send it to the e-logbook.
 
@@ -36,102 +45,59 @@ class ScreenshotButton(QToolButton):
             activities: Logbook activities.
             server_url: Logbook server URL.
             rbac_token: RBAC token.
-            chrome: Include the window chrome if widget is a QMainWindow.
         """
         super().__init__(parent)
+        self._src: Iterable[QWidget] = ()
+        self._include_window_decor = True
+        self._msg = message
+        self.setPopupMode(QToolButton.MenuButtonPopup)
+        self.setIcon(make_icon(Path(__file__).parent.absolute() / "icons" / "eLogbook.png"))
 
-        self.set_widget(widget)
-        self.set_message(message)
-        self.chrome = chrome
-
-        self._client = Client(server_url=server_url, rbac_token='')
+        self._client = Client(server_url=server_url, rbac_token="")
         self._ac_client = ActivitiesClient(client=self._client, activities=[])
+
+        menu = LogbookMenu(self._ac_client, parent=self)
+        menu.setToolTipsVisible(True)
+        menu.event_clicked.connect(self._take_delayed_screenshot)
+        menu.event_fetch_failed.connect(self.captureFailed)
+        self.setMenu(menu)
 
         self.set_activities(activities)
         self.set_rbac_token(rbac_token)
+        if source is not None:
+            self.source = source  # Will reset self._src
 
-        self.menu = LogbookMenu(self._ac_client, parent=self)
-        self.menu.setToolTipsVisible(True)
-        self.setMenu(self.menu)
-        self.menu.capture.connect(partial(self._screenshot_after_delay, True))
-        self.menu.capture_failed.connect(self.capture_failed.emit)
+        self.clicked.connect(self._on_click)
 
-        self.setPopupMode(QToolButton.MenuButtonPopup)
+    def _get_message(self) -> Optional[str]:
+        return self._msg
 
-        self.setIcon(make_icon(Path(__file__).parent.absolute() / 'icons' / 'eLogbook.png'))
+    def _set_message(self, message: Optional[str] = None):
+        self._msg = message
 
-        self.clicked.connect(self._screenshot_after_delay)
+    message = Property(str, _get_message, _set_message)
+    """
+    Logbook entry message. Setting this to :obj:`None` (default) will activate a
+    UI user prompt when button is pressed.
+    """
 
-    def _screenshot_after_delay(self, checked: bool, event_id: Optional[int] = None):
-        """
-        Wait for a short delay before grabbing the screenshot to allow
-        time for the pop-up menu to close,
-        """
-        QTimer.singleShot(100, partial(self._screenshot, event_id))
+    def _get_source(self) -> ScreenshotButtonSource:
+        return self._src
 
-    def _screenshot(self, event_id: Optional[int] = None):
-        """
-        Grab a screenshot of the widget(s) and post them to the logbook.
-        """
-        try:
-            if event_id is None:
-                if self.message is None:
-                    message, ok = QInputDialog.getText(self, 'Logbook', 'Enter a logbook message:')
-                else:
-                    message = self.message
-                if not message:
-                    raise ValueError('Logbook message cannot be empty')
-                event = self._ac_client.add_event(message)
-            else:
-                event = self._client.get_event(event_id)
+    def _set_source(self, widget: ScreenshotButtonSource):
+        self._src = [widget] if isinstance(widget, QWidget) else widget
 
-            if self.widgets is not None:
-                for i, widget in enumerate(self.widgets):
-                    if isinstance(widget, QMainWindow) and self.chrome:
-                        # Save a screenshot of the whole window including
-                        # the window chrome
-                        screen = QApplication.primaryScreen()
-                        screenshot = screen.grabWindow(0,
-                                                       widget.pos().x(),
-                                                       widget.pos().y(),
-                                                       widget.frameGeometry().width(),
-                                                       widget.frameGeometry().height())
-                    else:
-                        # Save a screenshot of just the widget
-                        screenshot = widget.grab()
+    source = property(fget=_get_source, fset=_set_source)
+    """One or more widgets to take the screenshot of."""
 
-                    screenshot_bytes = QByteArray()
-                    screenshot_buffer = QBuffer(screenshot_bytes)
-                    screenshot_buffer.open(QIODevice.WriteOnly)
-                    screenshot.save(screenshot_buffer, 'png', quality=100)
-                    event.attach_content(contents=screenshot_bytes,
-                                         mime_type='image/png',
-                                         name='capture_{0}.png'.format(i))
+    def _get_include_window_decorations(self) -> bool:
+        return self._include_window_decor
 
-            self.capture_succeeded.emit(event.event_id)
-        except (LogbookError, ValueError) as e:
-            self.capture_failed.emit(str(e))
+    def _set_include_window_decorations(self, new_val: bool):
+        self._include_window_decor = new_val
 
-    def set_message(self, message: Optional[str] = None):
-        """
-        Set the logbook entry message.
-
-        Args:
-            message: The message to use for the logbook entry.
-        """
-        self.message = message
-
-    def set_widget(self, widget: Optional[Union[QWidget, List[QWidget]]] = None):
-        """
-        Set the widget(s) to post a screenshot of.
-
-        Args:
-            widget: Widget (or list of widgets).
-        """
-        if isinstance(widget, QWidget):
-            self.widgets = [widget]
-        else:
-            self.widgets = widget
+    includeWindowDecorations: bool = Property(bool, _get_include_window_decorations, _set_include_window_decorations)
+    """Include window decorations in the screenshot if given :attr:`source` is a :class:`QMainWindow`."""
 
     def set_rbac_token(self, rbac_token: Token):
         """
@@ -140,20 +106,20 @@ class ScreenshotButton(QToolButton):
         Args:
             rbac_token: RBAC token.
         """
-        self._client.rbac_b64_token = '' if rbac_token is None else rbac_token
-        self._update_activities()
+        self._client.rbac_b64_token = "" if rbac_token is None else rbac_token
+        self._flush_activities_cache()
         self._update_tooltip()
-        self._update_enabled()
+        self._update_enabled_status()
 
     def clear_rbac_token(self):
         """
         Clear the RBAC token.
         """
-        self._client.rbac_b64_token = ''
+        self._client.rbac_b64_token = ""
         self._update_tooltip()
-        self._update_enabled()
+        self._update_enabled_status()
 
-    def activities(self) -> List[Activity]:
+    def _current_activities(self) -> Tuple[Activity, ...]:
         """
         Get the current activities.
         """
@@ -166,50 +132,91 @@ class ScreenshotButton(QToolButton):
         Args:
             activities: The activities.
         """
-        self._activities = [] if activities is None else activities
-        self._update_activities()
+        self._activities_cache = [] if activities is None else activities
+        self._flush_activities_cache()
         self._update_tooltip()
-        self._update_enabled()
+        self._update_enabled_status()
 
-    def _update_activities(self):
+    def _take_delayed_screenshot(self, event_id: Optional[int] = None):
         """
-        Update the activities in the ActivitiesClient.
+        Wait for a short delay before grabbing the screenshot to allow
+        time for the pop-up menu to close,
         """
-        if self._rbac_token_valid() and self._activities is not None:
-            self._ac_client.activities = self._activities
-            self._activities = None
+        QTimer.singleShot(100, functools.partial(self._take_screenshot, event_id))
+
+    def _take_screenshot(self, event_id: Optional[int] = None):
+        """
+        Grab a screenshot of the widget(s) and post them to the logbook.
+        """
+        try:
+            assert bool(self._src), "Source widget(s) for screenshot is undefined"
+            if event_id is None:
+                message = self._prepare_message()
+                assert message, "Logbook message cannot be empty"
+                event = self._ac_client.add_event(message)
+            else:
+                event = self._client.get_event(event_id)
+
+            for i, widget in enumerate(self._src):
+                if isinstance(widget, QMainWindow) and self._include_window_decor:
+                    # Save a screenshot of the whole window including
+                    # the window chrome
+                    screen = QApplication.primaryScreen()
+                    screenshot = screen.grabWindow(0,
+                                                   widget.pos().x(),
+                                                   widget.pos().y(),
+                                                   widget.frameGeometry().width(),
+                                                   widget.frameGeometry().height())
+                else:
+                    # Save a screenshot of just the widget
+                    screenshot = widget.grab()
+
+                screenshot_bytes = QByteArray()
+                screenshot_buffer = QBuffer(screenshot_bytes)
+                screenshot_buffer.open(QIODevice.WriteOnly)
+                screenshot.save(screenshot_buffer, "png", quality=100)
+                event.attach_content(contents=screenshot_bytes,
+                                     mime_type="image/png",
+                                     name=f"capture_{i}.png")
+
+            self.captureFinished.emit(event.event_id)
+        except (LogbookError, AssertionError) as e:
+            self.captureFailed.emit(str(e))
+
+    def _prepare_message(self) -> str:
+        message = self.message
+        if not message:
+            message, _ = QInputDialog.getText(self, "Logbook", "Enter a logbook message:")
+        return message
+
+    def _flush_activities_cache(self):
+        if self._rbac_token_valid() and self._activities_cache is not None:
+            self._ac_client.activities = self._activities_cache
+            self._activities_cache = None
 
     def _rbac_token_valid(self):
-        """
-        Check if the RBAC token is not empty.
-        """
-        return self._client.rbac_b64_token != ''
+        return len(self._client.rbac_b64_token) > 0
 
     def _update_tooltip(self):
-        """
-        Update the button tooltip.
-        """
         if not self._rbac_token_valid():
-            self.setToolTip('ERROR: RBAC login is required to write to the e-logbook')
-        elif not self.activities():
-            self.setToolTip('ERROR: No e-logbook activity is defined')
+            msg = "ERROR: RBAC login is required to write to the e-logbook"
+        elif not self._current_activities():
+            msg = "ERROR: No e-logbook activity is defined"
         else:
-            activities = '/'.join([a.name for a in self.activities()])
-            self.setToolTip('Capture screenshot to a new entry in {0} e-logbook'.format(activities))
+            activities = "/".join(map(operator.attrgetter("name"), self._current_activities()))
+            msg = f"Capture screenshot to a new entry in {activities} e-logbook"
+        self.setToolTip(msg)
 
-    def _update_enabled(self):
-        """
-        Update the button enabled status.
-        """
-        if self.activities() and self._rbac_token_valid():
-            self.setEnabled(True)
-        else:
-            self.setDisabled(True)
+    def _update_enabled_status(self):
+        self.setEnabled(bool(self._current_activities() and self._rbac_token_valid()))
+
+    def _on_click(self):
+        self._take_delayed_screenshot()
 
 
 class LogbookMenu(QMenu):
-    capture = Signal(int)
-    capture_failed = Signal(str)
+    event_clicked = Signal(int)
+    event_fetch_failed = Signal(str)
 
     def __init__(self,
                  client: ActivitiesClient,
@@ -224,36 +231,36 @@ class LogbookMenu(QMenu):
         super().__init__(parent)
         self._client = client
 
-    def showEvent(self, event: QEvent):
+    def showEvent(self, event: QShowEvent):
         """
         Override of the menu show event to populate it with the latest
         Logbook entries. The Logbook API doesn't offer a good way to
         keep a local model synchronised with the server, so this just
         refetches the latest entries each time.
         """
-        events = []
+        logbook_events = []
         try:
             # Note: specifying a `from_date` improves performance
             start = datetime.datetime.now() - datetime.timedelta(days=1)
             events_pages = self._client.get_events(from_date=start)
             events_pages.page_size = 10
             events_count = events_pages.count
-            events = events_pages.get_page(0)
+            logbook_events = events_pages.get_page(0)
         except LogbookError as e:
-            self.capture_failed.emit(str(e))
+            self.event_fetch_failed.emit(str(e))
 
+        # We must clear here, and must NOT clear in hideEvent, because actions will be destroyed before they trigger
         self.clear()
 
         if events_count > 0:
-            activities = '/'.join([a.name for a in self._client.activities])
-            for e in events:
-                action = QAction('id: {0} @ {1:%H:%M:%S}'.format(str(e.event_id)[-3:], e.date), self)
-                action.triggered.connect(partial(self.capture.emit, e.event_id))
-                action.setToolTip('Capture screenshot to existing entry {0} in {1} e-logbook'.format(e.event_id,
-                                                                                                     activities))
+            activities = "/".join(map(operator.attrgetter("name"), self._client.activities))
+            for logbook_event in logbook_events:
+                action = QAction("id: {0} @ {1:%T}".format(str(logbook_event.event_id)[-3:], logbook_event.date), self)
+                action.triggered.connect(functools.partial(self.event_clicked.emit, logbook_event.event_id))
+                action.setToolTip(f"Capture screenshot to existing entry {logbook_event.event_id} in {activities} e-logbook")
                 self.addAction(action)
         else:
-            action = QAction('(no events)', self)
+            action = QAction("(no events)", self)
             self.addAction(action)
 
         super().showEvent(event)
