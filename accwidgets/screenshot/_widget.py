@@ -3,14 +3,15 @@ import operator
 import functools
 from typing import Optional, Union, Tuple, Iterable
 from pathlib import Path
-from qtpy.QtCore import Signal, QTimer, QByteArray, QBuffer, QIODevice, Property
-from qtpy.QtWidgets import QWidget, QMenu, QAction, QApplication, QToolButton, QMainWindow, QInputDialog
+from qtpy.QtCore import Signal, QTimer, Property
+from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog
 from qtpy.QtGui import QShowEvent
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
 from pylogbook.models import Activity, ActivitiesType
 from accwidgets.qt import make_icon
+from ._grabber import grab_png_screenshot
 
 
 ScreenshotButtonSource = Union[QWidget, Iterable[QWidget]]
@@ -158,24 +159,9 @@ class ScreenshotButton(QToolButton):
                 event = self._client.get_event(event_id)
 
             for i, widget in enumerate(self._src):
-                if isinstance(widget, QMainWindow) and self._include_window_decor:
-                    # Save a screenshot of the whole window including
-                    # the window chrome
-                    screen = QApplication.primaryScreen()
-                    screenshot = screen.grabWindow(0,
-                                                   widget.pos().x(),
-                                                   widget.pos().y(),
-                                                   widget.frameGeometry().width(),
-                                                   widget.frameGeometry().height())
-                else:
-                    # Save a screenshot of just the widget
-                    screenshot = widget.grab()
-
-                screenshot_bytes = QByteArray()
-                screenshot_buffer = QBuffer(screenshot_bytes)
-                screenshot_buffer.open(QIODevice.WriteOnly)
-                screenshot.save(screenshot_buffer, "png", quality=100)
-                event.attach_content(contents=screenshot_bytes,
+                png_bytes = grab_png_screenshot(source=widget,
+                                                include_window_decorations=self.includeWindowDecorations)
+                event.attach_content(contents=png_bytes,
                                      mime_type="image/png",
                                      name=f"capture_{i}.png")
 
