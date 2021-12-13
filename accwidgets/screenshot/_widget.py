@@ -13,7 +13,8 @@ from qtpy.QtCore import Signal, QTimer, QEvent, QByteArray, QBuffer, QIODevice
 from qtpy.QtWidgets import QWidget, QMenu, QAction, QApplication, QToolButton, QMainWindow, QInputDialog
 
 
-class LogbookButton(QToolButton):
+class ScreenshotButton(QToolButton):
+
     capture_succeeded = Signal(int)
     capture_failed = Signal(str)
 
@@ -26,7 +27,7 @@ class LogbookButton(QToolButton):
                  rbac_token: Optional[Token] = None,
                  chrome: bool = True):
         """
-        A QToolButton to send a screenshot to the e-logbook.
+        A button to take application's screenshot and send it to the e-logbook.
 
         Args:
             parent: Parent widget to hold this object.

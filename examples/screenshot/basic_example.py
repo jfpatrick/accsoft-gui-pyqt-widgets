@@ -1,12 +1,12 @@
 """
-This example shows the simplest way of using LogbookButton widget.
+This example shows the simplest way of using ScreenshotButton widget.
 """
 
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QToolBar
 from pylogbook import NamedServer
 from accwidgets.rbac import RbaButton
-from accwidgets.screenshot import LogbookButton
+from accwidgets.screenshot import ScreenshotButton
 from accwidgets.qt import exec_app_interruptable
 
 
@@ -17,10 +17,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ScreenshotButton example")
         toolbar = QToolBar()
         self.addToolBar(toolbar)
-        logbook_button = LogbookButton(widget=self,
-                                       message='Qt-Logbook integration example',
-                                       server_url=NamedServer.TEST,
-                                       activities='LINAC_4')
+        logbook_button = ScreenshotButton(widget=self,
+                                          message='Qt-Logbook integration example',
+                                          server_url=NamedServer.TEST,
+                                          activities='LINAC_4')
         logbook_button.capture_succeeded.connect(self.capture_succeeded)
         logbook_button.capture_failed.connect(self.capture_failed)
         toolbar.addWidget(logbook_button)
