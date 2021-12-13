@@ -1,8 +1,8 @@
 import datetime
 import operator
 import functools
+import qtawesome as qta
 from typing import Optional, Union, Tuple, Iterable
-from pathlib import Path
 from qtpy.QtCore import Signal, QTimer, Property
 from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog
 from qtpy.QtGui import QShowEvent
@@ -10,7 +10,6 @@ from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
 from pylogbook.models import Activity, ActivitiesType
-from accwidgets.qt import make_icon
 from ._grabber import grab_png_screenshot
 
 
@@ -52,7 +51,7 @@ class ScreenshotButton(QToolButton):
         self._include_window_decor = True
         self._msg = message
         self.setPopupMode(QToolButton.MenuButtonPopup)
-        self.setIcon(make_icon(Path(__file__).parent.absolute() / "icons" / "eLogbook.png"))
+        self.setIcon(qta.icon("fa.book"))
 
         self._client = Client(server_url=server_url, rbac_token="")
         self._ac_client = ActivitiesClient(client=self._client, activities=[])
