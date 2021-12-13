@@ -59,7 +59,7 @@ test install:
     - pip install .[$CATEGORIES]
   parallel:
     matrix:
-      - CATEGORIES: app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar
+      - CATEGORIES: app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar,screenshot
       - CATEGORIES: all-widgets,tests,lint,doc,examples,bench
 
 build wheel:
