@@ -180,6 +180,23 @@ def test_assert_requirement_throws_on_wrong_version(_, environ, override_deps_de
         assert_requirement(req=req, widget_name="test_widget")
 
 
+@pytest.mark.parametrize("override_deps_defined,override_deps_value", [
+    (True, True),
+    (True, False),
+    (False, False),
+])
+@mock.patch("os.environ")
+@mock.patch("accwidgets._api.distribution")
+def test_assert_requirement_does_not_throw_without_specified_version(distribution, environ, override_deps_defined, override_deps_value, environ_get_side_effect):
+    environ.get.side_effect = environ_get_side_effect(override_deps_defined, override_deps_value)
+    req = mock.MagicMock()
+    req.name = "test_req"
+    req.marker = None
+    req.specifier.__str__.return_value = ""
+    req.specifier.contains.return_value = False
+    assert_requirement(req=req, widget_name="test_widget")
+
+
 @pytest.mark.parametrize("base_path,widget_name,expected_pkg_name", [
     ("/path/to/test_widget", "test_widget", "accwidgets.test_widget.__deps__"),
     ("/path/to/test_widget/__init__.py", "test_widget", "accwidgets.test_widget.__deps__"),

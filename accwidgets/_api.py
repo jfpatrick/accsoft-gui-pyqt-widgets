@@ -128,7 +128,7 @@ def assert_requirement(req: Requirement, widget_name: str):
     if override:
         return
 
-    if not req.specifier.contains(installed_pkg.version):
+    if str(req.specifier) and not req.specifier.contains(installed_pkg.version):
         raise ImportError(f"accwidgets.{widget_name} cannot reliably work with {req.name} versions other than "
                           f"{req.name}{req.specifier}. Please specify this widget as an extra of your accwidgets dependency, "
                           f"e.g. accwidgets[{widget_name}] in order to keep using the widget. To quickly install it "
