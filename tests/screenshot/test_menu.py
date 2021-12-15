@@ -1,10 +1,12 @@
 import pytest
 from typing import List
 from unittest import mock
+from datetime import datetime
+from dateutil.tz import UTC
 from pytestqt.qtbot import QtBot
 from qtpy.QtWidgets import QAction, QWidget
 from qtpy.QtGui import QShowEvent, QHideEvent
-from accwidgets.screenshot._menu import make_fallback_actions, LogbookMenu
+from accwidgets.screenshot._menu import make_fallback_actions, LogbookMenu, make_menu_title
 
 
 @pytest.mark.parametrize("fetch1", [[], ["entry1"], ["entry1", "entry2"]])
@@ -50,3 +52,25 @@ def test_make_fallback_actions(message, parent_type, qtbot: QtBot):
     assert isinstance(action, QAction)
     assert action.isEnabled() is False
     assert action.text() == message
+
+
+@pytest.mark.parametrize("event_date,expected_title", [
+    (datetime(year=2020, day=1, month=1, hour=12, minute=30, second=55, tzinfo=UTC), "id: 123 @ 12:30:55"),
+    (datetime(year=2020, day=1, month=1, hour=11, minute=30, second=55, tzinfo=UTC), "id: 123 @ 11:30:55"),
+    (datetime(year=2020, day=1, month=1, hour=0, minute=30, second=0, tzinfo=UTC), "id: 123 @ 00:30:00"),
+    (datetime(year=2020, day=1, month=1, hour=0, minute=0, second=0, tzinfo=UTC), "id: 123 @ 00:00:00"),
+    (datetime(year=2019, day=31, month=12, hour=23, minute=59, second=59, tzinfo=UTC), "id: 123 @ 23:59:59 (yesterday)"),
+    (datetime(year=2019, day=31, month=12, hour=12, minute=30, second=55, tzinfo=UTC), "id: 123 @ 12:30:55 (yesterday)"),
+    (datetime(year=2019, day=31, month=12, hour=0, minute=0, second=0, tzinfo=UTC), "id: 123 @ 00:00:00 (yesterday)"),
+    (datetime(year=2019, day=30, month=12, hour=23, minute=59, second=59, tzinfo=UTC), "id: 123 @ 23:59:59 (Dec 30)"),
+    (datetime(year=2018, day=31, month=12, hour=23, minute=59, second=59, tzinfo=UTC), "id: 123 @ 23:59:59 (Dec 31)"),
+    (datetime(year=2020, day=2, month=1, hour=0, minute=0, second=0, tzinfo=UTC), "id: 123 @ 00:00:00 (Jan 02)"),
+    (datetime(year=2020, day=3, month=1, hour=0, minute=0, second=0, tzinfo=UTC), "id: 123 @ 00:00:00 (Jan 03)"),
+])
+def test_menu_make_menu_title(event_date, expected_title):
+    event = mock.MagicMock()
+    event.date = event_date
+    event.event_id = "123"
+    res = make_menu_title(event=event,
+                          today=datetime(year=2020, day=1, month=1, hour=12, minute=30, second=55, tzinfo=UTC))
+    assert res == expected_title

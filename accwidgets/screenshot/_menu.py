@@ -1,6 +1,7 @@
 import weakref
 import functools
 from typing import Optional, List
+from datetime import datetime
 from typing_extensions import Protocol, runtime_checkable
 from qtpy.QtWidgets import QMenu, QWidget, QAction
 from qtpy.QtCore import Signal
@@ -57,10 +58,14 @@ class LogbookMenu(QMenu):
             if len(logbook_events) > 0:
                 activities_summary = make_activities_summary(model_provider.model)
 
+                today = datetime.now()
+                today = today.replace(hour=0,
+                                      minute=0,
+                                      second=0,
+                                      microsecond=0)
+
                 def map_event(event: Event):
-                    event_id = str(event.event_id)[-3:]
-                    date = event.date.strftime("%T")
-                    action = QAction(f"id: {event_id} @ {date}", self)
+                    action = QAction(make_menu_title(event=event, today=today), self)
                     action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
                     action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
                                       f"in {activities_summary} e-logbook")
@@ -75,3 +80,22 @@ def make_fallback_actions(msg: str, parent: QWidget) -> List[QAction]:
     fallback_action = QAction(msg, parent)
     fallback_action.setEnabled(False)
     return [fallback_action]
+
+
+def make_menu_title(event: Event, today: datetime) -> str:
+    date = event.date.strftime("%T")
+    compared = event.date.replace(hour=0,
+                                  minute=0,
+                                  second=0,
+                                  microsecond=0)
+    diff = today - compared
+    suffix: Optional[str]
+    if diff.days == 1:
+        suffix = "yesterday"
+    elif diff.days != 0:
+        suffix = event.date.strftime("%b %d")
+    else:
+        suffix = None
+    if suffix is not None:
+        date = f"{date} ({suffix})"
+    return f"id: {event.event_id!s} @ {date}"
