@@ -359,3 +359,26 @@ def test_get_logbook_events_fails(logbook):
     model = LogbookModel(logbook=logbook)
     with pytest.raises(LogbookError, match="Test error"):
         model.get_logbook_events(past_days=1, max_events=10)
+
+
+@pytest.mark.parametrize("activities,token,expected_error", [
+    (None, "", "RBAC login is required to write to the e-logbook"),
+    ("", "", "RBAC login is required to write to the e-logbook"),
+    (None, "abc123", "No e-logbook activity is defined"),
+    ("", "abc123", "No e-logbook activity is defined"),
+    ("TEST1", "abc123", None),
+    (["TEST1", "TEST2"], "abc123", None),
+    ("TEST1", "", "RBAC login is required to write to the e-logbook"),
+    (["TEST1", "TEST2"], "", "RBAC login is required to write to the e-logbook"),
+])
+def test_validate(logbook, activities, token, expected_error):
+    client, activities_client = logbook
+    activities_client.activities = activities
+    client.rbac_b64_token = token
+    model = LogbookModel(activities=activities, logbook=logbook)
+
+    if expected_error is None:
+        model.validate()
+    else:
+        with pytest.raises(ValueError, match=expected_error):
+            model.validate()

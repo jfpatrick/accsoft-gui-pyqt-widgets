@@ -180,22 +180,18 @@ class ScreenshotButton(OrientedToolButton):
             message, _ = QInputDialog.getText(self, "Logbook", "Enter a logbook message:")
         return message
 
-    def _update_tooltip(self):
-        if not self.model.rbac_token_valid:
-            msg = "ERROR: RBAC login is required to write to the e-logbook"
-        elif not self.model.logbook_activities:
-            msg = "ERROR: No e-logbook activity is defined"
+    def _update_ui(self):
+        try:
+            self.model.validate()
+        except ValueError as e:
+            msg = f"ERROR: {e!s}"
+            enable = False
         else:
+            enable = True
             activities_summary = make_activities_summary(self.model)
             msg = f"Capture screenshot to a new entry in {activities_summary} e-logbook"
         self.setToolTip(msg)
-
-    def _update_enabled_status(self):
-        self.setEnabled(bool(self.model.logbook_activities) and self.model.rbac_token_valid)
-
-    def _update_ui(self):
-        self._update_tooltip()
-        self._update_enabled_status()
+        self.setEnabled(enable)
 
     def _connect_model(self, model: LogbookModel):
         model.rbac_token_changed.connect(self._update_ui)

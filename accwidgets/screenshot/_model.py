@@ -56,10 +56,6 @@ class LogbookModel(QObject):
         # if given RBAC token is already valid, populate activities into the activities_client
         self._flush_activities_cache(emit_signal=False)
 
-    @property
-    def rbac_token_valid(self) -> bool:
-        return len(self._client.rbac_b64_token) > 0
-
     def reset_rbac_token(self, token: Optional[Token] = None):
         """
         Set or delete the existing RBAC token.
@@ -154,8 +150,20 @@ class LogbookModel(QObject):
         events_pages.page_size = max_events
         return list(events_pages.get_page(0))
 
+    def validate(self):
+        """
+        Validate the model to check if it can communicate with e-logbook.
+
+        Raises:
+            ValueError: If communication is not possible. Error message will be the reason for validation failure.
+        """
+        if not self._rbac_token_valid:
+            raise ValueError("RBAC login is required to write to the e-logbook")
+        if not self.logbook_activities:
+            raise ValueError("No e-logbook activity is defined")
+
     def _flush_activities_cache(self, emit_signal: bool = True):
-        if not self.rbac_token_valid or self._activities_cache is None:
+        if not self._rbac_token_valid or self._activities_cache is None:
             return
         prev_activities = self._activities_client.activities
         try:
@@ -166,6 +174,10 @@ class LogbookModel(QObject):
             if emit_signal and prev_activities != self._activities_cache:
                 self.activities_changed.emit()
             self._activities_cache = None
+
+    @property
+    def _rbac_token_valid(self) -> bool:
+        return len(self._client.rbac_b64_token) > 0
 
 
 def normalize_token(token: Optional[Token]) -> Union[str, Token]:
