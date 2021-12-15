@@ -4,12 +4,13 @@ import functools
 import qtawesome as qta
 from typing import Optional, Union, Tuple, Iterable
 from qtpy.QtCore import Signal, QTimer, Property
-from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog
+from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog, QSizePolicy
 from qtpy.QtGui import QShowEvent
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
 from pylogbook.models import Activity, ActivitiesType
+from accwidgets.qt import OrientedToolButton
 from ._grabber import grab_png_screenshot
 
 
@@ -17,7 +18,7 @@ ScreenshotButtonSource = Union[QWidget, Iterable[QWidget]]
 """Alias for the possible types of the widgets that can be captured in a screenshot."""
 
 
-class ScreenshotButton(QToolButton):
+class ScreenshotButton(OrientedToolButton):
 
     captureFinished = Signal(int)
     """
@@ -46,7 +47,9 @@ class ScreenshotButton(QToolButton):
             server_url: Logbook server URL.
             rbac_token: RBAC token.
         """
-        super().__init__(parent)
+        super().__init__(parent=parent,
+                         primary=QSizePolicy.Preferred,
+                         secondary=QSizePolicy.Expanding)
         self._src: Iterable[QWidget] = ()
         self._include_window_decor = True
         self._msg = message
