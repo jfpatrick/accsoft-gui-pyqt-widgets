@@ -22,8 +22,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ScreenshotButton basic example")
         toolbar = QToolBar()
         self.addToolBar(toolbar)
-        logbook_button = ScreenshotButton(source=self,
-                                          model=SampleLogbookModel())
+        logbook_button = ScreenshotButton(model=SampleLogbookModel())
         self.logbook_button = logbook_button
         logbook_button.captureFinished.connect(lambda event_id: print(f"Captured to event id={event_id}"))
         logbook_button.captureFailed.connect(lambda e: print(f"Capture failed: {e}"))

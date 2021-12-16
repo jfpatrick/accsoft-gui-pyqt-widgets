@@ -121,7 +121,8 @@ class ScreenshotButton(OrientedToolButton):
     def event(self, event: QEvent) -> bool:
         """
         This event handler is reimplemented to react to the external style change, e.g. via QSS, to adjust
-        color of the icon.
+        color of the icon. It also implements automatic source detection, when no explicit :attr:`source`
+        was provided.
 
         This is the main event handler; it handles event ``event``. You can reimplement this function in a
         subclass, but we recommend using one of the specialized event handlers instead.
@@ -138,6 +139,12 @@ class ScreenshotButton(OrientedToolButton):
         if event.type() == QEvent.StyleChange or event.type() == QEvent.PaletteChange:
             # Update this at the end of the event loop, when palette has been synchronized with the updated style
             QTimer.singleShot(0, self._update_icon)
+        elif event.type() == QEvent.ParentChange or event.type() == QEvent.Show:
+            # Assign window as the default source, if none defined
+            # ParentChange generally works when adding the widget programmatically, but does not trigger when
+            # instantiated from Designer file. For that, we fall back to show event.
+            if not self._src:
+                self._src = self.window()
         return res
 
     def _update_icon(self):
