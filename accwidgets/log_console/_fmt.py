@@ -120,8 +120,8 @@ class LogConsoleFormatter(AbstractLogConsoleFormatter):
                                 exc_info=getattr(record, "exc_info", None),
                                 func=getattr(record, "funcName", None),
                                 sinfo=getattr(record, "stack_info", None))
-        rec.created = int(record.timestamp)
-        rec.msecs = record.millis
+        rec.created = record.timestamp  # type: ignore  # mypy erroneusly thinks that 'created' is int
+        rec.msecs = record.millis  # type: ignore  # mypy erroneusly thinks that 'msecs' is int
 
         return self._fmt.format(rec)
 
