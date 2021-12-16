@@ -789,6 +789,192 @@ def test_app_frame_set_rbac_removes_old_widget(qtbot: QtBot, old_widget_type, ne
     assert not rbac_widget_is_in_toolbar()
 
 
+class NewExtraConsumer(QWidget):
+
+    def connect_rbac(self, button: RbaButton):
+        button.tokenExpired.connect(self.dump)
+        button.loginSucceeded.connect(self.dump)
+
+    def disconnect_rbac(self, button: RbaButton):
+        button.tokenExpired.disconnect(self.dump)
+        button.loginSucceeded.disconnect(self.dump)
+
+    def dump(self):
+        pass
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_links_rbac_with_consumer_when_consumer_added(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                                expected_login_failed_count, expected_login_finished_count,
+                                                                expected_login_succeeded_count, expected_token_expired_count,
+                                                                expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=True, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_links_rbac_with_consumer_when_rbac_added(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                            expected_login_failed_count, expected_login_finished_count,
+                                                            expected_login_succeeded_count, expected_token_expired_count,
+                                                            expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=False, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    rbac = RbaButton()
+    qtbot.add_widget(rbac)
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+    app_frame.rba_widget = rbac
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_relinks_rbac_with_consumer_when_rbac_replaced(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                                 expected_login_failed_count, expected_login_finished_count,
+                                                                 expected_login_succeeded_count, expected_token_expired_count,
+                                                                 expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=True, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    old_rbac = app_frame.rba_widget
+    assert old_rbac.receivers(old_rbac.tokenExpired) == expected_token_expired_count
+    assert old_rbac.receivers(old_rbac.loginSucceeded) == expected_login_succeeded_count
+    assert old_rbac.receivers(old_rbac.loginFinished) == expected_login_finished_count
+    assert old_rbac.receivers(old_rbac.loginFailed) == expected_login_failed_count
+    assert old_rbac.receivers(old_rbac.logoutFinished) == expected_logout_finished_count
+    new_rbac = RbaButton()
+    qtbot.add_widget(new_rbac)
+    assert new_rbac.receivers(new_rbac.tokenExpired) == 0
+    assert new_rbac.receivers(new_rbac.loginSucceeded) == 0
+    assert new_rbac.receivers(new_rbac.loginFinished) == 0
+    assert new_rbac.receivers(new_rbac.loginFailed) == 0
+    assert new_rbac.receivers(new_rbac.logoutFinished) == 0
+    app_frame.rba_widget = new_rbac
+    assert new_rbac.receivers(new_rbac.tokenExpired) == expected_token_expired_count
+    assert new_rbac.receivers(new_rbac.loginSucceeded) == expected_login_succeeded_count
+    assert new_rbac.receivers(new_rbac.loginFinished) == expected_login_finished_count
+    assert new_rbac.receivers(new_rbac.loginFailed) == expected_login_failed_count
+    assert new_rbac.receivers(new_rbac.logoutFinished) == expected_logout_finished_count
+    assert old_rbac.receivers(old_rbac.tokenExpired) == 0
+    assert old_rbac.receivers(old_rbac.loginSucceeded) == 0
+    assert old_rbac.receivers(old_rbac.loginFinished) == 0
+    assert old_rbac.receivers(old_rbac.loginFailed) == 0
+    assert old_rbac.receivers(old_rbac.logoutFinished) == 0
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@pytest.mark.parametrize("prop_name,prop_value", [
+    ("useRBAC", False),
+    ("rba_widget", None),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_unlinks_rbac_from_consumer_when_rbac_removed(_, qtbot: QtBot, prop_name, prop_value, consumer_types,
+                                                                consumer_destinations, expected_logout_finished_count,
+                                                                expected_login_failed_count, expected_login_finished_count,
+                                                                expected_login_succeeded_count, expected_token_expired_count):
+    app_frame = ApplicationFrame(use_rbac=True)
+    qtbot.add_widget(app_frame)
+    for consumer_type, consumer_dest in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, consumer_dest, widget)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+    setattr(app_frame, prop_name, prop_value)
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,"
+                         "expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count,"
+                         "expected_new_token_expired_count,expected_new_login_succeeded_count,expected_new_logout_finished_count,"
+                         "expected_new_login_failed_count,expected_new_login_finished_count",
+                         [
+                             ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0, 0, 0, 0, 0, 0),
+                             ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0, 1, 1, 0, 0, 0),
+                         ])
+@pytest.mark.parametrize("prop_name,prop_value", [
+    ("useScreenshot", False),
+    ("screenshot_widget", None),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_unlinks_rbac_from_consumer_when_consumer_removed(_, qtbot: QtBot, prop_name, prop_value,
+                                                                    consumer_destinations, consumer_types,
+                                                                    expected_login_failed_count, expected_login_finished_count,
+                                                                    expected_login_succeeded_count, expected_token_expired_count,
+                                                                    expected_logout_finished_count, expected_new_login_failed_count,
+                                                                    expected_new_login_finished_count, expected_new_login_succeeded_count,
+                                                                    expected_new_logout_finished_count, expected_new_token_expired_count):
+    app_frame = ApplicationFrame(use_rbac=True)
+    qtbot.add_widget(app_frame)
+    for consumer_type, consumer_dest in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, consumer_dest, widget)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+    setattr(app_frame, prop_name, prop_value)
+    assert rbac.receivers(rbac.tokenExpired) == expected_new_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_new_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_new_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_new_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_new_logout_finished_count
+
+
 @pytest.mark.parametrize("initial_value,new_value,expect_sets_bar", [
     (True, True, False),
     (False, False, False),

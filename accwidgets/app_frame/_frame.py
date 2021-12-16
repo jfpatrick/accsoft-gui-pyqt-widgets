@@ -1,11 +1,13 @@
 import re
-from typing import Optional, Union, overload, cast, Tuple, TYPE_CHECKING
+import functools
+from typing import Optional, Union, overload, cast, Tuple, TYPE_CHECKING, Callable
 from pathlib import Path
 from qtpy.QtWidgets import (QMainWindow, QWidget, QDockWidget, QMenu, QAction, QMenuBar, QToolBar, QSpacerItem,
                             QSizePolicy, QHBoxLayout)
 from qtpy.QtGui import QShowEvent
 from qtpy.QtCore import Qt, Property, Slot
 from accwidgets._designer_base import _icon, designer_user_error, DesignerUserError
+from accwidgets._integrations import RbaButtonProtocol, RbaConsumerProtocol
 from ._about_dialog import AboutDialog
 
 if TYPE_CHECKING:
@@ -183,6 +185,7 @@ class ApplicationFrame(QMainWindow):
             for associated_widget in tool_action.associatedWidgets():
                 if isinstance(associated_widget, QToolBar) and associated_widget.parent() == self:
                     associated_widget.removeAction(tool_action)
+            self.__unlink_rbac_from_components_if_needed()
             tool_widget.deleteLater()
             self.__rba_tool = None
         if new_val is not None:
@@ -196,6 +199,7 @@ class ApplicationFrame(QMainWindow):
                 toolbar.addWidget(ToolBarSpacer())
             tool_action = toolbar.addWidget(tool_widget)
             self.__rba_tool = (tool_action, tool_widget)
+            self.__link_rbac_with_other_components_if_needed()
         else:
             toolbar = self.main_toolbar()
             cnt = len(toolbar.actions())
@@ -242,6 +246,15 @@ class ApplicationFrame(QMainWindow):
             for associated_widget in tool_action.associatedWidgets():
                 if isinstance(associated_widget, QToolBar) and associated_widget.parent() == self:
                     associated_widget.removeAction(tool_action)
+            self.__unlink_rbac_from_components_if_needed(tool_widget)
+            model_changed_slot = getattr(tool_widget, _RBAC_CONSUMER_MODEL_CHANGED_SLOT, None)
+            if model_changed_slot is not None:
+                try:
+                    tool_widget.modelChanged.disconnect(model_changed_slot)
+                except (AttributeError, TypeError):
+                    pass
+                else:
+                    delattr(tool_widget, _RBAC_CONSUMER_MODEL_CHANGED_SLOT)
             tool_widget.deleteLater()
             self.__logbook_tool = None
         if new_val is not None:
@@ -257,6 +270,16 @@ class ApplicationFrame(QMainWindow):
                 # Snap just before RbaButton
                 tool_action = toolbar.insertWidget(toolbar.actions()[cnt - 1], tool_widget)
             self.__logbook_tool = (tool_action, tool_widget)
+            self.__link_rbac_with_other_components_if_needed(tool_widget)
+            try:
+                # If the model on the widget changes, re-link it with the RBAC button
+                model_changed_slot = functools.partial(self.__link_rbac_with_other_components_if_needed,
+                                                       consumer=tool_widget)
+                tool_widget.modelChanged.connect(model_changed_slot)
+            except (AttributeError, TypeError):
+                pass
+            else:
+                setattr(tool_widget, _RBAC_CONSUMER_MODEL_CHANGED_SLOT, model_changed_slot)
         else:
             toolbar = self.main_toolbar()
             cnt = len(toolbar.actions())
@@ -304,6 +327,7 @@ class ApplicationFrame(QMainWindow):
             for associated_widget in tool_action.associatedWidgets():
                 if isinstance(associated_widget, QToolBar) and associated_widget.parent() == self:
                     associated_widget.removeAction(tool_action)
+            self.__unlink_rbac_from_components_if_needed(tool_widget)
             tool_widget.deleteLater()
             self.__timing_tool = None
         if new_val is not None:
@@ -315,6 +339,7 @@ class ApplicationFrame(QMainWindow):
             except IndexError:
                 tool_action = toolbar.addWidget(tool_widget)
             self.__timing_tool = (tool_action, tool_widget)
+            self.__link_rbac_with_other_components_if_needed(tool_widget)
         else:
             self.__remove_main_toolbar_if_needed()
 
@@ -467,7 +492,67 @@ class ApplicationFrame(QMainWindow):
                 self.removeToolBar(toolbar)
                 toolbar.deleteLater()
 
+    def __link_rbac_with_other_components_if_needed(self, consumer: Optional[QWidget] = None):
+
+        def act(w: RbaConsumerProtocol):
+            if getattr(w, _RBAC_CONSUMER_CONNECTED_FLAG, False):
+                return
+            w.connect_rbac(self.rba_widget)
+            setattr(w, _RBAC_CONSUMER_CONNECTED_FLAG, True)
+
+        self.__iterate_rbac_consumers(act=act, consumer=consumer)
+
+    def __unlink_rbac_from_components_if_needed(self, consumer: Optional[QWidget] = None):
+
+        def act(w: RbaConsumerProtocol):
+            if not getattr(w, _RBAC_CONSUMER_CONNECTED_FLAG, False):
+                return
+            w.disconnect_rbac(self.rba_widget)
+            delattr(w, _RBAC_CONSUMER_CONNECTED_FLAG)
+
+        self.__iterate_rbac_consumers(act=act, consumer=consumer)
+
+    def __iterate_rbac_consumers(self,
+                                 act: Callable[[RbaConsumerProtocol], None],
+                                 consumer: Optional[QWidget]):
+        if not isinstance(self.rba_widget, RbaButtonProtocol):
+            return
+        # The limitation here is that it can only connect toolbar items
+        toolbar = self.main_toolbar(create=False)
+        if not toolbar:
+            return
+
+        def find_rba_consumer(tool_widget: QWidget):
+            if isinstance(tool_widget, RbaConsumerProtocol):
+                return tool_widget
+            else:
+                try:
+                    default_action = tool_widget.defaultAction()
+                except AttributeError:
+                    pass
+                else:
+                    if isinstance(default_action, RbaConsumerProtocol):
+                        return default_action
+            return None
+
+        if consumer is not None:
+            consumer = find_rba_consumer(consumer)
+            if consumer is not None:
+                act(consumer)
+        else:
+            for action in toolbar.actions():
+                if isinstance(action, RbaConsumerProtocol):
+                    act(action)
+                else:
+                    consumer = find_rba_consumer(toolbar.widgetForAction(action))
+                    if consumer is not None:
+                        act(consumer)
+
     __MAIN_TOOLBAR_TITLE = "Primary Toolbar"
+
+
+_RBAC_CONSUMER_CONNECTED_FLAG = "__accwidgets_rbac_consumer_connected__"
+_RBAC_CONSUMER_MODEL_CHANGED_SLOT = "__accwidgets_rbac_consumer_model_changed_slot__"
 
 
 class ToolBarSpacer(QWidget):
