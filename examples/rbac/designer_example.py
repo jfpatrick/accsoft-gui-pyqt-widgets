@@ -6,7 +6,7 @@ When required to use inside QToolBar, consider creating RbaButton programmatical
 
 import sys
 from pathlib import Path
-from qtpy.QtWidgets import QApplication, QMainWindow, QPushButton
+from qtpy.QtWidgets import QApplication, QMainWindow
 from qtpy.uic import loadUi
 from accwidgets.rbac import RbaButton
 from accwidgets.qt import exec_app_interruptable
@@ -16,7 +16,6 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.btn_code: QPushButton = None
         self.rbac: RbaButton = None
         loadUi(Path(__file__).absolute().parent / "designer_example.ui", self)
 
