@@ -121,6 +121,8 @@ The advantage of :class:`QAction` abstraction is that it can be reused in multip
 screenshot ability can be achieved by clicking a toolbar button, selecting a menu, or using a shortcut key sequence
 (if action was associated with one).
 
+.. seealso:: :ref:`widgets/screenshot/examples:Action example`, :ref:`widgets/screenshot/examples:Shortcut example`
+
 e-Logbook communication
 -----------------------
 
@@ -229,6 +231,8 @@ window.
 Furthermore, there can be multiple sources provided as a sequence to these properties. In that case, each of them will
 be captured and attached to the same e-logbook event as separate image files. Uploading of the images will be executed
 sequentially, one after another.
+
+.. seealso:: :ref:`widgets/screenshot/examples:Custom sources example`
 
 
 Further read
