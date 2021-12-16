@@ -1,4 +1,3 @@
-import logging
 import operator
 from typing import Optional, Set, Any, List
 from pathlib import Path
@@ -9,9 +8,6 @@ from qtpy.QtCore import (QSortFilterProxyModel, QObject, QModelIndex, QPersisten
 from qtpy.QtGui import QBrush, QKeyEvent
 from ._token import RbaRole
 from ._palette import get_color, ColorRole
-
-
-logger = logging.getLogger(__name__)
 
 
 class RbaCriticalRolesModel(QSortFilterProxyModel):

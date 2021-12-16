@@ -1,4 +1,3 @@
-import logging
 from typing import Optional, List
 from pathlib import Path
 from enum import IntEnum, auto
@@ -9,9 +8,6 @@ from qtpy.QtWidgets import (QWidget, QPushButton, QLineEdit, QLabel, QTabWidget,
                             QDialogButtonBox, QDialog, QStackedWidget)
 from accwidgets.qt import ActivityIndicator
 from ._token import RbaToken
-
-
-logger = logging.getLogger(__name__)
 
 
 class RbaAuthDialogWidget(QWidget):
