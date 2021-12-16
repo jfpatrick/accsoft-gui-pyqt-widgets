@@ -20,6 +20,7 @@ The following is a list of widgets that are requested (implemented ones have sta
    |propedit-link|        |done|            |propedit|        Allows to explicitly Get/Set one or more fields
                                                               of a specific device property
    |lsa-link|             |done|            |lsaselector|     Displays and selects LSA cycles
+   |screenshot-link|      |done|            |screenshot|      Uploads screenshots to e-logbook
    |led-link|             |done|            |led|             Works with arbitrary colors or a predefined
                                                               status: :attr:`~accwidgets.led.Led.Status.ON`,
                                                               :attr:`~accwidgets.led.Led.Status.OFF`,
@@ -76,6 +77,8 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |led-link| replace:: :doc:`LED <led/index>`
 
+.. |screenshot-link| replace:: :doc:`Screenshot button <screenshot/index>`
+
 .. |param-selector-link| replace:: :doc:`Parameter selector <parameter_selector/index>`
 
 .. |done| replace:: :green:`Available`
@@ -95,6 +98,8 @@ their usage statistics gathered from existing Inspector projects.
 .. |propedit| image:: ../img/propedit.png
 
 .. |lsaselector| image:: ../img/lsaselector.png
+
+.. |screenshot| image:: ../img/screenshot.png
 
 .. |trim| image:: ../img/trimeditor.png
    :width: 250px
@@ -125,6 +130,7 @@ Explore individual widgets
    graphs/index
    property_edit/index
    lsa_selector/index
+   screenshot/index
    led/index
    log_console/index
    timing_bar/index

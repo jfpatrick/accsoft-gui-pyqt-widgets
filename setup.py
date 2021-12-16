@@ -84,6 +84,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "pjlsa",
         "numpy",
         "pyqtgraph",
+        "pylogbook",
     ],
 }
 
