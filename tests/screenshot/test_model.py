@@ -322,6 +322,7 @@ def test_attach_screenshot_fails(logbook, screenshot, seq):
 
 
 @freeze_time(STATIC_TIME)
+@pytest.mark.asyncio
 @pytest.mark.parametrize("past_days,max_events,returned_events,expected_start_date,expected_result", [
     (0, 0, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, []),
     (1, 0, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
@@ -339,26 +340,27 @@ def test_attach_screenshot_fails(logbook, screenshot, seq):
     (1, 10, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
     (5, 10, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
 ])
-def test_get_logbook_events_succeeds(logbook, past_days, max_events, returned_events, expected_result,
-                                     expected_start_date):
+async def test_get_logbook_events_succeeds(logbook, past_days, max_events, returned_events, expected_result,
+                                           expected_start_date):
     _, activities_client = logbook
     remote_result = mock.MagicMock()
     remote_result.get_page.return_value = returned_events
     activities_client.get_events.return_value = remote_result
     model = LogbookModel(logbook=logbook)
     activities_client.get_events.assert_not_called()
-    res = model.get_logbook_events(past_days=past_days, max_events=max_events)
+    res = await model.get_logbook_events(past_days=past_days, max_events=max_events)
     activities_client.get_events.assert_called_once_with(from_date=datetime(**expected_start_date))
     remote_result.get_page.assert_called_once_with(0)
     assert res == expected_result
 
 
-def test_get_logbook_events_fails(logbook):
+@pytest.mark.asyncio
+async def test_get_logbook_events_fails(logbook):
     _, activities_client = logbook
     activities_client.get_events.side_effect = LogbookError("Test error", response=mock.MagicMock())
     model = LogbookModel(logbook=logbook)
     with pytest.raises(LogbookError, match="Test error"):
-        model.get_logbook_events(past_days=1, max_events=10)
+        await model.get_logbook_events(past_days=1, max_events=10)
 
 
 @pytest.mark.parametrize("activities,token,expected_error", [
@@ -382,3 +384,15 @@ def test_validate(logbook, activities, token, expected_error):
     else:
         with pytest.raises(ValueError, match=expected_error):
             model.validate()
+
+
+@mock.patch("accwidgets.screenshot._model.ThreadPoolExecutor")
+def test_shuts_down_thread_pool_on_destruction(ThreadPoolExecutor):
+    ThreadPoolExecutor.return_value.shutdown.assert_not_called()
+
+    def scope():
+        _ = LogbookModel(server_url="http://localhost:3000")
+        ThreadPoolExecutor.return_value.shutdown.assert_not_called()
+
+    scope()
+    ThreadPoolExecutor.return_value.shutdown.assert_called_once()

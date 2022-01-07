@@ -1,13 +1,19 @@
 import weakref
 import functools
 import qtawesome as qta
-from typing import Optional, List
+from asyncio import Future, CancelledError
+try:
+    from asyncio import create_task
+except ImportError:
+    from asyncio import ensure_future as create_task  # type: ignore
+from typing import Optional, List, Iterable
 from datetime import datetime
 from typing_extensions import Protocol, runtime_checkable
 from qtpy.QtWidgets import QMenu, QWidget, QAction
 from qtpy.QtCore import Signal
-from qtpy.QtGui import QShowEvent, QPalette
+from qtpy.QtGui import QShowEvent, QPalette, QHideEvent
 from pylogbook.models import Event
+from accwidgets._async_utils import install_asyncio_event_loop
 from ._common import make_activities_summary, make_new_entry_tooltip
 from ._model import LogbookModel
 
@@ -36,63 +42,100 @@ class LogbookMenu(QMenu):
                  parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._model_provider = weakref.ref(model_provider)
+        self._active_logbook_task: Optional[Future] = None
+        install_asyncio_event_loop()
+        self._create_persistent_actions()
 
     def showEvent(self, event: QShowEvent):
         # The Logbook API doesn't offer a good way to
         # keep a local model synchronised with the server, so this just
-        # re-fetches the latest entries each time.
-        try:
-            actions = self._build_event_actions()
-        except Exception as e:  # noqa: B902
-            self.event_fetch_failed.emit(str(e))
-            actions = make_fallback_actions("Error occurred (see log output for details)", self)
-
-        # We must clear here, and must NOT clear in hideEvent, because actions will be destroyed before they trigger
-        self.clear()
-        self.addActions(actions)
+        # re-fetches the latest entries each time (asynchronously).
+        self._update_new_action_with_latest_model()
+        self._set_menu_actions(make_fallback_actions("Loading…", self))
+        create_task(self._fetch_event_actions())
         super().showEvent(event)
 
-    def _build_event_actions(self) -> List[QAction]:
+    def hideEvent(self, event: QHideEvent):
+        super().hideEvent(event)
+        self._cancel_running_tasks()
+
+    def _update_new_action_with_latest_model(self):
         model_provider = self._model_provider()
         if not model_provider:
-            return make_fallback_actions("(can't retrieve events)", self)
-
+            return
+        new_action = self.actions()[0]
+        new_action.setIcon(qta.icon("fa.plus", color=self.palette().color(QPalette.Text)))
+        new_action.setToolTip(make_new_entry_tooltip(model_provider.model))
         text = "Create new entry"
-        if not model_provider.message:
+        interactive = not model_provider.message
+        if interactive:
             # User interaction will be required (to enter message), emphasize with ellipsis
             text = f"{text}…"
-        new_action = QAction(text, self)
-        new_action.setIcon(qta.icon("fa.plus", color=self.palette().color(QPalette.Text)))
+        new_action.setText(text)
+
+    def _create_persistent_actions(self):
+        new_action = QAction(self)
         new_action.triggered.connect(functools.partial(self.event_clicked.emit, -1))
-        new_action.setToolTip(make_new_entry_tooltip(model_provider.model))
         sep = QAction(self)
         sep.setSeparator(True)
-        actions = [new_action, sep]
+        self.addActions([new_action, sep])
 
-        logbook_events = model_provider.model.get_logbook_events(past_days=model_provider.max_menu_days,
-                                                                 max_events=model_provider.max_menu_entries)
+    def _clear_dynamic_actions(self):
+        actions = self.actions()
+        for i in reversed(range(2, len(self.actions()))):
+            self.removeAction(actions[i])
 
-        if len(logbook_events) > 0:
-            activities_summary = make_activities_summary(model_provider.model)
+    def _set_menu_actions(self, dynamic_actions: Iterable[QAction]):
+        self._clear_dynamic_actions()
+        self.addActions(dynamic_actions)
 
-            today = datetime.now()
-            today = today.replace(hour=0,
-                                  minute=0,
-                                  second=0,
-                                  microsecond=0)
+    async def _fetch_event_actions(self):
+        model_provider = self._model_provider()
+        if not model_provider:
+            self._set_menu_actions(make_fallback_actions("(can't retrieve events)", self))
+            return
 
-            def map_event(event: Event):
-                action = QAction(make_menu_title(event=event, today=today), self)
-                action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
-                action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
-                                  f"in {activities_summary} e-logbook")
-                return action
-
-            actions.extend(map(map_event, logbook_events))
+        self._active_logbook_task = create_task(
+            model_provider.model.get_logbook_events(past_days=model_provider.max_menu_days,
+                                                    max_events=model_provider.max_menu_entries),
+        )
+        try:
+            logbook_events = await self._active_logbook_task
+        except CancelledError:
+            actions = make_fallback_actions("(event retrieval cancelled)", self)
+        except Exception as e:  # noqa: B902
+            self.event_fetch_failed.emit(str(e))
+            actions = make_fallback_actions("Error occurred", self)
         else:
-            actions.extend(make_fallback_actions("(no events)", self))
+            if len(logbook_events) > 0:
+                activities_summary = make_activities_summary(model_provider.model)
 
-        return actions
+                today = datetime.now()
+                today = today.replace(hour=0,
+                                      minute=0,
+                                      second=0,
+                                      microsecond=0)
+
+                def map_event(event: Event):
+                    action = QAction(make_menu_title(event=event, today=today), self)
+                    action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
+                    action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
+                                      f"in {activities_summary} e-logbook")
+                    return action
+
+                actions = map(map_event, logbook_events)
+            else:
+                actions = make_fallback_actions("(no events)", self)
+
+        self._set_menu_actions(actions)
+
+    def _cancel_running_tasks(self):
+        if self._active_logbook_task is not None:
+            self._active_logbook_task.cancel()
+            self._active_logbook_task = None
+
+    def __del__(self):
+        self._cancel_running_tasks()
 
 
 def make_fallback_actions(msg: str, parent: QWidget) -> List[QAction]:

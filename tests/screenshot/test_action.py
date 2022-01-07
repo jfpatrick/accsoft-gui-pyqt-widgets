@@ -1,7 +1,7 @@
 import pytest
 from unittest import mock
 from pytestqt.qtbot import QtBot
-from qtpy.QtCore import QObject, QPoint
+from qtpy.QtCore import QObject
 from qtpy.QtWidgets import QToolButton, QWidget, QMainWindow, QMenuBar
 from pylogbook.models import Activity
 from pylogbook.exceptions import LogbookError
@@ -9,6 +9,7 @@ from accwidgets.rbac import RbaButton
 from accwidgets.screenshot import LogbookModel, ScreenshotAction
 from accwidgets.screenshot._menu import LogbookMenu
 from .fixtures import *  # noqa: F401,F403
+from ..async_shim import AsyncMock
 
 
 @pytest.mark.parametrize("parent_type", [None, QObject])
@@ -164,16 +165,19 @@ def test_max_menu_days_prop(logbook_model, new_val, qtbot: QtBot):
     assert action.max_menu_days == new_val
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("max_days", [1, 3])
 @pytest.mark.parametrize("max_entries", [1, 5, 10])
-def test_max_menu_props_affect_menu_on_show(max_days, max_entries, logbook_model, qtbot: QtBot):
+def test_max_menu_props_affect_menu_on_show(max_days, max_entries, logbook_model, qtbot: QtBot, event_loop):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
     action.max_menu_entries = max_entries
     action.max_menu_days = max_days
-    action.menu().popup(QPoint(0, 0))
-    logbook_model.get_logbook_events.assert_called_once_with(past_days=max_days,
-                                                             max_events=max_entries)
+    logbook_model.get_logbook_events = AsyncMock(return_value=[])
+    # This task is presumed to be launched from show event, tested in test_menu.py
+    event_loop.run_until_complete(action.menu()._fetch_event_actions())
+    logbook_model.get_logbook_events.assert_awaited_once_with(past_days=max_days,
+                                                              max_events=max_entries)
 
 
 @pytest.mark.parametrize("previously_connected,expect_initially_connected", [

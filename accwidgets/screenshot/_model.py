@@ -1,9 +1,18 @@
-from typing import Optional, Union, Tuple, List
+import asyncio
+from asyncio import Future
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional, Union, Tuple, List, Callable, TYPE_CHECKING
 from datetime import datetime, timedelta
 from qtpy.QtCore import Signal, QObject
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.models import Activity, ActivitiesType, Event
+
+
+if TYPE_CHECKING:
+    FutureType = Future
+else:
+    FutureType = Union
 
 
 class LogbookModel(QObject):
@@ -55,6 +64,7 @@ class LogbookModel(QObject):
             self._activities_client = ActivitiesClient(client=self._client, activities=[])
         # if given RBAC token is already valid, populate activities into the activities_client
         self._flush_activities_cache(emit_signal=False)
+        self._thread_pool = ThreadPoolExecutor(max_workers=1)
 
     def reset_rbac_token(self, token: Optional[Token] = None):
         """
@@ -129,7 +139,7 @@ class LogbookModel(QObject):
                              mime_type="image/png",
                              name=f"capture_{seq}.png")
 
-    def get_logbook_events(self, past_days: int, max_events: int) -> List[Event]:
+    async def get_logbook_events(self, past_days: int, max_events: int) -> FutureType[List[Event]]:
         """
         Retrieve existing e-logbook event in the given range.
 
@@ -143,12 +153,16 @@ class LogbookModel(QObject):
         Raises:
             ~pylogbook.exceptions.LogbookError: If there was a problem retrieving the events.
         """
+        activities_client = self._activities_client
 
-        start = datetime.now() - timedelta(days=past_days)
-        # Specifying a `from_date` improves performance
-        events_pages = self._activities_client.get_events(from_date=start)
-        events_pages.page_size = max_events
-        return list(events_pages.get_page(0))
+        def fn():
+            start = datetime.now() - timedelta(days=past_days)
+            # Specifying a `from_date` improves performance
+            events_pages = activities_client.get_events(from_date=start)
+            events_pages.page_size = max_events
+            return list(events_pages.get_page(0))
+
+        return await self._dispatch_runnable(fn)
 
     def validate(self):
         """
@@ -161,6 +175,9 @@ class LogbookModel(QObject):
             raise ValueError("RBAC login is required to write to the e-logbook")
         if not self.logbook_activities:
             raise ValueError("No e-logbook activity is defined")
+
+    def __del__(self):
+        self._thread_pool.shutdown()
 
     def _flush_activities_cache(self, emit_signal: bool = True):
         if not self._rbac_token_valid or self._activities_cache is None:
@@ -178,6 +195,10 @@ class LogbookModel(QObject):
     @property
     def _rbac_token_valid(self) -> bool:
         return len(self._client.rbac_b64_token) > 0
+
+    async def _dispatch_runnable(self, fn: Callable, *args) -> Future:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._thread_pool, fn, *args)
 
 
 def normalize_token(token: Optional[Token]) -> Union[str, Token]:
