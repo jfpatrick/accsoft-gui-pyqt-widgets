@@ -43,6 +43,8 @@ QCheckBox::indicator:unchecked, QGroupBox::indicator:unchecked { border: 1px sol
 QAbstractItemView { alternate-background-color: rgb(66,66,66); }
 QAction { color: rgb(180,180,180); }
 QMenu { background-color: rgb(45,45,45); }
+QMenu > QWidget { background-color: rgb(45,45,45); }
+QMenu > QWidget > ActivityIndicator > QLabel { background-color: rgb(45,45,45); }
 QMenu::item:selected { background-color: rgb(66,66,66); }
 QMenu::item { color: rgb(180,180,180); }
 QToolBar { border: none; background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 1 rgb(52,52,52), stop: 0 rgb(58,58,58)); }

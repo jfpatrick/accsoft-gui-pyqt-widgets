@@ -1,15 +1,17 @@
 import pytest
 from unittest import mock
+from typing import Optional, Callable
 from asyncio import CancelledError
 from datetime import datetime
 from dateutil.tz import UTC
 from pytestqt.qtbot import QtBot
-from qtpy.QtCore import QPoint
+from qtpy.QtCore import QPoint, QObject
 from qtpy.QtWidgets import QAction, QWidget
 from pylogbook.models import Event
 from pylogbook.exceptions import LogbookError
 from accwidgets.screenshot import LogbookModel
-from accwidgets.screenshot._menu import make_fallback_actions, LogbookMenu, make_menu_title
+from accwidgets.screenshot._menu import (make_fallback_actions, LogbookMenu, make_menu_title, LoadingAction,
+                                         ActivityIndicatorWrapper)
 from ..async_shim import AsyncMock
 
 
@@ -50,10 +52,12 @@ def test_menu_populates_menu_with_loading_item_on_show(_, qtbot: QtBot, provider
             menu.popup(QPoint(0, 0))
             fetch_mock.assert_called_once()
             assert len(menu.actions()) == 3
+            assert not isinstance(menu.actions()[0], LoadingAction)
             assert menu.actions()[0].text() == expected_first_text
             assert not menu.actions()[0].isSeparator()
+            assert not isinstance(menu.actions()[1], LoadingAction)
             assert menu.actions()[1].isSeparator()
-            assert menu.actions()[2].text() == "Loading…"
+            assert isinstance(menu.actions()[2], LoadingAction)
         menu.hide()
 
     simulate_show()
@@ -64,7 +68,7 @@ def test_menu_populates_menu_with_loading_item_on_show(_, qtbot: QtBot, provider
 
 @pytest.mark.parametrize("message", ["", "Test message", "(no events)"])
 @pytest.mark.parametrize("parent_type", [None, QWidget])
-def test_make_fallback_actions(message, parent_type, qtbot: QtBot):
+def test_menu_make_fallback_actions(message, parent_type, qtbot: QtBot):
     if parent_type is not None:
         parent = parent_type()
         qtbot.add_widget(parent)
@@ -178,6 +182,7 @@ def test_menu_updates_menu_after_successful_load(qtbot: QtBot, provider_message,
         assert action.text() == expected_title
         assert action.toolTip() == expected_tooltip
         assert action.isEnabled() == enabled
+        assert not isinstance(action, LoadingAction)
     menu._cancel_running_tasks()
 
 
@@ -214,6 +219,7 @@ def test_menu_updates_menu_after_failure_to_load(qtbot: QtBot, provider_message,
     assert not menu.actions()[0].isSeparator()
     assert menu.actions()[1].isSeparator()
     assert not menu.actions()[2].isEnabled()
+    assert not isinstance(menu.actions()[2], LoadingAction)
     assert menu.actions()[2].text() == "Error occurred"
     menu._cancel_running_tasks()
 
@@ -250,5 +256,91 @@ def test_menu_updates_menu_after_cancel_loading(qtbot: QtBot, provider_message, 
     assert not menu.actions()[0].isSeparator()
     assert menu.actions()[1].isSeparator()
     assert not menu.actions()[2].isEnabled()
+    assert not isinstance(menu.actions()[2], LoadingAction)
     assert menu.actions()[2].text() == "(event retrieval cancelled)"
     menu._cancel_running_tasks()
+
+
+@pytest.mark.asyncio
+def test_menu_populates_menu_on_show_with_error_when_model_provider_is_not_found(qtbot: QtBot, event_loop):
+    container = {"a": QObject()}
+    menu = LogbookMenu(model_provider=container["a"])
+    qtbot.add_widget(menu)
+    container["a"].deleteLater()
+    del container["a"]
+
+    assert len(menu.actions()) == 2
+    assert menu.actions()[0].text() == ""
+    assert not menu.actions()[0].isSeparator()
+    assert menu.actions()[1].isSeparator()
+
+    with mock.patch("accwidgets.screenshot._menu.create_task") as create_task:
+        # This is not the one called (from within showEvent) but we call it redundantly, so that we can explicitly await
+        # in this test case, and assume it will populate menu as needed.
+        # The fact that it's called from withing showEvent is checked above
+        with qtbot.wait_signal(menu.event_fetch_failed, raising=False, timeout=100) as blocker:
+            event_loop.run_until_complete(menu._fetch_event_actions())
+        assert not blocker.signal_triggered
+        create_task.assert_not_called()
+
+    assert len(menu.actions()) == 3
+    assert menu.actions()[0].text() == ""
+    assert not menu.actions()[0].isSeparator()
+    assert menu.actions()[1].isSeparator()
+    assert not menu.actions()[2].isEnabled()
+    assert not isinstance(menu.actions()[2], LoadingAction)
+    assert menu.actions()[2].text() == "(can't retrieve events)"
+
+
+def test_loading_action_create_widget(qtbot: QtBot, qapp):
+    action = LoadingAction(qapp)
+    parent = QWidget()
+    qtbot.add_widget(parent)
+    widget = action.createWidget(parent)
+    qtbot.add_widget(widget)
+    assert widget.parent() is parent
+    assert isinstance(widget, ActivityIndicatorWrapper)
+
+
+def test_activity_indicator_wrapper_init(qtbot: QtBot):
+    widget = ActivityIndicatorWrapper()
+    qtbot.add_widget(widget)
+    assert widget.activity.hint == "Loading…"
+    assert not widget.activity.animating
+
+
+def test_activity_indicator_wrapper_stops_animation_on_destruction(qtbot: QtBot):
+    orig_stop: Optional[Callable[[], None]] = None
+    stop_mock = mock.Mock()
+
+    def scope():
+        nonlocal orig_stop
+        widget = ActivityIndicatorWrapper()
+        qtbot.add_widget(widget)
+        orig_stop = widget.activity.stopAnimation
+        widget.activity.stopAnimation = stop_mock
+
+    stop_mock.assert_not_called()
+    scope()
+    stop_mock.assert_called_once()
+    assert orig_stop is not None
+    orig_stop()  # Cleanup
+
+
+def test_activity_indicator_wrapper_stops_animation_on_hide(qtbot: QtBot):
+    widget = ActivityIndicatorWrapper()
+    qtbot.add_widget(widget)
+    with qtbot.wait_exposed(widget):
+        widget.show()
+    assert widget.activity.animating
+    widget.hide()
+    assert not widget.activity.animating
+
+
+def test_activity_indicator_wrapper_starts_animation_on_show(qtbot: QtBot):
+    widget = ActivityIndicatorWrapper()
+    qtbot.add_widget(widget)
+    assert not widget.activity.animating
+    with qtbot.wait_exposed(widget):
+        widget.show()
+    assert widget.activity.animating

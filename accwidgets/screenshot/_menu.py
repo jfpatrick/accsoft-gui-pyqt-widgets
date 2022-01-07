@@ -9,10 +9,11 @@ except ImportError:
 from typing import Optional, List, Iterable
 from datetime import datetime
 from typing_extensions import Protocol, runtime_checkable
-from qtpy.QtWidgets import QMenu, QWidget, QAction
-from qtpy.QtCore import Signal
+from qtpy.QtWidgets import QMenu, QWidget, QAction, QWidgetAction, QHBoxLayout
+from qtpy.QtCore import Signal, QObject
 from qtpy.QtGui import QShowEvent, QPalette, QHideEvent
 from pylogbook.models import Event
+from accwidgets.qt import ActivityIndicator
 from accwidgets._async_utils import install_asyncio_event_loop
 from ._common import make_activities_summary, make_new_entry_tooltip
 from ._model import LogbookModel
@@ -50,8 +51,10 @@ class LogbookMenu(QMenu):
         # The Logbook API doesn't offer a good way to
         # keep a local model synchronised with the server, so this just
         # re-fetches the latest entries each time (asynchronously).
+        action = LoadingAction(self)
+        action.setEnabled(False)
         self._update_new_action_with_latest_model()
-        self._set_menu_actions(make_fallback_actions("Loading…", self))
+        self._set_menu_actions([action])
         create_task(self._fetch_event_actions())
         super().showEvent(event)
 
@@ -136,6 +139,38 @@ class LogbookMenu(QMenu):
 
     def __del__(self):
         self._cancel_running_tasks()
+
+
+class LoadingAction(QWidgetAction):
+
+    def createWidget(self, parent: QWidget):
+        widget = ActivityIndicatorWrapper(parent)
+        widget.setEnabled(False)
+        return widget
+
+
+class ActivityIndicatorWrapper(QWidget):
+
+    def __init__(self, parent: Optional[QObject] = None):
+        super().__init__(parent)
+        activity = ActivityIndicator(self)
+        activity.setHint("Loading…")
+        self.activity = activity
+        layout = QHBoxLayout()
+        layout.addWidget(activity)
+        layout.addStretch()
+        self.setLayout(layout)
+
+    def showEvent(self, event: QShowEvent):
+        self.activity.startAnimation()
+        super().showEvent(event)
+
+    def hideEvent(self, event: QHideEvent):
+        super().hideEvent(event)
+        self.activity.stopAnimation()
+
+    def __del__(self):
+        self.activity.stopAnimation()
 
 
 def make_fallback_actions(msg: str, parent: QWidget) -> List[QAction]:
