@@ -1,17 +1,15 @@
-import operator
 import functools
 import qtawesome as qta
-from typing import Optional, Union, Tuple, Iterable
+from typing import Optional, Union, Iterable
 from qtpy.QtCore import Signal, QTimer, Property, QEvent
 from qtpy.QtWidgets import QWidget, QToolButton, QInputDialog, QSizePolicy
 from qtpy.QtGui import QPalette
-from pyrbac import Token
-from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
-from pylogbook.models import Activity, ActivitiesType
 from accwidgets.qt import OrientedToolButton
 from ._grabber import grab_png_screenshot
+from ._common import make_activities_summary
 from ._menu import LogbookMenu
+from ._model import LogbookModel
 
 
 ScreenshotButtonSource = Union[QWidget, Iterable[QWidget]]
@@ -29,13 +27,14 @@ class ScreenshotButton(OrientedToolButton):
     captureFailed = Signal(str)
     """Notification of the problem taking a screenshot. The argument is the error message."""
 
+    modelChanged = Signal()
+    """Notifies that the underlying model has been updated."""
+
     def __init__(self,
                  parent: Optional[QWidget] = None,
                  source: Optional[ScreenshotButtonSource] = None,
                  message: Optional[str] = None,
-                 activities: Optional[ActivitiesType] = None,
-                 server_url: Union[str, NamedServer] = NamedServer.PRO,
-                 rbac_token: Optional[Token] = None):
+                 model: Optional[LogbookModel] = None):
         """
         A button to take application's screenshot and send it to the e-logbook.
 
@@ -43,9 +42,7 @@ class ScreenshotButton(OrientedToolButton):
             parent: Parent widget to hold this object.
             widget: The widget(s) to grab a screenshot of.
             message: Logbook entry message.
-            activities: Logbook activities.
-            server_url: Logbook server URL.
-            rbac_token: RBAC token.
+            model: Model that handles communication with the e-logbook.
         """
         super().__init__(parent=parent,
                          primary=QSizePolicy.Preferred,
@@ -56,21 +53,21 @@ class ScreenshotButton(OrientedToolButton):
         self.setPopupMode(QToolButton.MenuButtonPopup)
         self._update_icon()
 
-        self._client = Client(server_url=server_url, rbac_token="")
-        self._ac_client = ActivitiesClient(client=self._client, activities=[])
+        self._model = model or LogbookModel(parent=self)
+        self._connect_model(self._model)
 
-        menu = LogbookMenu(self._ac_client, parent=self)
+        menu = LogbookMenu(model_provider=self, parent=self)
         menu.setToolTipsVisible(True)
         menu.event_clicked.connect(self._take_delayed_screenshot)
         menu.event_fetch_failed.connect(self.captureFailed)
         self.setMenu(menu)
 
-        self.set_activities(activities)
-        self.set_rbac_token(rbac_token)
         if source is not None:
             self.source = source  # Will reset self._src
 
         self.clicked.connect(self._on_click)
+
+        self._update_ui()
 
     def _get_message(self) -> Optional[str]:
         return self._msg
@@ -82,6 +79,25 @@ class ScreenshotButton(OrientedToolButton):
     """
     Logbook entry message. Setting this to :obj:`None` (default) will activate a
     UI user prompt when button is pressed.
+    """
+
+    def _get_model(self) -> LogbookModel:
+        return self._model
+
+    def _set_model(self, new_val: LogbookModel):
+        if new_val == self._model:
+            return
+        self._disconnect_model(self._model)
+        self._model = new_val
+        self._connect_model(new_val)
+        self._update_ui()
+        self.modelChanged.emit()
+
+    model = property(fget=_get_model, fset=_set_model)
+    """
+    Model that handles interaction with :mod:`pylogbook` and :mod:`pyrbac` libraries.
+
+    When assigning a new model, its ownership is transferred to the widget.
     """
 
     def _get_source(self) -> ScreenshotButtonSource:
@@ -101,44 +117,6 @@ class ScreenshotButton(OrientedToolButton):
 
     includeWindowDecorations: bool = Property(bool, _get_include_window_decorations, _set_include_window_decorations)
     """Include window decorations in the screenshot if given :attr:`source` is a :class:`QMainWindow`."""
-
-    def set_rbac_token(self, rbac_token: Token):
-        """
-        Set the RBAC token.
-
-        Args:
-            rbac_token: RBAC token.
-        """
-        self._client.rbac_b64_token = "" if rbac_token is None else rbac_token
-        self._flush_activities_cache()
-        self._update_tooltip()
-        self._update_enabled_status()
-
-    def clear_rbac_token(self):
-        """
-        Clear the RBAC token.
-        """
-        self._client.rbac_b64_token = ""
-        self._update_tooltip()
-        self._update_enabled_status()
-
-    def _current_activities(self) -> Tuple[Activity, ...]:
-        """
-        Get the current activities.
-        """
-        return self._ac_client.activities
-
-    def set_activities(self, activities: ActivitiesType):
-        """
-        Set the logbook activities.
-
-        Args:
-            activities: The activities.
-        """
-        self._activities_cache = [] if activities is None else activities
-        self._flush_activities_cache()
-        self._update_tooltip()
-        self._update_enabled_status()
 
     def event(self, event: QEvent) -> bool:
         """
@@ -181,16 +159,16 @@ class ScreenshotButton(OrientedToolButton):
             if event_id is None:
                 message = self._prepare_message()
                 assert message, "Logbook message cannot be empty"
-                event = self._ac_client.add_event(message)
+                event = self.model.create_logbook_event(message)
             else:
-                event = self._client.get_event(event_id)
+                event = self.model.get_logbook_event(event_id)
 
             for i, widget in enumerate(self._src):
                 png_bytes = grab_png_screenshot(source=widget,
                                                 include_window_decorations=self.includeWindowDecorations)
-                event.attach_content(contents=png_bytes,
-                                     mime_type="image/png",
-                                     name=f"capture_{i}.png")
+                self.model.attach_screenshot(event=event,
+                                             screenshot=png_bytes,
+                                             seq=i)
 
             self.captureFinished.emit(event.event_id)
         except (LogbookError, AssertionError) as e:
@@ -202,26 +180,36 @@ class ScreenshotButton(OrientedToolButton):
             message, _ = QInputDialog.getText(self, "Logbook", "Enter a logbook message:")
         return message
 
-    def _flush_activities_cache(self):
-        if self._rbac_token_valid() and self._activities_cache is not None:
-            self._ac_client.activities = self._activities_cache
-            self._activities_cache = None
-
-    def _rbac_token_valid(self):
-        return len(self._client.rbac_b64_token) > 0
-
     def _update_tooltip(self):
-        if not self._rbac_token_valid():
+        if not self.model.rbac_token_valid:
             msg = "ERROR: RBAC login is required to write to the e-logbook"
-        elif not self._current_activities():
+        elif not self.model.logbook_activities:
             msg = "ERROR: No e-logbook activity is defined"
         else:
-            activities = "/".join(map(operator.attrgetter("name"), self._current_activities()))
-            msg = f"Capture screenshot to a new entry in {activities} e-logbook"
+            activities_summary = make_activities_summary(self.model)
+            msg = f"Capture screenshot to a new entry in {activities_summary} e-logbook"
         self.setToolTip(msg)
 
     def _update_enabled_status(self):
-        self.setEnabled(bool(self._current_activities() and self._rbac_token_valid()))
+        self.setEnabled(bool(self.model.logbook_activities) and self.model.rbac_token_valid)
+
+    def _update_ui(self):
+        self._update_tooltip()
+        self._update_enabled_status()
+
+    def _connect_model(self, model: LogbookModel):
+        model.rbac_token_changed.connect(self._update_ui)
+        model.activities_changed.connect(self._update_ui)
+        model.activities_failed.connect(self.capture_failed)
+        model.setParent(self)
+
+    def _disconnect_model(self, model: LogbookModel):
+        model.rbac_token_changed.disconnect(self._update_ui)
+        model.activities_changed.disconnect(self._update_ui)
+        model.activities_failed.disconnect(self.capture_failed)
+        if model.parent() is self:
+            model.setParent(None)
+            model.deleteLater()
 
     def _on_click(self):
         self._take_delayed_screenshot()

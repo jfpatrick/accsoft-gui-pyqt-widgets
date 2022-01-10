@@ -10,7 +10,7 @@ from accwidgets.screenshot._menu import make_fallback_actions, LogbookMenu
 @pytest.mark.parametrize("fetch1", [[], ["entry1"], ["entry1", "entry2"]])
 @pytest.mark.parametrize("fetch2", [[], ["entry1"], ["entry1", "entry2"]])
 def test_menu_populates_menu_on_show(qtbot: QtBot, fetch1, fetch2):
-    menu = LogbookMenu(client=mock.MagicMock())
+    menu = LogbookMenu(model_provider=mock.MagicMock())
     qtbot.add_widget(menu)
 
     def make_list(entries: List[str]) -> List[QAction]:
