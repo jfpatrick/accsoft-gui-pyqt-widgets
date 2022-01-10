@@ -48,7 +48,7 @@ class ScreenshotAction(QAction):
         """
         super().__init__(parent)
         self._src: List[QWidget] = []
-        self._include_window_decor = True
+        self._include_window_decor = False
         self._msg: Optional[str] = None
         self._max_menu_days = 1
         self._max_menu_entries = 10

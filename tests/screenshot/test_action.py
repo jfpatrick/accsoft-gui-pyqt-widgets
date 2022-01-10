@@ -143,7 +143,7 @@ def test_source_prop(logbook_model, is_iterable, iterable_count, qtbot: QtBot):
 def test_include_window_decorations_prop(logbook_model, new_val, qtbot: QtBot):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
-    assert action.include_window_decorations is True
+    assert action.include_window_decorations is False
     action.include_window_decorations = new_val
     assert action.include_window_decorations == new_val
 
