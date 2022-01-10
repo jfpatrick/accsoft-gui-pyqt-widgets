@@ -3,9 +3,12 @@ from typing import Union
 from enum import Enum
 from pylogbook import NamedActivity
 from pylogbook.models import Activity
-from accwidgets.screenshot import LogbookModel
-from accwidgets.screenshot._common import make_activities_summary
+from accwidgets.screenshot._common import make_activities_summary, make_new_entry_tooltip
 from .fixtures import *  # noqa: F401,F403
+
+
+def make_activity(val: Union[str, Enum]):
+    return Activity(activity_id=0, name=val if isinstance(val, str) else val.value)
 
 
 @pytest.mark.parametrize("activities,expected_result", [
@@ -15,13 +18,20 @@ from .fixtures import *  # noqa: F401,F403
     ((NamedActivity.LHC,), "LHC"),
     ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "LHC/LINAC 4/TEST1"),
 ])
-def test_make_activities_summary(activities, expected_result, logbook):
+def test_make_activities_summary(activities, expected_result, logbook_model):
+    logbook_model.logbook_activities = tuple(map(make_activity, activities))
+    res = make_activities_summary(logbook_model)
+    assert res == expected_result
 
-    def convert(val: Union[str, Enum]):
-        return Activity(activity_id=0, name=val if isinstance(val, str) else val.value)
 
-    _, activities_client = logbook
-    activities_client.activities = tuple(map(convert, activities))
-    model = LogbookModel(logbook=logbook)
-    res = make_activities_summary(model)
+@pytest.mark.parametrize("activities,expected_result", [
+    ((), "Capture screenshot to a new entry in  e-logbook"),
+    (("TEST1",), "Capture screenshot to a new entry in TEST1 e-logbook"),
+    (("TEST1", "TEST2"), "Capture screenshot to a new entry in TEST1/TEST2 e-logbook"),
+    ((NamedActivity.LHC,), "Capture screenshot to a new entry in LHC e-logbook"),
+    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "Capture screenshot to a new entry in LHC/LINAC 4/TEST1 e-logbook"),
+])
+def test_make_new_entry_tooltip(activities, expected_result, logbook_model):
+    logbook_model.logbook_activities = tuple(map(make_activity, activities))
+    res = make_new_entry_tooltip(logbook_model)
     assert res == expected_result

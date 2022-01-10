@@ -1,6 +1,7 @@
 import pytest
 from unittest import mock
 from pylogbook import ActivitiesClient, Client, NamedServer
+from accwidgets.screenshot import LogbookModel
 
 
 @pytest.fixture(scope="function")
@@ -11,3 +12,9 @@ def logbook():
     activities_client = mock.MagicMock(spec=ActivitiesClient)
     activities_client.activities = ()
     return client, activities_client
+
+
+@pytest.fixture(scope="function")
+def logbook_model():
+    model = mock.MagicMock(spec=LogbookModel)
+    return model

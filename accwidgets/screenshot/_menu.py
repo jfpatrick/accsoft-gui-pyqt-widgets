@@ -1,13 +1,14 @@
 import weakref
 import functools
+import qtawesome as qta
 from typing import Optional, List
 from datetime import datetime
 from typing_extensions import Protocol, runtime_checkable
 from qtpy.QtWidgets import QMenu, QWidget, QAction
 from qtpy.QtCore import Signal
-from qtpy.QtGui import QShowEvent
+from qtpy.QtGui import QShowEvent, QPalette
 from pylogbook.models import Event
-from ._common import make_activities_summary
+from ._common import make_activities_summary, make_new_entry_tooltip
 from ._model import LogbookModel
 
 
@@ -15,6 +16,8 @@ from ._model import LogbookModel
 class LogbookModelProviderProtocol(Protocol):
     model: LogbookModel
     message: Optional[str]
+    max_menu_entries: int
+    max_menu_days: int
 
 
 class LogbookMenu(QMenu):
@@ -51,29 +54,45 @@ class LogbookMenu(QMenu):
 
     def _build_event_actions(self) -> List[QAction]:
         model_provider = self._model_provider()
-        if model_provider:
-            logbook_events = model_provider.model.get_logbook_events(past_days=1,
-                                                                     max_events=10)
+        if not model_provider:
+            return make_fallback_actions("(can't retrieve events)", self)
 
-            if len(logbook_events) > 0:
-                activities_summary = make_activities_summary(model_provider.model)
+        text = "Create new entry"
+        if not model_provider.message:
+            # User interaction will be required (to enter message), emphasize with ellipsis
+            text = f"{text}…"
+        new_action = QAction(text, self)
+        new_action.setIcon(qta.icon("fa.plus", color=self.palette().color(QPalette.Text)))
+        new_action.triggered.connect(functools.partial(self.event_clicked.emit, -1))
+        new_action.setToolTip(make_new_entry_tooltip(model_provider.model))
+        sep = QAction(self)
+        sep.setSeparator(True)
+        actions = [new_action, sep]
 
-                today = datetime.now()
-                today = today.replace(hour=0,
-                                      minute=0,
-                                      second=0,
-                                      microsecond=0)
+        logbook_events = model_provider.model.get_logbook_events(past_days=model_provider.max_menu_days,
+                                                                 max_events=model_provider.max_menu_entries)
 
-                def map_event(event: Event):
-                    action = QAction(make_menu_title(event=event, today=today), self)
-                    action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
-                    action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
-                                      f"in {activities_summary} e-logbook")
-                    return action
+        if len(logbook_events) > 0:
+            activities_summary = make_activities_summary(model_provider.model)
 
-                return list(map(map_event, logbook_events))
+            today = datetime.now()
+            today = today.replace(hour=0,
+                                  minute=0,
+                                  second=0,
+                                  microsecond=0)
 
-        return make_fallback_actions("(no events)", self)
+            def map_event(event: Event):
+                action = QAction(make_menu_title(event=event, today=today), self)
+                action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
+                action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
+                                  f"in {activities_summary} e-logbook")
+                return action
+
+            actions.extend(map(map_event, logbook_events))
+        else:
+            actions.extend(make_fallback_actions("(no events)", self))
+
+        return actions
 
 
 def make_fallback_actions(msg: str, parent: QWidget) -> List[QAction]:

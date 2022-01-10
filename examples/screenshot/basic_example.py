@@ -6,13 +6,12 @@ e-logbook server.
 """
 
 import sys
-import functools
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication, QMainWindow, QToolBar, QCheckBox
 from accwidgets.rbac import RbaButton
 from accwidgets.screenshot import ScreenshotButton
 from accwidgets.qt import exec_app_interruptable
-from sample_model import SampleLogbookModel  # type: ignore
+from sample_model import SampleScreenshotAction  # type: ignore
 
 
 class MainWindow(QMainWindow):
@@ -22,7 +21,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ScreenshotButton basic example")
         toolbar = QToolBar()
         self.addToolBar(toolbar)
-        logbook_button = ScreenshotButton(model=SampleLogbookModel())
+        logbook_button = ScreenshotButton(action=SampleScreenshotAction())
         self.logbook_button = logbook_button
         logbook_button.captureFinished.connect(lambda event_id: print(f"Captured to event id={event_id}"))
         logbook_button.captureFailed.connect(lambda e: print(f"Capture failed: {e}"))
@@ -30,9 +29,7 @@ class MainWindow(QMainWindow):
 
         # RBAC button is required to produce a valid token for the e-logbook communications
         rbac_button = RbaButton()
-        rbac_button.loginSucceeded.connect(logbook_button.model.reset_rbac_token)
-        rbac_button.logoutFinished.connect(logbook_button.model.reset_rbac_token)
-        rbac_button.tokenExpired.connect(functools.partial(logbook_button.model.reset_rbac_token, None))
+        logbook_button.defaultAction().connect_rbac(rbac_button)
         toolbar.addWidget(rbac_button)
 
         check = QCheckBox("Include window decorations")
