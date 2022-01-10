@@ -3,9 +3,9 @@ import operator
 import functools
 import qtawesome as qta
 from typing import Optional, Union, Tuple, Iterable
-from qtpy.QtCore import Signal, QTimer, Property
+from qtpy.QtCore import Signal, QTimer, Property, QEvent
 from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog, QSizePolicy
-from qtpy.QtGui import QShowEvent
+from qtpy.QtGui import QShowEvent, QPalette
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
@@ -54,7 +54,7 @@ class ScreenshotButton(OrientedToolButton):
         self._include_window_decor = True
         self._msg = message
         self.setPopupMode(QToolButton.MenuButtonPopup)
-        self.setIcon(qta.icon("fa.book"))
+        self._update_icon()
 
         self._client = Client(server_url=server_url, rbac_token="")
         self._ac_client = ActivitiesClient(client=self._client, activities=[])
@@ -139,6 +139,31 @@ class ScreenshotButton(OrientedToolButton):
         self._flush_activities_cache()
         self._update_tooltip()
         self._update_enabled_status()
+
+    def event(self, event: QEvent) -> bool:
+        """
+        This event handler is reimplemented to react to the external style change, e.g. via QSS, to adjust
+        color of the icon.
+
+        This is the main event handler; it handles event ``event``. You can reimplement this function in a
+        subclass, but we recommend using one of the specialized event handlers instead.
+
+        Args:
+            event: Handled event.
+
+        Returns:
+            :obj:`True` if the event was recognized, otherwise it returns :obj:`False`. If the recognized event
+            was accepted (see :meth:`QEvent.accepted`), any further processing such as event propagation to the
+            parent widget stops.
+        """
+        res = super().event(event)
+        if event.type() == QEvent.StyleChange or event.type() == QEvent.PaletteChange:
+            # Update this at the end of the event loop, when palette has been synchronized with the updated style
+            QTimer.singleShot(0, self._update_icon)
+        return res
+
+    def _update_icon(self):
+        self.setIcon(qta.icon("fa.book", color=self.palette().color(QPalette.Text)))
 
     def _take_delayed_screenshot(self, event_id: Optional[int] = None):
         """
