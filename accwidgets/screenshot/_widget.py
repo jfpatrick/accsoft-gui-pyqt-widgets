@@ -1,17 +1,17 @@
-import datetime
 import operator
 import functools
 import qtawesome as qta
 from typing import Optional, Union, Tuple, Iterable
 from qtpy.QtCore import Signal, QTimer, Property, QEvent
-from qtpy.QtWidgets import QWidget, QMenu, QAction, QToolButton, QInputDialog, QSizePolicy
-from qtpy.QtGui import QShowEvent, QPalette
+from qtpy.QtWidgets import QWidget, QToolButton, QInputDialog, QSizePolicy
+from qtpy.QtGui import QPalette
 from pyrbac import Token
 from pylogbook import Client, ActivitiesClient, NamedServer
 from pylogbook.exceptions import LogbookError
 from pylogbook.models import Activity, ActivitiesType
 from accwidgets.qt import OrientedToolButton
 from ._grabber import grab_png_screenshot
+from ._menu import LogbookMenu
 
 
 ScreenshotButtonSource = Union[QWidget, Iterable[QWidget]]
@@ -225,55 +225,3 @@ class ScreenshotButton(OrientedToolButton):
 
     def _on_click(self):
         self._take_delayed_screenshot()
-
-
-class LogbookMenu(QMenu):
-    event_clicked = Signal(int)
-    event_fetch_failed = Signal(str)
-
-    def __init__(self,
-                 client: ActivitiesClient,
-                 parent: Optional[QWidget] = None):
-        """
-        A menu to select from previous logbook entries.
-
-        Args:
-            client: LogbookWrapper instance.
-            parent: Parent widget to hold this object.
-        """
-        super().__init__(parent)
-        self._client = client
-
-    def showEvent(self, event: QShowEvent):
-        """
-        Override of the menu show event to populate it with the latest
-        Logbook entries. The Logbook API doesn't offer a good way to
-        keep a local model synchronised with the server, so this just
-        refetches the latest entries each time.
-        """
-        logbook_events = []
-        try:
-            # Note: specifying a `from_date` improves performance
-            start = datetime.datetime.now() - datetime.timedelta(days=1)
-            events_pages = self._client.get_events(from_date=start)
-            events_pages.page_size = 10
-            events_count = events_pages.count
-            logbook_events = events_pages.get_page(0)
-        except LogbookError as e:
-            self.event_fetch_failed.emit(str(e))
-
-        # We must clear here, and must NOT clear in hideEvent, because actions will be destroyed before they trigger
-        self.clear()
-
-        if events_count > 0:
-            activities = "/".join(map(operator.attrgetter("name"), self._client.activities))
-            for logbook_event in logbook_events:
-                action = QAction("id: {0} @ {1:%T}".format(str(logbook_event.event_id)[-3:], logbook_event.date), self)
-                action.triggered.connect(functools.partial(self.event_clicked.emit, logbook_event.event_id))
-                action.setToolTip(f"Capture screenshot to existing entry {logbook_event.event_id} in {activities} e-logbook")
-                self.addAction(action)
-        else:
-            action = QAction("(no events)", self)
-            self.addAction(action)
-
-        super().showEvent(event)
