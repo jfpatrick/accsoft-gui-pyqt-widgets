@@ -1,5 +1,6 @@
 import pytest
 from unittest import mock
+from asyncio import CancelledError
 from pytestqt.qtbot import QtBot
 from qtpy.QtCore import QObject
 from qtpy.QtWidgets import QToolButton, QWidget, QMainWindow, QMenuBar
@@ -309,17 +310,21 @@ def test_menu_trigger_takes_screenshot_to_existing_event(menu_event_id, expected
         take_screenshot.assert_called_once_with(expected_screenshot_id)
 
 
+@pytest.mark.asyncio
 @mock.patch("accwidgets.screenshot._action.grab_png_screenshot")
-def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_screenshot, qtbot: QtBot, logbook_model):
+def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_screenshot, qtbot: QtBot, logbook_model,
+                                                                     event_loop):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
     source = QWidget()
     qtbot.add_widget(source)
     action.source = source
+    logbook_model.create_logbook_event = AsyncMock()
+    logbook_model.attach_screenshot = AsyncMock()
     with mock.patch.object(action, "_prepare_message", return_value=""):
         with qtbot.wait_signal(action.capture_finished, raising=False, timeout=100) as blocker1:
             with qtbot.wait_signal(action.capture_failed) as blocker2:
-                action._take_screenshot(None)
+                event_loop.run_until_complete(action._take_screenshot_async(None))
             assert blocker2.args == ["Logbook message cannot be empty"]
         assert not blocker1.signal_triggered
     logbook_model.attach_screenshot.assert_not_called()
@@ -327,6 +332,7 @@ def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_sc
     grab_png_screenshot.assert_not_called()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id,expected_event_id,expect_create_called,expect_get_called,expect_message_prompt", [
     (None, 123456, True, False, True),
     (-1, -1, False, True, False),
@@ -343,7 +349,8 @@ def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_sc
 @mock.patch("accwidgets.screenshot._action.grab_png_screenshot", return_value=b"png_bytes")
 def test_take_screenshot_remote_call_succeeds(grab_png_screenshot, expect_create_called, expect_attach_screenshot_seqs,
                                               expect_get_called, logbook_model, source_count, event_id, qtbot: QtBot,
-                                              include_window_decorations, expected_event_id, expect_message_prompt):
+                                              include_window_decorations, expected_event_id, expect_message_prompt,
+                                              event_loop):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
     action.include_window_decorations = include_window_decorations
@@ -352,12 +359,13 @@ def test_take_screenshot_remote_call_succeeds(grab_png_screenshot, expect_create
     action.source = [source] * source_count
     event = mock.MagicMock()
     event.event_id = event_id if event_id is not None else 123456
-    logbook_model.get_logbook_event.return_value = event
-    logbook_model.create_logbook_event.return_value = event
+    logbook_model.get_logbook_event = AsyncMock(return_value=event)
+    logbook_model.create_logbook_event = AsyncMock(return_value=event)
+    logbook_model.attach_screenshot = AsyncMock()
     with mock.patch.object(action, "_prepare_message", return_value="Returned message") as prepare_message:
         with qtbot.wait_signal(action.capture_failed, raising=False, timeout=100) as blocker1:
             with qtbot.wait_signal(action.capture_finished) as blocker2:
-                action._take_screenshot(event_id)
+                event_loop.run_until_complete(action._take_screenshot_async(event_id))
             assert blocker2.args == [expected_event_id]
         assert not blocker1.signal_triggered
         if expect_message_prompt:
@@ -372,15 +380,16 @@ def test_take_screenshot_remote_call_succeeds(grab_png_screenshot, expect_create
                   include_window_decorations=include_window_decorations),
     ]
     if expect_get_called:
-        logbook_model.get_logbook_event.assert_called_once_with(event_id)
+        logbook_model.get_logbook_event.assert_awaited_once_with(event_id)
     else:
         logbook_model.get_logbook_event.assert_not_called()
     if expect_create_called:
-        logbook_model.create_logbook_event.assert_called_once_with("Returned message")
+        logbook_model.create_logbook_event.assert_awaited_once_with("Returned message")
     else:
         logbook_model.create_logbook_event.assert_not_called()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id,expected_error", [
     (None, "Test create error"),
     (-1, "Test get error"),
@@ -389,19 +398,42 @@ def test_take_screenshot_remote_call_succeeds(grab_png_screenshot, expect_create
     (10, "Test get error"),
 ])
 @mock.patch("accwidgets.screenshot._action.grab_png_screenshot")
-def test_take_screenshot_remote_call_fails(grab_png_screenshot, event_id, qtbot: QtBot, expected_error, logbook_model):
+def test_take_screenshot_remote_call_fails(grab_png_screenshot, event_id, qtbot: QtBot, expected_error, logbook_model,
+                                           event_loop):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
     source = QWidget()
     qtbot.add_widget(source)
     action.source = source
-    logbook_model.create_logbook_event.side_effect = LogbookError("Test create error", response=mock.MagicMock())
-    logbook_model.get_logbook_event.side_effect = LogbookError("Test get error", response=mock.MagicMock())
+    logbook_model.create_logbook_event = AsyncMock(side_effect=LogbookError("Test create error", response=mock.MagicMock()))
+    logbook_model.get_logbook_event = AsyncMock(side_effect=LogbookError("Test get error", response=mock.MagicMock()))
+    logbook_model.attach_screenshot = AsyncMock()
     with mock.patch.object(action, "_prepare_message", return_value="Returned message"):
         with qtbot.wait_signal(action.capture_finished, raising=False, timeout=100) as blocker1:
             with qtbot.wait_signal(action.capture_failed) as blocker2:
-                action._take_screenshot(event_id)
+                event_loop.run_until_complete(action._take_screenshot_async(event_id))
             assert blocker2.args == [expected_error]
+        assert not blocker1.signal_triggered
+    logbook_model.attach_screenshot.assert_not_called()
+    grab_png_screenshot.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("event_id", [None, -1, 0, 1, 10])
+@mock.patch("accwidgets.screenshot._action.grab_png_screenshot")
+def test_take_screenshot_cancel_noop(grab_png_screenshot, event_id, qtbot: QtBot, logbook_model, event_loop):
+    action = ScreenshotAction(model=logbook_model)
+    source = QWidget()
+    qtbot.add_widget(source)
+    action.source = source
+    logbook_model.create_logbook_event = AsyncMock(side_effect=CancelledError)
+    logbook_model.get_logbook_event = AsyncMock(side_effect=CancelledError)
+    logbook_model.attach_screenshot = AsyncMock()
+    with mock.patch.object(action, "_prepare_message", return_value="Returned message"):
+        with qtbot.wait_signal(action.capture_finished, raising=False, timeout=100) as blocker1:
+            with qtbot.wait_signal(action.capture_failed, raising=False, timeout=100) as blocker2:
+                event_loop.run_until_complete(action._take_screenshot_async(event_id))
+            assert not blocker2.signal_triggered
         assert not blocker1.signal_triggered
     logbook_model.attach_screenshot.assert_not_called()
     grab_png_screenshot.assert_not_called()

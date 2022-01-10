@@ -1,5 +1,10 @@
 import functools
 import qtawesome as qta
+from asyncio import CancelledError
+try:
+    from asyncio import create_task
+except ImportError:
+    from asyncio import ensure_future as create_task  # type: ignore
 from typing import Optional, List, cast
 from qtpy.QtWidgets import QAction, QWidget, QInputDialog, QApplication, QMainWindow
 from qtpy.QtCore import QObject, Signal, QEvent, QTimer
@@ -7,6 +12,7 @@ from qtpy.QtGui import QPalette
 from pyrbac import Token
 from pylogbook.exceptions import LogbookError
 from accwidgets._integrations import RbaButtonProtocol
+from accwidgets._async_utils import install_asyncio_event_loop
 from ._model import LogbookModel
 from ._common import ScreenshotSource, make_new_entry_tooltip
 from ._menu import LogbookMenu
@@ -59,6 +65,8 @@ class ScreenshotAction(QAction):
         self.setText("Screenshot")
 
         self.triggered.connect(self._on_trigger)
+
+        install_asyncio_event_loop()
 
         self._update_icon_if_needed()
         self._update_ui()
@@ -250,6 +258,9 @@ class ScreenshotAction(QAction):
         QTimer.singleShot(100, functools.partial(self._take_screenshot, None if event_id == -1 else event_id))
 
     def _take_screenshot(self, event_id: Optional[int] = None):
+        create_task(self._take_screenshot_async(event_id))
+
+    async def _take_screenshot_async(self, event_id: Optional[int]):
         """
         Grab a screenshot of the widget(s) and post them to the logbook.
         """
@@ -257,20 +268,21 @@ class ScreenshotAction(QAction):
             if event_id is None:
                 message = self._prepare_message()
                 assert message, "Logbook message cannot be empty"
-                event = self.model.create_logbook_event(message)
+                produce_event_task = create_task(self.model.create_logbook_event(message))
             else:
-                event = self.model.get_logbook_event(event_id)
-
+                produce_event_task = create_task(self.model.get_logbook_event(event_id))
+            event = await produce_event_task
             for i, widget in enumerate(self._src):
                 png_bytes = grab_png_screenshot(source=widget,
                                                 include_window_decorations=self.include_window_decorations)
-                self.model.attach_screenshot(event=event,
-                                             screenshot=png_bytes,
-                                             seq=i)
-
+                await create_task(self.model.attach_screenshot(event=event,
+                                                               screenshot=png_bytes,
+                                                               seq=i))
             self.capture_finished.emit(event.event_id)
         except (LogbookError, AssertionError) as e:
             self.capture_failed.emit(str(e))
+        except CancelledError:
+            pass
 
     def _prepare_message(self) -> str:
         message = self.message

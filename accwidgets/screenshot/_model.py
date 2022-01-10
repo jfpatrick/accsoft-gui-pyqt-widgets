@@ -92,7 +92,7 @@ class LogbookModel(QObject):
     logbook_activities = property(fget=_get_logbook_activities, fset=_set_logbook_activities)
     """Current e-logbook activities."""
 
-    def create_logbook_event(self, message: str) -> Event:
+    async def create_logbook_event(self, message: str) -> FutureType[Event]:
         """
         Create a new e-logbook event with the given message.
 
@@ -105,9 +105,9 @@ class LogbookModel(QObject):
         Raises:
             ~pylogbook.exceptions.LogbookError: If there was a problem creating the event.
         """
-        return self._activities_client.add_event(message)
+        return await self._dispatch_runnable(self._activities_client.add_event, message)
 
-    def get_logbook_event(self, event_id: int) -> Event:
+    async def get_logbook_event(self, event_id: int) -> FutureType[Event]:
         """
         Retrieve an existing e-logbook event. This is alternative to :meth:`create_logbook_event`.
 
@@ -120,10 +120,9 @@ class LogbookModel(QObject):
         Raises:
             ~pylogbook.exceptions.LogbookError: If there was a problem retrieving the event.
         """
-        return self._client.get_event(event_id)
+        return await self._dispatch_runnable(self._client.get_event, event_id)
 
-    @classmethod
-    def attach_screenshot(cls, event: Event, screenshot: bytes, seq: int):
+    async def attach_screenshot(self, event: Event, screenshot: bytes, seq: int):
         """
         Attach a screenshot to an existing e-logbook event.
 
@@ -135,9 +134,10 @@ class LogbookModel(QObject):
         Raises:
             ~pylogbook.exceptions.LogbookError: If there was a problem interacting with e-logbook.
         """
-        event.attach_content(contents=screenshot,
-                             mime_type="image/png",
-                             name=f"capture_{seq}.png")
+        await self._dispatch_runnable(event.attach_content,
+                                      screenshot,
+                                      "image/png",
+                                      f"capture_{seq}.png")
 
     async def get_logbook_events(self, past_days: int, max_events: int) -> FutureType[List[Event]]:
         """

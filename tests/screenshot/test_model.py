@@ -259,66 +259,72 @@ def test_logbook_activities_applies_only_with_rbac_token(val, token, logbook, ex
         assert model.logbook_activities == ()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["", "Test message"])
-def test_create_logbook_event_succeeds(logbook, message):
+async def test_create_logbook_event_succeeds(logbook, message):
     _, activities_client = logbook
     model = LogbookModel(logbook=logbook)
     activities_client.add_event.assert_not_called()
-    res = model.create_logbook_event(message)
+    res = await model.create_logbook_event(message)
     activities_client.add_event.assert_called_once_with(message)
     assert res == activities_client.add_event.return_value
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["", "Test message"])
-def test_create_logbook_event_fails(logbook, message):
+async def test_create_logbook_event_fails(logbook, message):
     _, activities_client = logbook
     activities_client.add_event.side_effect = LogbookError("Test error", response=mock.MagicMock())
     model = LogbookModel(logbook=logbook)
     with pytest.raises(LogbookError, match="Test error"):
-        model.create_logbook_event(message)
+        await model.create_logbook_event(message)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id", [0, 1, 12552])
-def test_get_logbook_event_succeeds(logbook, event_id):
+async def test_get_logbook_event_succeeds(logbook, event_id):
     client, _ = logbook
     model = LogbookModel(logbook=logbook)
     client.get_event.assert_not_called()
-    res = model.get_logbook_event(event_id)
+    res = await model.get_logbook_event(event_id)
     client.get_event.assert_called_once_with(event_id)
     assert res == client.get_event.return_value
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id", [0, 1, 12552])
-def test_get_logbook_event_fails(logbook, event_id):
+async def test_get_logbook_event_fails(logbook, event_id):
     client, _ = logbook
     client.get_event.side_effect = LogbookError("Test error", response=mock.MagicMock())
     model = LogbookModel(logbook=logbook)
     with pytest.raises(LogbookError, match="Test error"):
-        model.get_logbook_event(event_id)
+        await model.get_logbook_event(event_id)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("screenshot", [b"", b"\x01\x95\x0e\x1b"])
 @pytest.mark.parametrize("seq,expected_filename", [
     (0, "capture_0.png"),
     (1, "capture_1.png"),
     (2, "capture_2.png"),
 ])
-def test_attach_screenshot_succeeds(logbook, screenshot, seq, expected_filename):
+async def test_attach_screenshot_succeeds(logbook, screenshot, seq, expected_filename):
     model = LogbookModel(logbook=logbook)
     event = mock.MagicMock(spec=Event)
     event.attach_content.assert_not_called()
-    model.attach_screenshot(event=event, screenshot=screenshot, seq=seq)
-    event.attach_content.assert_called_once_with(contents=screenshot, mime_type="image/png", name=expected_filename)
+    await model.attach_screenshot(event=event, screenshot=screenshot, seq=seq)
+    event.attach_content.assert_called_once_with(screenshot, "image/png", expected_filename)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("screenshot", [b"", b"\x01\x95\x0e\x1b"])
 @pytest.mark.parametrize("seq", [0, 1, 2])
-def test_attach_screenshot_fails(logbook, screenshot, seq):
+async def test_attach_screenshot_fails(logbook, screenshot, seq):
     model = LogbookModel(logbook=logbook)
     event = mock.MagicMock(spec=Event)
     event.attach_content.side_effect = LogbookError("Test error", response=mock.MagicMock())
     with pytest.raises(LogbookError, match="Test error"):
-        model.attach_screenshot(event=event, screenshot=screenshot, seq=seq)
+        await model.attach_screenshot(event=event, screenshot=screenshot, seq=seq)
 
 
 @freeze_time(STATIC_TIME)
