@@ -10,7 +10,7 @@ def make_activities_summary(model: LogbookModel) -> str:
 
 def make_new_entry_tooltip(model: LogbookModel) -> str:
     activities_summary = make_activities_summary(model)
-    return f"Capture screenshot to a new entry in {activities_summary} e-logbook"
+    return f"Capture screenshot to a new entry in <i>{activities_summary}</i> e-logbook"
 
 
 ScreenshotSource = Union[QWidget, Iterable[QWidget]]

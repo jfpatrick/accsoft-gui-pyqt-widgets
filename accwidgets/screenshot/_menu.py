@@ -119,14 +119,11 @@ class LogbookMenu(QMenu):
                                       second=0,
                                       microsecond=0)
 
-                def map_event(event: Event):
-                    action = QAction(make_menu_title(event=event, today=today), self)
-                    action.triggered.connect(functools.partial(self.event_clicked.emit, event.event_id))
-                    action.setToolTip(f"Capture screenshot to existing entry {event.event_id} "
-                                      f"in {activities_summary} e-logbook")
-                    return action
-
-                actions = map(map_event, logbook_events)
+                actions = map(functools.partial(map_event_action,
+                                                activities_summary=activities_summary,
+                                                today=today,
+                                                parent=self),
+                              logbook_events)
             else:
                 actions = make_fallback_actions("(no events)", self)
 
@@ -196,3 +193,13 @@ def make_menu_title(event: Event, today: datetime) -> str:
     if suffix is not None:
         date = f"{date} ({suffix})"
     return f"id: {event.event_id!s} @ {date}"
+
+
+def map_event_action(event: Event, activities_summary: str, today: datetime, parent: LogbookMenu):
+    action = QAction(make_menu_title(event=event, today=today), parent)
+    action.triggered.connect(functools.partial(parent.event_clicked.emit, event.event_id))
+    regular_id = str(event.event_id)[:-3]
+    bold_id = str(event.event_id)[-3:]
+    action.setToolTip(f"Capture screenshot to existing entry {regular_id}<b>{bold_id}</b> "
+                      f"in <i>{activities_summary}</i> e-logbook")
+    return action

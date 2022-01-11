@@ -25,11 +25,11 @@ def test_make_activities_summary(activities, expected_result, logbook_model):
 
 
 @pytest.mark.parametrize("activities,expected_result", [
-    ((), "Capture screenshot to a new entry in  e-logbook"),
-    (("TEST1",), "Capture screenshot to a new entry in TEST1 e-logbook"),
-    (("TEST1", "TEST2"), "Capture screenshot to a new entry in TEST1/TEST2 e-logbook"),
-    ((NamedActivity.LHC,), "Capture screenshot to a new entry in LHC e-logbook"),
-    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "Capture screenshot to a new entry in LHC/LINAC 4/TEST1 e-logbook"),
+    ((), "Capture screenshot to a new entry in <i></i> e-logbook"),
+    (("TEST1",), "Capture screenshot to a new entry in <i>TEST1</i> e-logbook"),
+    (("TEST1", "TEST2"), "Capture screenshot to a new entry in <i>TEST1/TEST2</i> e-logbook"),
+    ((NamedActivity.LHC,), "Capture screenshot to a new entry in <i>LHC</i> e-logbook"),
+    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "Capture screenshot to a new entry in <i>LHC/LINAC 4/TEST1</i> e-logbook"),
 ])
 def test_make_new_entry_tooltip(activities, expected_result, logbook_model):
     logbook_model.logbook_activities = tuple(map(make_activity, activities))

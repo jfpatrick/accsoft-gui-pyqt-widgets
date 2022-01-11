@@ -11,7 +11,7 @@ from pylogbook.models import Event
 from pylogbook.exceptions import LogbookError
 from accwidgets.screenshot import LogbookModel
 from accwidgets.screenshot._menu import (make_fallback_actions, LogbookMenu, make_menu_title, LoadingAction,
-                                         ActivityIndicatorWrapper)
+                                         ActivityIndicatorWrapper, map_event_action)
 from ..async_shim import AsyncMock
 
 
@@ -126,14 +126,15 @@ def test_menu_cancels_async_task_on_hide(qtbot: QtBot):
     ("", "Create new entry…"),
     ("Test message", "Create new entry"),
 ])
-@pytest.mark.parametrize("events,activities_summary,expected_menu_count,expected_titles,expected_tooltips,expected_enabled", [
-    ([], "TEST", 3, ["(no events)"], ["(no events)"], [False]),
-    ([1], "TEST", 3, ["Event 1"], ["Capture screenshot to existing entry 1 in TEST e-logbook"], [True]),
-    ([1, 2], "TEST", 4, ["Event 1", "Event 2"], ["Capture screenshot to existing entry 1 in TEST e-logbook", "Capture screenshot to existing entry 2 in TEST e-logbook"], [True, True]),
+@pytest.mark.parametrize("events,expected_menu_count,expected_titles,expected_enabled", [
+    ([], 3, ["(no events)"], [False]),
+    ([1], 3, ["Event 1"], [True]),
+    ([1, 2], 4, ["Event 1", "Event 2"], [True, True]),
 ])
-def test_menu_updates_menu_after_successful_load(qtbot: QtBot, provider_message, expected_first_text,
-                                                 events, activities_summary, expected_titles, expected_tooltips,
-                                                 expected_enabled, expected_menu_count, model_provider, event_loop):
+@mock.patch("accwidgets.screenshot._menu.make_activities_summary", return_value="TEST")
+def test_menu_updates_menu_after_successful_load(_, qtbot: QtBot, provider_message, expected_first_text,
+                                                 events, expected_titles, expected_enabled, expected_menu_count,
+                                                 model_provider, event_loop):
     def map_id_to_event(id: int):
         ev = mock.MagicMock(spec=Event)
         ev.event_id = id
@@ -151,36 +152,39 @@ def test_menu_updates_menu_after_successful_load(qtbot: QtBot, provider_message,
         menu.popup(QPoint(0, 0))
         fetch_mock.assert_called_once()
 
-    def title_side_effect(event, today):
-        _ = today
-        return f"Event {event.event_id}"
+    returned_actions = {}
+    for event_id in events:
+        act = QAction(f"Event {event_id}")
+        returned_actions[event_id] = act
+
+    def action_side_effect(event, activities_summary, today, parent):
+        _ = today, activities_summary, parent
+        return returned_actions[event.event_id]
 
     # This is not the one called (from within showEvent) but we call it redundantly, so that we can explicitly await
     # in this test case, and assume it will populate menu as needed.
     # The fact that it's called from withing showEvent is checked above
-    with mock.patch("accwidgets.screenshot._menu.make_menu_title", side_effect=title_side_effect):
-        with mock.patch("accwidgets.screenshot._menu.make_activities_summary", return_value=activities_summary):
-            # Note this test method is not async, because we would need to await for menu._fetch_event_actions()
-            # For some unclear reason, combination of async test case with qtbot in certain order produces a very
-            # opaque system error:
-            #
-            # Exceptions caught in Qt event loop:
-            # ________________________________________________________________________________
-            # StopIteration
-            #
-            # The above exception was the direct cause of the following exception:
-            #
-            # SystemError: <class 'PyQt5.QtGui.QWindow'> returned a result with an error set
-            event_loop.run_until_complete(menu._fetch_event_actions())
+    with mock.patch("accwidgets.screenshot._menu.map_event_action", side_effect=action_side_effect):
+        # Note this test method is not async, because we would need to await for menu._fetch_event_actions()
+        # For some unclear reason, combination of async test case with qtbot in certain order produces a very
+        # opaque system error:
+        #
+        # Exceptions caught in Qt event loop:
+        # ________________________________________________________________________________
+        # StopIteration
+        #
+        # The above exception was the direct cause of the following exception:
+        #
+        # SystemError: <class 'PyQt5.QtGui.QWindow'> returned a result with an error set
+        event_loop.run_until_complete(menu._fetch_event_actions())
 
     assert len(menu.actions()) == expected_menu_count
     assert menu.actions()[0].text() == expected_first_text
     assert not menu.actions()[0].isSeparator()
     assert menu.actions()[1].isSeparator()
-    for expected_title, expected_tooltip, enabled, i in zip(expected_titles, expected_tooltips, expected_enabled, range(2, 2 + len(expected_titles))):
+    for expected_title, enabled, i in zip(expected_titles, expected_enabled, range(2, 2 + len(expected_titles))):
         action = menu.actions()[i]
         assert action.text() == expected_title
-        assert action.toolTip() == expected_tooltip
         assert action.isEnabled() == enabled
         assert not isinstance(action, LoadingAction)
     menu._cancel_running_tasks()
@@ -344,3 +348,20 @@ def test_activity_indicator_wrapper_starts_animation_on_show(qtbot: QtBot):
     with qtbot.wait_exposed(widget):
         widget.show()
     assert widget.activity.animating
+
+
+@pytest.mark.parametrize("event_id,activities,expected_tooltip", [
+    (1, "TEST", "Capture screenshot to existing entry <b>1</b> in <i>TEST</i> e-logbook"),
+    (145864, "TEST", "Capture screenshot to existing entry 145<b>864</b> in <i>TEST</i> e-logbook"),
+    (145864, "LINAC4/LHC", "Capture screenshot to existing entry 145<b>864</b> in <i>LINAC4/LHC</i> e-logbook"),
+])
+@mock.patch("accwidgets.screenshot._menu.make_menu_title", return_value="Action title")
+def test_map_event_action(_, qtbot: QtBot, event_id, activities, expected_tooltip, model_provider):
+    menu = LogbookMenu(model_provider=model_provider(""))
+    qtbot.add_widget(menu)
+    event = mock.MagicMock()
+    event.event_id = event_id
+    action = map_event_action(event=event, activities_summary=activities, today=datetime.now(), parent=menu)
+    assert action.text() == "Action title"
+    assert action.toolTip() == expected_tooltip
+    assert action.receivers(action.triggered) > 0
