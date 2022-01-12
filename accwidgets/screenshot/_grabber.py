@@ -1,30 +1,29 @@
 from qtpy.QtWidgets import QWidget, QMainWindow, QApplication
 from qtpy.QtCore import QByteArray, QBuffer, QIODevice
+from qtpy.QtGui import QPixmap
 
 
 def grab_png_screenshot(source: QWidget, include_window_decorations: bool) -> bytes:
-    """
-    Takes screenshot of a given widget and stores it in a byte array with png compression.
+    pixmap = get_pixmap(source=source, include_window_decorations=include_window_decorations)
+    return pixmap_to_png_bytes(pixmap)
 
-    Args:
-        source: Widget to grab screenshot of.
-        include_window_decorations: When source is :class:`QMainWindow`, this allows to
-                                    include window frame in the screenshot.
 
-    Returns:
-        Byte array of the *.png image.
-    """
-    if isinstance(source, QMainWindow) and include_window_decorations:
-        screen = QApplication.primaryScreen()
-        screenshot = screen.grabWindow(0,
-                                       source.pos().x(),
-                                       source.pos().y(),
-                                       source.frameGeometry().width(),
-                                       source.frameGeometry().height())
-    else:
-        screenshot = source.grab()
+def get_pixmap(source: QWidget, include_window_decorations: bool) -> QPixmap:
+    if not include_window_decorations or not isinstance(source, QMainWindow):
+        return source.grab()
+    screen = QApplication.primaryScreen()
+    x_offset = source.geometry().x() - source.frameGeometry().x()
+    y_offset = source.geometry().y() - source.frameGeometry().y()
+    return screen.grabWindow(source.winId(),
+                             -x_offset,
+                             -y_offset,
+                             source.frameGeometry().width(),
+                             source.frameGeometry().height())
+
+
+def pixmap_to_png_bytes(pixmap: QPixmap) -> bytes:
     img_bytes = QByteArray()
     img_buf = QBuffer(img_bytes)
     img_buf.open(QIODevice.WriteOnly)
-    screenshot.save(img_buf, "png", quality=100)
+    pixmap.save(img_buf, "png", quality=100)
     return img_bytes
