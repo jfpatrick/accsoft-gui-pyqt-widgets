@@ -323,28 +323,27 @@ def test_attach_screenshot_fails(logbook, screenshot, seq):
 
 @freeze_time(STATIC_TIME)
 @pytest.mark.parametrize("past_days,max_events,returned_events,expected_start_date,expected_result", [
-    (0, 0, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (1, 0, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (5, 0, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (0, 1, ["Ev1"], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, (1, ["Ev1"])),
-    (1, 1, ["Ev1"], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, (1, ["Ev1"])),
-    (5, 1, ["Ev1"], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, (1, ["Ev1"])),
-    (0, 1, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (1, 1, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (5, 1, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (0, 10, ["Ev1", "Ev2"], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, (2, ["Ev1", "Ev2"])),
-    (1, 10, ["Ev1", "Ev2"], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, (2, ["Ev1", "Ev2"])),
-    (5, 10, ["Ev1", "Ev2"], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, (2, ["Ev1", "Ev2"])),
-    (0, 10, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (1, 10, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
-    (5, 10, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, (0, [])),
+    (0, 0, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, []),
+    (1, 0, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
+    (5, 0, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
+    (0, 1, ["Ev1"], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, ["Ev1"]),
+    (1, 1, ["Ev1"], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, ["Ev1"]),
+    (5, 1, ["Ev1"], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, ["Ev1"]),
+    (0, 1, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, []),
+    (1, 1, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
+    (5, 1, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
+    (0, 10, ["Ev1", "Ev2"], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, ["Ev1", "Ev2"]),
+    (1, 10, ["Ev1", "Ev2"], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, ["Ev1", "Ev2"]),
+    (5, 10, ["Ev1", "Ev2"], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, ["Ev1", "Ev2"]),
+    (0, 10, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, []),
+    (1, 10, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
+    (5, 10, [], {"year": 2019, "day": 27, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
 ])
 def test_get_logbook_events_succeeds(logbook, past_days, max_events, returned_events, expected_result,
                                      expected_start_date):
     _, activities_client = logbook
     remote_result = mock.MagicMock()
     remote_result.get_page.return_value = returned_events
-    remote_result.count = len(returned_events)
     activities_client.get_events.return_value = remote_result
     model = LogbookModel(logbook=logbook)
     activities_client.get_events.assert_not_called()

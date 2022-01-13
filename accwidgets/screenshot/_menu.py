@@ -51,10 +51,10 @@ class LogbookMenu(QMenu):
     def _build_event_actions(self) -> List[QAction]:
         model_provider = self._model_provider()
         if model_provider:
-            events_count, logbook_events = model_provider.model.get_logbook_events(past_days=1,
-                                                                                   max_events=10)
+            logbook_events = model_provider.model.get_logbook_events(past_days=1,
+                                                                     max_events=10)
 
-            if events_count > 0:
+            if len(logbook_events) > 0:
                 activities_summary = make_activities_summary(model_provider.model)
 
                 def map_event(event: Event):

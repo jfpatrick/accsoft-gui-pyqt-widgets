@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple, Iterable
+from typing import Optional, Union, Tuple, List
 from datetime import datetime, timedelta
 from qtpy.QtCore import Signal, QObject
 from pyrbac import Token
@@ -133,7 +133,7 @@ class LogbookModel(QObject):
                              mime_type="image/png",
                              name=f"capture_{seq}.png")
 
-    def get_logbook_events(self, past_days: int, max_events: int) -> Tuple[int, Iterable[Event]]:
+    def get_logbook_events(self, past_days: int, max_events: int) -> List[Event]:
         """
         Retrieve existing e-logbook event in the given range.
 
@@ -142,7 +142,7 @@ class LogbookModel(QObject):
             max_events: Upper limit of how many events to return.
 
         Returns:
-            A tuple of the number of retrieved events and the generator of the actual event objects.
+            Array of retrieved event objects.
 
         Raises:
             ~pylogbook.exceptions.LogbookError: If there was a problem retrieving the events.
@@ -152,9 +152,7 @@ class LogbookModel(QObject):
         # Specifying a `from_date` improves performance
         events_pages = self._activities_client.get_events(from_date=start)
         events_pages.page_size = max_events
-        events_count = events_pages.count
-        logbook_events = events_pages.get_page(0)
-        return events_count, logbook_events
+        return list(events_pages.get_page(0))
 
     def _flush_activities_cache(self, emit_signal: bool = True):
         if not self.rbac_token_valid or self._activities_cache is None:
