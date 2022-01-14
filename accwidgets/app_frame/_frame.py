@@ -189,6 +189,10 @@ class ApplicationFrame(QMainWindow):
             tool_action = toolbar.addWidget(tool_widget)
             self.__rba_tool = (tool_action, tool_widget)
         else:
+            toolbar = self.main_toolbar()
+            cnt = len(toolbar.actions())
+            if cnt > 0 and isinstance(toolbar.widgetForAction(toolbar.actions()[cnt - 1]), ToolBarSpacer):
+                toolbar.removeAction(toolbar.actions()[cnt - 1])
             self.__remove_main_toolbar_if_needed()
 
     rba_widget = property(fget=__get_rba_widget, fset=__set_rba_widget)
