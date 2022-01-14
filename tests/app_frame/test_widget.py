@@ -6,18 +6,25 @@ from qtpy.QtWidgets import QWidget, QDockWidget, QMenu, QWidgetAction, QToolBar,
 from accwidgets.app_frame import ApplicationFrame
 from accwidgets.log_console import LogConsoleDock, LogConsole
 from accwidgets.timing_bar import TimingBar
-from accwidgets.app_frame._frame import _strip_mnemonics
+from accwidgets.rbac import RbaButton
+from accwidgets.app_frame._frame import _strip_mnemonics, ToolBarSpacer
 
 
-@pytest.mark.parametrize("use_timing_bar,use_console,expect_timing_bar_exist,expect_log_console_exist", [
-    (True, True, True, True),
-    (False, True, False, True),
-    (True, False, True, False),
-    (False, False, False, False),
+@pytest.mark.parametrize("use_timing_bar,expect_timing_bar_exist", [
+    (True, True),
+    (False, False),
 ])
-def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar, expect_log_console_exist,
-                                       expect_timing_bar_exist):
-    widget = ApplicationFrame(use_timing_bar=use_timing_bar, use_log_console=use_console)
+@pytest.mark.parametrize("use_console,expect_log_console_exist", [
+    (True, True),
+    (False, False),
+])
+@pytest.mark.parametrize("use_rbac,expect_rbac_exists", [
+    (True, True),
+    (False, False),
+])
+def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar, use_rbac, expect_log_console_exist,
+                                       expect_timing_bar_exist, expect_rbac_exists):
+    widget = ApplicationFrame(use_timing_bar=use_timing_bar, use_log_console=use_console, use_rbac=use_rbac)
     qtbot.add_widget(widget)
     if expect_timing_bar_exist:
         assert widget.timing_bar is not None
@@ -27,6 +34,10 @@ def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar
         assert widget.log_console is not None
     else:
         assert widget.log_console is None
+    if expect_rbac_exists:
+        assert widget.rba_widget is not None
+    else:
+        assert widget.rba_widget is None
 
 
 def test_app_frame_default_subwidget_usage_flags(qtbot: QtBot):
@@ -34,6 +45,7 @@ def test_app_frame_default_subwidget_usage_flags(qtbot: QtBot):
     qtbot.add_widget(widget)
     assert widget.useTimingBar is False
     assert widget.useLogConsole is False
+    assert widget.useRBAC is False
 
 
 @mock.patch("accwidgets.app_frame._frame.AboutDialog.exec_")
@@ -380,138 +392,328 @@ def test_app_frame_set_timing_bar_adds_new_widget_when_toolbar_does_not_exist(qt
     assert cast(QWidgetAction, main_toolbar.actions()[0]).defaultWidget() == new_timing_bar
 
 
-@pytest.mark.parametrize("widget_type", [QWidget, TimingBar])
+@pytest.mark.parametrize("widget_dest,widget_type", [
+    ("timing_bar", QWidget),
+    ("timing_bar", TimingBar),
+    ("rba_widget", QWidget),
+    ("rba_widget", RbaButton),
+])
 @pytest.mark.parametrize("another_toolbar_exists", [True, False])
-def test_app_frame_set_timing_bar_adds_toggle_action_when_toolbar_gets_created(qtbot: QtBot, widget_type, another_toolbar_exists):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    assert widget.main_toolbar(create=False) is None
-    new_timing_bar = widget_type()
+def test_app_frame_set_toolbar_item_adds_toggle_action_when_toolbar_gets_created(qtbot: QtBot, widget_type,
+                                                                                 another_toolbar_exists, widget_dest):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    assert app_frame.main_toolbar(create=False) is None
+    new_widget = widget_type()
 
-    view_menu = widget.menuBar().addMenu("View")
+    view_menu = app_frame.menuBar().addMenu("View")
 
     def toggle_actions_count() -> int:
         return len([a for a in view_menu.actions() if a.text() == "Toggle Primary Toolbar"])
 
     if another_toolbar_exists:
-        widget.addToolBar("Another toolbar")
+        app_frame.addToolBar("Another toolbar")
 
     assert toggle_actions_count() == 0
-    widget.timing_bar = new_timing_bar
+    setattr(app_frame, widget_dest, new_widget)
     assert toggle_actions_count() == 1
 
 
-@pytest.mark.parametrize("widget_type", [QWidget, TimingBar])
-def test_app_frame_set_timing_bar_adds_new_widget_when_only_main_toolbar_exists(qtbot: QtBot, widget_type):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    main_toolbar = widget.main_toolbar()
+@pytest.mark.parametrize("widget_dest,widget_type,expected_actions_count,expected_action_index", [
+    ("timing_bar", QWidget, 1, 0),
+    ("timing_bar", TimingBar, 1, 0),
+    ("rba_widget", QWidget, 2, 1),
+    ("rba_widget", RbaButton, 2, 1),
+])
+def test_app_frame_set_toolbar_item_adds_new_widget_when_only_main_toolbar_exists(qtbot: QtBot, widget_type, widget_dest,
+                                                                                  expected_action_index, expected_actions_count):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    main_toolbar = app_frame.main_toolbar()
     assert len(main_toolbar.actions()) == 0
-    new_timing_bar = widget_type()
-    widget.timing_bar = new_timing_bar
-    assert len(main_toolbar.actions()) == 1
-    assert isinstance(main_toolbar.actions()[0], QWidgetAction)
-    assert cast(QWidgetAction, main_toolbar.actions()[0]).defaultWidget() == new_timing_bar
+    new_widget = widget_type()
+    setattr(app_frame, widget_dest, new_widget)
+    assert len(main_toolbar.actions()) == expected_actions_count
+    for i in range(0, expected_action_index):
+        assert isinstance(main_toolbar.actions()[i], QWidgetAction)
+        assert isinstance(cast(QWidgetAction, main_toolbar.actions()[i]).defaultWidget(), ToolBarSpacer)
+    assert cast(QWidgetAction, main_toolbar.actions()[expected_action_index]).defaultWidget() == new_widget
 
 
-@pytest.mark.parametrize("widget_type", [QWidget, TimingBar])
-def test_app_frame_set_timing_bar_adds_new_widget_when_multiple_toolbars_exist(qtbot: QtBot, widget_type):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    another_toolbar = widget.addToolBar("Another toolbar")
-    main_toolbar = widget.main_toolbar()
+@pytest.mark.parametrize("widget_dest,widget_type,expected_actions_count,expected_action_index", [
+    ("timing_bar", QWidget, 1, 0),
+    ("timing_bar", TimingBar, 1, 0),
+    ("rba_widget", QWidget, 2, 1),
+    ("rba_widget", RbaButton, 2, 1),
+])
+def test_app_frame_set_toolbar_item_adds_new_widget_when_multiple_toolbars_exist(qtbot: QtBot, widget_type, widget_dest,
+                                                                                 expected_action_index, expected_actions_count):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    another_toolbar = app_frame.addToolBar("Another toolbar")
+    main_toolbar = app_frame.main_toolbar()
     assert len(main_toolbar.actions()) == 0
     assert len(another_toolbar.actions()) == 0
-    new_timing_bar = widget_type()
-    widget.timing_bar = new_timing_bar
-    assert len(main_toolbar.actions()) == 1
+    new_widget = widget_type()
+    setattr(app_frame, widget_dest, new_widget)
+    assert len(main_toolbar.actions()) == expected_actions_count
     assert len(another_toolbar.actions()) == 0
-    assert isinstance(main_toolbar.actions()[0], QWidgetAction)
-    assert cast(QWidgetAction, main_toolbar.actions()[0]).defaultWidget() == new_timing_bar
+    for i in range(0, expected_action_index):
+        assert isinstance(main_toolbar.actions()[i], QWidgetAction)
+        assert isinstance(cast(QWidgetAction, main_toolbar.actions()[i]).defaultWidget(), ToolBarSpacer)
+    assert cast(QWidgetAction, main_toolbar.actions()[expected_action_index]).defaultWidget() == new_widget
 
 
-@pytest.mark.parametrize("widget_type", [QWidget, TimingBar])
-def test_app_frame_set_timing_bar_adds_new_widget_when_main_toolbar_is_not_empty(qtbot: QtBot, widget_type):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    main_toolbar = widget.main_toolbar()
+@pytest.mark.parametrize("widget_dest,widget_type,expected_actions_count,expected_action_index,expected_orig_index", [
+    ("timing_bar", QWidget, 2, 0, 1),
+    ("timing_bar", TimingBar, 2, 0, 1),
+    ("rba_widget", QWidget, 3, 2, 0),
+    ("rba_widget", RbaButton, 3, 2, 0),
+])
+def test_app_frame_set_toolbar_item_adds_new_widget_when_main_toolbar_is_not_empty(qtbot: QtBot, widget_type, widget_dest,
+                                                                                   expected_action_index,
+                                                                                   expected_actions_count,
+                                                                                   expected_orig_index):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    main_toolbar = app_frame.main_toolbar()
     main_toolbar.addAction("Test action")
     assert len(main_toolbar.actions()) == 1
-    assert not isinstance(main_toolbar.actions()[0], QWidgetAction)
-    assert main_toolbar.actions()[0].text() == "Test action"
-    new_timing_bar = widget_type()
-    widget.timing_bar = new_timing_bar
-    assert widget.main_toolbar(create=False) is not None
-    assert len(main_toolbar.actions()) == 2
-    assert isinstance(main_toolbar.actions()[0], QWidgetAction)
-    assert not isinstance(main_toolbar.actions()[1], QWidgetAction)
-    assert cast(QWidgetAction, main_toolbar.actions()[0]).defaultWidget() == new_timing_bar
-    assert main_toolbar.actions()[1].text() == "Test action"
+    orig_action = main_toolbar.actions()[0]
+    assert not isinstance(orig_action, QWidgetAction)
+    assert orig_action.text() == "Test action"
+    new_widget = widget_type()
+    setattr(app_frame, widget_dest, new_widget)
+    assert app_frame.main_toolbar(create=False) is not None
+    assert len(main_toolbar.actions()) == expected_actions_count
+    for i in range(expected_actions_count):
+        if i == expected_orig_index:
+            assert main_toolbar.actions()[i] is orig_action
+        else:
+            assert isinstance(main_toolbar.actions()[i], QWidgetAction)
+            default_widget = cast(QWidgetAction, main_toolbar.actions()[i]).defaultWidget()
+            if i == expected_action_index:
+                assert default_widget is new_widget
+            else:
+                assert isinstance(default_widget, ToolBarSpacer)
 
 
-@pytest.mark.parametrize("has_additional_widgets,new_widget_type,should_remove_toolbar", [
-    (False, None, True),
-    (True, None, False),
-    (False, QWidget, False),
-    (True, QWidget, False),
-    (False, TimingBar, False),
-    (True, TimingBar, False),
+@pytest.mark.parametrize("orig_sequence,new_sequence,should_remove_toolbar", [
+    ([(QWidget, "timing_bar")], [(None, "timing_bar")], True),
+    ([(QWidget, "timing_bar")], [(QWidget, "timing_bar")], False),
+    ([(QWidget, "timing_bar")], [(TimingBar, "timing_bar")], False),
+    ([(TimingBar, "timing_bar")], [(None, "timing_bar")], True),
+    ([(TimingBar, "timing_bar")], [(QWidget, "timing_bar")], False),
+    ([(TimingBar, "timing_bar")], [(TimingBar, "timing_bar")], False),
+    ([(QWidget, "rba_widget")], [(None, "rba_widget")], True),
+    ([(QWidget, "rba_widget")], [(QWidget, "rba_widget")], False),
+    ([(QWidget, "rba_widget")], [(RbaButton, "rba_widget")], False),
+    ([(RbaButton, "rba_widget")], [(None, "rba_widget")], True),
+    ([(RbaButton, "rba_widget")], [(QWidget, "rba_widget")], False),
+    ([(RbaButton, "rba_widget")], [(RbaButton, "rba_widget")], False),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "rba_widget")], False),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "timing_bar")], False),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "timing_bar"), (None, "rba_widget")], True),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "rba_widget"), (None, "timing_bar")], True),
 ])
-@pytest.mark.parametrize("widget_type", [QWidget, TimingBar])
-def test_app_frame_set_timing_bar_to_none_deletes_main_toolbar_if_last_widget(qtbot: QtBot, widget_type, has_additional_widgets,
-                                                                              should_remove_toolbar, new_widget_type):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    assert widget.main_toolbar(create=False) is None
-    if has_additional_widgets:
-        widget.main_toolbar().addAction("Test action")
-    widget.timing_bar = widget_type()
-    main_toolbar = widget.main_toolbar(create=False)
+def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_if_last_widget(qtbot: QtBot, orig_sequence,
+                                                                                new_sequence, should_remove_toolbar):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    assert app_frame.main_toolbar(create=False) is None
+    for widget_type, widget_dest in orig_sequence:
+        setattr(app_frame, widget_dest, widget_type())
+    main_toolbar = app_frame.main_toolbar(create=False)
     assert main_toolbar is not None
     with qtbot.wait_signal(main_toolbar.destroyed, raising=False, timeout=100) as blocker:
-        widget.timing_bar = None if new_widget_type is None else new_widget_type()
-    if should_remove_toolbar:
-        assert blocker.signal_triggered
-        assert widget.main_toolbar(create=False) is None
-    else:
-        assert not blocker.signal_triggered
-        assert widget.main_toolbar(create=False) is not None
+        for widget_type, widget_dest in new_sequence:
+            setattr(app_frame, widget_dest, None if widget_type is None else widget_type())
+    assert blocker.signal_triggered == should_remove_toolbar
+    assert (app_frame.main_toolbar(create=False) is None) == should_remove_toolbar
 
 
-def test_app_frame_set_timing_bar_to_none_deletes_main_toolbar_toggle_view_action_if_last_widget_and_menu_exists(qtbot: QtBot):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    widget.menuBar().addMenu("Useless")  # To make sure that it's not any menu that is picked up
-    view_menu = widget.menuBar().addMenu("View")
+@pytest.mark.parametrize("widget_seq", [
+    [(TimingBar, "timing_bar")],
+    [(RbaButton, "rba_widget")],
+    [(TimingBar, "timing_bar"), (RbaButton, "rba_widget")],
+    [(RbaButton, "rba_widget"), (TimingBar, "timing_bar")],
+])
+def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_toggle_view_action_if_last_widget_and_menu_exists(qtbot: QtBot,
+                                                                                                                   widget_seq):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    app_frame.menuBar().addMenu("Useless")  # To make sure that it's not any menu that is picked up
+    view_menu = app_frame.menuBar().addMenu("View")
 
     def toggle_actions_count() -> int:
         return len([a for a in view_menu.actions() if a.text() == "Toggle Primary Toolbar"])
 
     assert toggle_actions_count() == 0
-    widget.timing_bar = TimingBar()
+    for widget_type, widget_dest in widget_seq:
+        setattr(app_frame, widget_dest, widget_type())
     assert toggle_actions_count() == 1
-    widget.timing_bar = TimingBar()
+    for widget_type, widget_dest in widget_seq:
+        setattr(app_frame, widget_dest, widget_type())
     assert toggle_actions_count() == 1
-    widget.timing_bar = None
+    for _, widget_dest in widget_seq:
+        setattr(app_frame, widget_dest, None)
     assert toggle_actions_count() == 0
 
 
-def test_app_frame_set_timing_bar_main_toolbar_does_not_create_view_menu_if_not_exists(qtbot: QtBot):
-    widget = ApplicationFrame(use_timing_bar=False)
-    qtbot.add_widget(widget)
-    widget.menuBar().addMenu("Useless")  # To make sure that it's not any menu that is picked up
+@pytest.mark.parametrize("widget_type,widget_dest", [
+    (TimingBar, "timing_bar"),
+    (RbaButton, "rba_widget"),
+])
+def test_app_frame_set_toolbar_item_main_toolbar_does_not_create_view_menu_if_not_exists(qtbot: QtBot,
+                                                                                         widget_dest,
+                                                                                         widget_type):
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(app_frame)
+    app_frame.menuBar().addMenu("Useless")  # To make sure that it's not any menu that is picked up
 
     def get_view_menu() -> Optional[QMenu]:
         try:
-            return next(iter(w for w in widget.menuBar().actions() if w.text() == "View"))
+            return next(iter(w for w in app_frame.menuBar().actions() if w.text() == "View"))
         except StopIteration:
             return None
 
     assert get_view_menu() is None
-    widget.timing_bar = TimingBar()
+    setattr(app_frame, widget_dest, widget_type())
     assert get_view_menu() is None
-    widget.timing_bar = None
+    setattr(app_frame, widget_dest, None)
     assert get_view_menu() is None
+
+
+@pytest.mark.parametrize("use_timing_bar,use_rbac,expected_seq", [
+    (False, False, []),
+    (True, False, [TimingBar]),
+    (False, True, [ToolBarSpacer, RbaButton]),
+    (True, True, [TimingBar, ToolBarSpacer, RbaButton]),
+])
+def test_app_frame_toolbar_contents_with_multiple_toolbar_items_at_init(qtbot: QtBot, use_timing_bar, use_rbac, expected_seq):
+    widget = ApplicationFrame(use_timing_bar=use_timing_bar, use_rbac=use_rbac)
+    qtbot.add_widget(widget)
+    main_toolbar = widget.main_toolbar(create=False)
+    if len(expected_seq) == 0:
+        assert main_toolbar is None
+    else:
+        assert main_toolbar is not None
+        assert len(main_toolbar.actions()) == len(expected_seq)
+        for action, expected_type in zip(main_toolbar.actions(), expected_seq):
+            assert isinstance(action, QWidgetAction)
+            assert isinstance(cast(QWidgetAction, action).defaultWidget(), expected_type)
+
+
+@pytest.mark.parametrize("set_sequence,expected_seq", [
+    ([], []),
+    ([("timing_bar", TimingBar)], [TimingBar]),
+    ([("rba_widget", RbaButton)], [ToolBarSpacer, RbaButton]),
+    ([("timing_bar", TimingBar), ("rba_widget", RbaButton)], [TimingBar, ToolBarSpacer, RbaButton]),
+    ([("rba_widget", RbaButton), ("timing_bar", TimingBar)], [TimingBar, ToolBarSpacer, RbaButton]),
+])
+@pytest.mark.parametrize("create_toolbar_upfront", [True, False])
+def test_app_frame_toolbar_contents_with_multiple_toolbar_items_after_init(qtbot: QtBot, set_sequence, expected_seq,
+                                                                           create_toolbar_upfront):
+    widget = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    qtbot.add_widget(widget)
+    widget.main_toolbar(create=create_toolbar_upfront)
+    for widget_dest, widget_type in set_sequence:
+        setattr(widget, widget_dest, widget_type())
+    main_toolbar = widget.main_toolbar(create=False)
+    if len(expected_seq) == 0 and not create_toolbar_upfront:
+        assert main_toolbar is None
+    else:
+        assert main_toolbar is not None
+        assert len(main_toolbar.actions()) == len(expected_seq)
+        for action, expected_type in zip(main_toolbar.actions(), expected_seq):
+            assert isinstance(action, QWidgetAction)
+            assert isinstance(cast(QWidgetAction, action).defaultWidget(), expected_type)
+
+
+@pytest.mark.parametrize("initial_value,new_value,expect_sets_bar", [
+    (True, True, False),
+    (False, False, False),
+    (True, False, True),
+    (False, True, True),
+])
+def test_app_frame_use_rbac_noop_on_the_same_value(qtbot: QtBot, initial_value, new_value, expect_sets_bar):
+    widget = ApplicationFrame(use_rbac=initial_value)
+    qtbot.add_widget(widget)
+    with mock.patch("accwidgets.app_frame._frame.ApplicationFrame.rba_widget", new_callable=mock.PropertyMock) as rbac:
+        widget.useRBAC = new_value
+        if expect_sets_bar:
+            rbac.assert_called()
+        else:
+            rbac.assert_not_called()
+
+
+def test_app_frame_use_rbac_sets_bar_widget(qtbot: QtBot):
+    widget = ApplicationFrame(use_rbac=False)
+    qtbot.add_widget(widget)
+    assert widget.rba_widget is None
+    widget.useRBAC = True
+    assert isinstance(widget.rba_widget, RbaButton)
+
+
+@pytest.mark.parametrize("initial_widget,new_widget,expect_widget_update", [
+    (None, None, False),
+    ("rbac1", None, True),
+    ("rbac1", "rbac1", False),
+    ("rbac1", "rbac2", True),
+    ("rbac1", "widget1", True),
+    ("widget1", None, True),
+    ("widget1", "widget1", False),
+    ("widget1", "widget2", True),
+    ("widget1", "rbac1", True),
+    (None, "rbac1", True),
+    (None, "widget1", True),
+])
+def test_app_frame_set_rbac_noop_on_the_same_widget(qtbot: QtBot, initial_widget, new_widget, expect_widget_update):
+    # Do not add widgets to the qtbot, otherwise it may crash when it tries to close them, but they've already
+    # been deleted by the application frame.
+    rbac1 = RbaButton()
+    rbac2 = RbaButton()
+    widget1 = QWidget()
+    widget2 = QWidget()
+
+    subwidgets = {
+        "rbac1": rbac1,
+        "rbac2": rbac2,
+        "widget1": widget1,
+        "widget2": widget2,
+    }
+    widget = ApplicationFrame(use_rbac=False)
+    qtbot.add_widget(widget)
+    widget.rba_widget = None if initial_widget is None else subwidgets[initial_widget]
+    with mock.patch("qtpy.QtWidgets.QToolBar.addWidget") as addWidget:
+        with mock.patch("qtpy.QtWidgets.QToolBar.removeAction") as removeAction:
+            widget.rba_widget = None if new_widget is None else subwidgets[new_widget]
+            call_count = addWidget.call_count + removeAction.call_count
+            if expect_widget_update:
+                assert call_count > 0
+            else:
+                assert call_count == 0
+
+
+@pytest.mark.parametrize("old_widget_type", [QWidget, RbaButton])
+@pytest.mark.parametrize("new_widget_type", [None, QWidget, RbaButton])
+def test_app_frame_set_rbac_removes_old_widget(qtbot: QtBot, old_widget_type, new_widget_type):
+    widget = ApplicationFrame(use_rbac=False)
+    qtbot.add_widget(widget)
+
+    rbac_widget = old_widget_type()
+
+    def rbac_widget_is_in_toolbar() -> bool:
+        for action in widget.main_toolbar().actions():
+            if isinstance(action, QWidgetAction) and cast(QWidgetAction, action).defaultWidget() == rbac_widget:
+                return True
+        return False
+
+    assert not rbac_widget_is_in_toolbar()
+    widget.rba_widget = rbac_widget
+    assert rbac_widget_is_in_toolbar()
+    widget.rba_widget = None if new_widget_type is None else new_widget_type()
+    assert not rbac_widget_is_in_toolbar()
 
 
 @pytest.mark.parametrize("version", [
