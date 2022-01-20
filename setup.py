@@ -67,7 +67,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "pytest-qt>=4.0.2,<5a0",
         "pytest-random-order>=1.0.4,<1.1a0",
         "pytest-cov>=3.0.0,<4a0",
-        "pytest-asyncio>=0.16",
+        "pytest-asyncio>=0.17",
         "qasync>=0.13.0,<1a0",
     ],
     DOC_OPTION: [
