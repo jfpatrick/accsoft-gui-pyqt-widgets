@@ -32,16 +32,19 @@ def test_init_connects_implicit_model(_, __, qtbot: QtBot):
     qtbot.add_widget(action.menu())
     assert action.model.receivers(action.model.rbac_token_changed) > 0
     assert action.model.receivers(action.model.activities_changed) > 0
+    assert action.model.receivers(action.model.activities_failed) > 0
 
 
 def test_init_connects_provided_model(qtbot: QtBot, logbook):
     model = LogbookModel(logbook=logbook)
     assert model.receivers(model.rbac_token_changed) == 0
     assert model.receivers(model.activities_changed) == 0
+    assert model.receivers(model.activities_failed) == 0
     action = ScreenshotAction(model=model)
     qtbot.add_widget(action.menu())
     assert model.receivers(model.rbac_token_changed) > 0
     assert model.receivers(model.activities_changed) > 0
+    assert model.receivers(model.activities_failed) > 0
 
 
 def test_set_model_changes_ownership(qtbot: QtBot, logbook):
@@ -69,9 +72,11 @@ def test_set_model_disconnects_old_model(qtbot: QtBot, logbook):
     qtbot.add_widget(action.menu())
     assert model.receivers(model.rbac_token_changed) > 0
     assert model.receivers(model.activities_changed) > 0
+    assert model.receivers(model.activities_failed) > 0
     action.model = LogbookModel(logbook=logbook)
     assert model.receivers(model.rbac_token_changed) == 0
     assert model.receivers(model.activities_changed) == 0
+    assert model.receivers(model.activities_failed) == 0
 
 
 def test_set_model_connects_new_model(qtbot: QtBot, logbook, logbook_model):
@@ -80,9 +85,11 @@ def test_set_model_connects_new_model(qtbot: QtBot, logbook, logbook_model):
     model = LogbookModel(logbook=logbook)
     assert model.receivers(model.rbac_token_changed) == 0
     assert model.receivers(model.activities_changed) == 0
+    assert model.receivers(model.activities_failed) == 0
     action.model = model
     assert model.receivers(model.rbac_token_changed) > 0
     assert model.receivers(model.activities_changed) > 0
+    assert model.receivers(model.activities_failed) > 0
 
 
 @pytest.mark.parametrize("belongs_to_action,should_destroy", [

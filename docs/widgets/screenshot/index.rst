@@ -157,7 +157,9 @@ create a new e-logbook entry, or retrieve an existing one) the corresponding sig
 :attr:`~accwidgets.screenshot.ScreenshotButton.captureFailed` will fire.
 
 Lastly, if specified e-Logbook activity does not exist on the server, the action/button will remain disabled, and
-the :attr:`LogbookModel.activities_failed <accwidgets.screenshot.LogbookModel.activities_failed>` signal will fire.
+the :attr:`~accwidgets.screenshot.ScreenshotButton.activitiesFailed`,
+:attr:`ScreenshotAction.activities_failed <accwidgets.screenshot.ScreenshotAction.activities_failed>` and
+:attr:`LogbookModel.activities_failed <accwidgets.screenshot.LogbookModel.activities_failed>` signals will fire.
 
 .. note:: The connection to the e-logbook server is attempted only after **both** RBAC token and activity name are
           provided, therefore you will not receive the :attr:`~accwidgets.screenshot.LogbookModel.activities_failed`

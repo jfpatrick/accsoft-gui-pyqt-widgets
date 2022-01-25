@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
         self.logbook_button = logbook_button
         logbook_button.captureFinished.connect(lambda event_id: print(f"Captured to event id={event_id}"))
         logbook_button.captureFailed.connect(lambda e: print(f"Capture failed: {e}"))
+        logbook_button.activitiesFailed.connect(lambda e: print(f"Failed to change activities: {e}"))
         toolbar.addWidget(logbook_button)
 
         # RBAC button is required to produce a valid token for the e-logbook communications

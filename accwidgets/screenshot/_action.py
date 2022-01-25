@@ -36,6 +36,9 @@ class ScreenshotAction(QAction):
     model_changed = Signal()
     """Notifies that the underlying model has been updated."""
 
+    activities_failed = Signal(str)
+    """Notifies when the e-logbook activities setting has failed. The argument is the error message."""
+
     def __init__(self,
                  parent: Optional[QObject] = None,
                  model: Optional[LogbookModel] = None):
@@ -312,11 +315,13 @@ class ScreenshotAction(QAction):
     def _connect_model(self, model: LogbookModel):
         model.rbac_token_changed.connect(self._update_ui)
         model.activities_changed.connect(self._update_ui)
+        model.activities_failed.connect(self.activities_failed)
         model.setParent(self)
 
     def _disconnect_model(self, model: LogbookModel):
         model.rbac_token_changed.disconnect(self._update_ui)
         model.activities_changed.disconnect(self._update_ui)
+        model.activities_failed.disconnect(self.activities_failed)
         if model.parent() is self:
             model.setParent(None)
             model.deleteLater()

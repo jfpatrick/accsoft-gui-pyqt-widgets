@@ -21,6 +21,9 @@ class ScreenshotButton(OrientedToolButton):
     eventFetchFailed = Signal(str)
     """Notification of the problem retrieving events from the e-logbook. The argument is the error message."""
 
+    activitiesFailed = Signal(str)
+    """Notifies when the e-logbook activities setting has failed. The argument is the error message."""
+
     modelChanged = Signal()
     """Notifies that the underlying model has been updated."""
 
@@ -214,12 +217,14 @@ class ScreenshotButton(OrientedToolButton):
         action.capture_failed.connect(self.captureFailed)
         action.event_fetch_failed.connect(self.eventFetchFailed)
         action.model_changed.connect(self.modelChanged)
+        action.activities_failed.connect(self.activitiesFailed)
 
     def _disconnect_action(self, action: ScreenshotAction):
         action.capture_finished.disconnect(self.captureFinished)
         action.capture_failed.disconnect(self.captureFailed)
         action.event_fetch_failed.disconnect(self.eventFetchFailed)
         action.model_changed.disconnect(self.modelChanged)
+        action.activities_failed.disconnect(self.activitiesFailed)
 
 
 def assert_action(current_action: QAction):

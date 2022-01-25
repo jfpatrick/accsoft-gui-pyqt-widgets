@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
         shared_action = ScreenshotAction(model=SampleLogbookModel())
         shared_action.capture_finished.connect(lambda event_id: print(f"Captured to event id={event_id}"))
         shared_action.capture_failed.connect(lambda e: print(f"Capture failed: {e}"))
+        shared_action.activities_failed.connect(lambda e: print(f"Failed to change activities: {e}"))
         self.logbook_action = shared_action
 
         toolbar = QToolBar()

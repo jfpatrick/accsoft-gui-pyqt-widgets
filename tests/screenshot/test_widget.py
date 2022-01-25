@@ -32,6 +32,7 @@ def test_init_with_implicit_action(_, qtbot: QtBot):
     assert widget.defaultAction().receivers(widget.defaultAction().capture_failed) > 0
     assert widget.defaultAction().receivers(widget.defaultAction().event_fetch_failed) > 0
     assert widget.defaultAction().receivers(widget.defaultAction().model_changed) > 0
+    assert widget.defaultAction().receivers(widget.defaultAction().activities_failed) > 0
 
 
 @pytest.mark.asyncio
@@ -65,11 +66,13 @@ def test_set_default_action_disconnects_old_action(qtbot: QtBot, logbook_model, 
     assert old_action.receivers(old_action.capture_failed) > 0
     assert old_action.receivers(old_action.event_fetch_failed) > 0
     assert old_action.receivers(old_action.model_changed) > 0
+    assert old_action.receivers(old_action.activities_failed) > 0
     widget.setDefaultAction(ScreenshotAction(model=logbook_model))
     assert old_action.receivers(old_action.capture_finished) == 0
     assert old_action.receivers(old_action.capture_failed) == 0
     assert old_action.receivers(old_action.event_fetch_failed) == 0
     assert old_action.receivers(old_action.model_changed) == 0
+    assert old_action.receivers(old_action.activities_failed) == 0
 
 
 @pytest.mark.asyncio
@@ -81,11 +84,13 @@ def test_set_default_action_connects_new_action(qtbot: QtBot, logbook_model, qap
     assert action.receivers(action.capture_failed) == 0
     assert action.receivers(action.event_fetch_failed) == 0
     assert action.receivers(action.model_changed) == 0
+    assert action.receivers(action.activities_failed) == 0
     widget.setDefaultAction(action)
     assert action.receivers(action.capture_finished) > 0
     assert action.receivers(action.capture_failed) > 0
     assert action.receivers(action.event_fetch_failed) > 0
     assert action.receivers(action.model_changed) > 0
+    assert action.receivers(action.activities_failed) > 0
 
 
 @pytest.mark.parametrize("prev_type,new_type,expect_signal", [
