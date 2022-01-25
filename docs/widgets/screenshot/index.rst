@@ -57,8 +57,8 @@ or after the fact by manipulating properties:
    from accwidgets.screenshot import ScreenshotButton
    ...
    button = ScreenshotButton()
-   button.defaultAction().model.logbook_activities = "LINAC_4"
-   button.defaultAction().model.reset_rbac_token(my_existing_token)
+   button.model.logbook_activities = "LINAC_4"
+   button.model.reset_rbac_token(my_existing_token)
 
 Furthermore, it is possible to connect an existing :class:`~accwidgets.rbac.RbaButton` to this widget, so that RBAC
 token propagation and updates are handled automatically (see `RBAC authentication`_).
@@ -175,7 +175,7 @@ supply the token to :mod:`pylogbook` via :meth:`~accwidgets.screenshot.LogbookMo
    from accwidgets.screenshot import ScreenshotButton
    ...
    button = ScreenshotButton()
-   button.defaultAction().model.reset_rbac_token(my_existing_token)
+   button.model.reset_rbac_token(my_existing_token)
 
 In addition, there's convenience APIs in :class:`~accwidgets.screenshot.ScreenshotAction`, namely
 :meth:`~accwidgets.screenshot.ScreenshotAction.connect_rbac` and
@@ -211,7 +211,7 @@ This means that providing e-Logbook integration is just few steps away: enable
    window = ApplicationFrame()
    window.useRBAC = True
    window.useScreenshot = True
-   window.screenshot_widget.defaultAction().model.logbook_activities = "LINAC_4"
+   window.screenshot_widget.model.logbook_activities = "LINAC_4"
 
 This button will be put in the primary toolbar, on the right-hand side, just before the RBAC button.
 

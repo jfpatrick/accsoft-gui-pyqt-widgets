@@ -4,6 +4,7 @@ from qtpy.QtWidgets import QWidget, QToolButton, QSizePolicy, QAction
 from accwidgets.qt import OrientedToolButton
 from ._action import ScreenshotAction
 from ._common import ScreenshotSource
+from ._model import LogbookModel
 
 
 class ScreenshotButton(OrientedToolButton):
@@ -140,6 +141,26 @@ class ScreenshotButton(OrientedToolButton):
 
     This is a convenience property to access
     :attr:`ScreenshotAction.max_menu_days <accwidgets.screenshot.ScreenshotAction.max_menu_days>`.
+
+    Raises:
+        AssertionError: When :meth:`~QToolButton.defaultAction` of this widget is not of
+                        type :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+    """
+
+    def _get_model(self) -> LogbookModel:
+        return self._compatible_action.model
+
+    def _set_model(self, new_val: LogbookModel):
+        self._compatible_action.model = new_val
+
+    model = property(fget=_get_model, fset=_set_model)
+    """
+    Model that handles interaction with :mod:`pylogbook` and :mod:`pyrbac` libraries.
+
+    When assigning a new model, its ownership is transferred to the associated action.
+
+    This is a convenience property to access
+    :attr:`ScreenshotAction.model <accwidgets.screenshot.ScreenshotAction.model>`.
 
     Raises:
         AssertionError: When :meth:`~QToolButton.defaultAction` of this widget is not of

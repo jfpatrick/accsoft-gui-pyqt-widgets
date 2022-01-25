@@ -129,6 +129,7 @@ def test_set_default_action_fires_model_change_signal(qtbot: QtBot, qapp, prev_t
     ("includeWindowDecorations", "include_window_decorations", True),
     ("includeWindowDecorations", "include_window_decorations", False),
     ("source", "source", QWidget),
+    ("model", "model", mock.MagicMock(spec=LogbookModel)),
 ])
 def test_scalar_prop_with_proper_action(qtbot: QtBot, logbook_model, new_val, widget_prop_name, action_prop_name):
     action = ScreenshotAction(model=logbook_model)
@@ -155,7 +156,7 @@ def test_prop_getter_succeeds_with_generic_action(qtbot: QtBot, action_type, pro
     assert getattr(widget, prop_name) == expected_value
 
 
-@pytest.mark.parametrize("prop_name", ["maxMenuDays", "maxMenuEntries", "source"])
+@pytest.mark.parametrize("prop_name", ["maxMenuDays", "maxMenuEntries", "source", "model"])
 @pytest.mark.parametrize("action_type,expected_error", [
     (QAction, "Cannot retrieve/update ScreenshotAction-related property on the action of type QAction"),
     (CustomAction, "Cannot retrieve/update ScreenshotAction-related property on the action of type CustomAction"),
@@ -176,6 +177,7 @@ def test_prop_getter_fails_with_generic_action(qtbot: QtBot, action_type, expect
     ("message", ""),
     ("message", "Test message"),
     ("source", QWidget),
+    ("model", mock.MagicMock(spec=LogbookModel)),
 ])
 @pytest.mark.parametrize("action_type,expected_error", [
     (QAction, "Cannot retrieve/update ScreenshotAction-related property on the action of type QAction"),

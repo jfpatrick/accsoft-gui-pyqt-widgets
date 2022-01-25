@@ -15,7 +15,7 @@ API reference
      node[shape=record,style=filled,fillcolor=gray95];
      edge[dir=back, arrowtail=empty];
 
-     widget [label="{ScreenshotButton|+ message\l+ source\l+ includeWindowDecorations\l+ maxMenuDays\l+ maxMenuEntries\l...|+ defaultAction()\l}"]
+     widget [label="{ScreenshotButton|+ model\l+ message\l+ source\l+ includeWindowDecorations\l+ maxMenuDays\l+ maxMenuEntries\l...|+ defaultAction()\l}"]
      action [label="{ScreenshotAction|+ model\l+ message\l+ source\l+ include_window_decorations\l+ max_menu_days\l+ max_menu_entries\l...|+ connect_rbac()\l+ disconnect_rbac()\l}"]
      model [label="{LogbookModel|+ logbook_activities\l|+ reset_rbac_token()\l+ create_logbook_event()\l+ get_logbook_event()\l+ attach_screenshot()\l+ get_logbook_events()\l+ validate()\l}"]
 
