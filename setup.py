@@ -32,8 +32,6 @@ BENCH_OPTION = "bench"
 PACKAGE_NAME = "accwidgets"
 EXTRAS_ALL_FEATURES = "all-widgets"
 DEPENDENCY_OPTIONS = {LINT_OPTION, TEST_OPTION, BENCH_OPTION, DOC_OPTION, EXAMPLE_OPTION}
-# Section for commonly defined
-SHARED_OPTIONS = {LINT_OPTION, TEST_OPTION, DOC_OPTION}
 
 
 REQUIREMENTS: Dict[str, List[str]] = {
@@ -61,6 +59,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
         "flake8-builtins-unleashed>=1.3.1,<2a0",
         "flake8-blind-except>=0.2.0,<1a0",
         "flake8-bugbear>=21.9.2,<22a0",
+        "pre-commit>=2.17.0,<3a0",
     ],
     TEST_OPTION: [
         "pytest>=6.2.5,<7a0",

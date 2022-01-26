@@ -18,7 +18,7 @@ API reference
      widget [label="{LsaSelector|+ model\l+ accelerator\l+ fetchResidentOnly\l+ contextCategories\l+ hideHorizontalHeader\l+ showNameFilter\l+ showCategoryFilter\l+ selected_context\l...|+ select_user()\l}"]
      model [label="{LsaSelectorModel|+ accelerator\l+ resident_only\l+ categories\l+ filter_title\l+ filter_categories\l+ last_error\l...|+ color()\l+ set_color()\l+ refetch()\l+ find_stored_categories()\l+ connect_table()\l}"]
      acc [label="{LsaSelectorAccelerator|...|}"]
-	 role [label="{LsaSelectorColorRole|...|}"]
+     role [label="{LsaSelectorColorRole|...|}"]
      ctx [label="{AbstractLsaSelectorContext|+ name\l+ category\l|}"]
      res_ctx [label="{AbstractLsaSelectorResidentContext|+ name\l+ category\l+ user\l|}"]
      nores_ctx [label="{LsaSelectorNonResidentContext|+ name\l+ category\l+ multiplexed\l+ can_become_resident\l|}"]

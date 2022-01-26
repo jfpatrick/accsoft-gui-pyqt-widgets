@@ -19,5 +19,3 @@ Model
    :alt: Simplified class hierarchy
 
    Simplified class hierarchy
-
-
