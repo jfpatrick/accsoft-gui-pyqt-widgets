@@ -5,6 +5,7 @@ from asyncio import CancelledError
 from pytestqt.qtbot import QtBot
 from qtpy.QtCore import QObject
 from qtpy.QtWidgets import QToolButton, QWidget, QMainWindow, QMenuBar
+from pylogbook import ActivitiesClient
 from pylogbook.models import Activity
 from pylogbook.exceptions import LogbookError
 from accwidgets.rbac import RbaButton
@@ -523,9 +524,43 @@ def test_model_activities_update_ui(setEnabled, setToolTip, logbook, qtbot: QtBo
     setEnabled.reset_mock()
     setToolTip.reset_mock()
     activity = mock.MagicMock(spec=Activity)
-    activity.name = "TEST"
-    with qtbot.wait_signal(model.activities_changed, timeout=100):
-        model.logbook_activities = [activity]
+    activity.name = "TEST_LOGBOOK"
+    with qtbot.wait_signal(model.activities_failed, timeout=100, raising=False) as blocker1:
+        with qtbot.wait_signal(model.activities_changed, timeout=100, raising=False) as blocker2:
+            model.logbook_activities = [activity]
+        assert blocker2.signal_triggered
+    assert not blocker1.signal_triggered
+    setEnabled.assert_called_once()
+    setToolTip.assert_called_once()
+
+
+@mock.patch("accwidgets.screenshot.ScreenshotAction.setToolTip")
+@mock.patch("accwidgets.screenshot.ScreenshotAction.setEnabled")
+def test_model_activities_update_ui_on_failure(setEnabled, setToolTip, logbook, qtbot: QtBot, monkeypatch):
+    client, _ = logbook
+    prop_mock = mock.PropertyMock(return_value=())
+
+    def side_effect(*_):
+        raise ValueError
+
+    prop_mock.__set__ = side_effect
+    # We do not use pre-made activity_client mock here because PropertyMock needs to be set on the class, not
+    # instance.
+    monkeypatch.setattr(ActivitiesClient, "activities", prop_mock)
+    # Without rbac token, activities cache in the model won't be flushed and signal won't be fired
+    client.rbac_b64_token = "abc123"
+    model = LogbookModel(logbook=(client, ActivitiesClient(activities="", client=client)))
+    action = ScreenshotAction(model=model)
+    qtbot.add_widget(action.menu())
+    setEnabled.reset_mock()
+    setToolTip.reset_mock()
+    activity = mock.MagicMock(spec=Activity)
+    activity.name = "TEST_LOGBOOK"
+    with qtbot.wait_signal(model.activities_failed, timeout=100, raising=False) as blocker1:
+        with qtbot.wait_signal(model.activities_changed, timeout=100, raising=False) as blocker2:
+            model.logbook_activities = [activity]
+        assert not blocker2.signal_triggered
+    assert blocker1.signal_triggered
     setEnabled.assert_called_once()
     setToolTip.assert_called_once()
 
