@@ -50,6 +50,7 @@ class LogbookModel(QObject):
         """
         super().__init__(parent)
         self._activities_cache = activities
+        self._last_activity_error: Optional[str] = None
         self._client: Client
         self._activities_client: ActivitiesClient
         if logbook is not None:
@@ -171,6 +172,8 @@ class LogbookModel(QObject):
         Raises:
             ValueError: If communication is not possible. Error message will be the reason for validation failure.
         """
+        if self._last_activity_error:
+            raise ValueError(self._last_activity_error)
         if not self._rbac_token_valid:
             raise ValueError("RBAC login is required to write to the e-logbook")
         if not self.logbook_activities:
@@ -186,8 +189,11 @@ class LogbookModel(QObject):
         try:
             self._activities_client.activities = self._activities_cache
         except ValueError as e:
-            self.activities_failed.emit(str(e))
+            error = str(e)
+            self._last_activity_error = error
+            self.activities_failed.emit(error)
         else:
+            self._last_activity_error = None
             if emit_signal and prev_activities != self._activities_cache:
                 self.activities_changed.emit()
             self._activities_cache = None
