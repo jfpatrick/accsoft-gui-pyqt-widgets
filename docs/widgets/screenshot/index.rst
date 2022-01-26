@@ -179,9 +179,10 @@ supply the token to :mod:`pylogbook` via :meth:`~accwidgets.screenshot.LogbookMo
    button = ScreenshotButton()
    button.model.reset_rbac_token(my_existing_token)
 
-In addition, there's convenience APIs in :class:`~accwidgets.screenshot.ScreenshotAction`, namely
-:meth:`~accwidgets.screenshot.ScreenshotAction.connect_rbac` and
-:meth:`~accwidgets.screenshot.ScreenshotAction.disconnect_rbac`, that will allow to easily connect an existing
+In addition, there's convenience APIs in both :class:`~accwidgets.screenshot.ScreenshotButton` and
+:class:`~accwidgets.screenshot.ScreenshotAction`, namely
+:meth:`~accwidgets.screenshot.ScreenshotButton.connect_rbac` and
+:meth:`~accwidgets.screenshot.ScreenshotButton.disconnect_rbac`, that will allow to easily connect an existing
 :class:`~accwidgets.rbac.RbaButton` to ensure that RBAC tokens are synchronized between two widgets, for instance:
 
 .. code-block:: python
@@ -191,7 +192,7 @@ In addition, there's convenience APIs in :class:`~accwidgets.screenshot.Screensh
    ...
    rba_button = RbaButton()
    button = ScreenshotButton()
-   button.defaultAction().connect_rbac(rba_button)
+   button.connect_rbac(rba_button)
 
 
 Within ApplicationFrame

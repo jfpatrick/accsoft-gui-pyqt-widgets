@@ -196,3 +196,30 @@ def test_prop_setter_fails_with_generic_action(qtbot: QtBot, action_type, expect
         qtbot.add_widget(new_val)
     with pytest.raises(AssertionError, match=expected_error):
         setattr(widget, prop_name, new_val)
+
+
+@pytest.mark.parametrize("widget_meth_name,action_meth_name", [
+    ("connect_rbac", "connect_rbac"),
+    ("disconnect_rbac", "disconnect_rbac"),
+])
+def test_method_succeeds_with_proper_action(qtbot: QtBot, logbook_model, widget_meth_name, action_meth_name):
+    action = ScreenshotAction(model=logbook_model)
+    widget = ScreenshotButton(action=action)
+    qtbot.add_widget(widget)
+    arg = mock.MagicMock()
+    with mock.patch.object(action, action_meth_name) as orig_method:
+        getattr(widget, widget_meth_name)(arg)
+        orig_method.assert_called_once_with(arg)
+
+
+@pytest.mark.parametrize("meth_name", ["connect_rbac", "disconnect_rbac"])
+@pytest.mark.parametrize("action_type,expected_error", [
+    (QAction, "Cannot call ScreenshotAction-related method on the action of type QAction"),
+    (CustomAction, "Cannot call ScreenshotAction-related method on the action of type CustomAction"),
+])
+def test_method_fails_with_generic_action(qtbot: QtBot, action_type, expected_error, meth_name):
+    widget = ScreenshotButton(action=action_type())
+    qtbot.add_widget(widget)
+    meth = getattr(widget, meth_name)
+    with pytest.raises(AssertionError, match=expected_error):
+        meth(mock.MagicMock())

@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
 
         # RBAC button is required to produce a valid token for the e-logbook communications
         rbac_button = RbaButton()
-        logbook_button.defaultAction().connect_rbac(rbac_button)
+        logbook_button.connect_rbac(rbac_button)
         toolbar.addWidget(rbac_button)
 
         check = QCheckBox("Include window decorations")

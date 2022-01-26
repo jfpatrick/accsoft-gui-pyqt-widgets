@@ -2,6 +2,7 @@ from typing import Optional, cast
 from qtpy.QtCore import Signal, Property
 from qtpy.QtWidgets import QWidget, QToolButton, QSizePolicy, QAction
 from accwidgets.qt import OrientedToolButton
+from accwidgets._integrations import RbaButtonProtocol
 from ._action import ScreenshotAction
 from ._common import ScreenshotSource
 from ._model import LogbookModel
@@ -45,12 +46,12 @@ class ScreenshotButton(OrientedToolButton):
 
     def _get_message(self) -> Optional[str]:
         try:
-            return self._compatible_action.message
+            return self._compatible_action().message
         except AssertionError:
             return None
 
     def _set_message(self, message: Optional[str] = None):
-        self._compatible_action.message = message
+        self._compatible_action().message = message
 
     message = Property(str, _get_message, _set_message)
     """
@@ -66,10 +67,10 @@ class ScreenshotButton(OrientedToolButton):
     """
 
     def _get_source(self) -> ScreenshotSource:
-        return self._compatible_action.source
+        return self._compatible_action().source
 
     def _set_source(self, widget: ScreenshotSource):
-        self._compatible_action.source = widget
+        self._compatible_action().source = widget
 
     source = property(fget=_get_source, fset=_set_source)
     """
@@ -91,12 +92,12 @@ class ScreenshotButton(OrientedToolButton):
 
     def _get_include_window_decorations(self) -> bool:
         try:
-            return self._compatible_action.include_window_decorations
+            return self._compatible_action().include_window_decorations
         except AssertionError:
             return False
 
     def _set_include_window_decorations(self, new_val: bool):
-        self._compatible_action.include_window_decorations = new_val
+        self._compatible_action().include_window_decorations = new_val
 
     includeWindowDecorations: bool = Property(bool, _get_include_window_decorations, _set_include_window_decorations)
     """
@@ -114,10 +115,10 @@ class ScreenshotButton(OrientedToolButton):
     """
 
     def _get_max_entries(self) -> int:
-        return self._compatible_action.max_menu_entries
+        return self._compatible_action().max_menu_entries
 
     def _set_max_entries(self, new_val: int):
-        self._compatible_action.max_menu_entries = new_val
+        self._compatible_action().max_menu_entries = new_val
 
     maxMenuEntries: int = Property(int, _get_max_entries, _set_max_entries)
     """
@@ -132,10 +133,10 @@ class ScreenshotButton(OrientedToolButton):
     """
 
     def _get_max_days(self) -> int:
-        return self._compatible_action.max_menu_days
+        return self._compatible_action().max_menu_days
 
     def _set_max_days(self, new_val: int):
-        self._compatible_action.max_menu_days = new_val
+        self._compatible_action().max_menu_days = new_val
 
     maxMenuDays: int = Property(int, _get_max_days, _set_max_days)
     """
@@ -151,10 +152,10 @@ class ScreenshotButton(OrientedToolButton):
     """
 
     def _get_model(self) -> LogbookModel:
-        return self._compatible_action.model
+        return self._compatible_action().model
 
     def _set_model(self, new_val: LogbookModel):
-        self._compatible_action.model = new_val
+        self._compatible_action().model = new_val
 
     model = property(fget=_get_model, fset=_set_model)
     """
@@ -169,6 +170,40 @@ class ScreenshotButton(OrientedToolButton):
         AssertionError: When :meth:`~QToolButton.defaultAction` of this widget is not of
                         type :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
     """
+
+    def connect_rbac(self, button: RbaButtonProtocol):
+        """
+        Convenience method to bind the action with a :class:`~accwidgets.rbac.RbaButton` for automatic token
+        propagation.
+
+        This is a proxy to easily access
+        :meth:`ScreenshotAction.connect_rbac <accwidgets.screenshot.ScreenshotAction.connect_rbac>`.
+
+        Args:
+            button: Instance of :class:`~accwidgets.rbac.RbaButton` or a compatible class.
+
+        Raises:
+            AssertionError: When the :meth:`~QToolButton.defaultAction` of this widget is not of type
+                            :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+        """
+        self._compatible_action(calling_a_method=True).connect_rbac(button)
+
+    def disconnect_rbac(self, button: RbaButtonProtocol):
+        """
+        Convenience method to unbind the action from the :class:`~accwidgets.rbac.RbaButton` that was
+        previously connected via :meth:`connect_rbac`.
+
+        This is a proxy to easily access
+        :meth:`ScreenshotAction.disconnect_rbac <accwidgets.screenshot.ScreenshotAction.disconnect_rbac>`.
+
+        Args:
+            button: Instance of :class:`~accwidgets.rbac.RbaButton` or a compatible class.
+
+        Raises:
+            AssertionError: When the :meth:`~QToolButton.defaultAction` of this widget is not of type
+                            :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+        """
+        self._compatible_action(calling_a_method=True).disconnect_rbac(button)
 
     def setDefaultAction(self, action: QAction):
         """
@@ -206,10 +241,9 @@ class ScreenshotButton(OrientedToolButton):
         if model_changed:
             self.modelChanged.emit()
 
-    @property
-    def _compatible_action(self) -> ScreenshotAction:
+    def _compatible_action(self, calling_a_method: bool = False) -> ScreenshotAction:
         current_action = cast(ScreenshotAction, super().defaultAction())
-        assert_action(current_action)
+        assert_action(current_action, calling_a_method=calling_a_method)
         return current_action
 
     def _connect_action(self, action: ScreenshotAction):
@@ -227,8 +261,9 @@ class ScreenshotButton(OrientedToolButton):
         action.activities_failed.disconnect(self.activitiesFailed)
 
 
-def assert_action(current_action: QAction):
-    assert isinstance(current_action, ScreenshotAction), "Cannot retrieve/update " \
-                                                         f"{ScreenshotAction.__name__}-related property " \
+def assert_action(current_action: QAction, calling_a_method: bool):
+    assert isinstance(current_action, ScreenshotAction), f"Cannot {'call' if calling_a_method else 'retrieve/update'} " \
+                                                         f"{ScreenshotAction.__name__}-related " \
+                                                         f"{'method' if calling_a_method else 'property'} " \
                                                          "on the action " \
                                                          f"of type {type(current_action).__name__}"
