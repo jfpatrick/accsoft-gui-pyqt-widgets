@@ -23,6 +23,7 @@ import accwidgets
 import papc
 import numpy
 import pyqtgraph
+import pylogbook
 from accwidgets._api import REAL_MODULE_NAME_VAR
 
 # -- Project information -----------------------------------------------------
@@ -792,6 +793,7 @@ intersphinx_mapping = {
     "pjlsa": (f"https://gitlab.cern.ch/scripting-tools/pjlsa/-/blob/v{pjlsa.__version__}/", "./pjlsa.inv"),
     "papc": (f"https://acc-py.web.cern.ch/gitlab/acc-co/devops/python/incubator/papc/docs/v{papc.__version__}/", None),
     "pyrbac": ("https://acc-py.web.cern.ch/gitlab-mono/acc-co/cmw/cmw-core/docs/pyrbac/master/", None),
+    "pylogbook": (f"https://acc-py.web.cern.ch/gitlab/scripting-tools/pylogbook/docs/v{pylogbook.__version__}/", None),
     "pyCCDA": ("https://acc-py.web.cern.ch/gitlab/controls-configuration-service/controls-configuration-data-api/accsoft-ccs-ccda/docs/stable/", None),
 }
 

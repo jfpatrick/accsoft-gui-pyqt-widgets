@@ -7,6 +7,7 @@ from accwidgets.app_frame import ApplicationFrame
 from accwidgets.log_console import LogConsoleDock, LogConsole
 from accwidgets.timing_bar import TimingBar
 from accwidgets.rbac import RbaButton
+from accwidgets.screenshot import ScreenshotButton
 from accwidgets.app_frame._frame import _strip_mnemonics, ToolBarSpacer
 
 
@@ -22,9 +23,17 @@ from accwidgets.app_frame._frame import _strip_mnemonics, ToolBarSpacer
     (True, True),
     (False, False),
 ])
-def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar, use_rbac, expect_log_console_exist,
-                                       expect_timing_bar_exist, expect_rbac_exists):
-    widget = ApplicationFrame(use_timing_bar=use_timing_bar, use_log_console=use_console, use_rbac=use_rbac)
+@pytest.mark.parametrize("use_screenshot,expect_screenshot_exists", [
+    (True, True),
+    (False, False),
+])
+def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar, use_rbac, use_screenshot,
+                                       expect_log_console_exist, expect_timing_bar_exist, expect_rbac_exists,
+                                       expect_screenshot_exists):
+    widget = ApplicationFrame(use_timing_bar=use_timing_bar,
+                              use_log_console=use_console,
+                              use_rbac=use_rbac,
+                              use_screenshot=use_screenshot)
     qtbot.add_widget(widget)
     if expect_timing_bar_exist:
         assert widget.timing_bar is not None
@@ -38,6 +47,10 @@ def test_app_frame_init_use_subwidgets(qtbot: QtBot, use_console, use_timing_bar
         assert widget.rba_widget is not None
     else:
         assert widget.rba_widget is None
+    if expect_screenshot_exists:
+        assert widget.screenshot_widget is not None
+    else:
+        assert widget.screenshot_widget is None
 
 
 def test_app_frame_default_subwidget_usage_flags(qtbot: QtBot):
@@ -46,6 +59,7 @@ def test_app_frame_default_subwidget_usage_flags(qtbot: QtBot):
     assert widget.useTimingBar is False
     assert widget.useLogConsole is False
     assert widget.useRBAC is False
+    assert widget.useScreenshot is False
 
 
 @mock.patch("accwidgets.app_frame._frame.AboutDialog.exec_")
@@ -397,11 +411,14 @@ def test_app_frame_set_timing_bar_adds_new_widget_when_toolbar_does_not_exist(qt
     ("timing_bar", TimingBar),
     ("rba_widget", QWidget),
     ("rba_widget", RbaButton),
+    ("screenshot_widget", QWidget),
+    ("screenshot_widget", ScreenshotButton),
 ])
 @pytest.mark.parametrize("another_toolbar_exists", [True, False])
-def test_app_frame_set_toolbar_item_adds_toggle_action_when_toolbar_gets_created(qtbot: QtBot, widget_type,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_adds_toggle_action_when_toolbar_gets_created(_, qtbot: QtBot, widget_type,
                                                                                  another_toolbar_exists, widget_dest):
-    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False, use_screenshot=False)
     qtbot.add_widget(app_frame)
     assert app_frame.main_toolbar(create=False) is None
     new_widget = widget_type()
@@ -424,10 +441,13 @@ def test_app_frame_set_toolbar_item_adds_toggle_action_when_toolbar_gets_created
     ("timing_bar", TimingBar, 1, 0),
     ("rba_widget", QWidget, 2, 1),
     ("rba_widget", RbaButton, 2, 1),
+    ("screenshot_widget", QWidget, 2, 1),
+    ("screenshot_widget", ScreenshotButton, 2, 1),
 ])
-def test_app_frame_set_toolbar_item_adds_new_widget_when_only_main_toolbar_exists(qtbot: QtBot, widget_type, widget_dest,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_adds_new_widget_when_only_main_toolbar_exists(_, qtbot: QtBot, widget_type, widget_dest,
                                                                                   expected_action_index, expected_actions_count):
-    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False, use_screenshot=False)
     qtbot.add_widget(app_frame)
     main_toolbar = app_frame.main_toolbar()
     assert len(main_toolbar.actions()) == 0
@@ -445,8 +465,11 @@ def test_app_frame_set_toolbar_item_adds_new_widget_when_only_main_toolbar_exist
     ("timing_bar", TimingBar, 1, 0),
     ("rba_widget", QWidget, 2, 1),
     ("rba_widget", RbaButton, 2, 1),
+    ("screenshot_widget", QWidget, 2, 1),
+    ("screenshot_widget", ScreenshotButton, 2, 1),
 ])
-def test_app_frame_set_toolbar_item_adds_new_widget_when_multiple_toolbars_exist(qtbot: QtBot, widget_type, widget_dest,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_adds_new_widget_when_multiple_toolbars_exist(_, qtbot: QtBot, widget_type, widget_dest,
                                                                                  expected_action_index, expected_actions_count):
     app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
     qtbot.add_widget(app_frame)
@@ -469,8 +492,11 @@ def test_app_frame_set_toolbar_item_adds_new_widget_when_multiple_toolbars_exist
     ("timing_bar", TimingBar, 2, 0, 1),
     ("rba_widget", QWidget, 3, 2, 0),
     ("rba_widget", RbaButton, 3, 2, 0),
+    ("screenshot_widget", QWidget, 3, 2, 0),
+    ("screenshot_widget", ScreenshotButton, 3, 2, 0),
 ])
-def test_app_frame_set_toolbar_item_adds_new_widget_when_main_toolbar_is_not_empty(qtbot: QtBot, widget_type, widget_dest,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_adds_new_widget_when_main_toolbar_is_not_empty(_, qtbot: QtBot, widget_type, widget_dest,
                                                                                    expected_action_index,
                                                                                    expected_actions_count,
                                                                                    expected_orig_index):
@@ -511,14 +537,32 @@ def test_app_frame_set_toolbar_item_adds_new_widget_when_main_toolbar_is_not_emp
     ([(RbaButton, "rba_widget")], [(None, "rba_widget")], True),
     ([(RbaButton, "rba_widget")], [(QWidget, "rba_widget")], False),
     ([(RbaButton, "rba_widget")], [(RbaButton, "rba_widget")], False),
+    ([(QWidget, "screenshot_widget")], [(None, "screenshot_widget")], True),
+    ([(QWidget, "screenshot_widget")], [(QWidget, "screenshot_widget")], False),
+    ([(QWidget, "screenshot_widget")], [(ScreenshotButton, "screenshot_widget")], False),
+    ([(ScreenshotButton, "screenshot_widget")], [(None, "screenshot_widget")], True),
+    ([(ScreenshotButton, "screenshot_widget")], [(QWidget, "screenshot_widget")], False),
+    ([(ScreenshotButton, "screenshot_widget")], [(ScreenshotButton, "screenshot_widget")], False),
     ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "rba_widget")], False),
     ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "timing_bar")], False),
+    ([(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget")], [(None, "screenshot_widget")], False),
+    ([(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget")], [(None, "timing_bar")], False),
+    ([(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "screenshot_widget")], False),
+    ([(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "rba_widget")], False),
     ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "timing_bar"), (None, "rba_widget")], True),
     ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget")], [(None, "rba_widget"), (None, "timing_bar")], True),
+    ([(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget")], [(None, "timing_bar"), (None, "screenshot_widget")], True),
+    ([(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget")], [(None, "screenshot_widget"), (None, "timing_bar")], True),
+    ([(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "rba_widget"), (None, "screenshot_widget")], True),
+    ([(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "screenshot_widget"), (None, "rba_widget")], True),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "timing_bar"), (None, "screenshot_widget"), (None, "rba_widget")], True),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "timing_bar"), (None, "rba_widget"), (None, "screenshot_widget")], True),
+    ([(TimingBar, "timing_bar"), (RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")], [(None, "rba_widget"), (None, "screenshot_widget"), (None, "timing_bar")], True),
 ])
-def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_if_last_widget(qtbot: QtBot, orig_sequence,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_if_last_widget(_, qtbot: QtBot, orig_sequence,
                                                                                 new_sequence, should_remove_toolbar):
-    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False, use_screenshot=False)
     qtbot.add_widget(app_frame)
     assert app_frame.main_toolbar(create=False) is None
     for widget_type, widget_dest in orig_sequence:
@@ -535,12 +579,23 @@ def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_if_last_widget(
 @pytest.mark.parametrize("widget_seq", [
     [(TimingBar, "timing_bar")],
     [(RbaButton, "rba_widget")],
+    [(ScreenshotButton, "screenshot_widget")],
     [(TimingBar, "timing_bar"), (RbaButton, "rba_widget")],
     [(RbaButton, "rba_widget"), (TimingBar, "timing_bar")],
+    [(ScreenshotButton, "screenshot_widget"), (RbaButton, "rba_widget")],
+    [(ScreenshotButton, "screenshot_widget"), (TimingBar, "timing_bar")],
+    [(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget")],
+    [(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")],
+    [(TimingBar, "timing_bar"), (RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget")],
+    [(TimingBar, "timing_bar"), (ScreenshotButton, "screenshot_widget"), (RbaButton, "rba_widget")],
+    [(RbaButton, "rba_widget"), (ScreenshotButton, "screenshot_widget"), (TimingBar, "timing_bar")],
+    [(ScreenshotButton, "screenshot_widget"), (RbaButton, "rba_widget"), (TimingBar, "timing_bar")],
 ])
-def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_toggle_view_action_if_last_widget_and_menu_exists(qtbot: QtBot,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_toggle_view_action_if_last_widget_and_menu_exists(_,
+                                                                                                                   qtbot: QtBot,
                                                                                                                    widget_seq):
-    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
+    app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False, use_screenshot=False)
     qtbot.add_widget(app_frame)
     app_frame.menuBar().addMenu("Useless")  # To make sure that it's not any menu that is picked up
     view_menu = app_frame.menuBar().addMenu("View")
@@ -563,8 +618,10 @@ def test_app_frame_set_toolbar_item_to_none_deletes_main_toolbar_toggle_view_act
 @pytest.mark.parametrize("widget_type,widget_dest", [
     (TimingBar, "timing_bar"),
     (RbaButton, "rba_widget"),
+    (ScreenshotButton, "screenshot_widget"),
 ])
-def test_app_frame_set_toolbar_item_main_toolbar_does_not_create_view_menu_if_not_exists(qtbot: QtBot,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_toolbar_item_main_toolbar_does_not_create_view_menu_if_not_exists(_, qtbot: QtBot,
                                                                                          widget_dest,
                                                                                          widget_type):
     app_frame = ApplicationFrame(use_timing_bar=False, use_rbac=False)
@@ -584,14 +641,22 @@ def test_app_frame_set_toolbar_item_main_toolbar_does_not_create_view_menu_if_no
     assert get_view_menu() is None
 
 
-@pytest.mark.parametrize("use_timing_bar,use_rbac,expected_seq", [
-    (False, False, []),
-    (True, False, [TimingBar]),
-    (False, True, [ToolBarSpacer, RbaButton]),
-    (True, True, [TimingBar, ToolBarSpacer, RbaButton]),
+@pytest.mark.parametrize("use_timing_bar,use_rbac,use_screenshot,expected_seq", [
+    (False, False, False, []),
+    (True, False, False, [TimingBar]),
+    (False, True, False, [ToolBarSpacer, RbaButton]),
+    (True, True, False, [TimingBar, ToolBarSpacer, RbaButton]),
+    (False, False, True, [ToolBarSpacer, ScreenshotButton]),
+    (True, False, True, [TimingBar, ToolBarSpacer, ScreenshotButton]),
+    (False, True, True, [ToolBarSpacer, ScreenshotButton, RbaButton]),
+    (True, True, True, [TimingBar, ToolBarSpacer, ScreenshotButton, RbaButton]),
 ])
-def test_app_frame_toolbar_contents_with_multiple_toolbar_items_at_init(qtbot: QtBot, use_timing_bar, use_rbac, expected_seq):
-    widget = ApplicationFrame(use_timing_bar=use_timing_bar, use_rbac=use_rbac)
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_toolbar_contents_with_multiple_toolbar_items_at_init(_, qtbot: QtBot, use_timing_bar, use_rbac,
+                                                                        use_screenshot, expected_seq):
+    widget = ApplicationFrame(use_timing_bar=use_timing_bar,
+                              use_rbac=use_rbac,
+                              use_screenshot=use_screenshot)
     qtbot.add_widget(widget)
     main_toolbar = widget.main_toolbar(create=False)
     if len(expected_seq) == 0:
@@ -608,11 +673,19 @@ def test_app_frame_toolbar_contents_with_multiple_toolbar_items_at_init(qtbot: Q
     ([], []),
     ([("timing_bar", TimingBar)], [TimingBar]),
     ([("rba_widget", RbaButton)], [ToolBarSpacer, RbaButton]),
+    ([("screenshot_widget", ScreenshotButton)], [ToolBarSpacer, ScreenshotButton]),
     ([("timing_bar", TimingBar), ("rba_widget", RbaButton)], [TimingBar, ToolBarSpacer, RbaButton]),
     ([("rba_widget", RbaButton), ("timing_bar", TimingBar)], [TimingBar, ToolBarSpacer, RbaButton]),
+    ([("timing_bar", TimingBar), ("screenshot_widget", ScreenshotButton)], [TimingBar, ToolBarSpacer, ScreenshotButton]),
+    ([("rba_widget", RbaButton), ("screenshot_widget", ScreenshotButton)], [ToolBarSpacer, ScreenshotButton, RbaButton]),
+    ([("rba_widget", RbaButton), ("timing_bar", TimingBar), ("screenshot_widget", ScreenshotButton)], [TimingBar, ToolBarSpacer, ScreenshotButton, RbaButton]),
+    ([("timing_bar", TimingBar), ("rba_widget", RbaButton), ("screenshot_widget", ScreenshotButton)], [TimingBar, ToolBarSpacer, ScreenshotButton, RbaButton]),
+    ([("rba_widget", RbaButton), ("screenshot_widget", ScreenshotButton), ("timing_bar", TimingBar)], [TimingBar, ToolBarSpacer, ScreenshotButton, RbaButton]),
+    ([("screenshot_widget", ScreenshotButton), ("rba_widget", RbaButton), ("timing_bar", TimingBar)], [TimingBar, ToolBarSpacer, ScreenshotButton, RbaButton]),
 ])
 @pytest.mark.parametrize("create_toolbar_upfront", [True, False])
-def test_app_frame_toolbar_contents_with_multiple_toolbar_items_after_init(qtbot: QtBot, set_sequence, expected_seq,
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_toolbar_contents_with_multiple_toolbar_items_after_init(_, qtbot: QtBot, set_sequence, expected_seq,
                                                                            create_toolbar_upfront):
     widget = ApplicationFrame(use_timing_bar=False, use_rbac=False)
     qtbot.add_widget(widget)
@@ -714,6 +787,281 @@ def test_app_frame_set_rbac_removes_old_widget(qtbot: QtBot, old_widget_type, ne
     assert rbac_widget_is_in_toolbar()
     widget.rba_widget = None if new_widget_type is None else new_widget_type()
     assert not rbac_widget_is_in_toolbar()
+
+
+class NewExtraConsumer(QWidget):
+
+    def connect_rbac(self, button: RbaButton):
+        button.tokenExpired.connect(self.dump)
+        button.loginSucceeded.connect(self.dump)
+
+    def disconnect_rbac(self, button: RbaButton):
+        button.tokenExpired.disconnect(self.dump)
+        button.loginSucceeded.disconnect(self.dump)
+
+    def dump(self):
+        pass
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_links_rbac_with_consumer_when_consumer_added(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                                expected_login_failed_count, expected_login_finished_count,
+                                                                expected_login_succeeded_count, expected_token_expired_count,
+                                                                expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=True, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_links_rbac_with_consumer_when_rbac_added(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                            expected_login_failed_count, expected_login_finished_count,
+                                                            expected_login_succeeded_count, expected_token_expired_count,
+                                                            expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=False, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    rbac = RbaButton()
+    qtbot.add_widget(rbac)
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+    app_frame.rba_widget = rbac
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_relinks_rbac_with_consumer_when_rbac_replaced(_, qtbot: QtBot, consumer_destinations, consumer_types,
+                                                                 expected_login_failed_count, expected_login_finished_count,
+                                                                 expected_login_succeeded_count, expected_token_expired_count,
+                                                                 expected_logout_finished_count):
+    app_frame = ApplicationFrame(use_rbac=True, use_timing_bar=False, use_screenshot=False)
+    qtbot.add_widget(app_frame)
+    for consumer_type, prop_name in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, prop_name, widget)
+    old_rbac = app_frame.rba_widget
+    assert old_rbac.receivers(old_rbac.tokenExpired) == expected_token_expired_count
+    assert old_rbac.receivers(old_rbac.loginSucceeded) == expected_login_succeeded_count
+    assert old_rbac.receivers(old_rbac.loginFinished) == expected_login_finished_count
+    assert old_rbac.receivers(old_rbac.loginFailed) == expected_login_failed_count
+    assert old_rbac.receivers(old_rbac.logoutFinished) == expected_logout_finished_count
+    new_rbac = RbaButton()
+    qtbot.add_widget(new_rbac)
+    assert new_rbac.receivers(new_rbac.tokenExpired) == 0
+    assert new_rbac.receivers(new_rbac.loginSucceeded) == 0
+    assert new_rbac.receivers(new_rbac.loginFinished) == 0
+    assert new_rbac.receivers(new_rbac.loginFailed) == 0
+    assert new_rbac.receivers(new_rbac.logoutFinished) == 0
+    app_frame.rba_widget = new_rbac
+    assert new_rbac.receivers(new_rbac.tokenExpired) == expected_token_expired_count
+    assert new_rbac.receivers(new_rbac.loginSucceeded) == expected_login_succeeded_count
+    assert new_rbac.receivers(new_rbac.loginFinished) == expected_login_finished_count
+    assert new_rbac.receivers(new_rbac.loginFailed) == expected_login_failed_count
+    assert new_rbac.receivers(new_rbac.logoutFinished) == expected_logout_finished_count
+    assert old_rbac.receivers(old_rbac.tokenExpired) == 0
+    assert old_rbac.receivers(old_rbac.loginSucceeded) == 0
+    assert old_rbac.receivers(old_rbac.loginFinished) == 0
+    assert old_rbac.receivers(old_rbac.loginFailed) == 0
+    assert old_rbac.receivers(old_rbac.logoutFinished) == 0
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count", [
+    ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0),
+    ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0),
+])
+@pytest.mark.parametrize("prop_name,prop_value", [
+    ("useRBAC", False),
+    ("rba_widget", None),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_unlinks_rbac_from_consumer_when_rbac_removed(_, qtbot: QtBot, prop_name, prop_value, consumer_types,
+                                                                consumer_destinations, expected_logout_finished_count,
+                                                                expected_login_failed_count, expected_login_finished_count,
+                                                                expected_login_succeeded_count, expected_token_expired_count):
+    app_frame = ApplicationFrame(use_rbac=True)
+    qtbot.add_widget(app_frame)
+    for consumer_type, consumer_dest in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, consumer_dest, widget)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+    setattr(app_frame, prop_name, prop_value)
+    assert rbac.receivers(rbac.tokenExpired) == 0
+    assert rbac.receivers(rbac.loginSucceeded) == 0
+    assert rbac.receivers(rbac.loginFinished) == 0
+    assert rbac.receivers(rbac.loginFailed) == 0
+    assert rbac.receivers(rbac.logoutFinished) == 0
+
+
+@pytest.mark.parametrize("consumer_types,consumer_destinations,expected_token_expired_count,expected_login_succeeded_count,"
+                         "expected_logout_finished_count,expected_login_failed_count,expected_login_finished_count,"
+                         "expected_new_token_expired_count,expected_new_login_succeeded_count,expected_new_logout_finished_count,"
+                         "expected_new_login_failed_count,expected_new_login_finished_count",
+                         [
+                             ([ScreenshotButton], ["screenshot_widget"], 1, 1, 1, 0, 0, 0, 0, 0, 0, 0),
+                             ([ScreenshotButton, NewExtraConsumer], ["screenshot_widget", "timing_bar"], 2, 2, 1, 0, 0, 1, 1, 0, 0, 0),
+                         ])
+@pytest.mark.parametrize("prop_name,prop_value", [
+    ("useScreenshot", False),
+    ("screenshot_widget", None),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_unlinks_rbac_from_consumer_when_consumer_removed(_, qtbot: QtBot, prop_name, prop_value,
+                                                                    consumer_destinations, consumer_types,
+                                                                    expected_login_failed_count, expected_login_finished_count,
+                                                                    expected_login_succeeded_count, expected_token_expired_count,
+                                                                    expected_logout_finished_count, expected_new_login_failed_count,
+                                                                    expected_new_login_finished_count, expected_new_login_succeeded_count,
+                                                                    expected_new_logout_finished_count, expected_new_token_expired_count):
+    app_frame = ApplicationFrame(use_rbac=True)
+    qtbot.add_widget(app_frame)
+    for consumer_type, consumer_dest in zip(consumer_types, consumer_destinations):
+        widget = consumer_type()
+        qtbot.add_widget(widget)
+        setattr(app_frame, consumer_dest, widget)
+    rbac = app_frame.rba_widget
+    assert rbac.receivers(rbac.tokenExpired) == expected_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_logout_finished_count
+    setattr(app_frame, prop_name, prop_value)
+    assert rbac.receivers(rbac.tokenExpired) == expected_new_token_expired_count
+    assert rbac.receivers(rbac.loginSucceeded) == expected_new_login_succeeded_count
+    assert rbac.receivers(rbac.loginFinished) == expected_new_login_finished_count
+    assert rbac.receivers(rbac.loginFailed) == expected_new_login_failed_count
+    assert rbac.receivers(rbac.logoutFinished) == expected_new_logout_finished_count
+
+
+@pytest.mark.parametrize("initial_value,new_value,expect_sets_bar", [
+    (True, True, False),
+    (False, False, False),
+    (True, False, True),
+    (False, True, True),
+])
+def test_app_frame_use_screenshot_noop_on_the_same_value(qtbot: QtBot, initial_value, new_value, expect_sets_bar):
+    widget = ApplicationFrame(use_screenshot=initial_value)
+    qtbot.add_widget(widget)
+    with mock.patch("accwidgets.app_frame._frame.ApplicationFrame.screenshot_widget", new_callable=mock.PropertyMock) as prop:
+        widget.useScreenshot = new_value
+        if expect_sets_bar:
+            prop.assert_called()
+        else:
+            prop.assert_not_called()
+
+
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_use_screenshot_sets_bar_widget(_, qtbot: QtBot):
+    widget = ApplicationFrame(use_screenshot=False)
+    qtbot.add_widget(widget)
+    assert widget.screenshot_widget is None
+    widget.useScreenshot = True
+    assert isinstance(widget.screenshot_widget, ScreenshotButton)
+
+
+@pytest.mark.parametrize("initial_widget,new_widget,expect_widget_update", [
+    (None, None, False),
+    ("scrn1", None, True),
+    ("scrn1", "scrn1", False),
+    ("scrn1", "scrn2", True),
+    ("scrn1", "widget1", True),
+    ("widget1", None, True),
+    ("widget1", "widget1", False),
+    ("widget1", "widget2", True),
+    ("widget1", "scrn1", True),
+    (None, "scrn1", True),
+    (None, "widget1", True),
+])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_screenshot_noop_on_the_same_widget(_, qtbot: QtBot, initial_widget, new_widget, expect_widget_update):
+    # Do not add widgets to the qtbot, otherwise it may crash when it tries to close them, but they've already
+    # been deleted by the application frame.
+    scrn1 = ScreenshotButton()
+    scrn2 = ScreenshotButton()
+    widget1 = QWidget()
+    widget2 = QWidget()
+
+    subwidgets = {
+        "scrn1": scrn1,
+        "scrn2": scrn2,
+        "widget1": widget1,
+        "widget2": widget2,
+    }
+    widget = ApplicationFrame(use_rbac=False)
+    qtbot.add_widget(widget)
+    widget.screenshot_widget = None if initial_widget is None else subwidgets[initial_widget]
+    with mock.patch("qtpy.QtWidgets.QToolBar.addWidget") as addWidget:
+        with mock.patch("qtpy.QtWidgets.QToolBar.removeAction") as removeAction:
+            widget.screenshot_widget = None if new_widget is None else subwidgets[new_widget]
+            call_count = addWidget.call_count + removeAction.call_count
+            if expect_widget_update:
+                assert call_count > 0
+            else:
+                assert call_count == 0
+
+
+@pytest.mark.parametrize("old_widget_type", [QWidget, ScreenshotButton])
+@pytest.mark.parametrize("new_widget_type", [None, QWidget, ScreenshotButton])
+@mock.patch("accwidgets.screenshot._model.LogbookModel")
+def test_app_frame_set_screenshot_removes_old_widget(_, qtbot: QtBot, old_widget_type, new_widget_type):
+    widget = ApplicationFrame(use_screenshot=False)
+    qtbot.add_widget(widget)
+
+    screenshot_widget = old_widget_type()
+
+    def screenshot_widget_is_in_toolbar() -> bool:
+        for action in widget.main_toolbar().actions():
+            if isinstance(action, QWidgetAction) and cast(QWidgetAction, action).defaultWidget() == screenshot_widget:
+                return True
+        return False
+
+    assert not screenshot_widget_is_in_toolbar()
+    widget.screenshot_widget = screenshot_widget
+    assert screenshot_widget_is_in_toolbar()
+    widget.screenshot_widget = None if new_widget_type is None else new_widget_type()
+    assert not screenshot_widget_is_in_toolbar()
 
 
 @pytest.mark.parametrize("version", [

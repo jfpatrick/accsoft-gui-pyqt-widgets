@@ -14,12 +14,14 @@ packages needed to run examples, it is advised to install a special ``examples``
 - `LogConsole example`_
 - `TimingBar example`_
 - `RBAC example`_
+- `Screenshot example`_
 - `Subclassing example`_
 - `PyJapc RBAC authentication example`_
 - `RBAC expiration example`_
 - `Custom log console example`_
 - `Custom timing bar example`_
 - `Custom RBAC example`_
+- `Custom screenshot button example`_
 
 
 Basic example
@@ -182,6 +184,44 @@ recreate the experience provided by "CERN Application Frame"
          Show contents of rbac_example.py...
 
    .. literalinclude:: ../../../examples/app_frame/rbac_example.py
+
+.. raw:: html
+
+   <p />
+
+Screenshot example
+------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/screenshot_example.py
+
+This example shows the use of :class:`~accwidgets.app_frame.ApplicationFrame` window with
+:class:`~accwidgets.screenshot.ScreenshotButton` enabled. Note, this code requires
+additional dependencies for :class:`~accwidgets.screenshot.ScreenshotButton` and :class:`~accwidgets.rbac.RbaButton`
+must be installed, as explained in :ref:`widgets/app_frame/index:Transitive dependencies`.
+:class:`~accwidgets.screenshot.ScreenshotButton` requires a valid RBAC token to work, therefore it's often being used
+together with :class:`~accwidgets.rbac.RbaButton`. When both are enabled in
+:class:`~accwidgets.app_frame.ApplicationFrame`, they will be automatically connected, so that RBAC token is
+transferred automatically. User may need to only define activities, because
+:class:`~accwidgets.screenshot.ScreenshotButton` is disabled with no activities defined (in this case we redefine
+the whole model in order to connect to the TEST logbook server). Menus here are configured to partially recreate
+the experience provided by "CERN Application Frame" :ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+In addition to standard menus, we insert the :class:`~accwidgets.screenshot.ScreenshotAction` into the "File" menu.
+
+.. image:: ../../img/examples_appframe_screenshot.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of screenshot_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/screenshot_example.py
 
 .. raw:: html
 
@@ -374,6 +414,38 @@ partially recreate the experience provided by "CERN Application Frame"
          Show contents of custom_rbac_example.py...
 
    .. literalinclude:: ../../../examples/app_frame/custom_rbac_example.py
+
+.. raw:: html
+
+   <p />
+
+Custom screenshot button example
+--------------------------------
+
+To launch this example from the project root, run:
+
+.. code-block:: bash
+
+   python examples/app_frame/custom_screenshot_example.py
+
+This example shows that :class:`~accwidgets.app_frame.ApplicationFrame` may accept any widget as a Screenshot button,
+not necessarily derivative of accwidgets' :class:`~accwidgets.screenshot.ScreenshotButton`. If the provided widget
+does not provide hooks to automatically connect to :class:`~accwidgets.rbac.RbaButton`, the RBAC token propagation
+won't be created automatically and it's up to the developer to ensure it. Menus here are configured to partially
+recreate the experience provided by "CERN Application Frame"
+:ref:`Qt Designer template <install:Enable Qt Designer templates>`.
+
+.. image:: ../../img/examples_appframe_custom_screenshot.png
+
+.. container:: collapsible-block
+
+   .. container:: collapsible-title
+
+      .. raw:: html
+
+         Show contents of custom_screenshot_example.py...
+
+   .. literalinclude:: ../../../examples/app_frame/custom_screenshot_example.py
 
 .. raw:: html
 
