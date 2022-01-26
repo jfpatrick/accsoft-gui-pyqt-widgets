@@ -1,5 +1,5 @@
 # accwidgets
- 
+
 Accelerator Widgets for Python GUIs (accwidgets)
 
 >
@@ -54,6 +54,12 @@ For development, the easiest is to install all possible packages (to skip `pip i
 subsections):
 ```bash
 pip install -e .[all]
+```
+
+You may want to benefit from `pre-commit` tool, which is already installed with dependencies above. The only additional
+step to activate it is to run:
+```bash
+pre-commit install
 ```
 
 >

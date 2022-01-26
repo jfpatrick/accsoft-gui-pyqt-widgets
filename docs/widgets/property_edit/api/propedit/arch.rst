@@ -22,4 +22,3 @@
      widget -> {abs_layout_delegate, abs_widget_delegate} [arrowtail=normal];
      rank=same; widget -> field [arrowtail=diamond];
    }
-

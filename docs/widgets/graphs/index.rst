@@ -72,4 +72,3 @@ Further read
 .. |missing| raw:: html
 
    <input type="checkbox" />
-

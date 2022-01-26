@@ -351,4 +351,3 @@ Here's the same method, in our own subclass, :class:`~accwidgets.graph.ExPlotIte
            kwargs: Additional arguments in case the original PyQtGraph API changes
        """
    # ...
-
