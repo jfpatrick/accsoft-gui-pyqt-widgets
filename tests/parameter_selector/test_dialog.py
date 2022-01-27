@@ -525,9 +525,9 @@ def test_widget_protocol_selection_affects_result(_, qtbot: QtBot, no_proto_text
     (True, False, "rda3", 2, 1, 0, "dev3", "prop3.2", None, "rda3:///dev3/prop3.2"),
     (True, False, "rda3", 2, 1, 1, "dev3", "prop3.2", None, "rda3:///dev3/prop3.2"),
 ])
-async def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop, proto,
-                                                       expected_label, expected_field, expected_prop, expected_dev,
-                                                       enable_protocols, enable_fields):
+def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop, proto,
+                                                 expected_label, expected_field, expected_prop, expected_dev,
+                                                 enable_protocols, enable_fields):
     data = [
         ("dev1", [("prop1", [])]),
         ("dev2", [("prop2", ["field2"])]),
@@ -570,8 +570,8 @@ async def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_de
     (True, "rda3", 0, -1, 0),
     (True, "rda3", 3, 0, -1),
 ])
-async def test_widget_on_result_changed_fails_to_set_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop,
-                                                               proto, enable_protocols):
+def test_widget_on_result_changed_fails_to_set_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop,
+                                                         proto, enable_protocols):
     data = [
         ("dev1", [("prop1", [])]),
         ("dev2", [("prop2", ["field2"])]),
@@ -736,15 +736,15 @@ def test_widget_cancel_running_tasks(qtbot: QtBot, should_cancel, task_exists, e
 @pytest.mark.parametrize("search_string", ["", " ", "  ", "\t", "\n"])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-async def test_widget_on_search_requested_noop_with_empty_string(qtbot: QtBot, enable_protocols, enable_fields,
-                                                                 search_string):
+def test_widget_on_search_requested_noop_with_empty_string(qtbot: QtBot, enable_protocols, enable_fields,
+                                                           search_string, event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
     qtbot.add_widget(widget)
     with mock.patch.object(widget, "_update_from_status") as update_from_status:
         with mock.patch.object(widget, "_reset_selected_value") as reset_selected_value:
-            await widget._on_search_requested(search_string)
+            event_loop.run_until_complete(widget._on_search_requested(search_string))
             update_from_status.assert_not_called()
             reset_selected_value.assert_not_called()
             assert widget._active_ccda_task is None
@@ -767,8 +767,8 @@ async def test_widget_on_search_requested_noop_with_empty_string(qtbot: QtBot, e
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-async def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enable_protocols, search_string,
-                                                              expected_hint, expected_lookup, enable_fields):
+def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enable_protocols, search_string, event_loop,
+                                                        expected_hint, expected_lookup, enable_fields):
 
     class TestException(Exception):
         pass
@@ -784,7 +784,7 @@ async def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enab
         look_up_ccda.assert_not_called()
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
             with mock.patch.object(widget, "_reset_selected_value") as reset_selected_value:
-                await widget._on_search_requested(search_string)
+                event_loop.run_until_complete(widget._on_search_requested(search_string))
                 # The second call is expected to be a failure, because we purposefully throw an exception for early exit,
                 # so it will re-render the UI to failure.
                 assert update_from_status.call_args_list == [
@@ -805,8 +805,8 @@ async def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enab
 ])
 @pytest.mark.parametrize("search_string", ["TEST.DEV", "test/prop#field "])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, enable_protocols, search_string,
-                                                                  prev_status, expected_new_status):
+def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, enable_protocols, search_string,
+                                                            prev_status, expected_new_status, event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=True,
                                no_protocol_option="")
@@ -819,7 +819,7 @@ async def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, side_effect=CancelledError):
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
-            await widget._on_search_requested(search_string)
+            event_loop.run_until_complete(widget._on_search_requested(search_string))
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
             assert update_from_status.call_args_list == [
@@ -838,8 +838,8 @@ async def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, 
 @pytest.mark.parametrize("search_string", ["TEST.DEV", "test/prop#field "])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-async def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_protocols, search_string, prev_status,
-                                                           enable_fields):
+def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_protocols, search_string, prev_status,
+                                                     enable_fields, event_loop):
     class TestException(Exception):
         pass
 
@@ -855,7 +855,7 @@ async def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, side_effect=TestException("test error message")):
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
-            await widget._on_search_requested(search_string)
+            event_loop.run_until_complete(widget._on_search_requested(search_string))
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
             assert update_from_status.call_args_list == [
@@ -883,8 +883,8 @@ async def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_protocols, search_string, prev_status,
-                                                          expected_group_name, results, enable_fields):
+def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_protocols, search_string, prev_status,
+                                                    expected_group_name, results, enable_fields, event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -899,7 +899,7 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, results)):
         with mock.patch.object(widget, "_update_from_status") as update_from_status:
-            await widget._on_search_requested(search_string)
+            event_loop.run_until_complete(widget._on_search_requested(search_string))
             # First call inevitably will be with IN_PROGRESS, because that's what activating the background task
             # does
             assert update_from_status.call_args_list == [
@@ -924,8 +924,9 @@ async def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_p
 ])
 @pytest.mark.parametrize("search_string", ["TEST.DEV", "test/prop#field "])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_on_search_requested_success_selects_when_only_result(qtbot: QtBot, enable_protocols, search_string,
-                                                                           prev_status, results, expect_select_first):
+def test_widget_on_search_requested_success_selects_when_only_result(qtbot: QtBot, enable_protocols, search_string,
+                                                                     prev_status, results, expect_select_first,
+                                                                     event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols, enable_fields=True, no_protocol_option="")
     qtbot.add_widget(widget)
     widget.activity_indicator = mock.MagicMock()  # prevent pixmap init, which causes C++ virtual method error
@@ -938,7 +939,7 @@ async def test_widget_on_search_requested_success_selects_when_only_result(qtbot
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, results)):
-        await widget._on_search_requested(search_string)
+        event_loop.run_until_complete(widget._on_search_requested(search_string))
         if expect_select_first:
             mocked_proxy.update_selection.assert_called_once_with(0)
         else:
@@ -963,9 +964,9 @@ async def test_widget_on_search_requested_success_selects_when_only_result(qtbot
     ("dev3/prop3.2#nonexisting", 2, 1, -1),
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_on_search_requested_success_selects_appropriate_result(qtbot: QtBot, enable_protocols,
-                                                                             search_string, expect_dev, expect_field,
-                                                                             expect_prop):
+def test_widget_on_search_requested_success_selects_appropriate_result(qtbot: QtBot, enable_protocols,
+                                                                       search_string, expect_dev, expect_field,
+                                                                       expect_prop, event_loop):
     data = [
         ("dev1", [("prop1", [])]),
         ("dev2", [("prop2", ["field2"])]),
@@ -995,7 +996,7 @@ async def test_widget_on_search_requested_success_selects_appropriate_result(qtb
 
     # This mock has to stay in the test body, otherwise it's not propagated and is recognized as original function
     with mock.patch("accwidgets.parameter_selector._dialog.look_up_ccda", new_callable=AsyncMock, return_value=(mocked_iterator, data)):
-        await widget._on_search_requested(search_string)
+        event_loop.run_until_complete(widget._on_search_requested(search_string))
         for proxy, expected_idx in zip([dev_proxy, prop_proxy, field_proxy], [expect_dev, expect_prop, expect_field]):
             assert proxy.selected_idx == expected_idx
 
