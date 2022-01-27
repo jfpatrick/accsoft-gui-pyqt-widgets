@@ -117,7 +117,7 @@ def test_token_dialog_colors_validity(_, qtbot: QtBot, valid, expected_color, lo
 @pytest.mark.parametrize("auto_renewable", [True, False])
 @mock.patch("accwidgets.rbac._token.account_type_to_string", side_effect=mocked_account_type_to_str)
 def test_token_dialog_expiration(_, qtbot: QtBot, expiration_time, expected_color, expected_label, login_method,
-                                 auto_renewable, expected_qss_role):
+                                 auto_renewable, expected_qss_role, qapp: QApplication):
     token = make_token(valid=True,
                        loc_auth_reqd=False,
                        roles=cast(List[str], []),
@@ -129,6 +129,6 @@ def test_token_dialog_expiration(_, qtbot: QtBot, expiration_time, expected_colo
     assert label.text() == expected_label
     assert label.property("qss-role") == expected_qss_role
     if expected_color is None:
-        assert label.palette().color(QPalette.WindowText) == QApplication.instance().palette().color(QPalette.WindowText)
+        assert label.palette().color(QPalette.WindowText) == qapp.palette().color(QPalette.WindowText)
     else:
         assert label.palette().color(QPalette.WindowText).name() == expected_color

@@ -154,7 +154,7 @@ def test_designer_user_error_does_not_use_assert_cache_in_designer(is_designer, 
     assert accwidgets._api._ASSERT_CACHE_ENABLED
 
 
-def test_task_ext_non_modal_window_focuses_the_same_instance_when_exists(task_ext, qtbot: QtBot):
+def test_task_ext_non_modal_window_focuses_the_same_instance_when_exists(task_ext, qtbot: QtBot, qapp: QApplication):
     dialog = QDialog()
     qtbot.add_widget(dialog)
     with qtbot.wait_exposed(dialog):
@@ -170,7 +170,7 @@ def test_task_ext_non_modal_window_focuses_the_same_instance_when_exists(task_ex
     with qtbot.wait_exposed(dialog):
         res = task_ext.focus_dialog(key="test_key")
     assert res is True
-    QApplication.instance().processEvents()  # Make sure that active window is properly re-assigned
+    qapp.processEvents()  # Make sure that active window is properly re-assigned
     assert not another_dialog.isActiveWindow()
     assert dialog.isActiveWindow()
 

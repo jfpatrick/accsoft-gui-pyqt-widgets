@@ -734,7 +734,7 @@ def test_auth_btn_click(qtbot: QtBot, connected, should_logout_model, should_sho
 
 @pytest.mark.parametrize("key", [Qt.Key_Enter, Qt.Key_Return])
 @mock.patch("accwidgets.rbac._model.RbaButtonModel.login_explicitly")
-def test_auth_btn_does_not_close_menu_on_dbl_return(login_explicitly, qtbot: QtBot, key):
+def test_auth_btn_does_not_close_menu_on_dbl_return(login_explicitly, qtbot: QtBot, key, qapp: QApplication):
     # Navigate to the explicit tab, double hit the return key, to: 1 - jump to the next field, 2 - initiate login
     # The default behavior of the menu, would hide the popup after the double Return keystroke
     view = RbaButton()
@@ -745,8 +745,7 @@ def test_auth_btn_does_not_close_menu_on_dbl_return(login_explicitly, qtbot: QtB
 
     def on_menu_visible():
         # Navigate to the explicit tab menu
-        app = cast(QApplication, QApplication.instance())
-        window = app.topLevelWindows()[1]
+        window = qapp.topLevelWindows()[1]
         qtbot.keyClick(window, Qt.Key_Tab)
         qtbot.keyClick(window, Qt.Key_Right)
         assert menu_widget.isVisible()
@@ -778,7 +777,7 @@ def test_auth_btn_does_not_close_menu_on_dbl_return(login_explicitly, qtbot: QtB
         view._auth_btn.click()
 
 
-def test_auth_btn_does_not_close_menu_on_mouse_click(qtbot: QtBot):
+def test_auth_btn_does_not_close_menu_on_mouse_click(qtbot: QtBot, qapp: QApplication):
     # This tests that Mouse click inside the popup does not close it, which is default QMenu behavior
     # See RbaAuthPopupWidget.event
     view = RbaButton()
@@ -789,8 +788,7 @@ def test_auth_btn_does_not_close_menu_on_mouse_click(qtbot: QtBot):
 
     def on_menu_visible():
         # Navigate to the explicit tab menu
-        app = cast(QApplication, QApplication.instance())
-        window = app.topLevelWindows()[1]
+        window = qapp.topLevelWindows()[1]
         assert menu_widget.isVisible()
         qtbot.mouseClick(window, Qt.LeftButton, Qt.NoModifier, QPoint(10, 10))  # Click inside the widget
         assert menu_widget.isVisible()
@@ -802,7 +800,7 @@ def test_auth_btn_does_not_close_menu_on_mouse_click(qtbot: QtBot):
         view._auth_btn.click()
 
 
-def test_auth_btn_login_widget_receives_tab(qtbot: QtBot):
+def test_auth_btn_login_widget_receives_tab(qtbot: QtBot, qapp: QApplication):
     # This tests that Tab keystrokes actually change the focus by the tab order, instead of QMenu default behavior
     # that closes the menu on Tab.
     view = RbaButton()
@@ -813,8 +811,7 @@ def test_auth_btn_login_widget_receives_tab(qtbot: QtBot):
 
     def on_menu_visible():
         # Navigate to the explicit tab menu
-        app = cast(QApplication, QApplication.instance())
-        window = app.topLevelWindows()[1]
+        window = qapp.topLevelWindows()[1]
         assert menu_widget.loc_btn.hasFocus()
         assert not menu_widget.roles_loc.hasFocus()
         qtbot.keyClick(window, Qt.Key_Tab)
