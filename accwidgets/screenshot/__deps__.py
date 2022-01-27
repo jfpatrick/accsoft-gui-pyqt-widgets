@@ -3,4 +3,5 @@ core = [
     "pylogbook>=3.1.0,<4a0",
     "pyrbac>=0.0.7,<0.1a0",
     "qtawesome>=0.7.0,<2a0",
+    "qasync>=0.22.0,<1a0",
 ]
