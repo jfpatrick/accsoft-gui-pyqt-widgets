@@ -134,7 +134,7 @@ def test_timing_supercycle_cycle_basic_period_succeeds(supercycle_obj: TimingSup
         supercycle_obj.cycle_at_basic_period(3)
 
 
-def test_model_detaches_japc_on_destroy(qtbot):
+def test_model_detaches_japc_on_destroy(qtbot, qapp: QApplication):
     _ = qtbot
     japc = mock.MagicMock()
     sh = mock.MagicMock()
@@ -145,7 +145,7 @@ def test_model_detaches_japc_on_destroy(qtbot):
                                              selector="")]
 
     sh.stopMonitoring.assert_not_called()
-    QApplication.instance().sendEvent(model, QEvent(QEvent.DeferredDelete))  # The only working way of triggering "destroyed" signal
+    qapp.sendEvent(model, QEvent(QEvent.DeferredDelete))  # The only working way of triggering "destroyed" signal
     sh.stopMonitoring.assert_called_once()
 
 
