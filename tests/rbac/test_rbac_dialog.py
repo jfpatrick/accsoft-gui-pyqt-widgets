@@ -440,6 +440,7 @@ def test_rbac_dialog_popup_wrapper_default_focus(qtbot: QtBot, default_tab, expe
     widget = RbaAuthPopupWidget(focused_tab=default_tab, initial_username=initial_username)
     with qtbot.wait_exposed(widget):
         widget.show()
+    qtbot.wait(100)
     assert widget.loc_btn.hasFocus() == expect_location_button_focused
     assert widget.username.hasFocus() == expect_username_focused
     assert widget.password.hasFocus() == expect_password_focused
