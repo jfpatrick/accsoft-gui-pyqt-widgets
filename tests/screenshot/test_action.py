@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from unittest import mock
 from asyncio import CancelledError
@@ -9,7 +10,6 @@ from pylogbook.exceptions import LogbookError
 from accwidgets.rbac import RbaButton
 from accwidgets.screenshot import LogbookModel, ScreenshotAction
 from accwidgets.screenshot._menu import LogbookMenu
-from .fixtures import *  # noqa: F401,F403
 from ..async_shim import AsyncMock
 
 

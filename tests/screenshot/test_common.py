@@ -1,10 +1,10 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from typing import Union
 from enum import Enum
 from pylogbook import NamedActivity
 from pylogbook.models import Activity
 from accwidgets.screenshot._common import make_activities_summary, make_new_entry_tooltip
-from .fixtures import *  # noqa: F401,F403
 
 
 def make_activity(val: Union[str, Enum]):

@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 import sys
 import numpy as np
@@ -12,7 +13,6 @@ from accwidgets.log_console import LogLevel, LogConsoleFormatter
 from accwidgets.log_console._prefs_dialog import (ModelConfiguration, ColorTableModelItem, ColorTableModel,
                                                   LoggerTableModel, LoggerTableModelItem, LevelComboboxColumnDelegate,
                                                   LogPreferencesDialog, ViewConfiguration, FmtConfiguration)
-from .fixtures import *  # noqa: F401,F403
 
 
 @pytest.mark.parametrize("buffer_size,expect_size_ok", [

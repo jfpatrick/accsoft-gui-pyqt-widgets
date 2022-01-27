@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from datetime import datetime
 from unittest import mock
@@ -8,7 +9,6 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QPalette
 from accwidgets.timing_bar import TimingBarModel, TimingBar, TimingBarDomain
 from accwidgets.timing_bar._model import TimingUpdate
-from .fixtures import *  # noqa: F401,F403
 
 
 def test_timing_bar_set_model_changes_ownership(qtbot):

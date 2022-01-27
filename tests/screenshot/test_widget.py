@@ -1,9 +1,9 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from unittest import mock
 from pytestqt.qtbot import QtBot
 from qtpy.QtWidgets import QAction, QWidget, QToolButton
 from accwidgets.screenshot import ScreenshotButton, ScreenshotAction, LogbookModel
-from .fixtures import *  # noqa: F401,F403
 
 
 class CustomAction(QAction):

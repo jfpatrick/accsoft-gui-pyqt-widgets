@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from typing import Optional
 from pytestqt.qtbot import QtBot
@@ -10,7 +11,6 @@ from pylogbook import Client, NamedActivity, NamedServer
 from pylogbook.models import Event
 from pylogbook.exceptions import LogbookError
 from accwidgets.screenshot import LogbookModel
-from .fixtures import *  # noqa: F401,F403
 
 
 STATIC_TIME = datetime(year=2020, day=1, month=1, hour=12, minute=30, second=55, tzinfo=UTC)

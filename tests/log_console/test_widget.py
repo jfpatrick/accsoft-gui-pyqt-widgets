@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 import logging
 import re
@@ -11,7 +12,6 @@ from accwidgets.log_console import (LogConsole, LogConsoleModel, LogConsoleForma
                                     LogConsoleDock)
 from accwidgets.log_console._viewer import (LogConsoleCollapseButton, LogConsoleLastMessageEdit, FmtConfiguration,
                                             _format_html_message)
-from .fixtures import *  # noqa: F401,F403
 
 
 @pytest.fixture(scope="function", autouse=True)

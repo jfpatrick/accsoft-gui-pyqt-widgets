@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 import re
 import logging
@@ -8,7 +9,6 @@ from typing import cast
 from pytestqt.qtbot import QtBot
 from accwidgets.log_console import LogLevel, LogConsoleModel, LogConsoleRecord
 from accwidgets.log_console._model import PythonLoggingHandler, _record_from_python_logging_record, _get_logger
-from .fixtures import *  # noqa: F401,F403
 
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to

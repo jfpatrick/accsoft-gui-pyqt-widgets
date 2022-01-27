@@ -1,7 +1,7 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 from dateutil.parser import isoparse
 from accwidgets.log_console import LogConsoleFormatter, LogConsoleRecord, LogLevel
-from .fixtures import *  # noqa: F401,F403
 
 
 @pytest.mark.parametrize("test_attr", [True, False])

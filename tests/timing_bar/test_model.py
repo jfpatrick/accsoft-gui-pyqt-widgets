@@ -1,3 +1,4 @@
+from .fixtures import *  # noqa: F401,F403
 import pytest
 import functools
 import operator
@@ -13,7 +14,6 @@ from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import QEvent
 from accwidgets.timing_bar import TimingBarModel, TimingBarDomain
 from accwidgets.timing_bar._model import TimingSuperCycle, TimingCycle, TimingUpdate, PyJapcSubscription
-from .fixtures import *  # noqa: F401,F403
 
 
 # We have to make the freeze time utc, otherwise freeze-gun seems to
