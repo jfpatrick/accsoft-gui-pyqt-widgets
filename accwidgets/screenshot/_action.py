@@ -315,12 +315,14 @@ class ScreenshotAction(QAction):
     def _connect_model(self, model: LogbookModel):
         model.rbac_token_changed.connect(self._update_ui)
         model.activities_changed.connect(self._update_ui)
+        model.activities_failed.connect(self._update_ui)
         model.activities_failed.connect(self.activities_failed)
         model.setParent(self)
 
     def _disconnect_model(self, model: LogbookModel):
         model.rbac_token_changed.disconnect(self._update_ui)
         model.activities_changed.disconnect(self._update_ui)
+        model.activities_failed.disconnect(self._update_ui)
         model.activities_failed.disconnect(self.activities_failed)
         if model.parent() is self:
             model.setParent(None)

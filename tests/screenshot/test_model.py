@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from datetime import datetime
 from dateutil.tz import UTC
 from qtpy.QtCore import QObject
-from pylogbook import Client, NamedActivity, NamedServer
+from pylogbook import Client, ActivitiesClient, NamedActivity, NamedServer
 from pylogbook.models import Event
 from pylogbook.exceptions import LogbookError
 from accwidgets.screenshot import LogbookModel
@@ -259,6 +259,26 @@ def test_logbook_activities_applies_only_with_rbac_token(val, token, logbook, ex
         assert model.logbook_activities == ()
 
 
+@pytest.mark.parametrize("activities", ["", "TEST_LOGBOOK"])
+def test_logbook_activities_remote_failure_fires_signal(logbook, monkeypatch, activities, qtbot: QtBot):
+    client, _ = logbook
+    prop_mock = mock.PropertyMock(return_value=())
+
+    def side_effect(*_):
+        raise ValueError("Test error")
+
+    prop_mock.__set__ = side_effect
+    # We do not use pre-made activity_client mock here because PropertyMock needs to be set on the class, not
+    # instance.
+    monkeypatch.setattr(ActivitiesClient, "activities", prop_mock)
+    # Without rbac token, activities cache in the model won't be flushed and signal won't be fired
+    client.rbac_b64_token = "abc123"
+    model = LogbookModel(logbook=(client, ActivitiesClient(activities="", client=client)))
+    with qtbot.wait_signal(model.activities_failed) as blocker:
+        model.logbook_activities = activities
+    assert blocker.args == ["Test error"]
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["", "Test message"])
 async def test_create_logbook_event_succeeds(logbook, message):
@@ -390,6 +410,26 @@ def test_validate(logbook, activities, token, expected_error):
     else:
         with pytest.raises(ValueError, match=expected_error):
             model.validate()
+
+
+@pytest.mark.parametrize("activities", ["", "TEST_LOGBOOK"])
+def test_validate_with_remote_failure(logbook, monkeypatch, activities):
+    client, _ = logbook
+    prop_mock = mock.PropertyMock(return_value=())
+
+    def side_effect(*_):
+        raise ValueError("Test error")
+
+    prop_mock.__set__ = side_effect
+    # We do not use pre-made activity_client mock here because PropertyMock needs to be set on the class, not
+    # instance.
+    monkeypatch.setattr(ActivitiesClient, "activities", prop_mock)
+    # Without rbac token, activities cache in the model won't be flushed and signal won't be fired
+    client.rbac_b64_token = "abc123"
+    model = LogbookModel(logbook=(client, ActivitiesClient(activities="", client=client)), activities=activities)
+
+    with pytest.raises(ValueError, match="Test error"):
+        model.validate()
 
 
 @mock.patch("accwidgets.screenshot._model.ThreadPoolExecutor")
