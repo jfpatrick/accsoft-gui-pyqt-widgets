@@ -5,8 +5,9 @@ include:
 
 stages:
   - Code Quality
-  - Unit Tests
+  - Source Tests
   - Build Wheel
+  - Wheel Tests
   - Documentation
   - Upload Release
 
@@ -60,7 +61,7 @@ pre-commit:
 
 pytest:
   extends: .matrix_job
-  stage: Unit Tests
+  stage: Source Tests
   script:
     - |
       pip install .[test]
@@ -76,26 +77,58 @@ pytest:
     reports:
       junit: report.xml
 
-test install:
-  image: $CURRENT_BASE_IMAGE
-  stage: Unit Tests
+.aux_install_extras:
+  variables:
+    AUX_EXTRAS: all-widgets,test,lint,doc,examples,bench
+
+test aux dep collisions:
+  extends: .aux_install_extras
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
+  stage: Source Tests
   script:
-    - pip install .[$CATEGORIES]
-  parallel:
-    matrix:
-      - CATEGORIES:
-          - app_frame,graph,led,log_console,lsa_selector,parameter_selector,property_edit,rbac,timing_bar,screenshot
-          - all-widgets,tests,lint,doc,examples,bench
-        CURRENT_BASE_IMAGE:
-          - $ACCPY_IMAGE_CC7_2020_11
-          - $ACCPY_IMAGE_CC7_2021_12
-          - $ACCPY_IMAGE_CS8_2020_11
-          - $ACCPY_IMAGE_CS8_2021_12
+    - pip install .[$AUX_EXTRAS]
 
 build wheel:
   extends: .acc_py_build_wheel
   image: $ACCPY_IMAGE_INFRASTRUCTURE
   stage: Build Wheel
+
+.inspect_install_extras:
+  extends: .aux_install_extras
+  stage: Wheel Tests
+  before_script:
+    - *init_sequence
+    - pip install importlib_metadata
+    - pip install ./wheelhouse/*.whl
+    - export WIDGET_EXTRAS=$(python -c "from importlib_metadata import metadata; print(','.join(set(metadata('accwidgets').json['provides_extra']) - ({'all'} | set('$AUX_EXTRAS'.split(',')))))")
+
+test imports:
+  extends: .inspect_install_extras
+  image: $ACCPY_IMAGE_INFRASTRUCTURE
+  script:
+    # As of today, Gitlab CI does not support variable expansion in parallel:matrix,
+    # therefore we're force to keep an internal loop inside a single job instead of
+    # having 1 job per installation variant.
+    # https://gitlab.com/gitlab-org/gitlab/-/issues/11549
+    - IFS=, EXTRAS_ARRAY=( $WIDGET_EXTRAS )
+    - WHEEL_PATH=$(realpath ./wheelhouse/*.whl)
+    - |
+      for extra in "${EXTRAS_ARRAY[@]}"; do
+          acc-py venv .job-venv
+          echo "Installing $extra"
+          bash -c "source .job-venv/bin/activate && pip install $WHEEL_PATH[$extra] && echo 'Running Python import' && python -c 'import accwidgets.$extra'"
+          rm -rf .job-venv
+      done
+
+test dep collisions:
+  extends:
+    - .inspect_install_extras
+    - .matrix_job
+  image: $CURRENT_BASE_IMAGE
+  script:
+    - |
+      echo "Installing categories: $WIDGET_EXTRAS"
+      pip install .[$WIDGET_EXTRAS]
 
 .sphinx_custom:
   stage: Documentation
