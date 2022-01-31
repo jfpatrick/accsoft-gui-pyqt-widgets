@@ -260,7 +260,12 @@ def test_sets_window_as_source_on_show_when_none_inside_app_menu(qtbot: QtBot, l
     assert action.source == []
     with qtbot.wait_exposed(window):
         window.show()
-    assert action.source == [window]
+
+    def check_status():
+        assert action.source == [window]
+
+    # Use wait_until to ensure that application events have been processed completely
+    qtbot.wait_until(check_status)
 
 
 def test_sets_window_as_source_on_show_when_none_inside_parent_widget(qtbot: QtBot, logbook_model):
@@ -276,7 +281,12 @@ def test_sets_window_as_source_on_show_when_none_inside_parent_widget(qtbot: QtB
     assert action.source == []
     with qtbot.wait_exposed(window):
         window.show()
-    assert action.source == [window]
+
+    def check_status():
+        assert action.source == [window]
+
+    # Use wait_until to ensure that application events have been processed completely
+    qtbot.wait_until(check_status)
 
 
 def test_does_not_set_anything_as_source_on_show_when_no_window_exists(qtbot: QtBot, logbook_model):
