@@ -13,7 +13,6 @@ extras = {
     "examples": [
         "pylogbook>=3.1.0,<4a0",
         # Dependencies of RbaButton
-        "dataclasses>=0.7,<0.8a0;python_version<'3.7'",
         "pyrbac>=0.0.7,<0.1a0",
     ],
 }
