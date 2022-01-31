@@ -1924,7 +1924,8 @@ def test_table_model_headers(role, orientation, section, expected_label):
         7, 1, Qt.ForegroundRole, "#000000",
     ),
 ])
-def test_table_model_table_colors(color_map_mod, row, column, role, expected_color_name, ctxs):
+def test_table_model_table_colors(color_map_mod, row, column, role, expected_color_name, ctxs, qapp):
+    _ = qapp  # This is prevention for segfault that occurs randomly
     color_map = {**LsaSelectorModel.DEFAULT_COLOR_MAP, **color_map_mod}
     rows = [LsaSelectorRowViewModel(ctx=ctx) for ctx in ctxs]
     model = LsaSelectorTableModel(row_models=rows,
