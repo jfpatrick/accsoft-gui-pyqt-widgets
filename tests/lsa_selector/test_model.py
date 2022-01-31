@@ -16,28 +16,11 @@ from accwidgets.lsa_selector._model import (LsaSelectorRowViewModel, LsaSelector
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_java_imports():
-    sys.modules["java"] = mock.MagicMock()
-    sys.modules["java.util"] = mock.MagicMock()
-    sys.modules["cern"] = mock.MagicMock()
-    sys.modules["cern.accsoft"] = mock.MagicMock()
-    sys.modules["cern.accsoft.commons"] = mock.MagicMock()
-    sys.modules["cern.accsoft.commons.domain"] = mock.MagicMock()
-    sys.modules["cern.lsa"] = mock.MagicMock()
-    sys.modules["cern.lsa.client"] = mock.MagicMock()
-    sys.modules["cern.lsa.domain"] = mock.MagicMock()
-    sys.modules["cern.lsa.domain.settings"] = mock.MagicMock()
+def mock_java_imports(monkeypatch):
+    for mod_name in ("java", "java.util", "cern", "cern.accsoft", "cern.accsoft.commons", "cern.accsoft.commons.domain",
+                     "cern.lsa", "cern.lsa.client", "cern.lsa.domain", "cern.lsa.domain.settings"):
+        monkeypatch.setitem(sys.modules, mod_name, mock.MagicMock())
     yield
-    del sys.modules["java"]
-    del sys.modules["java.util"]
-    del sys.modules["cern"]
-    del sys.modules["cern.accsoft"]
-    del sys.modules["cern.accsoft.commons"]
-    del sys.modules["cern.accsoft.commons.domain"]
-    del sys.modules["cern.lsa"]
-    del sys.modules["cern.lsa.client"]
-    del sys.modules["cern.lsa.domain"]
-    del sys.modules["cern.lsa.domain.settings"]
 
 
 @pytest.mark.parametrize("ctx_type,extra_args,allows_user", [
@@ -1924,7 +1907,8 @@ def test_table_model_headers(role, orientation, section, expected_label):
         7, 1, Qt.ForegroundRole, "#000000",
     ),
 ])
-def test_table_model_table_colors(color_map_mod, row, column, role, expected_color_name, ctxs):
+def test_table_model_table_colors(color_map_mod, row, column, role, expected_color_name, ctxs, qapp):
+    _ = qapp  # This is prevention for segfault that occurs randomly
     color_map = {**LsaSelectorModel.DEFAULT_COLOR_MAP, **color_map_mod}
     rows = [LsaSelectorRowViewModel(ctx=ctx) for ctx in ctxs]
     model = LsaSelectorTableModel(row_models=rows,
@@ -2543,10 +2527,11 @@ def test_table_model_table_tooltips(rows, row, column, expected_string):
                                       category=LsaSelectorNonResidentContext.Category.OPERATIONAL),
     ]),
 ])
-def test_contexts_for_accelerator(accelerator, resident_only, categories, expected_ctxs, all_ctxs, active_users, spare_users):
+def test_contexts_for_accelerator(accelerator, resident_only, categories, expected_ctxs, all_ctxs, active_users,
+                                  spare_users, monkeypatch):
 
-    sys.modules["cern.accsoft.commons.domain"].CernAccelerator = LsaSelectorAccelerator
-    sys.modules["cern.lsa.domain.settings"].ContextFamily.BEAMPROCESS = 13
+    monkeypatch.setattr(sys.modules["cern.accsoft.commons.domain"], "CernAccelerator", LsaSelectorAccelerator)
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].ContextFamily, "BEAMPROCESS", 13)
 
     def make_category_mock(cat: AbstractLsaSelectorContext.Category):
         obj = mock.MagicMock()
@@ -2589,15 +2574,15 @@ def test_contexts_for_accelerator(accelerator, resident_only, categories, expect
     def get_users(context: mock.MagicMock):
         return {context.getUser()} if context.isResident() else set()
 
-    sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value.findStandAloneCycles.return_value = [make_drivable_mock(ctx) for ctx in all_ctxs]
-    sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value.findContextCategories.return_value = [make_category_mock(cat) for cat in AbstractLsaSelectorContext.Category]
-    sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value.findActiveTimingUsers.return_value = make_active_users_mock()
-    sys.modules["cern.lsa.domain.settings"].Contexts.filterResidentContexts.side_effect = filter_contexts
-    sys.modules["cern.lsa.domain.settings"].Contexts.filterByCategories.side_effect = filter_category
-    sys.modules["cern.lsa.domain.settings"].Contexts.getDrivableContexts.side_effect = drivable_contexts
-    sys.modules["cern.lsa.domain.settings"].Contexts.canBecomeResident.side_effect = can_become_resident
-    sys.modules["cern.lsa.domain.settings"].Contexts.getStandAloneContext.side_effect = standalone_context
-    sys.modules["cern.lsa.domain.settings"].Contexts.getUsers.side_effect = get_users
+    monkeypatch.setattr(sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value, "findStandAloneCycles", mock.MagicMock(return_value=[make_drivable_mock(ctx) for ctx in all_ctxs]))
+    monkeypatch.setattr(sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value, "findContextCategories", mock.MagicMock(return_value=[make_category_mock(cat) for cat in AbstractLsaSelectorContext.Category]))
+    monkeypatch.setattr(sys.modules["cern.lsa.client"].ServiceLocator.getService.return_value, "findActiveTimingUsers", mock.MagicMock(return_value=make_active_users_mock()))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "filterResidentContexts", mock.MagicMock(side_effect=filter_contexts))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "filterByCategories", mock.MagicMock(side_effect=filter_category))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "getDrivableContexts", mock.MagicMock(side_effect=drivable_contexts))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "canBecomeResident", mock.MagicMock(side_effect=can_become_resident))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "getStandAloneContext", mock.MagicMock(side_effect=standalone_context))
+    monkeypatch.setattr(sys.modules["cern.lsa.domain.settings"].Contexts, "getUsers", mock.MagicMock(side_effect=get_users))
 
     res = contexts_for_accelerator(accelerator=accelerator,
                                    resident_only=resident_only,

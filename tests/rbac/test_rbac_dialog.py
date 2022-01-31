@@ -23,10 +23,14 @@ def test_rbac_dialog_configures_for_predefined_username(qtbot: QtBot, initial_us
     qtbot.add_widget(widget)
     with qtbot.wait_exposed(widget):
         widget.show()
-    assert widget.username.text() == expected_username_text
-    assert widget.username.isEnabled() == expected_username_enabled
-    assert widget.username.isClearButtonEnabled() == expected_username_clear
-    assert widget.password.hasFocus() == password_should_focus
+
+    def check_stats():
+        assert widget.username.text() == expected_username_text
+        assert widget.username.isEnabled() == expected_username_enabled
+        assert widget.username.isClearButtonEnabled() == expected_username_clear
+        assert widget.password.hasFocus() == password_should_focus
+
+    qtbot.wait_until(check_stats)
 
 
 @pytest.mark.parametrize("default_tab,selected_index,location_button_visible,explicit_button_visible", [
@@ -261,13 +265,20 @@ def test_rbac_dialog_return_key_in_explicit_tab(qtbot: QtBot, focused_field, exp
     with qtbot.wait_exposed(widget):
         widget.show()
     getattr(widget, focused_field).setFocus()
+    qtbot.wait_until(lambda: getattr(widget, focused_field).hasFocus())
     with mock.patch.object(widget.user_btn, "click") as callout:
         qtbot.keyClick(widget, pressed_key)
         if expect_login_clicked:
             callout.assert_called_once()
         else:
             callout.assert_not_called()
-        assert widget.password.hasFocus() == expected_password_has_focus
+
+        def check_focus():
+            assert widget.password.hasFocus() == expected_password_has_focus
+
+        # As explained in pytest-qt docs, it's better to use this, because focus events may not be processed
+        # immediately. https://pytest-qt.readthedocs.io/en/latest/wait_until.html
+        qtbot.wait_until(check_focus)
 
 
 @pytest.mark.parametrize("default_tab,roles,username,password,checkbox,btn,expected_signal,signal_overload,expected_args", [
@@ -440,7 +451,10 @@ def test_rbac_dialog_popup_wrapper_default_focus(qtbot: QtBot, default_tab, expe
     widget = RbaAuthPopupWidget(focused_tab=default_tab, initial_username=initial_username)
     with qtbot.wait_exposed(widget):
         widget.show()
-    qtbot.wait(100)
-    assert widget.loc_btn.hasFocus() == expect_location_button_focused
-    assert widget.username.hasFocus() == expect_username_focused
-    assert widget.password.hasFocus() == expect_password_focused
+
+    def check_focus():
+        assert widget.loc_btn.hasFocus() == expect_location_button_focused
+        assert widget.username.hasFocus() == expect_username_focused
+        assert widget.password.hasFocus() == expect_password_focused
+
+    qtbot.wait_until(check_focus)

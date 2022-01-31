@@ -1,7 +1,6 @@
 import pytest
 import sys
 from unittest import mock
-from typing import Optional, Any
 from accwidgets._api import mark_public_api, assert_dependencies, assert_requirement, disable_assert_cache
 
 try:
@@ -18,10 +17,6 @@ def test_fn_wrapper():
     accwidgets._api._ASSERT_CACHE.clear()
     yield
     accwidgets._api._ASSERT_CACHE.clear()
-    try:
-        del sys.modules["accwidgets.test_widget.__deps__"]
-    except KeyError:
-        pass
 
 
 @pytest.fixture
@@ -37,27 +32,12 @@ def custom_class():
 
 
 @pytest.fixture
-def environ_get_side_effect():
-
-    def _wrapper(override_deps_defined: bool, override_deps_value: bool):
-
-        def get_environ(key: str, default_value: Optional[Any] = None):
-            if override_deps_defined and key == "ACCWIDGETS_OVERRIDE_DEPENDENCIES":
-                return override_deps_value
-            return default_value
-
-        return get_environ
-
-    return _wrapper
-
-
-@pytest.fixture
-def inject_mod_side_effect():
+def inject_mod_side_effect(monkeypatch):
 
     def _wrapper(mock_obj: mock.Mock):
 
         def side_effect(pkg_name: str):
-            sys.modules[pkg_name] = mock_obj
+            monkeypatch.setitem(sys.modules, pkg_name, mock_obj)
 
         return side_effect
 
@@ -132,10 +112,10 @@ def test_assert_requirement_ignored_with_irrelevant_marker(distribution, marker_
     (True, False),
     (False, False),
 ])
-@mock.patch("os.environ")
 @mock.patch("accwidgets._api.distribution")
-def test_assert_requirement_throws_on_package_not_found(distribution, environ, override_deps_defined, override_deps_value, environ_get_side_effect):
-    environ.get.side_effect = environ_get_side_effect(override_deps_defined, override_deps_value)
+def test_assert_requirement_throws_on_package_not_found(distribution, override_deps_defined, override_deps_value, monkeypatch):
+    if override_deps_defined:
+        monkeypatch.setenv("ACCWIDGETS_OVERRIDE_DEPENDENCIES", str(int(override_deps_value)))
     distribution.side_effect = PackageNotFoundError("test_req")
     req = mock.MagicMock()
     req.name = "test_req"
@@ -157,10 +137,11 @@ def test_assert_requirement_throws_on_package_not_found(distribution, environ, o
     (True, False, True, False),
     (False, False, True, False),
 ])
-@mock.patch("os.environ")
 @mock.patch("accwidgets._api.distribution")
-def test_assert_requirement_throws_on_wrong_version(_, environ, override_deps_defined, override_deps_value, requirement_correct, should_throw, environ_get_side_effect):
-    environ.get.side_effect = environ_get_side_effect(override_deps_defined, override_deps_value)
+def test_assert_requirement_throws_on_wrong_version(_, override_deps_defined, override_deps_value, monkeypatch,
+                                                    requirement_correct, should_throw):
+    if override_deps_defined:
+        monkeypatch.setenv("ACCWIDGETS_OVERRIDE_DEPENDENCIES", str(int(override_deps_value)))
     req = mock.MagicMock()
     req.name = "test_req"
     req.marker = None
@@ -185,10 +166,11 @@ def test_assert_requirement_throws_on_wrong_version(_, environ, override_deps_de
     (True, False),
     (False, False),
 ])
-@mock.patch("os.environ")
 @mock.patch("accwidgets._api.distribution")
-def test_assert_requirement_does_not_throw_without_specified_version(distribution, environ, override_deps_defined, override_deps_value, environ_get_side_effect):
-    environ.get.side_effect = environ_get_side_effect(override_deps_defined, override_deps_value)
+def test_assert_requirement_does_not_throw_without_specified_version(distribution, override_deps_defined, monkeypatch,
+                                                                     override_deps_value):
+    if override_deps_defined:
+        monkeypatch.setenv("ACCWIDGETS_OVERRIDE_DEPENDENCIES", str(int(override_deps_value)))
     req = mock.MagicMock()
     req.name = "test_req"
     req.marker = None

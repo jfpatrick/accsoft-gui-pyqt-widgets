@@ -2,29 +2,36 @@
 
 
 import pytest
+from pytestqt.qtbot import QtBot
 from accwidgets.graph import ExPlotWidgetConfig, EditablePlotWidget
 from tests.graph.mock_utils.widget_test_window import MinimalTestWindow
 
 
-@pytest.fixture(autouse=False)
-def minimal_test_window() -> MinimalTestWindow:
+@pytest.fixture
+def minimal_test_window(qtbot: QtBot) -> MinimalTestWindow:
     """Fixture for creating a minimal Test Window."""
     window = MinimalTestWindow(plot=ExPlotWidgetConfig())
-    window.show()
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     return window
 
 
-@pytest.fixture(autouse=False)
-def empty_testing_window() -> MinimalTestWindow:
+@pytest.fixture
+def empty_testing_window(qtbot: QtBot) -> MinimalTestWindow:
     """Fixture for creating a minimal Test Window."""
     window = MinimalTestWindow()
-    window.show()
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     return window
 
 
-@pytest.fixture(autouse=False)
-def editable_testing_window() -> MinimalTestWindow:
+@pytest.fixture
+def editable_testing_window(qtbot: QtBot) -> MinimalTestWindow:
     """Fixture for creating a minimal Test Window."""
     window = MinimalTestWindow(plot=EditablePlotWidget())
-    window.show()
+    qtbot.add_widget(window)
+    with qtbot.wait_exposed(window):
+        window.show()
     return window
