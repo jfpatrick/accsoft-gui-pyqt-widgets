@@ -13,7 +13,7 @@ from ..async_shim import AsyncMock
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.fixture(scope="function")
-async def root_model():
+def root_model():
     root = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     data = [
@@ -39,7 +39,7 @@ def make_italic_font() -> QFont:
     [],
     [("dev", [])],
 ])
-async def test_root_model_set_data_resets_model(qtbot: QtBot, data):
+def test_root_model_set_data_resets_model(qtbot: QtBot, data):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with qtbot.wait_signal(model.modelReset):
@@ -53,7 +53,7 @@ async def test_root_model_set_data_resets_model(qtbot: QtBot, data):
     [],
     [("dev", [])],
 ])
-async def test_root_model_set_data_cancels_active_requests(data):
+def test_root_model_set_data_cancels_active_requests(data):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with mock.patch.object(model, "cancel_active_requests") as cancel_active_requests:
@@ -67,7 +67,7 @@ async def test_root_model_set_data_cancels_active_requests(data):
     [],
     [("dev", [])],
 ])
-async def test_root_model_set_data_updates_rows_with_first_batch(data):
+def test_root_model_set_data_updates_rows_with_first_batch(data):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with mock.patch.object(model, "_trigger_row_update") as trigger_row_update:
@@ -133,7 +133,7 @@ def test_root_model_can_fetch_more(is_loading, iter_exhausted, iter_exists, expe
     (True, False),
     (False, True),
 ])
-async def test_root_model_fetch_more(is_loading, expect_task_created):
+def test_root_model_fetch_more(is_loading, expect_task_created, event_loop):
     model = SearchResultsModel()
     model._is_loading = is_loading
     with mock.patch.object(model, "_do_fetch_more", new_callable=AsyncMock) as do_fetch_more:
@@ -141,7 +141,7 @@ async def test_root_model_fetch_more(is_loading, expect_task_created):
         do_fetch_more.assert_not_awaited()
         if expect_task_created:
             assert model._active_task is not None
-            await model._active_task
+            event_loop.run_until_complete(model._active_task)
             do_fetch_more.assert_awaited_once()
         else:
             assert model._active_task is None
@@ -204,8 +204,8 @@ def test_root_model_set_loading(qtbot: QtBot, initial_val, new_val, expected_val
     (True, True, True),
     (False, False, False),
 ])
-async def test_root_model_do_fetch_more_no_iter_noop(iter_exists, expect_request_next_batch,
-                                                     expect_trigger_rows):
+def test_root_model_do_fetch_more_no_iter_noop(iter_exists, expect_request_next_batch, event_loop,
+                                               expect_trigger_rows):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     async_mock = AsyncMock()
@@ -215,7 +215,7 @@ async def test_root_model_do_fetch_more_no_iter_noop(iter_exists, expect_request
     if iter_exists:
         model._iter = mocked_iterator
     with mock.patch.object(model, "_trigger_row_update") as trigger_row_update:
-        await model._do_fetch_more()
+        event_loop.run_until_complete(model._do_fetch_more())
         if expect_trigger_rows:
             trigger_row_update.assert_called()
         else:
@@ -227,7 +227,7 @@ async def test_root_model_do_fetch_more_no_iter_noop(iter_exists, expect_request
 
 
 @pytest.mark.asyncio
-async def test_root_model_do_fetch_more_updates_rows_with_loading_cell():
+def test_root_model_do_fetch_more_updates_rows_with_loading_cell(event_loop):
     model = SearchResultsModel()
 
     def side_effect():
@@ -240,7 +240,7 @@ async def test_root_model_do_fetch_more_updates_rows_with_loading_cell():
     mocked_iterator.__anext__ = async_mock
     model._iter = mocked_iterator
     assert model.is_loading is False
-    await model._do_fetch_more()
+    event_loop.run_until_complete(model._do_fetch_more())
     assert model.is_loading is False
 
 
@@ -268,7 +268,7 @@ async def test_root_model_do_fetch_more_updates_rows_with_loading_cell():
     ),
 
 ])
-async def test_root_model_do_fetch_more_success(batches, expected_data):
+def test_root_model_do_fetch_more_success(batches, expected_data, event_loop):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     async_mock = AsyncMock()
@@ -277,7 +277,7 @@ async def test_root_model_do_fetch_more_success(batches, expected_data):
     assert model._data == []
     for next_batch, expected_aggregated_data in zip(batches, expected_data):
         async_mock.return_value = next_batch
-        await model._do_fetch_more()
+        event_loop.run_until_complete(model._do_fetch_more())
         assert model._data == expected_aggregated_data
 
 
@@ -287,7 +287,7 @@ async def test_root_model_do_fetch_more_success(batches, expected_data):
     [("dev1", [])],
     [("dev1", []), ("dev2", [("prop", ["field"])])],
 ])
-async def test_root_model_do_fetch_more_iter_exhausted(initial_data):
+def test_root_model_do_fetch_more_iter_exhausted(initial_data, event_loop):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     async_mock = AsyncMock()
@@ -299,7 +299,7 @@ async def test_root_model_do_fetch_more_iter_exhausted(initial_data):
     assert model._data == initial_data
     assert model._iter_exhausted is False
     assert model._iter is not None
-    await model._do_fetch_more()
+    event_loop.run_until_complete(model._do_fetch_more())
     assert model._data == initial_data
     assert model._iter_exhausted is True
     assert model._iter is not None
@@ -689,7 +689,7 @@ def test_extendable_model_can_fetch_more(parent_model_class, parent_returns, exp
     SearchProxyModel,
     SearchResultsModel,
 ])
-async def test_extendable_model_fetch_more(parent_model_class):
+def test_extendable_model_fetch_more(parent_model_class):
     model = ExtendableProxyModel()
     if parent_model_class is not None:
         parent_model = parent_model_class()
@@ -836,18 +836,18 @@ def make_dev_iter_side_effect(*returned_devices):
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("device_name", ["dev1", "dev2"])
-async def test_look_up_ccda_calls_api(device_name, get_ccda_mock):
+def test_look_up_ccda_calls_api(device_name, get_ccda_mock, event_loop):
     pagination_iter, get_ccda_res = get_ccda_mock
     pagination_iter.__anext__ = AsyncMock(side_effect=StopAsyncIteration)
-    await look_up_ccda(device_name)
+    event_loop.run_until_complete(look_up_ccda(device_name))
     get_ccda_res.Device.search.assert_called_once_with(f'name=="*{device_name}*"')
 
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
-async def test_look_up_ccda_empty(get_ccda_mock):
+def test_look_up_ccda_empty(get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
     pagination_iter.__anext__ = AsyncMock(side_effect=StopAsyncIteration)
-    results = await look_up_ccda("test_device")
+    results = event_loop.run_until_complete(look_up_ccda("test_device"))
     assert isinstance(results, tuple)
     assert len(results) == 2
     assert results[0] is not None
@@ -861,8 +861,8 @@ async def test_look_up_ccda_empty(get_ccda_mock):
     (["dev1", "dev2", "dev3", "dev4", "dev5", "dev6"], ["dev1", "dev2", "dev3", "dev4", "dev5"]),
 ])
 @pytest.mark.parametrize("returned_device_props_empty", [True, False])
-async def test_look_up_ccda_exhausted_on_non_first_batch(get_ccda_mock, expected_first_bach_names, returned_device_names,
-                                                         returned_device_props_empty):
+def test_look_up_ccda_exhausted_on_non_first_batch(get_ccda_mock, expected_first_bach_names, returned_device_names,
+                                                   returned_device_props_empty, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     if returned_device_props_empty:
@@ -888,7 +888,7 @@ async def test_look_up_ccda_exhausted_on_non_first_batch(get_ccda_mock, expected
         returned_devices.append(device_mock)
 
     pagination_iter.__anext__ = AsyncMock(side_effect=make_dev_iter_side_effect(*returned_devices))
-    results = await look_up_ccda("test_device")
+    results = event_loop.run_until_complete(look_up_ccda("test_device"))
     assert isinstance(results, tuple)
     assert len(results) == 2
     assert results[0] is not None
@@ -902,7 +902,7 @@ async def test_look_up_ccda_exhausted_on_non_first_batch(get_ccda_mock, expected
     (["field3", "field2", "field1"], ["field1", "field2", "field3"]),
     (["field3", "Field2", "field1"], ["Field2", "field1", "field3"]),
 ])
-async def test_look_up_ccda_fields_are_ordered(field_names, expected_field_names, get_ccda_mock):
+def test_look_up_ccda_fields_are_ordered(field_names, expected_field_names, get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     prop = mock.MagicMock()
@@ -918,7 +918,7 @@ async def test_look_up_ccda_fields_are_ordered(field_names, expected_field_names
     device_mock.name = "test_device"
 
     pagination_iter.__anext__ = AsyncMock(side_effect=make_dev_iter_side_effect(device_mock))
-    results = await look_up_ccda("test_device")
+    results = event_loop.run_until_complete(look_up_ccda("test_device"))
     assert isinstance(results, tuple)
     assert len(results) == 2
     assert results[1] == [("test_device", [("prop1", expected_field_names)])]
@@ -931,7 +931,7 @@ async def test_look_up_ccda_fields_are_ordered(field_names, expected_field_names
     (["prop3", "prop2", "prop1"], ["prop1", "prop2", "prop3"]),
     (["prop3", "Prop2", "prop1"], ["Prop2", "prop1", "prop3"]),
 ])
-async def test_look_up_ccda_props_are_ordered(prop_names, expected_prop_names, get_ccda_mock):
+def test_look_up_ccda_props_are_ordered(prop_names, expected_prop_names, get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     props = []
@@ -945,7 +945,7 @@ async def test_look_up_ccda_props_are_ordered(prop_names, expected_prop_names, g
     device_mock.name = "test_device"
 
     pagination_iter.__anext__ = AsyncMock(side_effect=make_dev_iter_side_effect(device_mock))
-    results = await look_up_ccda("test_device")
+    results = event_loop.run_until_complete(look_up_ccda("test_device"))
     assert isinstance(results, tuple)
     assert len(results) == 2
     assert results[1] == [("test_device", [(name, []) for name in expected_prop_names])]
@@ -960,7 +960,7 @@ async def test_look_up_ccda_props_are_ordered(prop_names, expected_prop_names, g
      [["dev1", "dev2", "dev3", "dev4", "dev5"], ["dev6", "dev7", "dev8", "dev9", "dev10"],
       ["dev11"]]),
 ])
-async def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expected_device_batches):
+def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expected_device_batches, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     returned_devices = []
@@ -971,7 +971,7 @@ async def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expec
         returned_devices.append(device_mock)
 
     pagination_iter.__anext__ = AsyncMock(side_effect=make_dev_iter_side_effect(*returned_devices))
-    results = await look_up_ccda("test_device")
+    results = event_loop.run_until_complete(look_up_ccda("test_device"))
     assert isinstance(results, tuple)
     assert len(results) == 2
     results_iter = iter(expected_device_batches)
@@ -980,16 +980,16 @@ async def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expec
     try:
         next_expected_batch = next(results_iter)
     except StopIteration:
-        next_results = await results[0].__anext__()
+        next_results = event_loop.run_until_complete(results[0].__anext__())
         assert next_results == []
     else:
-        next_results = await results[0].__anext__()
+        next_results = event_loop.run_until_complete(results[0].__anext__())
         assert next_results == [(name, []) for name in next_expected_batch]
 
 
 @pytest.mark.skip("QApplication is not created by qtbot at the time when QSelectorEventLoop initialized. It fails")
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
-async def test_look_up_ccda_batches_in_parallel(get_ccda_mock):
+def test_look_up_ccda_batches_in_parallel(get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     returned_devices = []
@@ -1036,17 +1036,17 @@ async def test_look_up_ccda_batches_in_parallel(get_ccda_mock):
         return next_device
 
     pagination_iter.__anext__ = process_next_request
-    await look_up_ccda("test_device")
+    event_loop.run_until_complete(look_up_ccda("test_device"))
 
 
 @pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("error_type", [TypeError, ValueError])
-async def test_look_up_ccda_does_not_catch_api_exceptions(get_ccda_mock, error_type):
+def test_look_up_ccda_does_not_catch_api_exceptions(get_ccda_mock, error_type, event_loop):
     pagination_iter, _ = get_ccda_mock
 
     pagination_iter.__anext__ = AsyncMock(side_effect=error_type)
     with pytest.raises(error_type):
-        await look_up_ccda("test_device")
+        event_loop.run_until_complete(look_up_ccda("test_device"))
 
 
 def test_get_ccda_is_singleton():

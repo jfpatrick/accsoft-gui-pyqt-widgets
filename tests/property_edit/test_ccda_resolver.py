@@ -15,10 +15,10 @@ from ..async_shim import AsyncMock
     ("asd", 'Invalid parameter name "asd"'),
     ("dev/prop/field", 'Invalid parameter name "dev/prop/field"'),
 ])
-async def test_resolve_from_param_invalid_param(param, expected_error):
+def test_resolve_from_param_invalid_param(param, expected_error, event_loop):
     with mock.patch("accwidgets.property_edit.designer.ccda_resolver._map_fields_sorted") as map_fields_sorted:
         with pytest.raises(ValueError, match=expected_error):
-            await _resolve_from_param(param)
+            event_loop.run_until_complete(_resolve_from_param(param))
         map_fields_sorted.assert_not_called()
 
 
@@ -27,7 +27,7 @@ async def test_resolve_from_param_invalid_param(param, expected_error):
     ("prop1", None),
     ("prop2", r'Device "dev" does not have a property "prop2"'),
 ])
-async def test_resolve_from_param_no_property_exists(lookup_prop, expected_error):
+def test_resolve_from_param_no_property_exists(lookup_prop, expected_error, event_loop):
     with mock.patch("accwidgets.property_edit.designer.ccda_resolver.CCDA") as CCDA:
         with mock.patch("accwidgets.property_edit.designer.ccda_resolver._map_fields_sorted") as map_fields_sorted:
             device_mock = mock.MagicMock()
@@ -38,17 +38,17 @@ async def test_resolve_from_param_no_property_exists(lookup_prop, expected_error
 
             param_name = f"dev/{lookup_prop}"
             if expected_error is None:
-                await _resolve_from_param(param_name)
+                event_loop.run_until_complete(_resolve_from_param(param_name))
                 map_fields_sorted.assert_called_once()
             else:
                 with pytest.raises(ValueError, match=expected_error):
-                    await _resolve_from_param(param_name)
+                    event_loop.run_until_complete(_resolve_from_param(param_name))
                 map_fields_sorted.assert_not_called()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("param_name", ["dev/prop1", "dev/prop1#field"])
-async def test_resolve_from_param_succeeds(param_name):
+def test_resolve_from_param_succeeds(param_name, event_loop):
     with mock.patch("accwidgets.property_edit.designer.ccda_resolver.CCDA") as CCDA:
         with mock.patch("accwidgets.property_edit.designer.ccda_resolver._map_fields_sorted") as map_fields_sorted:
             device_mock = mock.MagicMock()
@@ -58,7 +58,7 @@ async def test_resolve_from_param_succeeds(param_name):
             data_field = PropertyField(name="field1")
             class_mock.device_class_properties = [DeviceClassProperty(name="prop1", data_fields=[data_field])]
 
-            await _resolve_from_param(param_name)
+            event_loop.run_until_complete(_resolve_from_param(param_name))
             map_fields_sorted.assert_called_once_with([data_field])
 
 

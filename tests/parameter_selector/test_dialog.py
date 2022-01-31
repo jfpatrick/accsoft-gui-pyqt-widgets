@@ -329,8 +329,8 @@ def test_widget_value_setter_succeeds_sets_ui(_, qtbot: QtBot, enable_protocols,
     (False, "unknown://srv/test/prop#field", "test/prop"),
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, value, expected_search_string,
-                                                                enable_protocols, enable_fields):
+def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, value, expected_search_string,
+                                                          enable_protocols, enable_fields):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -347,8 +347,7 @@ async def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, va
 @pytest.mark.parametrize("initial_val", ["", "test/prop"])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-async def test_widget_value_setter_fails_search_not_requested(qtbot: QtBot, initial_val, enable_protocols,
-                                                              enable_fields):
+def test_widget_value_setter_fails_search_not_requested(qtbot: QtBot, initial_val, enable_protocols, enable_fields):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -636,7 +635,7 @@ def test_widget_on_model_loading_changed_controls_aux_indicator(qtbot: QtBot, lo
 ])
 @pytest.mark.parametrize("enable_fields", [True, False])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-async def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields):
+def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -1022,7 +1021,7 @@ def test_dialog_value_getter(value, qtbot: QtBot, val, enable_protocols):
     (True, "test/prop#field", "test/prop#field"),
     (True, "rda3:///test/prop#field", "rda3:///test/prop#field"),
 ])
-async def test_dialog_initial_value_affects_widget(qtbot: QtBot, enable_protocols, initial_val, expected_val):
+def test_dialog_initial_value_affects_widget(qtbot: QtBot, enable_protocols, initial_val, expected_val):
     dialog = ParameterSelectorDialog(enable_protocols=enable_protocols, initial_value=initial_val)
     qtbot.add_widget(dialog)
     assert dialog.value == expected_val
@@ -1055,7 +1054,7 @@ def test_dialog_enable_protocols_affects_widget(_, ParameterSelector, qtbot: QtB
     (QDialogButtonBox.Ok, QDialog.Accepted),
     (QDialogButtonBox.Cancel, QDialog.Rejected),
 ])
-async def test_dialog_buttonbox_trigger(qtbot: QtBot, btn, expected_result):
+def test_dialog_buttonbox_trigger(qtbot: QtBot, btn, expected_result):
     dialog = ParameterSelectorDialog()
     qtbot.add_widget(dialog)
     buttons = next(iter(c for c in dialog.children() if isinstance(c, QDialogButtonBox)))
