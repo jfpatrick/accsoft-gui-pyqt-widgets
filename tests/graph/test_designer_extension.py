@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from typing import Type, List, Tuple, Any
-from pytestqt.qtbot import QtBot
 from unittest import mock
 from qtpy.QtWidgets import QDialogButtonBox
 from PyQt5.QtTest import QAbstractItemModelTester
@@ -17,8 +16,8 @@ _PLOT_TYPES = [ScrollingPlotWidget,
 
 
 @pytest.fixture
-def table_model():
-    def model_builder(qtbot: QtBot, plot: ExPlotWidget) -> Tuple[PlotLayerTableModel, PlotLayerEditingDialog]:
+def table_model(qtbot):
+    def model_builder(plot: ExPlotWidget) -> Tuple[PlotLayerTableModel, PlotLayerEditingDialog]:
         dialog = PlotLayerEditingDialog(plot=plot)
         qtbot.add_widget(dialog)
         _ = QAbstractItemModelTester(dialog.table.model())  # Test for common model mistakes
@@ -42,9 +41,9 @@ def test_layer_dialog_data_standard_plot(qtbot,
                                          empty_testing_window: MinimalTestWindow,
                                          plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, _ = table_model(qtbot=qtbot, plot=plot)
+    model, _ = table_model(plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, "Auto", "Auto"],
         ["y", "", True, "Auto", "Auto"],
@@ -57,11 +56,11 @@ def test_layer_dialog_data_plot_with_custom_view_ranges_and_labels(qtbot,
                                                                    empty_testing_window: MinimalTestWindow,
                                                                    plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.setRange(xRange=(-5, 5), yRange=(-2, 8), padding=0.0)
     plot.setLabels(bottom="x", top="x", left="y", right="y")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, _ = table_model(qtbot=qtbot, plot=plot)
+    model, _ = table_model(plot)
     compare_table_contents(model=model, desired=[
         ["x", "x", False, -5.0, 5.0],
         ["y", "y", False, -2.0, 8.0],
@@ -74,10 +73,10 @@ def test_layer_dialog_data_plot_with_additional_standard_layer(qtbot,
                                                                empty_testing_window: MinimalTestWindow,
                                                                plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("my new layer")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, _ = table_model(qtbot=qtbot, plot=plot)
+    model, _ = table_model(plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, "Auto", "Auto"],
         ["y", "", True, "Auto", "Auto"],
@@ -91,12 +90,12 @@ def test_layer_dialog_data_plot_with_additional_altered_layer(qtbot,
                                                               empty_testing_window: MinimalTestWindow,
                                                               plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("l1")
     plot.setLabel(axis="l1", text="some label text")
     plot.setRange(l1=(-100, 100), padding=0.0)
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, _ = table_model(qtbot=qtbot, plot=plot)
+    model, _ = table_model(plot)
     compare_table_contents(model=model, desired=[
         ["x", "", True, "Auto", "Auto"],
         ["y", "", True, "Auto", "Auto"],
@@ -120,9 +119,9 @@ def test_layer_dialog_set_view_ranges(qtbot,
                                       empty_testing_window: MinimalTestWindow,
                                       plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     model.setData(model.index(0, _COLUMN_LABEL_TEXT), "New X Label")
     model.setData(model.index(0, _COLUMN_AUTO_RANGE), False)
     model.setData(model.index(0, _COLUMN_RANGE_MIN), -123.0)
@@ -148,9 +147,9 @@ def test_layer_dialog_add_layer(qtbot,
                                 empty_testing_window: MinimalTestWindow,
                                 plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     # Add a layer through the dialog and change it
     dialog.add_btn.click()
     model.setData(model.index(2, _COLUMN_LABEL_TEXT), "layer")
@@ -174,11 +173,11 @@ def test_layer_dialog_remove_layer(qtbot,
                                    empty_testing_window: MinimalTestWindow,
                                    plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("remove_me")
     assert len(plot.plotItem.layers) == 2
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     # Remove layer by selecting it and pressing the deleted button
     dialog.table.selectRow(2)
     dialog.remove_btn.click()
@@ -195,12 +194,12 @@ def test_layer_dialog_rename_layer(qtbot,
                                    empty_testing_window: MinimalTestWindow,
                                    plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("rename_me")
     plot.setRange(rename_me=(-12.0, 34.0), padding=0)
     plot.setLabels(rename_me="my label")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     model.setData(model.index(2, 0), "renamed")
     # Pretend we are inside designer and cursor is found
     with mock.patch("accwidgets.graph.designer.designer_extensions.get_designer_cursor", return_value=plot):
@@ -218,6 +217,7 @@ def test_layer_dialog_press_cancel_button(qtbot,
                                           empty_testing_window: MinimalTestWindow,
                                           plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("l1")
     plot.setRange(xRange=(-5.0, 5.0), yRange=(-2.0, 8.0), l1=(-10.0, 100.0), padding=0.0)
     plot.setLabels(bottom="x", top="x", left="y", right="y", l1="l1")
@@ -232,8 +232,7 @@ def test_layer_dialog_press_cancel_button(qtbot,
     assert np.allclose(plot.getViewBox("l1").targetRange()[1], [-10.0, 100.0])
     # Lets change some stuff in the dialog
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     model.setData(model.index(0, _COLUMN_LABEL_TEXT), "New X Label")
     model.setData(model.index(0, _COLUMN_AUTO_RANGE), True)
     model.setData(model.index(1, _COLUMN_LABEL_TEXT), "New Y Label")
@@ -272,11 +271,11 @@ def test_modify_non_empty_layer(qtbot,
                                 empty_testing_window: MinimalTestWindow,
                                 plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("l1")
     default_item = plot.plotItem.addCurve(data_source=UpdateSource())
     layer_item = plot.plotItem.addCurve(data_source=UpdateSource(), layer="l1")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
     # Check current situation
     assert len(plot.plotItem.layers) == 2
     assert len(plot.getViewBox().addedItems) == 1
@@ -284,7 +283,7 @@ def test_modify_non_empty_layer(qtbot,
     assert len(plot.getViewBox("l1").addedItems) == 1
     assert layer_item in plot.getViewBox("l1").addedItems
     # Lets modify the layer in the dialog
-    model, dialog = table_model(qtbot=qtbot, plot=plot)
+    model, dialog = table_model(plot)
     model.setData(model.index(2, _COLUMN_LAYER_ID), "new_id")
     # Apply
     # Pretend we are inside designer and cursor is found
@@ -306,11 +305,11 @@ def test_remove_non_empty_layer(qtbot,
                                 empty_testing_window: MinimalTestWindow,
                                 plot_type: Type[ExPlotWidget]):
     plot = plot_type()
+    qtbot.add_widget(plot)
     plot.add_layer("l1")
     default_item = plot.plotItem.addCurve(data_source=UpdateSource())
     layer_item = plot.plotItem.addCurve(data_source=UpdateSource(), layer="l1")
     empty_testing_window.setCentralWidget(plot)
-    qtbot.add_widget(empty_testing_window)
     # Check current situation
     assert len(plot.plotItem.layers) == 2
     assert len(plot.getViewBox().addedItems) == 1
@@ -318,7 +317,7 @@ def test_remove_non_empty_layer(qtbot,
     assert len(plot.getViewBox("l1").addedItems) == 1
     assert layer_item in plot.getViewBox("l1").addedItems
     # Remove extra layer
-    _, dialog = table_model(qtbot=qtbot, plot=plot)
+    _, dialog = table_model(plot)
     dialog.table.selectRow(2)
     dialog.remove_btn.click()
     # Pretend we are inside designer and cursor is found

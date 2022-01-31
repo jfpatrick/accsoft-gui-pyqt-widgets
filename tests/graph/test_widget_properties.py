@@ -5,7 +5,7 @@ Tests for widget properties used by the designer plugin.
 import pytest
 import json
 import numpy as np
-from typing import Union
+from typing import Union, Type
 from qtpy import QtGui, QtCore
 from accwidgets.graph import (StaticPlotWidget, ScrollingPlotWidget, CyclicPlotWidget, PointData, CurveData,
                               BarCollectionData, InjectionBarCollectionData)
@@ -14,13 +14,26 @@ from accwidgets.graph.widgets.plotwidget import (XAxisSideOptions, DefaultYAxisS
 from .mock_utils.widget_test_window import MinimalTestWindow
 
 
+@pytest.fixture
+def minimal_test_window_with_widget(qtbot):
+
+    def _wrapper(widget_type: Type):
+        plot = widget_type()
+        qtbot.add_widget(plot)
+        window = MinimalTestWindow(plot=plot)
+        qtbot.add_widget(window)
+        return window
+
+    return _wrapper
+
+
 @pytest.mark.parametrize("widget", [
     ScrollingPlotWidget,
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_title_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_title_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot._set_plot_title(new_val="My title")
     assert window.plot.plotItem.titleLabel.text == "My title"
     assert window.plot._get_plot_title() == "My title"
@@ -31,8 +44,8 @@ def test_title_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_grid_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_grid_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     # Show grid in x direction
     window.plot.gridOrientation = GridOrientationOptions.X
     assert window.plot.plotItem.ctrl.xGridCheck.isChecked()
@@ -59,8 +72,8 @@ def test_grid_property(qtbot, widget):
     ScrollingPlotWidget,
     CyclicPlotWidget,
 ])
-def test_time_line_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_time_line_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot._set_show_time_line(new_val=True)
     assert window.plot._get_show_time_line()
     assert window.plot.plotItem._time_line
@@ -73,8 +86,8 @@ def test_time_line_property(qtbot, widget):
     ScrollingPlotWidget,
     CyclicPlotWidget,
 ])
-def test_time_span_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_time_span_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot._set_left_time_span_boundary(new_val=3.1415)
     assert window.plot._get_left_time_span_boundary() == 3.1415
     assert window.plot.plotItem.plot_config.time_span.left_boundary_offset == 3.1415
@@ -88,8 +101,8 @@ def test_time_span_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_x_axis_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_x_axis_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot.showXAxis = XAxisSideOptions.Hidden
     assert window.plot.showXAxis == XAxisSideOptions.Hidden
     window.plot.showXAxis = XAxisSideOptions.Bottom
@@ -107,8 +120,8 @@ def test_x_axis_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_y_axis_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_y_axis_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot.showYAxis = DefaultYAxisSideOptions.Hidden
     assert window.plot.showYAxis == DefaultYAxisSideOptions.Hidden
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
@@ -126,8 +139,8 @@ def test_y_axis_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_axis_labels_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_axis_labels_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot._set_layer_ids(layers=["0"])
     window.plot.showXAxis = XAxisSideOptions.Bottom
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
@@ -159,8 +172,8 @@ def test_axis_labels_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_axis_ranges_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_axis_ranges_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot.showXAxis = XAxisSideOptions.Bottom
     window.plot.showYAxis = DefaultYAxisSideOptions.Left
     window.plot._set_layer_ids(layers=["0"])
@@ -215,8 +228,8 @@ def test_axis_ranges_property(qtbot, widget):
     CyclicPlotWidget,
     StaticPlotWidget,
 ])
-def test_layer_ids_property(qtbot, widget):
-    window = MinimalTestWindow(plot=widget())
+def test_layer_ids_property(minimal_test_window_with_widget, widget):
+    window = minimal_test_window_with_widget(widget)
     window.plot._set_layer_ids(layers=["custom_layer_0"])
     assert len(window.plot.layerIDs) == 1
     assert window.plot._get_layer_ids() == ["custom_layer_0"]
@@ -241,7 +254,6 @@ def test_layer_ids_property(qtbot, widget):
 def test_push_data_styling_properties(qtbot,
                                       empty_testing_window,
                                       widget):
-    qtbot.add_widget(empty_testing_window)
     plot: Union[ScrollingPlotWidget, CyclicPlotWidget] = widget()
     empty_testing_window.setCentralWidget(plot)
     plot.pushDataItemPenColor = QtGui.QColor(255, 0, 0)
@@ -264,8 +276,8 @@ def test_push_data_styling_properties(qtbot,
 
 def test_replace_data_as_curve_styling_properties(qtbot,
                                                   empty_testing_window):
-    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
     plot.replaceDataItemPenWidth = 3
@@ -287,8 +299,8 @@ def test_replace_data_as_curve_styling_properties(qtbot,
 
 def test_replace_data_as_bargraph_styling_properties(qtbot,
                                                      empty_testing_window):
-    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
     plot.replaceDataItemPenWidth = 3
@@ -312,8 +324,8 @@ def test_replace_data_as_bargraph_styling_properties(qtbot,
 
 def test_replace_data_as_injectionbargraph_styling_properties(qtbot,
                                                               empty_testing_window):
-    qtbot.add_widget(empty_testing_window)
     plot: StaticPlotWidget = StaticPlotWidget()
+    qtbot.add_widget(plot)
     empty_testing_window.setCentralWidget(plot)
     plot.replaceDataItemPenColor = QtGui.QColor(255, 44, 0)
     plot.replaceDataItemPenWidth = 3
