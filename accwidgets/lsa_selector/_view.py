@@ -234,7 +234,7 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
             self._name_filter = None
         elif new_val:
             self._name_filter = QLineEdit(self)
-            self._name_filter.setPlaceholderText("Type context name to filter...")
+            self._name_filter.setPlaceholderText("Type context name to filter…")
             self._name_filter.textEdited.connect(self._on_name_filter_typed)
             self._main_layout.insertWidget(1, self._name_filter)
             self._update_name_filter()

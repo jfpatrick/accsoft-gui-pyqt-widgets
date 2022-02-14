@@ -342,8 +342,8 @@ def test_field_dialog_stops_active_task_on_hide(cancel_running_tasks, qtbot: QtB
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("param_name,expected_hint", [
-    ("test/prop", 'Resolving "test/prop" property structure...'),
-    ("rda3:///test/prop", 'Resolving "rda3:///test/prop" property structure...'),
+    ("test/prop", 'Resolving "test/prop" property structure…'),
+    ("rda3:///test/prop", 'Resolving "rda3:///test/prop" property structure…'),
 ])
 def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot, param_name, expected_hint, event_loop):
 

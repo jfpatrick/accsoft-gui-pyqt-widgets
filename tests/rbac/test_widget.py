@@ -244,7 +244,7 @@ def test_rba_button_adapts_layout_when_moved_to_toolbar_from_another_parent(qtbo
     with qtbot.wait_exposed(another_parent):
         another_parent.show()
     if another_parent.width() >= 300 or another_parent.height() >= 300:
-        pytest.skip("Got unexpected window size. Presumably running in tiling window manager. Skipping...")
+        pytest.skip("Got unexpected window size. Presumably running in tiling window manager. Skipping…")
     assert isinstance(view.layout(), QHBoxLayout)
     assert view._auth_btn.iconSize() == QSize(expected_orig_w, expected_orig_h)
     another_parent.hide()
@@ -355,7 +355,7 @@ def test_rba_button_fills_size_when_added_not_to_toolbar(qtbot: QtBot, another_l
     with qtbot.wait_exposed(parent):
         parent.show()  # Required for resizeEvent to be fired on resize
     if parent.width() >= 300 or parent.height() >= 300:
-        pytest.skip("Got unexpected window size. Presumably running in tiling window manager. Skipping...")
+        pytest.skip("Got unexpected window size. Presumably running in tiling window manager. Skipping…")
     assert view._auth_btn.iconSize() == QSize(94, 94)
     parent.resize(new_w, new_h)
     assert view._auth_btn.iconSize() == QSize(expected_icon_w, expected_icon_h)

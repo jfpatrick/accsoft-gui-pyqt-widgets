@@ -300,7 +300,7 @@ class PlotLayerExtension(WidgetsTaskMenuExtension):
             widget: Plot widget to be associated with the extension.
         """
         super().__init__(widget)
-        self.edit_layer_action = QAction("Edit Axes...", self.widget)
+        self.edit_layer_action = QAction("Edit Axes…", self.widget)
         self.edit_layer_action.triggered.connect(self._edit_curves)
 
     def actions(self):

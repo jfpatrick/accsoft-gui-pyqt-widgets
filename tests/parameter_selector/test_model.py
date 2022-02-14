@@ -748,7 +748,7 @@ def test_extendable_model_row_count(is_loading, rowCount, real_count, is_loading
     (2, Qt.DisplayRole, True, "dev3"),
     (2, Qt.FontRole, True, None),
     (2, Qt.ToolTipRole, True, None),
-    (3, Qt.DisplayRole, True, "Loading more..."),
+    (3, Qt.DisplayRole, True, "Loading more…"),
     (3, Qt.FontRole, True, make_italic_font),
     (3, Qt.ToolTipRole, True, None),
     (4, Qt.DisplayRole, True, None),

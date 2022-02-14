@@ -751,18 +751,18 @@ def test_widget_on_search_requested_noop_with_empty_string(qtbot: QtBot, enable_
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("search_string,expected_hint,expected_lookup", [
-    ("TEST.DEV", "Searching TEST.DEV...", "TEST.DEV"),
-    ("TEST.DEV ", "Searching TEST.DEV...", "TEST.DEV"),
-    (" TEST.DEV", "Searching TEST.DEV...", "TEST.DEV"),
-    ("test/prop", "Searching test...", "test"),
-    ("test/prop ", "Searching test...", "test"),
-    (" test/prop", "Searching test...", "test"),
-    ("test/prop#field", "Searching test...", "test"),
-    ("test/prop#field ", "Searching test...", "test"),
-    (" test/prop#field", "Searching test...", "test"),
-    ("rda3:///test/prop#field", "Searching test...", "test"),
-    ("rda3:///test/prop#field ", "Searching test...", "test"),
-    (" rda3:///test/prop#field", "Searching test...", "test"),
+    ("TEST.DEV", "Searching TEST.DEV…", "TEST.DEV"),
+    ("TEST.DEV ", "Searching TEST.DEV…", "TEST.DEV"),
+    (" TEST.DEV", "Searching TEST.DEV…", "TEST.DEV"),
+    ("test/prop", "Searching test…", "test"),
+    ("test/prop ", "Searching test…", "test"),
+    (" test/prop", "Searching test…", "test"),
+    ("test/prop#field", "Searching test…", "test"),
+    ("test/prop#field ", "Searching test…", "test"),
+    (" test/prop#field", "Searching test…", "test"),
+    ("rda3:///test/prop#field", "Searching test…", "test"),
+    ("rda3:///test/prop#field ", "Searching test…", "test"),
+    (" rda3:///test/prop#field", "Searching test…", "test"),
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])

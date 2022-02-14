@@ -485,7 +485,7 @@ class FieldsDialog(AbstractTableDialog[PropertyEditField, FieldEditorTableModel]
         if not self._resolve_from_param:
             return
         self._update_ui_for_loading(True)
-        self.activity_indicator.hint = f'Resolving "{param}" property structure...'
+        self.activity_indicator.hint = f'Resolving "{param}" property structure…'
         self._active_ccda_task = self._resolve_from_param(param)
         try:
             items, skipped_items = await self._active_ccda_task
@@ -540,7 +540,7 @@ class PropertyFieldExtension(WidgetsTaskMenuExtension):
             widget: widget the extension is associated with.
         """
         super().__init__(widget)
-        self.action = QAction("Edit Contents...", self.widget)
+        self.action = QAction("Edit Contents…", self.widget)
         self.action.triggered.connect(self._open_dialog)
 
     def actions(self):

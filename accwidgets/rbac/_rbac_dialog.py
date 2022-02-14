@@ -98,7 +98,7 @@ class RbaAuthDialogWidget(QWidget):
         self.user_auto_info.setProperty("qss-role", "info")
         self.loc_auto_info.setProperty("qss-role", "info")
         self.activity_stack.setCurrentIndex(self._STACK_NORMAL)
-        self.activity_indicator.hint = "Logging in..."
+        self.activity_indicator.hint = "Logging in…"
 
         if initial_username:
             self.username.setText(initial_username)

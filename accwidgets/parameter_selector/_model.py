@@ -247,7 +247,7 @@ class ExtendableProxyModel(SearchProxyModel):
         if (index.row() == self.rowCount() - 1
                 and self.sourceModel() and cast(SearchResultsModel, self.sourceModel()).is_loading):
             if role == Qt.DisplayRole:
-                return "Loading more..."
+                return "Loading more…"
             elif role == Qt.FontRole:
                 font = cast(QFont, super().data(index, role))
                 font = font or QFont()

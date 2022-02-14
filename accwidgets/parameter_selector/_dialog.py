@@ -241,7 +241,7 @@ class ParameterSelector(QWidget):
         search_prop = device_addr.prop if device_addr else None
         search_field = device_addr.field if self._enable_fields and device_addr else None
 
-        self.activity_indicator.hint = f"Searching {search_device}..."
+        self.activity_indicator.hint = f"Searching {search_device}…"
         self._update_from_status(ParameterSelector.NetworkRequestStatus.IN_PROGRESS)
         self._active_ccda_task = look_up_ccda(search_device)
         self._reset_selected_value()
@@ -313,7 +313,7 @@ class ParameterSelectorDialog(QDialog):
             parent: Owning widget.
         """
         super().__init__(parent)
-        self.setWindowTitle("Select Parameter...")
+        self.setWindowTitle("Select Parameter…")
         layout = QVBoxLayout()
         self._widget = ParameterSelector(parent=self,
                                          enable_protocols=enable_protocols,
