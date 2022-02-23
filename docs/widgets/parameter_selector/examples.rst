@@ -56,7 +56,7 @@ To launch this example from the project root, run:
 
    python examples/parameter_selector/designer_example.py
 
-This is the the same example as `Basic example`_, but integrating with Qt Designer widget, instead of the
+This is the same example as `Basic example`_, but integrating with Qt Designer widget, instead of the
 programmatically created one. The newly selected parameter name is printed to the console.
 
 .. image:: ../../img/examples_paramsel_designer.png

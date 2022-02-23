@@ -1309,7 +1309,7 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
     pushDataItemSymbol: int = Property(SymbolOptions,
                                        fget=ExPlotWidget._get_slot_item_symbol,
                                        fset=ExPlotWidget._set_slot_item_symbol)
-    """Symbol for the item displaying data through the the :meth:`pushData` slot."""
+    """Symbol for the item displaying data through the :meth:`pushData` slot."""
 
     @Slot(float)
     @Slot(int)

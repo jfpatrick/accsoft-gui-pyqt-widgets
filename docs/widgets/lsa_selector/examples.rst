@@ -57,7 +57,7 @@ To launch this example from the project root, run:
 
    python examples/lsa_selector/designer_example.py
 
-This is the the same example as `Basic example`_, but integrating with Qt Designer widget, instead of the
+This is the same example as `Basic example`_, but integrating with Qt Designer widget, instead of the
 programmatically created one. For the sake of example, we are using custom model that does not require
 connection to LSA servers.
 

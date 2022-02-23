@@ -66,7 +66,7 @@ To launch this example from the project root, run:
 
    python examples/app_frame/designer_example.py
 
-This is the the same :class:`~accwidgets.app_frame.ApplicationFrame` example as ``programmatic_example.py``, but
+This is the same :class:`~accwidgets.app_frame.ApplicationFrame` example as ``programmatic_example.py``, but
 integrating with Qt Designer widget, instead of the programmatically created one. By default, it will not enable any
 additional widgets in order to prevent the implicit need to install additional dependencies for other widgets.
 It is possible, however, to enable those in property configuration (see examples below). The ``app.ui`` file was

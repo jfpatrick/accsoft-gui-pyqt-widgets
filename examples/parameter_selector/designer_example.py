@@ -1,5 +1,5 @@
 """
-This is the the same example as basic_example.py, but integrating with Qt Designer widget, instead of the
+This is the same example as basic_example.py, but integrating with Qt Designer widget, instead of the
 programmatically created one. The newly selected parameter name is printed to the console.
 """
 

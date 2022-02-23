@@ -1,5 +1,5 @@
 """
-This is the the same example as basic_example.py, but integrating with Qt Designer widget, instead of the
+This is the same example as basic_example.py, but integrating with Qt Designer widget, instead of the
 programmatically created one. For the sake of example, we are using custom model that does not require connection
 to real devices.
 """

@@ -226,7 +226,7 @@ class CyclicPlotCurve(LivePlotCurve):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
-        point will be added if the the new point exceeds the current time
+        point will be added if the new point exceeds the current time
         (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.time_span.start
@@ -242,7 +242,7 @@ class CyclicPlotCurve(LivePlotCurve):
         """Update the displayed new curve with clipping
 
         Updates the data displayed with the new curves data item. A temporary
-        point will be added if the the new point exceeds the current time
+        point will be added if the new point exceeds the current time
         (because of e.g. inaccurate timestamp)
         """
         start = self._parent_plot_item.last_timestamp - self._parent_plot_item.time_span.time_span.size
