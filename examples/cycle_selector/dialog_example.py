@@ -6,7 +6,7 @@ unless the dialog has been cancelled.
 
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QPushButton
-from accwidgets.pls import PlsSelectorDialog
+from accwidgets.cycle_selector import CycleSelectorDialog
 from accwidgets.qt import exec_app_interruptable
 
 
@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("PlsSelector dialog example")
+        self.setWindowTitle("CycleSelector dialog example")
 
         btn = QPushButton("Press to open dialog")
         btn.clicked.connect(self._open_dialog)
@@ -26,9 +26,9 @@ class MainWindow(QMainWindow):
         self.resize(100, 50)
 
     def _open_dialog(self):
-        dialog = PlsSelectorDialog(parent=self)
-        if dialog.exec_() == PlsSelectorDialog.Accepted:
-            print(f"New selector: {dialog.value}")
+        dialog = CycleSelectorDialog(parent=self)
+        if dialog.exec_() == CycleSelectorDialog.Accepted:
+            print(f"New cycle: {dialog.value}")
 
 
 if __name__ == "__main__":

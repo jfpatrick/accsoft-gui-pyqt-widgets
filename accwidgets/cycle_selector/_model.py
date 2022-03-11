@@ -6,14 +6,14 @@ from typing import Optional, List, Mapping, DefaultDict, cast
 from qtpy.QtCore import QObject
 
 
-class PlsSelectorConnectionError(Exception):
+class CycleSelectorConnectionError(Exception):
     """
     Error raised when querying CCDB fails.
     """
     pass
 
 
-class PlsSelectorModel(QObject):
+class CycleSelectorModel(QObject):
 
     def __init__(self, ccda: Optional[pyccda.AsyncAPI] = None, parent: Optional[QObject] = None):
         """
@@ -40,7 +40,7 @@ class PlsSelectorModel(QObject):
             raise
         except Exception as e:  # noqa: B902
             # TODO: When PyCCDA fixes its exception to abstract it away from urllib3 implementation, we should catch it instead of general one
-            raise PlsSelectorConnectionError(e) from e
+            raise CycleSelectorConnectionError(e) from e
 
         domains = [d async for d in pagination]
         dict_data = cast(DefaultDict[str, DefaultDict[str, List[str]]], defaultdict(functools.partial(defaultdict, dict)))

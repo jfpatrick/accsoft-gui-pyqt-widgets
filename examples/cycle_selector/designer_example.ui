@@ -11,12 +11,12 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>PlsSelector Qt Designer example</string>
+   <string>CycleSelector Qt Designer example</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="PlsSelector" name="widget">
+     <widget class="CycleSelector" name="widget">
       <property name="toolTip">
        <string/>
       </property>
@@ -30,9 +30,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PlsSelector</class>
+   <class>CycleSelector</class>
    <extends>QWidget</extends>
-   <header>accwidgets.pls</header>
+   <header>accwidgets.cycle_selector</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -7,7 +7,7 @@ CycleSelector widget in a popup.
 
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QToolBar, QLabel, QToolButton
-from accwidgets.pls import PlsSelectorAction
+from accwidgets.cycle_selector import CycleSelectorAction
 from accwidgets.qt import exec_app_interruptable
 
 
@@ -15,12 +15,12 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("PlsSelector popup action example")
+        self.setWindowTitle("CycleSelector popup action example")
         toolbar = QToolBar()
         self.addToolBar(toolbar)
 
         self.label = QLabel()
-        action = PlsSelectorAction(parent=self) #, text="Choose PLS")
+        action = CycleSelectorAction(parent=self)
         action.valueChanged.connect(self.update_label)
 
         btn = QToolButton(self)
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self.update_label(None)
 
     def update_label(self, val: str):
-        self.label.setText(f"Selected PLS: {val or None}")
+        self.label.setText(f"Selected cycle: {val or None}")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 from typing import Optional, Tuple
 from qtpy.QtCore import Signal
-from ._widget import PlsSelector
-from ._model import PlsSelectorModel
+from ._widget import CycleSelector
+from ._model import CycleSelectorModel
 
 
-class PlsSelectorWrapper:
+class CycleSelectorWrapper:
 
     valueChanged = Signal(str)
     """
@@ -12,16 +12,16 @@ class PlsSelectorWrapper:
     ``DOMAIN.GROUP.LINE``.
     """
 
-    def __init__(self, model: Optional[PlsSelectorModel] = None):
+    def __init__(self, model: Optional[CycleSelectorModel] = None):
         super().__init__()
-        self._pls = PlsSelector(model=model)
-        self._pls.valueChanged.connect(self.valueChanged)
+        self._sel = CycleSelector(model=model)
+        self._sel.valueChanged.connect(self.valueChanged)
 
     def _get_value(self) -> Optional[Tuple[str, str, str]]:
-        return self._pls.value
+        return self._sel.value
 
     def _set_value(self, new_val: Optional[Tuple[str, str, str]]):
-        self._pls.value = new_val
+        self._sel.value = new_val
 
     value = property(fget=_get_value, fset=_set_value)
     """
@@ -32,10 +32,10 @@ class PlsSelectorWrapper:
     """
 
     def _get_only_users(self) -> bool:
-        return self._pls.onlyUsers
+        return self._sel.onlyUsers
 
     def _set_only_users(self, new_val: bool):
-        self._pls.onlyUsers = new_val
+        self._sel.onlyUsers = new_val
 
     onlyUsers = property(fget=_get_only_users, fset=_set_only_users)
     """
@@ -48,10 +48,10 @@ class PlsSelectorWrapper:
     """
 
     def _get_allow_all_user(self) -> bool:
-        return self._pls.allowAllUser
+        return self._sel.allowAllUser
 
     def _set_allow_all_user(self, new_val: bool):
-        self._pls.allowAllUser = new_val
+        self._sel.allowAllUser = new_val
 
     allowAllUser = property(fget=_get_allow_all_user, fset=_set_allow_all_user)
     """
@@ -64,10 +64,10 @@ class PlsSelectorWrapper:
     """
 
     def _get_require_selector(self) -> bool:
-        return self._pls.requireSelector
+        return self._sel.requireSelector
 
     def _set_require_selector(self, new_val: bool):
-        self._pls.requireSelector = new_val
+        self._sel.requireSelector = new_val
 
     requireSelector = property(fget=_get_require_selector, fset=_set_require_selector)
     """
@@ -79,10 +79,10 @@ class PlsSelectorWrapper:
     """
 
     def _get_enforced_domain(self) -> Optional[str]:
-        return self._pls.enforcedDomain
+        return self._sel.enforcedDomain
 
     def _set_enforced_domain(self, new_val: Optional[str]):
-        self._pls.enforcedDomain = new_val
+        self._sel.enforcedDomain = new_val
 
     enforcedDomain = property(fget=_get_enforced_domain, fset=_set_enforced_domain)
     """

@@ -6,30 +6,30 @@ UI controls.
 
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout
-from accwidgets.pls import PlsSelector, PlsSelectorModel, PlsSelectorConnectionError
+from accwidgets.cycle_selector import CycleSelector, CycleSelectorModel, CycleSelectorConnectionError
 from accwidgets.qt import exec_app_interruptable
 
 
-class ErrorModel(PlsSelectorModel):
+class ErrorModel(CycleSelectorModel):
 
     async def fetch(self):
-        raise PlsSelectorConnectionError("Sample error")
+        raise CycleSelectorConnectionError("Sample error")
 
 
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("PlsSelector error example")
+        self.setWindowTitle("CycleSelector error example")
 
-        pls_selector = PlsSelector(parent=self, model=ErrorModel())
+        selector = CycleSelector(parent=self, model=ErrorModel())
 
-        self.pls = pls_selector
+        self.selector = selector
 
         # Create some margin to the window edges
         self.setCentralWidget(QWidget())
         self.centralWidget().setLayout(QHBoxLayout())
-        self.centralWidget().layout().addWidget(pls_selector)
+        self.centralWidget().layout().addWidget(selector)
         self.resize(400, 70)
 
 

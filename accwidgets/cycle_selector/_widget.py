@@ -16,10 +16,10 @@ from qtpy.QtWidgets import QWidget, QComboBox, QFrame, QCheckBox, QStackedWidget
 from accwidgets.qt import ActivityIndicator
 from accwidgets._designer_base import is_designer
 from accwidgets._async_utils import install_asyncio_event_loop
-from ._model import PlsSelectorModel, PlsSelectorConnectionError
+from ._model import CycleSelectorModel, CycleSelectorConnectionError
 
 
-class PlsSelector(QWidget):
+class CycleSelector(QWidget):
 
     valueChanged = Signal(str)
     """
@@ -27,7 +27,7 @@ class PlsSelector(QWidget):
     ``DOMAIN.GROUP.LINE``.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None, model: Optional[PlsSelectorModel] = None):
+    def __init__(self, parent: Optional[QWidget] = None, model: Optional[CycleSelectorModel] = None):
         """
         Widget for choosing control system "selector" (sometimes called timing user).
 
@@ -37,8 +37,8 @@ class PlsSelector(QWidget):
         """
         super().__init__(parent)
 
-        self._pls_value: Optional[Tuple[str, str, str]] = None
-        self._last_used_pls_value: Optional[Tuple[str, str, str]] = None
+        self._sel_value: Optional[Tuple[str, str, str]] = None
+        self._last_used_sel_value: Optional[Tuple[str, str, str]] = None
         self._only_users = False
         self._allow_all_user = True
         self._require_selector = False
@@ -46,12 +46,12 @@ class PlsSelector(QWidget):
 
         self._enforced_domain: Optional[str] = None
 
-        self._model = model or PlsSelectorModel()
+        self._model = model or CycleSelectorModel()
         self._orig_data: List[Tuple[str, List[Tuple[str, List[str]]]]] = []
         self._filtered_data: Optional[List[Tuple[str, List[Tuple[str, List[str]]]]]] = None
         self._active_ccda_task: Optional[Future] = None
 
-        self._ui = PlsSelectorUi(self)
+        self._ui = CycleSelectorUi(self)
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._ui)
@@ -62,7 +62,7 @@ class PlsSelector(QWidget):
         self._ui.machine_combo.setModel(QStringListModel())
         # We do not use models for other 2 comboboxes because model cannot be used well with separators
 
-        self._ui.activity.hint = "Loading PLS information…"
+        self._ui.activity.hint = "Loading available selectors…"
 
         self._update_no_selector_checkbox()
         self._toggle_selector(self._ui.no_selector.checkState())
@@ -77,13 +77,13 @@ class PlsSelector(QWidget):
 
         install_asyncio_event_loop()
 
-    def _get_pls_value(self) -> Optional[Tuple[str, str, str]]:
-        if is_designer() and self._pls_value:
+    def _get_sel_value(self) -> Optional[Tuple[str, str, str]]:
+        if is_designer() and self._sel_value:
             # Show as string in Qt Designer
-            return pls_tuple_to_str(self._pls_value)  # type: ignore
-        return self._pls_value
+            return selector_tuple_to_str(self._sel_value)  # type: ignore
+        return self._sel_value
 
-    def _set_pls_value(self, new_val: Union[str, Tuple[str, str, str], None]):
+    def _set_sel_value(self, new_val: Union[str, Tuple[str, str, str], None]):
         if is_designer() and new_val == "":
             new_val = None
         if new_val is None and self.requireSelector:
@@ -102,18 +102,18 @@ class PlsSelector(QWidget):
         else:
             processed_val = new_val
         if self.enforcedDomain is not None and (processed_val is not None and processed_val[0] != self.enforcedDomain):
-            sel = pls_tuple_to_str(processed_val) if processed_val is not None else processed_val
-            raise ValueError(f'Given PLS selector "{sel}" does not belong to the '
+            sel = selector_tuple_to_str(processed_val) if processed_val is not None else processed_val
+            raise ValueError(f'Given cycle selector "{sel}" does not belong to the '
                              f'enforced domain "{self.enforcedDomain}"')
-        if processed_val == self._pls_value:
+        if processed_val == self._sel_value:
             return
-        self._pls_value = processed_val
+        self._sel_value = processed_val
         self._update_no_selector_checkbox()
         if self._orig_data:
             self._render_data_if_needed()
         self._notify_new_selector()
 
-    value: Optional[Tuple[str, str, str]] = Property(str, _get_pls_value, _set_pls_value)
+    value: Optional[Tuple[str, str, str]] = Property(str, _get_sel_value, _set_sel_value)
     """
     Currently selected value. Updating this attribute will update the corresponding UI.
 
@@ -121,10 +121,10 @@ class PlsSelector(QWidget):
               Also, when :attr:`enforcedDomain` is set, only values of the same domain can be assigned.
     """
 
-    def _get_model(self) -> PlsSelectorModel:
+    def _get_model(self) -> CycleSelectorModel:
         return self._model
 
-    def _set_model(self, new_val: PlsSelectorModel):
+    def _set_model(self, new_val: CycleSelectorModel):
         if new_val == self._model:
             return
         self._disconnect_model(self._model)
@@ -183,7 +183,7 @@ class PlsSelector(QWidget):
     def _set_require_selector(self, new_val: bool):
         if new_val == self.requireSelector:
             return
-        if new_val and self._pls_value is None:
+        if new_val and self._sel_value is None:
             if is_designer():
                 if self._orig_data:
                     # In Qt Designer, don't throw errors, try to come up with any valid selector
@@ -211,8 +211,8 @@ class PlsSelector(QWidget):
     def _set_enforced_domain(self, new_val: Optional[str]):
         if new_val == self.enforcedDomain:
             return
-        if not is_designer() and new_val and self._pls_value is not None and self._pls_value[0] != new_val.upper():
-            raise ValueError(f'Cannot set enforcedDomain to {new_val}, because current value "{pls_tuple_to_str(self._pls_value)}" is incompatible')
+        if not is_designer() and new_val and self._sel_value is not None and self._sel_value[0] != new_val.upper():
+            raise ValueError(f'Cannot set enforcedDomain to {new_val}, because current value "{selector_tuple_to_str(self._sel_value)}" is incompatible')
 
         self._enforced_domain = new_val.upper() if new_val else None
         self._update_machine_ui()
@@ -272,7 +272,7 @@ class PlsSelector(QWidget):
             if not self._give_up_ui_on_cancel:
                 self._set_mode(_STACK_COMPLETE)
             return
-        except PlsSelectorConnectionError as e:
+        except CycleSelectorConnectionError as e:
             self._show_error(str(e))
             return
 
@@ -294,7 +294,7 @@ class PlsSelector(QWidget):
 
     def _render_data_if_needed(self):
         try:
-            machine, group, line = self._pls_value
+            machine, group, line = self._sel_value
         except TypeError:
             machine, group, line = None, None, None
 
@@ -382,7 +382,7 @@ class PlsSelector(QWidget):
         self._ui.group_combo.setCurrentIndex(new_group_idx)
         self._repopulate_lines_combo(machine_idx=index, group_idx=new_group_idx)
         try:
-            self._pls_value = self._reconstruct_selector()
+            self._sel_value = self._reconstruct_selector()
         except ValueError:
             return
         self._notify_new_selector()
@@ -391,14 +391,14 @@ class PlsSelector(QWidget):
         self._repopulate_lines_combo(machine_idx=self._ui.machine_combo.currentIndex(), group_idx=index)
         self._ui.line_combo.setCurrentIndex(0)
         try:
-            self._pls_value = self._reconstruct_selector()
+            self._sel_value = self._reconstruct_selector()
         except ValueError:
             return
         self._notify_new_selector()
 
     def _on_line_selected(self):
         try:
-            self._pls_value = self._reconstruct_selector()
+            self._sel_value = self._reconstruct_selector()
         except ValueError:
             return
         self._notify_new_selector()
@@ -434,21 +434,21 @@ class PlsSelector(QWidget):
             pass
 
     def _notify_new_selector(self):
-        if self._pls_value == self._last_used_pls_value:
+        if self._sel_value == self._last_used_sel_value:
             return
 
-        self._last_used_pls_value = self._pls_value
-        new_selector = pls_tuple_to_str(self._pls_value) if self._pls_value is not None else None
+        self._last_used_sel_value = self._sel_value
+        new_selector = selector_tuple_to_str(self._sel_value) if self._sel_value is not None else None
         self.valueChanged.emit(new_selector)
 
     def _show_error(self, msg: str):
         self._set_mode(_STACK_ERROR)
         self._ui.error.setText(msg)
 
-    def _connect_model(self, model: PlsSelectorModel):
+    def _connect_model(self, model: CycleSelectorModel):
         self._model.setParent(self)
 
-    def _disconnect_model(self, model: PlsSelectorModel):
+    def _disconnect_model(self, model: CycleSelectorModel):
         if model.parent() is self:
             model.setParent(None)
             model.deleteLater()
@@ -465,7 +465,7 @@ class PlsSelector(QWidget):
 
     def _update_no_selector_checkbox(self):
         blocker = QSignalBlocker(self._ui.no_selector)
-        self._ui.no_selector.setChecked(self._pls_value is None)
+        self._ui.no_selector.setChecked(self._sel_value is None)
         blocker.unblock()
         self._update_frame_ui()
 
@@ -494,7 +494,7 @@ class PlsSelector(QWidget):
         return machine, group, line
 
 
-class PlsSelectorUi(QWidget):
+class CycleSelectorUi(QWidget):
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
@@ -506,7 +506,7 @@ class PlsSelectorUi(QWidget):
         self.stack: QStackedWidget = None
         self.error: QLabel = None
         self.activity: ActivityIndicator = None  # type: ignore
-        loadUi(Path(__file__).parent / "pls.ui", self)
+        loadUi(Path(__file__).parent / "selector.ui", self)
 
 
 _STACK_COMPLETE = 0
@@ -582,8 +582,8 @@ def cmp_values(lhs: str, rhs: str):
     return (lhs > rhs) - (lhs < rhs)
 
 
-def pls_tuple_to_str(pls: Tuple[str, str, str]) -> str:
-    return ".".join(pls)
+def selector_tuple_to_str(sel: Tuple[str, str, str]) -> str:
+    return ".".join(sel)
 
 
 GROUP_NAME_USER = "USER"

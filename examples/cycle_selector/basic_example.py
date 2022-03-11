@@ -5,7 +5,7 @@ printed to the console.
 
 import sys
 from qtpy.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout
-from accwidgets.pls import PlsSelector
+from accwidgets.cycle_selector import CycleSelector
 from accwidgets.qt import exec_app_interruptable
 
 
@@ -13,16 +13,16 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setWindowTitle("PlsSelector simple example")
+        self.setWindowTitle("CycleSelector simple example")
 
-        pls_selector = PlsSelector(parent=self)
-        pls_selector.valueChanged.connect(lambda sel: print(f"New selector: {sel}"))
-        self.pls = pls_selector
+        selector = CycleSelector(parent=self)
+        selector.valueChanged.connect(lambda sel: print(f"New cycle: {sel}"))
+        self.selector = selector
 
         # Create some margin to the window edges
         self.setCentralWidget(QWidget())
         self.centralWidget().setLayout(QHBoxLayout())
-        self.centralWidget().layout().addWidget(pls_selector)
+        self.centralWidget().layout().addWidget(selector)
         self.resize(400, 70)
 
 

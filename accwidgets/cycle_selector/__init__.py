@@ -7,15 +7,15 @@ from accwidgets._api import assert_dependencies as _assert_dependencies
 _assert_dependencies(__file__)
 
 
-from ._model import PlsSelectorModel, PlsSelectorConnectionError
-from ._widget import PlsSelector
-from ._dialog import PlsSelectorDialog
-from ._action import PlsSelectorAction
+from ._model import CycleSelectorModel, CycleSelectorConnectionError
+from ._widget import CycleSelector
+from ._dialog import CycleSelectorDialog
+from ._action import CycleSelectorAction
 
 
 from accwidgets._api import mark_public_api as _mark_public_api
-_mark_public_api(PlsSelectorConnectionError, __name__)
-_mark_public_api(PlsSelectorModel, __name__)
-_mark_public_api(PlsSelector, __name__)
-_mark_public_api(PlsSelectorDialog, __name__)
-_mark_public_api(PlsSelectorAction, __name__)
+_mark_public_api(CycleSelectorConnectionError, __name__)
+_mark_public_api(CycleSelectorModel, __name__)
+_mark_public_api(CycleSelector, __name__)
+_mark_public_api(CycleSelectorDialog, __name__)
+_mark_public_api(CycleSelectorAction, __name__)
