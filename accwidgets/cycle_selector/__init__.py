@@ -11,6 +11,7 @@ from ._model import CycleSelectorModel, CycleSelectorConnectionError
 from ._widget import CycleSelector
 from ._dialog import CycleSelectorDialog
 from ._action import CycleSelectorAction
+from ._data import CycleSelectorValue
 
 
 from accwidgets._api import mark_public_api as _mark_public_api
@@ -19,3 +20,4 @@ _mark_public_api(CycleSelectorModel, __name__)
 _mark_public_api(CycleSelector, __name__)
 _mark_public_api(CycleSelectorDialog, __name__)
 _mark_public_api(CycleSelectorAction, __name__)
+_mark_public_api(CycleSelectorValue, __name__)

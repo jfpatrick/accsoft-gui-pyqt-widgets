@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, Union
 from qtpy.QtWidgets import QAction, QMenu, QWidgetAction, QWidget, QVBoxLayout
 from qtpy.QtCore import QEvent
 from qtpy.QtGui import QIcon
 from ._model import CycleSelectorModel
 from ._common import CycleSelectorWrapper
-from ._widget import selector_tuple_to_str
+from ._data import CycleSelectorValue
 
 
 class CycleSelectorAction(QAction, CycleSelectorWrapper):
@@ -41,12 +41,12 @@ class CycleSelectorAction(QAction, CycleSelectorWrapper):
         else:
             # Make the title dynamic, depending on the selected value:
             self._sel.valueChanged.connect(self._update_title)
-            self._update_title(selector_tuple_to_str(self._sel.value) if self._sel.value is not None else "")
+            self._update_title(self._sel.value)
         if icon:
             self.setIcon(icon)
         self.setMenu(menu)
 
-    def _update_title(self, val: str):
+    def _update_title(self, val: Union[str, CycleSelectorValue, None]):
         self.setText(f"Selector: {val or '---'}")
 
 

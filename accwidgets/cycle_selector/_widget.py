@@ -6,7 +6,7 @@ try:
     from asyncio import create_task
 except ImportError:
     from asyncio import ensure_future as create_task  # type: ignore
-from typing import Optional, List, cast, Union, Tuple, Dict
+from typing import Optional, List, cast, Union, Dict, Tuple
 from pathlib import Path
 from copy import deepcopy
 from qtpy.uic import loadUi
@@ -17,6 +17,7 @@ from accwidgets.qt import ActivityIndicator
 from accwidgets._designer_base import is_designer
 from accwidgets._async_utils import install_asyncio_event_loop
 from ._model import CycleSelectorModel, CycleSelectorConnectionError
+from ._data import CycleSelectorValue
 
 
 class CycleSelector(QWidget):
@@ -37,8 +38,8 @@ class CycleSelector(QWidget):
         """
         super().__init__(parent)
 
-        self._sel_value: Optional[Tuple[str, str, str]] = None
-        self._last_used_sel_value: Optional[Tuple[str, str, str]] = None
+        self._sel_value: Optional[CycleSelectorValue] = None
+        self._last_used_sel_value: Optional[CycleSelectorValue] = None
         self._only_users = False
         self._allow_all_user = True
         self._require_selector = False
@@ -77,33 +78,33 @@ class CycleSelector(QWidget):
 
         install_asyncio_event_loop()
 
-    def _get_sel_value(self) -> Optional[Tuple[str, str, str]]:
+    def _get_sel_value(self) -> Optional[CycleSelectorValue]:
         if is_designer() and self._sel_value:
             # Show as string in Qt Designer
-            return selector_tuple_to_str(self._sel_value)  # type: ignore
+            return str(self._sel_value)  # type: ignore
         return self._sel_value
 
-    def _set_sel_value(self, new_val: Union[str, Tuple[str, str, str], None]):
+    def _set_sel_value(self, new_val: Union[str, CycleSelectorValue, None]):
         if is_designer() and new_val == "":
             new_val = None
         if new_val is None and self.requireSelector:
             raise ValueError(f"Cannot accept {new_val} selector because requireSelector is set to True")
-        processed_val: Optional[Tuple[str, str, str]]
+        processed_val: Optional[CycleSelectorValue]
         if isinstance(new_val, str):
-            tuple_val = new_val.split(".")
-            if len(tuple_val) != 3 or any(len(v) == 0 for v in tuple_val):
+            list_val = new_val.split(".")
+            if len(list_val) != 3 or any(len(v) == 0 for v in list_val):
                 if is_designer():
                     # User might be still typing, we should not raise exceptions here. Just bail out and hope for correct
                     # value on the next keystrokes.
                     return
                 else:
                     raise ValueError(f'Incorrect string format passed ("{new_val}"), must be of format DOMAIN.GROUP.LINE')
-            processed_val = cast(Tuple[str, str, str], tuple(tuple_val))
+            machine, group, line = tuple(list_val)
+            processed_val = CycleSelectorValue(domain=machine, group=group, line=line)
         else:
             processed_val = new_val
-        if self.enforcedDomain is not None and (processed_val is not None and processed_val[0] != self.enforcedDomain):
-            sel = selector_tuple_to_str(processed_val) if processed_val is not None else processed_val
-            raise ValueError(f'Given cycle selector "{sel}" does not belong to the '
+        if self.enforcedDomain is not None and (processed_val is not None and processed_val.domain != self.enforcedDomain):
+            raise ValueError(f'Given cycle selector "{processed_val}" does not belong to the '
                              f'enforced domain "{self.enforcedDomain}"')
         if processed_val == self._sel_value:
             return
@@ -113,7 +114,7 @@ class CycleSelector(QWidget):
             self._render_data_if_needed()
         self._notify_new_selector()
 
-    value: Optional[Tuple[str, str, str]] = Property(str, _get_sel_value, _set_sel_value)
+    value: Optional[CycleSelectorValue] = Property(str, _get_sel_value, _set_sel_value)
     """
     Currently selected value. Updating this attribute will update the corresponding UI.
 
@@ -211,8 +212,8 @@ class CycleSelector(QWidget):
     def _set_enforced_domain(self, new_val: Optional[str]):
         if new_val == self.enforcedDomain:
             return
-        if not is_designer() and new_val and self._sel_value is not None and self._sel_value[0] != new_val.upper():
-            raise ValueError(f'Cannot set enforcedDomain to {new_val}, because current value "{selector_tuple_to_str(self._sel_value)}" is incompatible')
+        if not is_designer() and new_val and self._sel_value is not None and self._sel_value.domain != new_val.upper():
+            raise ValueError(f'Cannot set enforcedDomain to {new_val}, because current value "{self._sel_value}" is incompatible')
 
         self._enforced_domain = new_val.upper() if new_val else None
         self._update_machine_ui()
@@ -293,10 +294,8 @@ class CycleSelector(QWidget):
         return self._filtered_data
 
     def _render_data_if_needed(self):
-        try:
-            machine, group, line = self._sel_value
-        except TypeError:
-            machine, group, line = None, None, None
+        machine, group, line = ((self._sel_value.domain, self._sel_value.group, self._sel_value.line) if self._sel_value
+                                else (None, None, None))
 
         if self.enforcedDomain:
             machine = self.enforcedDomain
@@ -438,8 +437,7 @@ class CycleSelector(QWidget):
             return
 
         self._last_used_sel_value = self._sel_value
-        new_selector = selector_tuple_to_str(self._sel_value) if self._sel_value is not None else None
-        self.valueChanged.emit(new_selector)
+        self.valueChanged.emit(str(self._sel_value) if self._sel_value else "")
 
     def _show_error(self, msg: str):
         self._set_mode(_STACK_ERROR)
@@ -483,7 +481,7 @@ class CycleSelector(QWidget):
             self._active_ccda_task.cancel()
             self._active_ccda_task = None
 
-    def _reconstruct_selector(self, ignore_no_selector: bool = False) -> Optional[Tuple[str, str, str]]:
+    def _reconstruct_selector(self, ignore_no_selector: bool = False) -> Optional[CycleSelectorValue]:
         if not ignore_no_selector and self._ui.no_selector.isChecked():
             return None
         machine = self._ui.machine_combo.currentText()
@@ -491,7 +489,7 @@ class CycleSelector(QWidget):
         line = self._ui.line_combo.currentText()
         if not machine or not group or not line:
             raise ValueError
-        return machine, group, line
+        return CycleSelectorValue(domain=machine, group=group, line=line)
 
 
 class CycleSelectorUi(QWidget):
@@ -580,10 +578,6 @@ def cmp_values(lhs: str, rhs: str):
     if rhs == VALUE_NAME_ALL:
         return 1
     return (lhs > rhs) - (lhs < rhs)
-
-
-def selector_tuple_to_str(sel: Tuple[str, str, str]) -> str:
-    return ".".join(sel)
 
 
 GROUP_NAME_USER = "USER"

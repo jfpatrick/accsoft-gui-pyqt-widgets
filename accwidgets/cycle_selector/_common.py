@@ -1,7 +1,8 @@
-from typing import Optional, Tuple
+from typing import Optional
 from qtpy.QtCore import Signal
 from ._widget import CycleSelector
 from ._model import CycleSelectorModel
+from ._data import CycleSelectorValue
 
 
 class CycleSelectorWrapper:
@@ -17,10 +18,10 @@ class CycleSelectorWrapper:
         self._sel = CycleSelector(model=model)
         self._sel.valueChanged.connect(self.valueChanged)
 
-    def _get_value(self) -> Optional[Tuple[str, str, str]]:
+    def _get_value(self) -> Optional[CycleSelectorValue]:
         return self._sel.value
 
-    def _set_value(self, new_val: Optional[Tuple[str, str, str]]):
+    def _set_value(self, new_val: Optional[CycleSelectorValue]):
         self._sel.value = new_val
 
     value = property(fget=_get_value, fset=_set_value)
