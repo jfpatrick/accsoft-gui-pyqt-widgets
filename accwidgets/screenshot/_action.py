@@ -218,7 +218,6 @@ class ScreenshotAction(QAction):
                     window = None
                 if window is not None:
                     self.source = window
-            QApplication.instance().removeEventFilter(self)  # This is needed only once, remove to improve performance
 
         # Do not call super. In rare cases (e.g. in ApplicationFrame tests) this function can be called after the
         # object is deleted, hence super produces error. But we are expecting False from the super anyway.
