@@ -10,9 +10,8 @@ class CustomAction(QAction):
     pass
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("parent_type", [None, QWidget])
-def test_init(qtbot: QtBot, logbook_model, parent_type):
+def test_init(qtbot: QtBot, logbook_model, parent_type, event_loop):
     parent = None if parent_type is None else parent_type()
     widget = ScreenshotButton(action=ScreenshotAction(model=logbook_model),
                               parent=parent)
@@ -21,9 +20,8 @@ def test_init(qtbot: QtBot, logbook_model, parent_type):
     assert widget.parent() is parent
 
 
-@pytest.mark.asyncio
 @mock.patch("accwidgets.screenshot._model.LogbookModel")
-def test_init_with_implicit_action(_, qtbot: QtBot):
+def test_init_with_implicit_action(_, qtbot: QtBot, event_loop):
     widget = ScreenshotButton()
     qtbot.add_widget(widget)
     assert isinstance(widget.defaultAction(), ScreenshotAction)
@@ -35,8 +33,7 @@ def test_init_with_implicit_action(_, qtbot: QtBot):
     assert widget.defaultAction().receivers(widget.defaultAction().activities_failed) > 0
 
 
-@pytest.mark.asyncio
-def test_init_provided_action_retains_parent(qtbot: QtBot, logbook_model):
+def test_init_provided_action_retains_parent(qtbot: QtBot, logbook_model, event_loop):
     another_parent = QWidget()
     qtbot.add_widget(another_parent)
     widget = ScreenshotButton(action=ScreenshotAction(model=logbook_model, parent=another_parent))
@@ -44,8 +41,7 @@ def test_init_provided_action_retains_parent(qtbot: QtBot, logbook_model):
     assert widget.defaultAction().parent() is another_parent
 
 
-@pytest.mark.asyncio
-def test_set_default_action_provided_action_retains_parent(qtbot: QtBot, logbook_model, qapp):
+def test_set_default_action_provided_action_retains_parent(qtbot: QtBot, logbook_model, qapp, event_loop):
     # Using qapp as parent to avoid premature action destruction in tests which causes segfault
     widget = ScreenshotButton(action=ScreenshotAction(model=logbook_model, parent=qapp))
     qtbot.add_widget(widget)
@@ -57,8 +53,7 @@ def test_set_default_action_provided_action_retains_parent(qtbot: QtBot, logbook
     assert action.parent() is another_parent
 
 
-@pytest.mark.asyncio
-def test_set_default_action_disconnects_old_action(qtbot: QtBot, logbook_model, qapp):
+def test_set_default_action_disconnects_old_action(qtbot: QtBot, logbook_model, qapp, event_loop):
     old_action = ScreenshotAction(model=logbook_model, parent=qapp)
     widget = ScreenshotButton(action=old_action)
     qtbot.add_widget(widget)
@@ -75,8 +70,7 @@ def test_set_default_action_disconnects_old_action(qtbot: QtBot, logbook_model, 
     assert old_action.receivers(old_action.activities_failed) == 0
 
 
-@pytest.mark.asyncio
-def test_set_default_action_connects_new_action(qtbot: QtBot, logbook_model, qapp):
+def test_set_default_action_connects_new_action(qtbot: QtBot, logbook_model, qapp, event_loop):
     widget = ScreenshotButton(action=ScreenshotAction(model=logbook_model, parent=qapp))
     qtbot.add_widget(widget)
     action = ScreenshotAction(model=logbook_model)

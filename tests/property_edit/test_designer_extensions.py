@@ -340,7 +340,6 @@ def test_field_dialog_stops_active_task_on_hide(cancel_running_tasks, qtbot: QtB
     cancel_running_tasks.assert_called_once()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("param_name,expected_hint", [
     ("test/prop", 'Resolving "test/prop" property structure…'),
     ("rda3:///test/prop", 'Resolving "rda3:///test/prop" property structure…'),
@@ -370,7 +369,6 @@ def test_field_dialog_populate_from_param_sets_in_progress_ui(qtbot: QtBot, para
                 assert dialog._active_ccda_task is not None
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("return_any_fields", [True, False])
 def test_field_dialog_populate_from_param_success_sets_ui(qtbot: QtBot, some_fields, return_any_fields, event_loop):
 
@@ -392,7 +390,6 @@ def test_field_dialog_populate_from_param_success_sets_ui(qtbot: QtBot, some_fie
             show_info.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("skipped_items,expected_error", [
     (set(), None),
     ({"f2", "f1"}, "The following fields were not mapped, as their types are unsupported:\n\n- f1\n- f2"),
@@ -418,7 +415,6 @@ def test_field_dialog_populate_from_param_success_notifies_skipped_items(qtbot: 
                 mocked_warning.assert_called_once_with(dialog, "Some items were skipped", expected_error)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("error,expected_message", [
     (TypeError, ""),
     (ValueError, ""),
@@ -438,7 +434,6 @@ def test_field_dialog_populate_from_param_sets_ui_on_error(qtbot: QtBot, expecte
             mocked_warning.assert_called_once_with(dialog, "Error occurred", expected_message)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("prev_loading", [False, True])
 def test_field_dialog_populate_from_param_rolls_back_ui_on_cancel(qtbot: QtBot, prev_loading, event_loop):
 
@@ -476,7 +471,6 @@ def test_field_dialog_hides_ccdb_button_when_parameter_selector_cant_be_imported
     assert dialog.ccdb_btn.isVisible() == expect_show_button
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("import_fails,expect_calls_inner", [
     (False, True),
     (True, False),

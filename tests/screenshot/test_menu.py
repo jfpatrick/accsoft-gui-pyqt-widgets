@@ -29,7 +29,6 @@ def model_provider():
     return _wrapper
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("provider_message,expected_first_text", [
     (None, "Create new entry…"),
     ("", "Create new entry…"),
@@ -37,7 +36,7 @@ def model_provider():
 ])
 @mock.patch("accwidgets.screenshot._menu.make_new_entry_tooltip", return_value="")
 def test_menu_populates_menu_with_loading_item_on_show(_, qtbot: QtBot, provider_message, expected_first_text,
-                                                       model_provider):
+                                                       model_provider, event_loop):
     provider = model_provider(provider_message)
     menu = LogbookMenu(model_provider=provider)
     qtbot.add_widget(menu)
@@ -105,8 +104,7 @@ def test_menu_make_menu_title(event_date, expected_title):
     assert res == expected_title
 
 
-@pytest.mark.asyncio
-def test_menu_cancels_async_task_on_hide(qtbot: QtBot):
+def test_menu_cancels_async_task_on_hide(qtbot: QtBot, event_loop):
     menu = LogbookMenu(model_provider=mock.MagicMock())
     qtbot.add_widget(menu)
     with mock.patch.object(menu, "_cancel_running_tasks") as cancel_running_tasks:
@@ -120,7 +118,6 @@ def test_menu_cancels_async_task_on_hide(qtbot: QtBot):
     menu._cancel_running_tasks()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("provider_message,expected_first_text", [
     (None, "Create new entry…"),
     ("", "Create new entry…"),
@@ -190,7 +187,6 @@ def test_menu_updates_menu_after_successful_load(_, qtbot: QtBot, provider_messa
     menu._cancel_running_tasks()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("provider_message,expected_first_text", [
     (None, "Create new entry…"),
     ("", "Create new entry…"),
@@ -228,7 +224,6 @@ def test_menu_updates_menu_after_failure_to_load(qtbot: QtBot, provider_message,
     menu._cancel_running_tasks()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("provider_message,expected_first_text", [
     (None, "Create new entry…"),
     ("", "Create new entry…"),
@@ -265,7 +260,6 @@ def test_menu_updates_menu_after_cancel_loading(qtbot: QtBot, provider_message, 
     menu._cancel_running_tasks()
 
 
-@pytest.mark.asyncio
 def test_menu_populates_menu_on_show_with_error_when_model_provider_is_not_found(qtbot: QtBot, event_loop):
     container = {"a": QObject()}
     menu = LogbookMenu(model_provider=container["a"])

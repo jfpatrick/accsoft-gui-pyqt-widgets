@@ -11,9 +11,8 @@ from accwidgets.parameter_selector._model import (get_ccda, SearchResultsModel, 
 from ..async_shim import AsyncMock
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.fixture(scope="function")
-def root_model():
+def root_model(event_loop):
     root = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     data = [
@@ -33,13 +32,12 @@ def make_italic_font() -> QFont:
     return font
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("data", [
     None,
     [],
     [("dev", [])],
 ])
-def test_root_model_set_data_resets_model(qtbot: QtBot, data):
+def test_root_model_set_data_resets_model(qtbot: QtBot, data, event_loop):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with qtbot.wait_signal(model.modelReset):
@@ -47,13 +45,12 @@ def test_root_model_set_data_resets_model(qtbot: QtBot, data):
         assert model._data == (data or [])
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("data", [
     None,
     [],
     [("dev", [])],
 ])
-def test_root_model_set_data_cancels_active_requests(data):
+def test_root_model_set_data_cancels_active_requests(data, event_loop):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with mock.patch.object(model, "cancel_active_requests") as cancel_active_requests:
@@ -61,13 +58,12 @@ def test_root_model_set_data_cancels_active_requests(data):
         cancel_active_requests.assert_called_once_with()
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("data", [
     None,
     [],
     [("dev", [])],
 ])
-def test_root_model_set_data_updates_rows_with_first_batch(data):
+def test_root_model_set_data_updates_rows_with_first_batch(data, event_loop):
     model = SearchResultsModel()
     mocked_iterator = mock.MagicMock()
     with mock.patch.object(model, "_trigger_row_update") as trigger_row_update:
@@ -128,7 +124,6 @@ def test_root_model_can_fetch_more(is_loading, iter_exhausted, iter_exists, expe
 
 
 @pytest.mark.skip("QApplication is not created by qtbot at the time when QSelectorEventLoop initialized. It fails")
-@pytest.mark.asyncio
 @pytest.mark.parametrize("is_loading,expect_task_created", [
     (True, False),
     (False, True),
@@ -199,7 +194,6 @@ def test_root_model_set_loading(qtbot: QtBot, initial_val, new_val, expected_val
         assert blocker.args == [expected_val]
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("iter_exists,expect_trigger_rows,expect_request_next_batch", [
     (True, True, True),
     (False, False, False),
@@ -226,7 +220,6 @@ def test_root_model_do_fetch_more_no_iter_noop(iter_exists, expect_request_next_
             async_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
 def test_root_model_do_fetch_more_updates_rows_with_loading_cell(event_loop):
     model = SearchResultsModel()
 
@@ -244,7 +237,6 @@ def test_root_model_do_fetch_more_updates_rows_with_loading_cell(event_loop):
     assert model.is_loading is False
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("batches,expected_data", [
     (
         [
@@ -281,7 +273,6 @@ def test_root_model_do_fetch_more_success(batches, expected_data, event_loop):
         assert model._data == expected_aggregated_data
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("initial_data", [
     [],
     [("dev1", [])],
@@ -683,13 +674,12 @@ def test_extendable_model_can_fetch_more(parent_model_class, parent_returns, exp
     assert model.canFetchMore(QModelIndex()) == expected_result
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("parent_model_class", [
     None,
     SearchProxyModel,
     SearchResultsModel,
 ])
-def test_extendable_model_fetch_more(parent_model_class):
+def test_extendable_model_fetch_more(parent_model_class, event_loop):
     model = ExtendableProxyModel()
     if parent_model_class is not None:
         parent_model = parent_model_class()
@@ -834,7 +824,6 @@ def make_dev_iter_side_effect(*returned_devices):
     return side_effect
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("device_name", ["dev1", "dev2"])
 def test_look_up_ccda_calls_api(device_name, get_ccda_mock, event_loop):
     pagination_iter, get_ccda_res = get_ccda_mock
@@ -843,7 +832,6 @@ def test_look_up_ccda_calls_api(device_name, get_ccda_mock, event_loop):
     get_ccda_res.Device.search.assert_called_once_with(f'name=="*{device_name}*"')
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 def test_look_up_ccda_empty(get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
     pagination_iter.__anext__ = AsyncMock(side_effect=StopAsyncIteration)
@@ -854,7 +842,6 @@ def test_look_up_ccda_empty(get_ccda_mock, event_loop):
     assert results[1] == []
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("returned_device_names,expected_first_bach_names", [
     (["dev1"], ["dev1"]),
     (["dev1", "dev2"], ["dev1", "dev2"]),
@@ -895,7 +882,6 @@ def test_look_up_ccda_exhausted_on_non_first_batch(get_ccda_mock, expected_first
     assert results[1] == [(name, expected_props) for name in expected_first_bach_names]
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("field_names,expected_field_names", [
     (["field1", "field2", "field3"], ["field1", "field2", "field3"]),
     (["field3", "field1", "field2"], ["field1", "field2", "field3"]),
@@ -924,7 +910,6 @@ def test_look_up_ccda_fields_are_ordered(field_names, expected_field_names, get_
     assert results[1] == [("test_device", [("prop1", expected_field_names)])]
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("prop_names,expected_prop_names", [
     (["prop1", "prop2", "prop3"], ["prop1", "prop2", "prop3"]),
     (["prop3", "prop1", "prop2"], ["prop1", "prop2", "prop3"]),
@@ -951,7 +936,6 @@ def test_look_up_ccda_props_are_ordered(prop_names, expected_prop_names, get_ccd
     assert results[1] == [("test_device", [(name, []) for name in expected_prop_names])]
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("device_names,expected_device_batches", [
     (["dev1"], [["dev1"]]),
     (["dev1", "dev2", "dev3", "dev4", "dev5"], [["dev1", "dev2", "dev3", "dev4", "dev5"]]),
@@ -971,7 +955,8 @@ def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expected_de
         returned_devices.append(device_mock)
 
     pagination_iter.__anext__ = AsyncMock(side_effect=make_dev_iter_side_effect(*returned_devices))
-    results = event_loop.run_until_complete(look_up_ccda("test_device"))
+    complete = event_loop.run_until_complete(look_up_ccda("test_device"))
+    results = complete
     assert isinstance(results, tuple)
     assert len(results) == 2
     results_iter = iter(expected_device_batches)
@@ -988,7 +973,6 @@ def test_look_up_ccda_iter_is_yieldable(get_ccda_mock, device_names, expected_de
 
 
 @pytest.mark.skip("QApplication is not created by qtbot at the time when QSelectorEventLoop initialized. It fails")
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 def test_look_up_ccda_batches_in_parallel(get_ccda_mock, event_loop):
     pagination_iter, _ = get_ccda_mock
 
@@ -1039,7 +1023,6 @@ def test_look_up_ccda_batches_in_parallel(get_ccda_mock, event_loop):
     event_loop.run_until_complete(look_up_ccda("test_device"))
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("error_type", [TypeError, ValueError])
 def test_look_up_ccda_does_not_catch_api_exceptions(get_ccda_mock, error_type, event_loop):
     pagination_iter, _ = get_ccda_mock

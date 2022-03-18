@@ -303,7 +303,6 @@ def test_widget_value_setter_succeeds_sets_ui(_, qtbot: QtBot, enable_protocols,
     assert widget.selector_label.text() == expected_label
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("enable_fields,value,expected_search_string", [
     (True, "", ""),
     (True, "test/prop", "test/prop"),
@@ -330,7 +329,7 @@ def test_widget_value_setter_succeeds_sets_ui(_, qtbot: QtBot, enable_protocols,
 ])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, value, expected_search_string,
-                                                          enable_protocols, enable_fields):
+                                                          enable_protocols, enable_fields, event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -343,11 +342,11 @@ def test_widget_value_setter_succeeds_requests_new_search(qtbot: QtBot, value, e
         assert widget.search_edit.text() == expected_search_string
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("initial_val", ["", "test/prop"])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
-def test_widget_value_setter_fails_search_not_requested(qtbot: QtBot, initial_val, enable_protocols, enable_fields):
+def test_widget_value_setter_fails_search_not_requested(qtbot: QtBot, initial_val, enable_protocols, enable_fields,
+                                                        event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -479,7 +478,6 @@ def test_widget_protocol_selection_affects_result(_, qtbot: QtBot, no_proto_text
     assert widget.value == expected_val
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("enable_protocols,enable_fields,proto,selected_dev,selected_prop,selected_field,expected_dev,expected_prop,expected_field,expected_label", [
     (False, True, None, 0, 0, -1, "dev1", "prop1", None, "dev1/prop1"),
     (False, True, None, 1, 0, -1, "dev2", "prop2", None, "dev2/prop2"),
@@ -526,7 +524,7 @@ def test_widget_protocol_selection_affects_result(_, qtbot: QtBot, no_proto_text
 ])
 def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop, proto,
                                                  expected_label, expected_field, expected_prop, expected_dev,
-                                                 enable_protocols, enable_fields):
+                                                 enable_protocols, enable_fields, event_loop):
     data = [
         ("dev1", [("prop1", [])]),
         ("dev2", [("prop2", ["field2"])]),
@@ -551,7 +549,6 @@ def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, sel
     assert widget.selector_label.text() == expected_label
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("enable_protocols,proto,selected_dev,selected_prop,selected_field", [
     (False, None, -1, 0, -1),
     (False, None, 0, -1, -1),
@@ -570,7 +567,7 @@ def test_widget_on_result_changed_sets_new_value(qtbot: QtBot, selected_dev, sel
     (True, "rda3", 3, 0, -1),
 ])
 def test_widget_on_result_changed_fails_to_set_new_value(qtbot: QtBot, selected_dev, selected_field, selected_prop,
-                                                         proto, enable_protocols):
+                                                         proto, enable_protocols, event_loop):
     data = [
         ("dev1", [("prop1", [])]),
         ("dev2", [("prop2", ["field2"])]),
@@ -627,7 +624,6 @@ def test_widget_on_model_loading_changed_controls_aux_indicator(qtbot: QtBot, lo
         stop.assert_called_once_with()
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("text", [
     "",
     "test",
@@ -635,7 +631,7 @@ def test_widget_on_model_loading_changed_controls_aux_indicator(qtbot: QtBot, lo
 ])
 @pytest.mark.parametrize("enable_fields", [True, False])
 @pytest.mark.parametrize("enable_protocols", [True, False])
-def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields):
+def test_widget_start_search_calls_method_with_text(qtbot: QtBot, text, enable_protocols, enable_fields, event_loop):
     widget = ParameterSelector(enable_protocols=enable_protocols,
                                enable_fields=enable_fields,
                                no_protocol_option="")
@@ -731,7 +727,6 @@ def test_widget_cancel_running_tasks(qtbot: QtBot, should_cancel, task_exists, e
     root_model_mock.cancel_active_requests.assert_called_once_with()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("search_string", ["", " ", "  ", "\t", "\n"])
 @pytest.mark.parametrize("enable_protocols", [True, False])
 @pytest.mark.parametrize("enable_fields", [True, False])
@@ -749,7 +744,6 @@ def test_widget_on_search_requested_noop_with_empty_string(qtbot: QtBot, enable_
             assert widget._active_ccda_task is None
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("search_string,expected_hint,expected_lookup", [
     ("TEST.DEV", "Searching TEST.DEV…", "TEST.DEV"),
     ("TEST.DEV ", "Searching TEST.DEV…", "TEST.DEV"),
@@ -796,7 +790,6 @@ def test_widget_on_search_requested_sets_in_progress_ui(qtbot: QtBot, enable_pro
                 assert widget._active_ccda_task is not None
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("prev_status,expected_new_status", [
     (ParameterSelector.NetworkRequestStatus.COMPLETE, ParameterSelector.NetworkRequestStatus.COMPLETE),
     (ParameterSelector.NetworkRequestStatus.FAILED, ParameterSelector.NetworkRequestStatus.FAILED),
@@ -828,7 +821,6 @@ def test_widget_on_search_requested_rolls_back_ui_on_cancel(qtbot: QtBot, enable
             assert widget.err_label.text() == "Start by typing the device name into the field above!"
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("prev_status", [
     ParameterSelector.NetworkRequestStatus.COMPLETE,
     ParameterSelector.NetworkRequestStatus.FAILED,
@@ -865,7 +857,6 @@ def test_widget_on_search_requested_sets_ui_on_error(qtbot: QtBot, enable_protoc
             assert widget.results_group.title() == orig_results_name
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("prev_status", [
     ParameterSelector.NetworkRequestStatus.COMPLETE,
     ParameterSelector.NetworkRequestStatus.FAILED,
@@ -910,7 +901,6 @@ def test_widget_on_search_requested_success_sets_ui(qtbot: QtBot, enable_protoco
             root_model.set_data.assert_called_once_with(mocked_iterator, results)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("prev_status", [
     ParameterSelector.NetworkRequestStatus.COMPLETE,
     ParameterSelector.NetworkRequestStatus.FAILED,
@@ -945,7 +935,6 @@ def test_widget_on_search_requested_success_selects_when_only_result(qtbot: QtBo
             mocked_proxy.update_selection.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("search_string,expect_dev,expect_prop,expect_field", [
     ("nonexisting", -1, -1, -1),
     ("dev1", 0, -1, -1),
@@ -1010,7 +999,6 @@ def test_dialog_value_getter(value, qtbot: QtBot, val, enable_protocols):
     assert dialog.value == val
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("enable_protocols,initial_val,expected_val", [
     (False, "", ""),
     (False, "test/prop", "test/prop"),
@@ -1021,7 +1009,7 @@ def test_dialog_value_getter(value, qtbot: QtBot, val, enable_protocols):
     (True, "test/prop#field", "test/prop#field"),
     (True, "rda3:///test/prop#field", "rda3:///test/prop#field"),
 ])
-def test_dialog_initial_value_affects_widget(qtbot: QtBot, enable_protocols, initial_val, expected_val):
+def test_dialog_initial_value_affects_widget(qtbot: QtBot, enable_protocols, initial_val, expected_val, event_loop):
     dialog = ParameterSelectorDialog(enable_protocols=enable_protocols, initial_value=initial_val)
     qtbot.add_widget(dialog)
     assert dialog.value == expected_val
@@ -1049,12 +1037,11 @@ def test_dialog_enable_protocols_affects_widget(_, ParameterSelector, qtbot: QtB
                                               no_protocol_option=expected_no_proto)
 
 
-@pytest.mark.asyncio  # Needed to run underlying event loop, otherwise internal "create_task" call will fail
 @pytest.mark.parametrize("btn,expected_result", [
     (QDialogButtonBox.Ok, QDialog.Accepted),
     (QDialogButtonBox.Cancel, QDialog.Rejected),
 ])
-def test_dialog_buttonbox_trigger(qtbot: QtBot, btn, expected_result):
+def test_dialog_buttonbox_trigger(qtbot: QtBot, btn, expected_result, event_loop):
     dialog = ParameterSelectorDialog()
     qtbot.add_widget(dialog)
     buttons = next(iter(c for c in dialog.children() if isinstance(c, QDialogButtonBox)))

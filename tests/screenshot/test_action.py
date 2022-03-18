@@ -174,7 +174,6 @@ def test_max_menu_days_prop(logbook_model, new_val, qtbot: QtBot):
     assert action.max_menu_days == new_val
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("max_days", [1, 3])
 @pytest.mark.parametrize("max_entries", [1, 5, 10])
 def test_max_menu_props_affect_menu_on_show(max_days, max_entries, logbook_model, qtbot: QtBot, event_loop):
@@ -328,7 +327,6 @@ def test_menu_trigger_takes_screenshot_to_existing_event(menu_event_id, expected
         take_screenshot.assert_called_once_with(expected_screenshot_id)
 
 
-@pytest.mark.asyncio
 @mock.patch("accwidgets.screenshot._action.grab_png_screenshot")
 def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_screenshot, qtbot: QtBot, logbook_model,
                                                                      event_loop):
@@ -350,7 +348,6 @@ def test_take_screenshot_fails_when_no_message_provided_after_prompt(grab_png_sc
     grab_png_screenshot.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id,expected_event_id,expect_create_called,expect_get_called,expect_message_prompt", [
     (None, 123456, True, False, True),
     (-1, -1, False, True, False),
@@ -407,7 +404,6 @@ def test_take_screenshot_remote_call_succeeds(grab_png_screenshot, expect_create
         logbook_model.create_logbook_event.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id,expected_error", [
     (None, "Test create error"),
     (-1, "Test get error"),
@@ -436,7 +432,6 @@ def test_take_screenshot_remote_call_fails(grab_png_screenshot, event_id, qtbot:
     grab_png_screenshot.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id", [None, -1, 0, 1, 10])
 @mock.patch("accwidgets.screenshot._action.grab_png_screenshot")
 def test_take_screenshot_cancel_noop(grab_png_screenshot, event_id, qtbot: QtBot, logbook_model, event_loop):

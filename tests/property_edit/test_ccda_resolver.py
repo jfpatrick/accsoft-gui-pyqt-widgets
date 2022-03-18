@@ -9,7 +9,6 @@ from accwidgets.property_edit.designer.ccda_resolver import (_user_data_for_type
 from ..async_shim import AsyncMock
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("param,expected_error", [
     ("", 'Invalid parameter name ""'),
     ("asd", 'Invalid parameter name "asd"'),
@@ -22,7 +21,6 @@ def test_resolve_from_param_invalid_param(param, expected_error, event_loop):
         map_fields_sorted.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("lookup_prop,expected_error", [
     ("prop1", None),
     ("prop2", r'Device "dev" does not have a property "prop2"'),
@@ -46,7 +44,6 @@ def test_resolve_from_param_no_property_exists(lookup_prop, expected_error, even
                 map_fields_sorted.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("param_name", ["dev/prop1", "dev/prop1#field"])
 def test_resolve_from_param_succeeds(param_name, event_loop):
     with mock.patch("accwidgets.property_edit.designer.ccda_resolver.CCDA") as CCDA:

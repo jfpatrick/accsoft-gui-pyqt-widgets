@@ -279,7 +279,6 @@ def test_logbook_activities_remote_failure_fires_signal(logbook, monkeypatch, ac
     assert blocker.args == ["Test error"]
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["", "Test message"])
 def test_create_logbook_event_succeeds(logbook, message, event_loop):
     _, activities_client = logbook
@@ -290,7 +289,6 @@ def test_create_logbook_event_succeeds(logbook, message, event_loop):
     assert res == activities_client.add_event.return_value
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["", "Test message"])
 def test_create_logbook_event_fails(logbook, message, event_loop):
     _, activities_client = logbook
@@ -300,7 +298,6 @@ def test_create_logbook_event_fails(logbook, message, event_loop):
         event_loop.run_until_complete(model.create_logbook_event(message))
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id", [0, 1, 12552])
 def test_get_logbook_event_succeeds(logbook, event_id, event_loop):
     client, _ = logbook
@@ -311,7 +308,6 @@ def test_get_logbook_event_succeeds(logbook, event_id, event_loop):
     assert res == client.get_event.return_value
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("event_id", [0, 1, 12552])
 def test_get_logbook_event_fails(logbook, event_id, event_loop):
     client, _ = logbook
@@ -321,7 +317,6 @@ def test_get_logbook_event_fails(logbook, event_id, event_loop):
         event_loop.run_until_complete(model.get_logbook_event(event_id))
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("screenshot", [b"", b"\x01\x95\x0e\x1b"])
 @pytest.mark.parametrize("seq,expected_filename", [
     (0, "capture_0.png"),
@@ -336,7 +331,6 @@ def test_attach_screenshot_succeeds(logbook, screenshot, seq, expected_filename,
     event.attach_content.assert_called_once_with(screenshot, "image/png", expected_filename)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("screenshot", [b"", b"\x01\x95\x0e\x1b"])
 @pytest.mark.parametrize("seq", [0, 1, 2])
 def test_attach_screenshot_fails(logbook, screenshot, seq, event_loop):
@@ -348,7 +342,6 @@ def test_attach_screenshot_fails(logbook, screenshot, seq, event_loop):
 
 
 @freeze_time(STATIC_TIME)
-@pytest.mark.asyncio
 @pytest.mark.parametrize("past_days,max_events,returned_events,expected_start_date,expected_result", [
     (0, 0, [], {"year": 2020, "day": 1, "month": 1, "hour": 12, "minute": 30, "second": 55}, []),
     (1, 0, [], {"year": 2019, "day": 31, "month": 12, "hour": 12, "minute": 30, "second": 55}, []),
@@ -380,7 +373,6 @@ def test_get_logbook_events_succeeds(logbook, past_days, max_events, returned_ev
     assert res == expected_result
 
 
-@pytest.mark.asyncio
 def test_get_logbook_events_fails(logbook, event_loop):
     _, activities_client = logbook
     activities_client.get_events.side_effect = LogbookError("Test error", response=mock.MagicMock())
