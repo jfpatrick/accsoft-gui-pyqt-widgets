@@ -200,7 +200,7 @@ class ScreenshotAction(QAction):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() in (QEvent.ApplicationPaletteChange, QEvent.StyleChange, QEvent.PaletteChange):
-            if event.type() == QEvent.ApplicationPaletteChange or watched is self.parentWidget():
+            if event.type() == QEvent.ApplicationPaletteChange or watched is self.parentWidget() or watched is self.menu():
                 # Schedule the update at the end of the event loop, when palette has been synchronized with the updated style
                 # We use a flag, in case this event filter fires many times during the same render frame,
                 # while only a single icon update is needed
@@ -218,7 +218,6 @@ class ScreenshotAction(QAction):
                     window = None
                 if window is not None:
                     self.source = window
-            QApplication.instance().removeEventFilter(self)  # This is needed only once, remove to improve performance
 
         # Do not call super. In rare cases (e.g. in ApplicationFrame tests) this function can be called after the
         # object is deleted, hence super produces error. But we are expecting False from the super anyway.
