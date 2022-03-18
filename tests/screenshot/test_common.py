@@ -15,8 +15,8 @@ def make_activity(val: Union[str, Enum]):
     ((), ""),
     (("TEST1",), "TEST1"),
     (("TEST1", "TEST2"), "TEST1/TEST2"),
-    ((NamedActivity.LHC,), "LHC"),
-    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "LHC/LINAC 4/TEST1"),
+    ((NamedActivity.LHC,), NamedActivity.LHC.value),
+    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), f"{NamedActivity.LHC.value}/{NamedActivity.LINAC4.value}/TEST1"),
 ])
 def test_make_activities_summary(activities, expected_result, logbook_model):
     logbook_model.logbook_activities = tuple(map(make_activity, activities))
@@ -28,8 +28,8 @@ def test_make_activities_summary(activities, expected_result, logbook_model):
     ((), "Capture screenshot to a new entry in <i></i> e-logbook"),
     (("TEST1",), "Capture screenshot to a new entry in <i>TEST1</i> e-logbook"),
     (("TEST1", "TEST2"), "Capture screenshot to a new entry in <i>TEST1/TEST2</i> e-logbook"),
-    ((NamedActivity.LHC,), "Capture screenshot to a new entry in <i>LHC</i> e-logbook"),
-    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), "Capture screenshot to a new entry in <i>LHC/LINAC 4/TEST1</i> e-logbook"),
+    ((NamedActivity.LHC,), f"Capture screenshot to a new entry in <i>{NamedActivity.LHC.value}</i> e-logbook"),
+    ((NamedActivity.LHC, NamedActivity.LINAC4, "TEST1"), f"Capture screenshot to a new entry in <i>{NamedActivity.LHC.value}/{NamedActivity.LINAC4.value}/TEST1</i> e-logbook"),
 ])
 def test_make_new_entry_tooltip(activities, expected_result, logbook_model):
     logbook_model.logbook_activities = tuple(map(make_activity, activities))
