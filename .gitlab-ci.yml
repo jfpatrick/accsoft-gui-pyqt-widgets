@@ -66,7 +66,7 @@ pytest:
     - |
       pip install .[test]
       extra_args=
-      [[ "CURRENT_BASE_IMAGE" == "$ACCPY_IMAGE_CC7_2020_11" ]] && extra_args="--cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets"
+      [[ "$CURRENT_BASE_IMAGE" == "$ACCPY_IMAGE_CC7_2020_11" ]] && extra_args="--cov-report html:coverage --cov-report term-missing:skip-covered --cov=accwidgets"
       OMP_NUM_THREADS=1 run_headless python -m pytest --random-order --junitxml=report.xml $extra_args -vx --color=yes tests/
   artifacts:
     name: coverage-report
