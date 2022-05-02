@@ -9,9 +9,11 @@ _assert_dependencies(__file__)
 
 from ._model import PlsSelectorModel, PlsSelectorConnectionError
 from ._widget import PlsSelector
+from ._dialog import PlsSelectorDialog
 
 
 from accwidgets._api import mark_public_api as _mark_public_api
 _mark_public_api(PlsSelectorConnectionError, __name__)
 _mark_public_api(PlsSelectorModel, __name__)
 _mark_public_api(PlsSelector, __name__)
+_mark_public_api(PlsSelectorDialog, __name__)
