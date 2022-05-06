@@ -5,26 +5,14 @@ from pytestqt.exceptions import TimeoutError as QtBotTimeoutError
 from typing import cast
 from pyrbac import Token
 from pathlib import Path
-from qtpy.QtGui import QColor, QIcon, QWindow
+from qtpy.QtGui import QColor, QIcon
 from qtpy.QtCore import QObject, Qt, QSize, QTimer, QPoint
 from qtpy.QtWidgets import (QToolButton, QToolBar, QVBoxLayout, QHBoxLayout, QWidget, QGridLayout, QSizePolicy,
-                            QWidgetAction, QDialog, QApplication, QStackedWidget)
+                            QWidgetAction, QDialog, QStackedWidget)
 from accwidgets.qt import make_icon
 from accwidgets.rbac import RbaButton, RbaButtonModel, RbaToken
 from accwidgets.rbac._widget import RbaUserButton, RbaAuthButton, RbaAuthPopupWidget, RbaRolePicker
 from .fixtures import make_token
-
-
-@pytest.fixture
-def visible_qwindow(qapp: QApplication):
-
-    def wrapper() -> QWindow:
-        for window in qapp.topLevelWindows():
-            if window.isVisible():
-                return window
-        return None
-
-    return wrapper
 
 
 def test_rba_button_set_model_changes_ownership(qtbot: QtBot):
