@@ -1552,8 +1552,8 @@ class PlotItemLayerCollection:
         identifier = identifier or PlotItemLayer.default_layer_id
         try:
             return self._layers[identifier]
-        except KeyError:
-            raise KeyError(f"No layer with the identifier '{identifier}'")
+        except KeyError as e:
+            raise KeyError(f"No layer with the identifier '{identifier}'") from e
 
     def add(self, layer: PlotItemLayer):
         """

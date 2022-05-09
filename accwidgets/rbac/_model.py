@@ -226,12 +226,12 @@ class RbaButtonModel(QObject):
                 try:
                     new_token = b64decode(new_token)
                 except Exception as e:  # noqa: B902
-                    raise ValueError(f"Failed to decode base64-encoded token: {e!s}")
+                    raise ValueError(f"Failed to decode base64-encoded token: {e!s}") from e
             if isinstance(new_token, bytes):
                 try:
                     new_token = Token(new_token)  # FIXME: This needs a more precices try-catch when pyrbac implements proper exceptions https://issues.cern.ch/browse/RBAC-958
                 except Exception as e:  # noqa: B902
-                    raise ValueError(f"Failed to instantiate RBAC token: {e!s}")
+                    raise ValueError(f"Failed to instantiate RBAC token: {e!s}") from e
             if not isinstance(new_token, Token):
                 raise ValueError(f"Unsupported Token type: {type(new_token).__name__}")
 

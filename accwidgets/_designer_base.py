@@ -696,6 +696,6 @@ def designer_user_error(error_type: Type[Exception], match: Optional[str] = None
                 raise
 
             QMessageBox.warning(parent, "Error occurred", f"This property cannot be used due to error: {e!s}")
-            raise DesignerUserError(e)
+            raise DesignerUserError(e) from e
     else:
         yield
