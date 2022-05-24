@@ -201,7 +201,7 @@ this library, a widget may shortly become available in comrad.""",
         "Typing :: Typed",
     ],
     package_data={
-        "": ["*.ico", "*.png", "*.ui"],
+        "": ["*.ico", "*.png", "*.ui", "py.typed"],
     },
     entry_points={
         "console_scripts": [
