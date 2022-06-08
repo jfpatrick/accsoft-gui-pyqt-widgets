@@ -155,6 +155,7 @@ class ParameterSelector(QWidget):
 
     def hideEvent(self, event: QHideEvent):
         super().hideEvent(event)
+        self.activity_indicator.stopAnimation()
         self._cancel_running_tasks()
 
     def _on_device_search_changed(self, search_string: str):
