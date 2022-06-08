@@ -71,6 +71,7 @@ REQUIREMENTS: Dict[str, List[str]] = {
     ],
     DOC_OPTION: [
         "Sphinx>=3.2.1,<3.5a0",
+        "Jinja2>=3.0,<3.1a0",  # FIXME: This is needed temporarily, because new Jinja2 3.1 release breaks Sphinx 3.x
         "sphobjinv>=2.1,<3a0",
         "sphinxcontrib-napoleon2>=1.0,<2a0",
         "sphinx-autodoc-typehints>=1.12.0,<1.13a0",
