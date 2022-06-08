@@ -9,7 +9,7 @@ from typing import Optional
 from pathlib import Path
 from qtpy.uic import loadUi
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QKeyEvent, QHideEvent
+from qtpy.QtGui import QKeyEvent, QHideEvent, QShowEvent
 from qtpy.QtWidgets import (QWidget, QDialog, QVBoxLayout, QPushButton, QLineEdit, QLabel, QStackedWidget,
                             QGroupBox, QListView, QComboBox, QDialogButtonBox)
 from accwidgets._async_utils import install_asyncio_event_loop
@@ -36,6 +36,7 @@ class ParameterSelector(QWidget):
         self._enable_protocols = enable_protocols
         self._enable_fields = enable_fields
         self._selected_value = make_empty_addr()
+        self._give_up_ui_on_cancel = False
 
         self.search_btn: QPushButton = None
         self.search_edit: QLineEdit = None
@@ -153,9 +154,14 @@ class ParameterSelector(QWidget):
             return
         super().keyPressEvent(event)
 
+    def showEvent(self, event: QShowEvent):
+        self._give_up_ui_on_cancel = False
+        super().showEvent(event)
+
     def hideEvent(self, event: QHideEvent):
         super().hideEvent(event)
         self.activity_indicator.stopAnimation()
+        self._give_up_ui_on_cancel = True
         self._cancel_running_tasks()
 
     def _on_device_search_changed(self, search_string: str):
@@ -250,7 +256,8 @@ class ParameterSelector(QWidget):
         try:
             search_iterator, first_batch = await self._active_ccda_task
         except CancelledError:
-            self._update_from_status(self._prev_search_status)
+            if not self._give_up_ui_on_cancel:
+                self._update_from_status(self._prev_search_status)
             return
         except BaseException as e:  # noqa: B902
             self.err_label.setText(str(e))
