@@ -6,15 +6,12 @@ from pathlib import Path
 from accwidgets._api import disable_assert_cache
 
 
-skip_plugin = False
 try:
     with disable_assert_cache():
         from accwidgets.graph import ScrollingPlotWidget, CyclicPlotWidget, StaticPlotWidget
 except ImportError:
-    skip_plugin = True
-
-
-if not skip_plugin:
+    pass
+else:
     from accwidgets.graph.designer import PlotLayerExtension
     from accwidgets._designer_base import create_plugin, WidgetBoxGroup
 

@@ -6,15 +6,12 @@ from pathlib import Path
 from accwidgets._api import disable_assert_cache
 
 
-skip_plugin = False
 try:
     with disable_assert_cache():
         from accwidgets.property_edit import PropertyEdit
 except ImportError:
-    skip_plugin = True
-
-
-if not skip_plugin:
+    pass
+else:
     from accwidgets._designer_base import create_plugin, WidgetBoxGroup
     from accwidgets.property_edit.designer.designer_extensions import PropertyFieldExtension
 
