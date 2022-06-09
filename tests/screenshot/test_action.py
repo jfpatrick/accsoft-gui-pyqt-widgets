@@ -288,6 +288,7 @@ def test_sets_window_as_source_on_show_when_none_inside_parent_widget(qtbot: QtB
     qtbot.wait_until(check_status)
 
 
+@pytest.mark.skip("Flaky test")
 def test_does_not_set_anything_as_source_on_show_when_no_window_exists(qtbot: QtBot, logbook_model):
     action = ScreenshotAction(model=logbook_model)
     qtbot.add_widget(action.menu())
