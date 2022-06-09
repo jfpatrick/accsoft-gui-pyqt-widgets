@@ -38,6 +38,8 @@ The following is a list of widgets that are requested (implemented ones have sta
    |rbac-link|            |done|            |rbac|            :mod:`pyrbac`-backed component. Needs manual
                                                               synchronization with Java RBAC libraries.
    |param-selector-link|  |done|            |param-selector|  Discover devices and properties from CCDB
+   |cycle-selector-link|  |done|            |cycle-selector|  Discover timing users and machine cycles from
+                                                              CCDB
    =====================  ================  ================  ===============================================
 
 In addition to explicitly requested widgets, those available in
@@ -81,6 +83,8 @@ their usage statistics gathered from existing Inspector projects.
 
 .. |param-selector-link| replace:: :doc:`Parameter selector <parameter_selector/index>`
 
+.. |cycle-selector-link| replace:: :doc:`Cycle selector <cycle_selector/index>`
+
 .. |done| replace:: :green:`Available`
 
 .. |na| replace:: N/A
@@ -119,6 +123,9 @@ their usage statistics gathered from existing Inspector projects.
 .. |param-selector| image:: ../img/paramselector.png
    :width: 250px
 
+.. |cycle-selector| image:: ../img/cycleselector.png
+   :width: 250px
+
 
 Explore individual widgets
 --------------------------
@@ -136,4 +143,5 @@ Explore individual widgets
    timing_bar/index
    rbac/index
    parameter_selector/index
+   cycle_selector/index
    qt/modules

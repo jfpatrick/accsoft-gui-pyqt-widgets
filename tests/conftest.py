@@ -2,6 +2,8 @@ import os
 import time
 import pytest
 import asyncio
+from qtpy.QtWidgets import QApplication
+from qtpy.QtGui import QWindow
 from accwidgets._async_utils import make_qt_compatible_loop
 
 
@@ -30,3 +32,15 @@ def event_loop(request, qtbot):
         loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def visible_qwindow(qapp: QApplication):
+
+    def wrapper() -> QWindow:
+        for window in qapp.topLevelWindows():
+            if window.isVisible():
+                return window
+        return None
+
+    return wrapper

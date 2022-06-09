@@ -1046,6 +1046,5 @@ def test_dialog_buttonbox_trigger(qtbot: QtBot, btn, expected_result, event_loop
     qtbot.add_widget(dialog)
     buttons = next(iter(c for c in dialog.children() if isinstance(c, QDialogButtonBox)))
     dialog_button = buttons.button(btn)
-    print(dialog_button)
     qtbot.mouseClick(dialog_button, Qt.LeftButton)
     assert dialog.result() == expected_result
