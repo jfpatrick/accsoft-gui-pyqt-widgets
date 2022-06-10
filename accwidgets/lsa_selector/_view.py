@@ -201,7 +201,7 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
         for member in LsaSelector.ContextCategories:
             if member == LsaSelector.ContextCategories.ALL:
                 continue
-            if new_val & member:
+            if (new_val & member) and member.name:
                 new_set.add(AbstractLsaSelectorContext.Category[member.name])
         self.model.categories = new_set
 

@@ -124,7 +124,7 @@ class PlottingItemDataFactory:
     @staticmethod
     def transform(
         dtype: Type[PlottingItemData],
-        *values: Union[float, str, Union[ArrayLike, Sequence[float]], Union[ArrayLike, Sequence[str]]],
+        *values: Union[float, str, ArrayLike, Sequence[float], Sequence[str]],
     ) -> PlottingItemData:
         """
         Transform the values into the given type.
@@ -141,7 +141,8 @@ class PlottingItemDataFactory:
             PlottingItemDataFactory.should_unwrap(values[0], dtype)
             and len(values) == 1
         ):
-            return transform_func(*values[0])
+            first_val = cast(Union[Sequence[float], Sequence[str]], values[0])
+            return transform_func(*first_val)
         else:
             return transform_func(*values)
 
@@ -167,7 +168,7 @@ class PlottingItemDataFactory:
         return False
 
     @staticmethod
-    def get_transformation(data_type: Optional[Type[PlottingItemData]]) -> Callable[[], PlottingItemData]:
+    def get_transformation(data_type: Optional[Type[PlottingItemData]]) -> Callable[..., PlottingItemData]:
         """
         Selects the best fitting transformation function fo the given data type.
 
