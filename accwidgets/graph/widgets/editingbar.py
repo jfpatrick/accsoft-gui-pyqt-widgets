@@ -299,7 +299,11 @@ class StandardTransformations:
 class EditingToolBar(QToolBar):
 
     sig_enable_selection_mode = Signal(bool)
-    """Emits the command to toggle the selection mode in an :class:`EditablePlotWidget`."""
+    """
+    Emits the command to toggle the selection mode in an :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
+    """
 
     standard_functions: List[Tuple[Tuple[str, str], Callable[[CurveData], CurveData], int]] = [
         (("mdi.ray-start-end", "Align"), StandardTransformations.aligned, 1),

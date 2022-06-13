@@ -75,12 +75,16 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
     """
     Signal fired whenever users selects a new context in the table. The argument is a context object associated with
     the selected table row.
+
+    :type: pyqtSignal
     """
 
     userSelectionChanged = Signal(str)
     """
     Signal fired whenever user selects a new resident contexts. Since non-resident contexts are not associated with any
     user, this signal is omitted. The argument is a complete timing user selector, e.g. ``LEI.USER.LIN3MEAS``.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

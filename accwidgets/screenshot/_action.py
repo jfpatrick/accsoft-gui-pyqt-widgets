@@ -25,19 +25,37 @@ class ScreenshotAction(QAction):
     """
     Notification of the successful registration of the screenshot.
     The argument is the event ID within e-logbook system.
+
+    :type: pyqtSignal
     """
 
     capture_failed = Signal(str)
-    """Notification of the problem taking a screenshot. The argument is the error message."""
+    """
+    Notification of the problem taking a screenshot. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     event_fetch_failed = Signal(str)
-    """Notification of the problem retrieving events from the e-logbook. The argument is the error message."""
+    """
+    Notification of the problem retrieving events from the e-logbook. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     model_changed = Signal()
-    """Notifies that the underlying model has been updated."""
+    """
+    Notifies that the underlying model has been updated.
+
+    :type: pyqtSignal
+    """
 
     activities_failed = Signal(str)
-    """Notifies when the e-logbook activities setting has failed. The argument is the error message."""
+    """
+    Notifies when the e-logbook activities setting has failed. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  parent: Optional[QObject] = None,

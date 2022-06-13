@@ -71,6 +71,8 @@ class ExPlotWidget(pg.PlotWidget):
     has been moved around by dragging.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     sig_plot_selected = Signal(bool)
@@ -78,6 +80,8 @@ class ExPlotWidget(pg.PlotWidget):
     Fired when selection is toggled for editing. Boolean argument stands for select/unselect.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

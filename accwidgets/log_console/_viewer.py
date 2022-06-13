@@ -22,6 +22,8 @@ class LogConsole(QWidget):
     """
     Signal to notify when the widget has been collapsed or expanded. The argument is :obj:`True`, when the console
     is expanded.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

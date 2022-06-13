@@ -156,10 +156,18 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         LONG_ROWS = QFormLayout.WrapLongRows
 
     valueUpdated = Signal(dict)
-    """Signal issued when the user updates field values and presses 'Set' button."""
+    """
+    Signal issued when the user updates field values and presses 'Set' button.
+
+    :type: pyqtSignal
+    """
 
     valueRequested = Signal()
-    """Signal issued when the user requests new values by pressing 'Get' button."""
+    """
+    Signal issued when the user requests new values by pressing 'Get' button.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  parent: Optional[QWidget] = None,

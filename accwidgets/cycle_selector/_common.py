@@ -11,6 +11,8 @@ class CycleSelectorWrapper:
     """
     Fires whenever the selector value changes. The payload will be a string version of selector in the format
     ``DOMAIN.GROUP.LINE``.
+
+    :type: pyqtSignal
     """
 
     def __init__(self, model: Optional[CycleSelectorModel] = None):

@@ -20,19 +20,31 @@ class RbaButton(QWidget):
     loginSucceeded = Signal(Token)
     """
     Fires when the login is successful, sending a newly obtained token.
+
+    :type: pyqtSignal
     """
 
     loginFailed = Signal(str, int)
     """
     Signal emitted when login fails. The first argument is error message, the second argument is login method value,
     that corresponds to the :class:`~accwidgets.rbac.RbaToken.LoginMethod` enum.
+
+    :type: pyqtSignal
     """
 
     logoutFinished = Signal()
-    """Fires when the logout has been finished."""
+    """
+    Fires when the logout has been finished.
+
+    :type: pyqtSignal
+    """
 
     loginFinished = Signal()
-    """Fires when the login has been finished, no matter the outcome."""
+    """
+    Fires when the login has been finished, no matter the outcome.
+
+    :type: pyqtSignal
+    """
 
     tokenExpired = Signal(Token)
     """
@@ -41,6 +53,8 @@ class RbaButton(QWidget):
     .. note:: This signal fires only when the auto-renewable token expires. It will not fire if the expiring token
               is a one-time token (produced when selecting custom roles) or a token that was received from the
               outside via :meth:`~accwidgets.rbac.RbaButtonModel.update_token` call.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

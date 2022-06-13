@@ -137,18 +137,24 @@ class TimingBarModel(QObject):
     current basic period really advanced (devices may fire more than one event at once), hence it is useful to know
     when these events represent a change in state (e.g. for indicating heartbeat). Otherwise, if each even would be
     duplicated, the heartbeat value would be canceled out.
+
+    :type: pyqtSignal
     """
 
     timingErrorReceived = Signal(str)
     """
     Signal that is fired when a connection error is received. This can be either a supercycle structure problem,
     or connection issues with XTIM or CTIM devices. The string argument represents the error message.
+
+    :type: pyqtSignal
     """
 
     domainNameChanged = Signal(str)
     """
     Signal to notify that domain has been changed. The widget should update its domain name label, without necessarily
     repainting the rest of the canvas. The string argument is the name of the new timing domain.
+
+    :type: pyqtSignal
     """
 
     monitoringChanged = Signal(bool)
@@ -156,6 +162,8 @@ class TimingBarModel(QObject):
     Signal to notify that model's monitoring state has been altered. This signal arrives before subscriptions have been
     affected. Therefore, if subscription procedure produces an error, :attr:`timingErrorReceived` signal will follow
     afterwards.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

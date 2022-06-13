@@ -14,19 +14,37 @@ class ScreenshotButton(OrientedToolButton):
     """
     Notification of the successful registration of the screenshot.
     The argument is the event ID within e-logbook system.
+
+    :type: pyqtSignal
     """
 
     captureFailed = Signal(str)
-    """Notification of the problem taking a screenshot. The argument is the error message."""
+    """
+    Notification of the problem taking a screenshot. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     eventFetchFailed = Signal(str)
-    """Notification of the problem retrieving events from the e-logbook. The argument is the error message."""
+    """
+    Notification of the problem retrieving events from the e-logbook. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     activitiesFailed = Signal(str)
-    """Notifies when the e-logbook activities setting has failed. The argument is the error message."""
+    """
+    Notifies when the e-logbook activities setting has failed. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     modelChanged = Signal()
-    """Notifies that the underlying model has been updated."""
+    """
+    Notifies that the underlying model has been updated.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  parent: Optional[QWidget] = None,

@@ -671,7 +671,11 @@ class AbstractComboBoxColumnDelegate(QStyledItemDelegate, metaclass=AbstractQObj
 class BooleanButton(QToolButton):
 
     value_changed = Signal()
-    """Boolean value has been updated by the user."""
+    """
+    Boolean value has been updated by the user.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self, parent: Optional[QObject] = None):
         """

@@ -29,12 +29,16 @@ class AbstractBaseDataModel(QObject, metaclass=AbstractQObjectMeta):
     stored by the data model. This signal is triggered when the data is
     changed in direction from the :class:`UpdateSource` to the view,
     but not in the opposite one.
+
+    :type: pyqtSignal
     """
 
     # TODO: Does it need to be in the superclass. Sounds like it is for editing only.
     sig_data_model_edited = Signal([CurveData])
     """
     Signal informing that the data model was edited from the view.
+
+    :type: pyqtSignal
     """
 
     def __init__(self, data_source: UpdateSource, **_):

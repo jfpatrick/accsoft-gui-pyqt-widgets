@@ -310,6 +310,8 @@ class EditablePlotCurve(AbstractBasePlotCurve):
     Signal informing about any changes to the current selection. If the emitted
     data is empty, the current selection is considered unselected. The signal will also
     be emitted, if the current selection has been moved around by dragging.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,
@@ -595,12 +597,16 @@ class DataSelectionMarker(pg.ScatterPlotItem):
     """
     As soon as a move was done successfully, this signal will emit the new
     position of the data displayed by this marker.
+
+    :type: pyqtSignal
     """
 
     sig_selection_moved = Signal(np.ndarray)
     """
     With every move this signal will be emitted. It is mainly for visualizing
     a work in progress editing in the original curve.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

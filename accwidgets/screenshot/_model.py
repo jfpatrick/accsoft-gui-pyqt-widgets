@@ -18,13 +18,25 @@ else:
 class LogbookModel(QObject):
 
     rbac_token_changed = Signal()
-    """Notifies when the RBAC token has been changed."""
+    """
+    Notifies when the RBAC token has been changed.
+
+    :type: pyqtSignal
+    """
 
     activities_changed = Signal()
-    """Notifies when the e-logbook activities have been changed."""
+    """
+    Notifies when the e-logbook activities have been changed.
+
+    :type: pyqtSignal
+    """
 
     activities_failed = Signal(str)
-    """Notifies when the e-logbook activities setting has failed. The argument is the error message."""
+    """
+    Notifies when the e-logbook activities setting has failed. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  server_url: Union[str, NamedServer, None] = None,

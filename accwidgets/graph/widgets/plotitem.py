@@ -69,6 +69,8 @@ class ExPlotItem(pg.PlotItem):
     has been moved around by dragging.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     sig_plot_selected = Signal(bool)
@@ -76,6 +78,8 @@ class ExPlotItem(pg.PlotItem):
     Fired when selection is toggled for editing. Boolean argument stands for select/unselect.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,
@@ -1781,12 +1785,16 @@ class ExViewBox(pg.ViewBox):
     as soon as it is completed (the mouse button from the drag is released).
     The selection boundaries are represented in scene coordinates and not
     device coordinates.
+
+    :type: pyqtSignal
     """
 
     sig_xrange_changed = Signal()
     """
     This is a replacement for :attr:`~pyqtgraph.ViewBox.sigRangeChangedManually` to disable auto-scrolling
     only when dragging and zooming in a particular way.
+
+    :type: pyqtSignal
     """
 
     def __init__(self, **viewbox_kwargs):

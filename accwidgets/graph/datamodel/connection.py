@@ -37,10 +37,18 @@ class UpdateSource(QObject):
     #       Change dict to fitting type when integrated.
     # sig_new_time_span = Signal(dict)
     sig_new_timestamp = Signal(float)
-    """Publishes new actual time to the receiver."""
+    """
+    Publishes new actual time to the receiver.
+
+    :type: pyqtSignal
+    """
 
     sig_new_data = Signal("PyQt_PyObject")
-    """Publishes a new data sample wrapped in an appropriate data structure."""
+    """
+    Publishes a new data sample wrapped in an appropriate data structure.
+
+    :type: pyqtSignal
+    """
 
     @Slot(CurveData)
     def handle_data_model_edit(self, data: CurveData):

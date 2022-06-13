@@ -33,10 +33,16 @@ class LogbookMenu(QMenu):
     """
     Signal when a menu entry has been clicked. The argument is the e-logbook event ID. This argument will be -1
     for the new entry creation.
+
+    :type: pyqtSignal
     """
 
     event_fetch_failed = Signal(str)
-    """Notification of the problem retrieving events from the e-logbook. The argument is the error message."""
+    """
+    Notification of the problem retrieving events from the e-logbook. The argument is the error message.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  model_provider: LogbookModelProviderProtocol,

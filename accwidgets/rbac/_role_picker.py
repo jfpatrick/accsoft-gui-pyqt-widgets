@@ -171,7 +171,11 @@ class RbaRolesModel(QAbstractListModel):
 class RbaRolePicker(QDialog):
 
     roles_selected = Signal(list, QDialog)
-    """Notifies interested parties that list of roles has been confirmed and a re-login is required to apply it."""
+    """
+    Notifies interested parties that list of roles has been confirmed and a re-login is required to apply it.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self,
                  roles: List[RbaRole],
