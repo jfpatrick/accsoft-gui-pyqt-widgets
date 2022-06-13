@@ -33,6 +33,8 @@ class RbaAuthDialogWidget(QWidget):
 
     * bool argument: Login with boolean indicating whether interactive roles selection is needed
     * list argument: Login with pre-selected roles, which are a list of strings. No interactive roles selection should be done.
+
+    :type: pyqtSignal
     """
 
     explicit_login = Signal([str, str, bool], [str, str, list])
@@ -43,6 +45,8 @@ class RbaAuthDialogWidget(QWidget):
 
     * bool as the last argument: Login with boolean indicating whether interactive roles selection is needed
     * list as the last argument: Login with pre-selected roles, which are a list of strings. No interactive roles selection should be done.
+
+    :type: pyqtSignal
     """
 
     # TODO: Uncomment when adding kerberos support
@@ -54,6 +58,8 @@ class RbaAuthDialogWidget(QWidget):
     #
     # * bool argument: Login with boolean indicating whether interactive roles selection is needed
     # * list argument: Login with pre-selected roles, which are a list of strings. No interactive roles selection should be done.
+    #
+    # :type: pyqtSignal
     # """
 
     def __init__(self,

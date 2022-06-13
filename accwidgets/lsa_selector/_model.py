@@ -238,18 +238,30 @@ class LsaSelectorModel(QObject):
     Signals when background color has changed. This is used to keep in sync the background of the resident cycles
     (defined inside the model, due to :class:`QAbstractItemModel` architecture) and the overall background color of
     the table, managed by the view (:class:`LsaSelector`).
+
+    :type: pyqtSignal
     """
 
     title_filter_changed = Signal()
-    """Notifies when the filter by context title has been updated."""
+    """
+    Notifies when the filter by context title has been updated.
+
+    :type: pyqtSignal
+    """
 
     category_filter_changed = Signal()
-    """Notifies when the filter by context category has been updated."""
+    """
+    Notifies when the filter by context category has been updated.
+
+    :type: pyqtSignal
+    """
 
     lsa_error_received = Signal(str)
     """
     Indicates the problem while retrieving data from an LSA server. Error message is passed as an argument, but
     can also be accessed via :attr:`last_error`.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

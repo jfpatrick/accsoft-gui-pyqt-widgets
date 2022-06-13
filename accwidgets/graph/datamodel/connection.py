@@ -37,10 +37,18 @@ class UpdateSource(QObject):
     #       Change dict to fitting type when integrated.
     # sig_new_time_span = Signal(dict)
     sig_new_timestamp = Signal(float)
-    """Publishes new actual time to the receiver."""
+    """
+    Publishes new actual time to the receiver.
+
+    :type: pyqtSignal
+    """
 
     sig_new_data = Signal("PyQt_PyObject")
-    """Publishes a new data sample wrapped in an appropriate data structure."""
+    """
+    Publishes a new data sample wrapped in an appropriate data structure.
+
+    :type: pyqtSignal
+    """
 
     @Slot(CurveData)
     def handle_data_model_edit(self, data: CurveData):
@@ -124,7 +132,7 @@ class PlottingItemDataFactory:
     @staticmethod
     def transform(
         dtype: Type[PlottingItemData],
-        *values: Union[float, str, Union[ArrayLike, Sequence[float]], Union[ArrayLike, Sequence[str]]],
+        *values: Union[float, str, ArrayLike, Sequence[float], Sequence[str]],
     ) -> PlottingItemData:
         """
         Transform the values into the given type.
@@ -141,7 +149,8 @@ class PlottingItemDataFactory:
             PlottingItemDataFactory.should_unwrap(values[0], dtype)
             and len(values) == 1
         ):
-            return transform_func(*values[0])
+            first_val = cast(Union[Sequence[float], Sequence[str]], values[0])
+            return transform_func(*first_val)
         else:
             return transform_func(*values)
 
@@ -167,7 +176,7 @@ class PlottingItemDataFactory:
         return False
 
     @staticmethod
-    def get_transformation(data_type: Optional[Type[PlottingItemData]]) -> Callable[[], PlottingItemData]:
+    def get_transformation(data_type: Optional[Type[PlottingItemData]]) -> Callable[..., PlottingItemData]:
         """
         Selects the best fitting transformation function fo the given data type.
 

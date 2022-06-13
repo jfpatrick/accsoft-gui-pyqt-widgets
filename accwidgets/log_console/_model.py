@@ -85,7 +85,11 @@ class AbstractLogConsoleModel(QObject, metaclass=AbstractQObjectMeta):
     """Base class for the models used with :class:`LogConsole` widget."""
 
     freeze_changed = Signal(bool)
-    """Signal emitted when :attr:`frozen` value changes. The argument is the new value of the attribute."""
+    """
+    Signal emitted when :attr:`frozen` value changes. The argument is the new value of the attribute.
+
+    :type: pyqtSignal
+    """
 
     new_log_record_received = Signal(LogConsoleRecord, bool)
     """
@@ -93,6 +97,8 @@ class AbstractLogConsoleModel(QObject, metaclass=AbstractQObjectMeta):
 
     - First argument is a new record
     - Second argument if the buffer was full, so that earliest records should be popped from the view.
+
+    :type: pyqtSignal
     """
 
     @property
@@ -467,6 +473,8 @@ class PythonLoggingHandler(QObject, logging.Handler):
     First argument is the actual message, that should be stored in the buffer.
     Second argument indicates whether this message should be displayed. (For the case when console is frozen,
     it must be stored but not display until explicitly fetched).
+
+    :type: pyqtSignal
     """
 
     def __init__(self,

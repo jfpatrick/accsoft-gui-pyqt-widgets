@@ -75,12 +75,16 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
     """
     Signal fired whenever users selects a new context in the table. The argument is a context object associated with
     the selected table row.
+
+    :type: pyqtSignal
     """
 
     userSelectionChanged = Signal(str)
     """
     Signal fired whenever user selects a new resident contexts. Since non-resident contexts are not associated with any
     user, this signal is omitted. The argument is a complete timing user selector, e.g. ``LEI.USER.LIN3MEAS``.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,
@@ -170,8 +174,12 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
             new_val = LsaSelectorAccelerator(new_val)
         self.model.accelerator = new_val
 
-    accelerator: LsaSelectorAccelerator = Property(_QtDesignerAccelerator, fget=_get_accelerator, fset=_set_accelerator)
-    """LSA accelerator to retrieve cycles for. Updating this property will automatically re-fetch data."""
+    accelerator = Property(_QtDesignerAccelerator, fget=_get_accelerator, fset=_set_accelerator)
+    """
+    LSA accelerator to retrieve cycles for. Updating this property will automatically re-fetch data.
+
+    :type: LsaSelectorAccelerator
+    """
 
     def _get_resident_only(self) -> bool:
         return self.model.resident_only
@@ -179,9 +187,11 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
     def _set_resident_only(self, new_val: bool):
         self.model.resident_only = new_val
 
-    fetchResidentOnly: bool = Property(bool, fget=_get_resident_only, fset=_set_resident_only)
+    fetchResidentOnly = Property(bool, fget=_get_resident_only, fset=_set_resident_only)
     """
     Choice for retrieving only resident or all LSA cycles. Updating this property will automatically re-fetch data.
+
+    :type: bool
     """
 
     def _get_displayed_categories(self) -> "LsaSelector.ContextCategories":
@@ -201,13 +211,15 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
         for member in LsaSelector.ContextCategories:
             if member == LsaSelector.ContextCategories.ALL:
                 continue
-            if new_val & member:
+            if (new_val & member) and member.name:
                 new_set.add(AbstractLsaSelectorContext.Category[member.name])
         self.model.categories = new_set
 
-    contextCategories: "LsaSelector.ContextCategories" = Property(_QtDesignerContextCategories, fget=_get_displayed_categories, fset=_set_displayed_categories)
+    contextCategories = Property(_QtDesignerContextCategories, fget=_get_displayed_categories, fset=_set_displayed_categories)
     """
     Choice to limit cycles to only specific context categories. Updating this property will automatically re-fetch data.
+
+    :type: LsaSelector.ContextCategories
     """
 
     def _get_hide_header(self) -> bool:
@@ -219,8 +231,12 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
         self._hide_header = new_val
         self._table.horizontalHeader().setHidden(new_val)
 
-    hideHorizontalHeader: bool = Property(bool, fget=_get_hide_header, fset=_set_hide_header)
-    """Flag to hide table header with column names."""
+    hideHorizontalHeader = Property(bool, fget=_get_hide_header, fset=_set_hide_header)
+    """
+    Flag to hide table header with column names.
+
+    :type: bool
+    """
 
     def _get_show_name_filter(self) -> bool:
         return self._name_filter is not None
@@ -239,8 +255,12 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
             self._main_layout.insertWidget(1, self._name_filter)
             self._update_name_filter()
 
-    showNameFilter: bool = Property(bool, fget=_get_show_name_filter, fset=_set_show_name_filter)
-    """Flag to show the text input that filters the displayed contexts by name."""
+    showNameFilter = Property(bool, fget=_get_show_name_filter, fset=_set_show_name_filter)
+    """
+    Flag to show the text input that filters the displayed contexts by name.
+
+    :type: bool
+    """
 
     def _get_show_category_filter(self) -> bool:
         return self._category_filter is not None
@@ -260,8 +280,12 @@ class LsaSelector(QWidget, _QtDesignerAccelerator, _QtDesignerContextCategories)
             self._main_layout.insertWidget(self._main_layout.count(), self._category_filter)
             self._update_category_filter()
 
-    showCategoryFilter: bool = Property(bool, fget=_get_show_category_filter, fset=_set_show_category_filter)
-    """Flag to show the dropdown menu that filters the displayed contexts by category."""
+    showCategoryFilter = Property(bool, fget=_get_show_category_filter, fset=_set_show_category_filter)
+    """
+    Flag to show the dropdown menu that filters the displayed contexts by category.
+
+    :type: bool
+    """
 
     def select_user(self, user: str):
         """

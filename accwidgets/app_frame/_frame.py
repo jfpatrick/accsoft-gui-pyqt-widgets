@@ -103,12 +103,14 @@ class ApplicationFrame(QMainWindow):
                 return
         self.log_console = LogConsoleDock() if new_val else None
 
-    useLogConsole: bool = Property(bool, fget=__get_use_log_console, fset=__set_use_log_console)
+    useLogConsole = Property(bool, fget=__get_use_log_console, fset=__set_use_log_console)
     """
     Display log console drawer (placed at the bottom of the window by default).
 
     This call will instantiate a :class:`~accwidgets.log_console.LogConsoleDock` object.
     If you wish to use a custom log console class, assign it to the :attr:`log_console` property directly.
+
+    :type: bool
     """
 
     def __get_log_console(self) -> Optional["LogConsoleDock"]:
@@ -164,12 +166,14 @@ class ApplicationFrame(QMainWindow):
                 return
         self.rba_widget = RbaButton() if new_val else None
 
-    useRBAC: bool = Property(bool, fget=__get_use_rbac, fset=__set_use_rbac)
+    useRBAC = Property(bool, fget=__get_use_rbac, fset=__set_use_rbac)
     """
     Display RBAC toolbar item (placed at the right of the primary toolbar).
 
     This call will instantiate a :class:`RbaButton` object.
     If you wish to use a custom widget class, assign it to the :attr:`rba_widget` property directly.
+
+    :type: bool
     """
 
     def __get_rba_widget(self) -> Optional["RbaButton"]:
@@ -225,12 +229,14 @@ class ApplicationFrame(QMainWindow):
                 return
         self.screenshot_widget = ScreenshotButton() if new_val else None
 
-    useScreenshot: bool = Property(bool, fget=__get_use_screenshot, fset=__set_use_screenshot)
+    useScreenshot = Property(bool, fget=__get_use_screenshot, fset=__set_use_screenshot)
     """
     Display e-logbook screenshot button in the primary toolbar.
 
     This call will instantiate a :class:`ScreenshotButton` object.
     If you wish to use a custom widget class, assign it to the :attr:`screenshot_widget` property directly.
+
+    :type: bool
     """
 
     def __get_screenshot_widget(self) -> Optional["ScreenshotButton"]:
@@ -305,12 +311,14 @@ class ApplicationFrame(QMainWindow):
                 return
         self.timing_bar = TimingBar() if new_val else None
 
-    useTimingBar: bool = Property(bool, fget=__get_use_timing_bar, fset=__set_use_timing_bar)
+    useTimingBar = Property(bool, fget=__get_use_timing_bar, fset=__set_use_timing_bar)
     """
     Display timing cycle indicator (placed at the left of the primary toolbar).
 
     This call will instantiate a :class:`~accwidgets.timing_bar.TimingBar` object.
     If you wish to use a custom widget class, assign it to the :attr:`timing_bar` property directly.
+
+    :type: bool
     """
 
     def __get_timing_bar(self) -> Optional["TimingBar"]:
@@ -349,10 +357,12 @@ class ApplicationFrame(QMainWindow):
     def __set_app_version(self, new_val: str):
         self.__app_version = new_val
 
-    appVersion: str = Property(str, fget=lambda self: self.__app_version, fset=__set_app_version)
+    appVersion = Property(str, fget=lambda self: self.__app_version, fset=__set_app_version)
     """
     Application version that is displayed in the default "About" dialog. You may ignore it,
     when using a custom about dialog, e.g. by overriding :meth:`showAboutDialog`.
+
+    :type: str
     """
 
     @overload

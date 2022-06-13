@@ -12,7 +12,11 @@ from ._dialog import ParameterSelectorDialog
 class ParameterLineEdit(QWidget):
 
     valueChanged = Signal(str)
-    """Fires whenever a value changes in the text field."""
+    """
+    Fires whenever a value changes in the text field.
+
+    :type: pyqtSignal
+    """
 
     def __init__(self, parent: Optional[QWidget] = None, value: str = ""):
         """

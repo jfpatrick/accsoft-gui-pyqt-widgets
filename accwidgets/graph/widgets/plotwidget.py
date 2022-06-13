@@ -71,6 +71,8 @@ class ExPlotWidget(pg.PlotWidget):
     has been moved around by dragging.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     sig_plot_selected = Signal(bool)
@@ -78,6 +80,8 @@ class ExPlotWidget(pg.PlotWidget):
     Fired when selection is toggled for editing. Boolean argument stands for select/unselect.
 
     This signal is only used in :class:`EditablePlotWidget`.
+
+    :type: pyqtSignal
     """
 
     def __init__(self,
@@ -411,8 +415,12 @@ class ExPlotWidget(pg.PlotWidget):
                 # will hide the title label
                 self.plotItem.setTitle(None)
 
-    plotTitle: str = Property(str, _get_plot_title, _set_plot_title)
-    """Title shown at the top of the plot."""
+    plotTitle = Property(str, _get_plot_title, _set_plot_title)
+    """
+    Title shown at the top of the plot.
+
+    :type: str
+    """
 
     def _get_show_time_line(self) -> bool:
         return self.plotItem.plot_config.time_progress_line
@@ -425,8 +433,12 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line)
-    """Show vertical line indicating the current timestamp."""
+    showTimeProgressLine = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line)
+    """
+    Show vertical line indicating the current timestamp.
+
+    :type: bool
+    """
 
     def _get_right_time_span_boundary(self) -> float:
         return self.plotItem.plot_config.time_span.right_boundary_offset
@@ -441,11 +453,15 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    rightTimeBoundary: float = Property(float,
-                                        fget=_get_right_time_span_boundary,
-                                        fset=_set_right_time_span_boundary,
-                                        designable=False)
-    """Value of the right (upper) boundary of the plot's time span."""
+    rightTimeBoundary = Property(float,
+                                 fget=_get_right_time_span_boundary,
+                                 fset=_set_right_time_span_boundary,
+                                 designable=False)
+    """
+    Value of the right (upper) boundary of the plot's time span.
+
+    :type: float
+    """
 
     def _get_left_time_span_boundary(self, hide_nans: bool = True) -> float:
         potential = self.plotItem.plot_config.time_span.left_boundary_offset
@@ -468,11 +484,15 @@ class ExPlotWidget(pg.PlotWidget):
 
     # designable false ->   can be used from code but is part of the sub classes property sheet if they
     #                       are set to designable
-    leftTimeBoundary: float = Property(float,
-                                       fget=_get_left_time_span_boundary,
-                                       fset=_set_left_time_span_boundary,
-                                       designable=False)
-    """Value of the left (lower) boundary of the plot's time span."""
+    leftTimeBoundary = Property(float,
+                                fget=_get_left_time_span_boundary,
+                                fset=_set_left_time_span_boundary,
+                                designable=False)
+    """
+    Value of the left (lower) boundary of the plot's time span.
+
+    :type: float
+    """
 
     def _get_left_time_span_boundary_bool(self) -> bool:
         return not np.isinf(self._get_left_time_span_boundary(hide_nans=False))
@@ -492,14 +512,16 @@ class ExPlotWidget(pg.PlotWidget):
             except NameError:
                 self._set_left_time_span_boundary(new_val=60.0)
 
-    leftTimeBoundaryEnabled: bool = Property(bool,
-                                             fget=_get_left_time_span_boundary_bool,
-                                             fset=_set_left_time_span_boundary_bool,
-                                             designable=False)
+    leftTimeBoundaryEnabled = Property(bool,
+                                       fget=_get_left_time_span_boundary_bool,
+                                       fset=_set_left_time_span_boundary_bool,
+                                       designable=False)
     """
     Toggle for the left (lower) boundary of the plot's time span.
 
     This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
+
+    :type: bool
     """
 
     # ~~~~~~~~~~~~~~~~~ Styling Opts for Slot Items ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -725,10 +747,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # Update labels through property
             self.axisLabels = self.axisLabels
 
-    xAxisSide: int = Property(XAxisSideOptions, fget=_get_show_x_axis, fset=_set_show_x_axis)
+    xAxisSide = Property(XAxisSideOptions, fget=_get_show_x_axis, fset=_set_show_x_axis)
     """
     Indicates the side where the x-axis should be placed. Possible values are :attr:`XAxisSideOptions.Top`,
     :attr:`XAxisSideOptions.Bottom`, :attr:`XAxisSideOptions.Both` and :attr:`XAxisSideOptions.Hidden`.
+
+    :type: int
     """
 
     def _get_show_y_axis(self) -> int:
@@ -761,11 +785,13 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # Update labels through property
             self.axisLabels = self.axisLabels
 
-    defaultYAxisSide: int = Property(DefaultYAxisSideOptions, fget=_get_show_y_axis, fset=_set_show_y_axis)
+    defaultYAxisSide = Property(DefaultYAxisSideOptions, fget=_get_show_y_axis, fset=_set_show_y_axis)
     """
     Indicates the side where the default y-axis should be placed. Possible values are
     :attr:`DefaultYAxisSideOptions.Left`, :attr:`DefaultYAxisSideOptions.Right`, :attr:`DefaultYAxisSideOptions.Both`
     and :attr:`XAxisSideOptions.Hidden`.
+
+    :type: int
     """
 
     def _get_show_grid(self) -> int:
@@ -794,10 +820,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                 cast(ExPlotWidget, self).plotItem.showGrid(x=False)
                 cast(ExPlotWidget, self).plotItem.showGrid(y=False)
 
-    gridOrientation: int = Property(GridOrientationOptions, fget=_get_show_grid, fset=_set_show_grid)
+    gridOrientation = Property(GridOrientationOptions, fget=_get_show_grid, fset=_set_show_grid)
     """
     Indicates the direction of the visible grid lines. Possible values are :attr:`GridOrientationOptions.X`,
     :attr:`GridOrientationOptions.Y`, :attr:`GridOrientationOptions.Both` and :attr:`GridOrientationOptions.Hidden`.
+
+    :type: int
     """
 
     def _get_show_legend(self) -> bool:
@@ -828,8 +856,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
                     curr_legend.setVisible(False)
             cast(ExPlotWidget, self).update()
 
-    showLegend: bool = Property(bool, fget=_get_show_legend, fset=_set_show_legend)
-    """Flags whether the legend should be shown."""
+    showLegend = Property(bool, fget=_get_show_legend, fset=_set_show_legend)
+    """
+    Flags whether the legend should be shown.
+
+    :type: bool
+    """
 
     def _get_legend_position(self) -> Tuple[int, int]:
         try:
@@ -894,10 +926,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _set_legend_x_position(self, new_val: int):
         self._set_legend_position(x_alignment=new_val)
 
-    legendXAlignment: int = Property(LegendXAlignmentOptions, fget=_get_legend_x_position, fset=_set_legend_x_position)
+    legendXAlignment = Property(LegendXAlignmentOptions, fget=_get_legend_x_position, fset=_set_legend_x_position)
     """
     Indicates the horizontal alignment of the legend. Possible values are :attr:`LegendXAlignmentOptions.Left`,
     :attr:`LegendXAlignmentOptions.Right` and :attr:`LegendXAlignmentOptions.Center`.
+
+    :type: int
     """
 
     def _get_legend_y_position(self) -> int:
@@ -906,10 +940,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
     def _set_legend_y_position(self, new_val: int):
         self._set_legend_position(y_alignment=new_val)
 
-    legendYAlignment: int = Property(LegendYAlignmentOptions, fget=_get_legend_y_position, fset=_set_legend_y_position)
+    legendYAlignment = Property(LegendYAlignmentOptions, fget=_get_legend_y_position, fset=_set_legend_y_position)
     """
     Indicates the vertical alignment of the legend. Possible values are :attr:`LegendYAlignmentOptions.Top`,
     :attr:`LegendYAlignmentOptions.Bottom` and :attr:`LegendYAlignmentOptions.Center`.
+
+    :type: int
     """
 
     # ~~~~~~~~~~ QtDesigner Properties ~~~~~~~~~~
@@ -948,8 +984,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
         # Update changed identifiers
         self._update_layers(layers)
 
-    layerIDs: List[str] = Property("QStringList", fget=_get_layer_ids, fset=_set_layer_ids, designable=False)
-    """List of string identifiers of the additional layer."""
+    layerIDs = Property("QStringList", fget=_get_layer_ids, fset=_set_layer_ids, designable=False)
+    """
+    List of string identifiers of the additional layer.
+
+    :type: ~typing.List[str]
+    """
 
     def _get_axis_labels(self) -> str:
         """QtDesigner getter function for the PlotItems axis labels"""
@@ -985,8 +1025,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # TypeError for len() operation on entries that do not support it
             pass
 
-    axisLabels: str = Property(str, fget=_get_axis_labels, fset=_set_axis_labels, designable=False)
-    """JSON representation of mappings of axis positions and layers to a label text."""
+    axisLabels = Property(str, fget=_get_axis_labels, fset=_set_axis_labels, designable=False)
+    """
+    JSON representation of mappings of axis positions and layers to a label text.
+
+    :type: str
+    """
 
     def _get_axis_ranges(self) -> str:
         """QtDesigner getter function for the PlotItems axis ranges"""
@@ -1028,8 +1072,12 @@ class ExPlotWidgetProperties(XAxisSideOptions,
             # TypeError for len() operation on entries that do not support it
             pass
 
-    axisRanges: str = Property(str, fget=_get_axis_ranges, fset=_set_axis_ranges, designable=False)
-    """JSON representation of mappings of x, y and layers to a view range."""
+    axisRanges = Property(str, fget=_get_axis_ranges, fset=_set_axis_ranges, designable=False)
+    """
+    JSON representation of mappings of x, y and layers to a view range.
+
+    :type: str
+    """
 
     def _update_layers(self, new: List[str]):
         """
@@ -1132,51 +1180,81 @@ class ScrollingPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions): 
                               timing_source=timing_source,
                               **plotitem_kwargs)
 
-    rightTimeBoundary: float = Property(float,
-                                        fget=ExPlotWidget._get_right_time_span_boundary,
-                                        fset=ExPlotWidget._set_right_time_span_boundary)
-    """Value of the right (upper) boundary of the plot's time span."""
+    rightTimeBoundary = Property(float,
+                                 fget=ExPlotWidget._get_right_time_span_boundary,
+                                 fset=ExPlotWidget._set_right_time_span_boundary)
+    """
+    Value of the right (upper) boundary of the plot's time span.
 
-    leftTimeBoundary: float = Property(float,
-                                       fget=ExPlotWidget._get_left_time_span_boundary,
-                                       fset=ExPlotWidget._set_left_time_span_boundary)
-    """Value of the left (lower) boundary of the plot's time span."""
+    :type: float
+    """
 
-    leftTimeBoundaryEnabled: bool = Property(bool,
-                                             fget=ExPlotWidget._get_left_time_span_boundary_bool,
-                                             fset=ExPlotWidget._set_left_time_span_boundary_bool)
+    leftTimeBoundary = Property(float,
+                                fget=ExPlotWidget._get_left_time_span_boundary,
+                                fset=ExPlotWidget._set_left_time_span_boundary)
+    """
+    Value of the left (lower) boundary of the plot's time span.
+
+    :type: float
+    """
+
+    leftTimeBoundaryEnabled = Property(bool,
+                                       fget=ExPlotWidget._get_left_time_span_boundary_bool,
+                                       fset=ExPlotWidget._set_left_time_span_boundary_bool)
     """
     Toggle for the left (lower) boundary of the plot's time span.
 
     This allows choosing between infinite time span into the past, or having a hard border of the oldest timestamps.
+
+    :type: bool
     """
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    pushDataItemPenColor: QColor = Property(QColor,
-                                            fget=ExPlotWidget._get_slot_item_pen_color,
-                                            fset=ExPlotWidget._set_slot_item_pen_color)
-    """Pen color for the item displaying data through the :meth:`pushData` slot."""
+    pushDataItemPenColor = Property(QColor,
+                                    fget=ExPlotWidget._get_slot_item_pen_color,
+                                    fset=ExPlotWidget._set_slot_item_pen_color)
+    """
+    Pen color for the item displaying data through the :meth:`pushData` slot.
 
-    pushDataItemPenWidth: int = Property(int,
-                                         fget=ExPlotWidget._get_slot_item_pen_width,
-                                         fset=ExPlotWidget._set_slot_item_pen_width)
-    """Pen width for the item displaying data through the :meth:`pushData` slot."""
+    :type: QColor
+    """
 
-    pushDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
-                                                 fget=ExPlotWidget._get_slot_item_pen_style,
-                                                 fset=ExPlotWidget._set_slot_item_pen_style)
-    """Pen line style for the item displaying data through :meth:`pushData` slot."""
+    pushDataItemPenWidth = Property(int,
+                                    fget=ExPlotWidget._get_slot_item_pen_width,
+                                    fset=ExPlotWidget._set_slot_item_pen_width)
+    """
+    Pen width for the item displaying data through the :meth:`pushData` slot.
 
-    pushDataItemBrushColor: str = Property(QColor,
-                                           fget=ExPlotWidget._get_slot_item_brush_color,
-                                           fset=ExPlotWidget._set_slot_item_brush_color)
-    """Brush color for the item displaying data through the :meth:`pushData` slot."""
+    :type: int
+    """
 
-    pushDataItemSymbol: int = Property(SymbolOptions,
-                                       fget=ExPlotWidget._get_slot_item_symbol,
-                                       fset=ExPlotWidget._set_slot_item_symbol)
-    """Symbol for the item displaying data through :meth:`pushData` slot."""
+    pushDataItemPenStyle = Property(Qt.PenStyle,
+                                    fget=ExPlotWidget._get_slot_item_pen_style,
+                                    fset=ExPlotWidget._set_slot_item_pen_style)
+    """
+    Pen line style for the item displaying data through :meth:`pushData` slot.
+
+    :type: Qt.PenStyle
+    """
+
+    pushDataItemBrushColor = Property(QColor,
+                                      fget=ExPlotWidget._get_slot_item_brush_color,
+                                      fset=ExPlotWidget._set_slot_item_brush_color)
+    """
+    Brush color for the item displaying data through the :meth:`pushData` slot.
+
+    :type: str
+    """
+
+    pushDataItemSymbol = Property(SymbolOptions,
+                                  fget=ExPlotWidget._get_slot_item_symbol,
+                                  fset=ExPlotWidget._set_slot_item_symbol)
+    """
+    Symbol for the item displaying data through :meth:`pushData` slot.
+
+    :type: int
+    """
 
     @Slot(float)
     @Slot(int)
@@ -1260,10 +1338,14 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
                               timing_source=timing_source,
                               **plotitem_kwargs)
 
-    leftTimeBoundary: float = Property(float,
-                                       fget=ExPlotWidget._get_left_time_span_boundary,
-                                       fset=ExPlotWidget._set_left_time_span_boundary)
-    """Value of the left (lower) boundary of the plot's time span."""
+    leftTimeBoundary = Property(float,
+                                fget=ExPlotWidget._get_left_time_span_boundary,
+                                fset=ExPlotWidget._set_left_time_span_boundary)
+    """
+    Value of the left (lower) boundary of the plot's time span.
+
+    :type: float
+    """
 
     def _get_left_time_span_boundary_bool(self, **kwargs) -> bool:
         if not designer_check.is_designer():
@@ -1276,40 +1358,60 @@ class CyclicPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at cyclic plot, "
                           "since a cyclic plot can not be drawn without both boundaries defined.")
 
-    leftTimeBoundaryEnabled: bool = Property(bool,
-                                             fget=_get_left_time_span_boundary_bool,
-                                             fset=_set_left_time_span_boundary_bool,
-                                             designable=False)
+    leftTimeBoundaryEnabled = Property(bool,
+                                       fget=_get_left_time_span_boundary_bool,
+                                       fset=_set_left_time_span_boundary_bool,
+                                       designable=False)
     """
     .. warning:: Do not use this in a cyclic plot.
     """
 
     # ~~~~~~~~~~~~~~~ pushData slot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    pushDataItemPenColor: QColor = Property(QColor,
-                                            fget=ExPlotWidget._get_slot_item_pen_color,
-                                            fset=ExPlotWidget._set_slot_item_pen_color)
-    """Pen color for the item displaying data through the :meth:`pushData` slot."""
+    pushDataItemPenColor = Property(QColor,
+                                    fget=ExPlotWidget._get_slot_item_pen_color,
+                                    fset=ExPlotWidget._set_slot_item_pen_color)
+    """
+    Pen color for the item displaying data through the :meth:`pushData` slot.
 
-    pushDataItemPenWidth: int = Property(int,
-                                         fget=ExPlotWidget._get_slot_item_pen_width,
-                                         fset=ExPlotWidget._set_slot_item_pen_width)
-    """Pen width for the item displaying data through the :meth:`pushData` slot."""
+    :type: QColor
+    """
 
-    pushDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
-                                                 fget=ExPlotWidget._get_slot_item_pen_style,
-                                                 fset=ExPlotWidget._set_slot_item_pen_style)
-    """Pen line style for the item displaying data through the :meth:`pushData` slot."""
+    pushDataItemPenWidth = Property(int,
+                                    fget=ExPlotWidget._get_slot_item_pen_width,
+                                    fset=ExPlotWidget._set_slot_item_pen_width)
+    """
+    Pen width for the item displaying data through the :meth:`pushData` slot.
 
-    pushDataItemBrushColor: str = Property(QColor,
-                                           fget=ExPlotWidget._get_slot_item_brush_color,
-                                           fset=ExPlotWidget._set_slot_item_brush_color)
-    """Brush color for the item displaying data through the :meth:`pushData` slot."""
+    :type: int
+    """
 
-    pushDataItemSymbol: int = Property(SymbolOptions,
-                                       fget=ExPlotWidget._get_slot_item_symbol,
-                                       fset=ExPlotWidget._set_slot_item_symbol)
-    """Symbol for the item displaying data through the :meth:`pushData` slot."""
+    pushDataItemPenStyle = Property(Qt.PenStyle,
+                                    fget=ExPlotWidget._get_slot_item_pen_style,
+                                    fset=ExPlotWidget._set_slot_item_pen_style)
+    """
+    Pen line style for the item displaying data through the :meth:`pushData` slot.
+
+    :type: Qt.PenStyle
+    """
+
+    pushDataItemBrushColor = Property(QColor,
+                                      fget=ExPlotWidget._get_slot_item_brush_color,
+                                      fset=ExPlotWidget._set_slot_item_brush_color)
+    """
+    Brush color for the item displaying data through the :meth:`pushData` slot.
+
+    :type: str
+    """
+
+    pushDataItemSymbol = Property(SymbolOptions,
+                                  fget=ExPlotWidget._get_slot_item_symbol,
+                                  fset=ExPlotWidget._set_slot_item_symbol)
+    """
+    Symbol for the item displaying data through the :meth:`pushData` slot.
+
+    :type: int
+    """
 
     @Slot(float)
     @Slot(int)
@@ -1389,8 +1491,12 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'showTimeProgressLine' is not supposed to be used with at static plot. "
                           "Use only with ScrollingPlotWidget and CyclicPlotWidget.")
 
-    showTimeProgressLine: bool = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
-    """Show vertical line indicating the current timestamp."""
+    showTimeProgressLine = Property(bool, fget=_get_show_time_line, fset=_set_show_time_line, designable=False)
+    """
+    Show vertical line indicating the current timestamp.
+
+    :type: bool
+    """
 
     def _get_right_time_span_boundary(self) -> float:
         if not designer_check.is_designer():
@@ -1403,10 +1509,10 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'rightTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    rightTimeBoundary: float = Property(float,
-                                        fget=_get_right_time_span_boundary,
-                                        fset=_set_right_time_span_boundary,
-                                        designable=False)
+    rightTimeBoundary = Property(float,
+                                 fget=_get_right_time_span_boundary,
+                                 fset=_set_right_time_span_boundary,
+                                 designable=False)
     """
     .. warning:: Do not use this in a static plot.
     """
@@ -1422,10 +1528,10 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'leftTimeBoundary' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftTimeBoundary: float = Property(float,
-                                       fget=_get_left_time_span_boundary,
-                                       fset=_set_left_time_span_boundary,
-                                       designable=False)
+    leftTimeBoundary = Property(float,
+                                fget=_get_left_time_span_boundary,
+                                fset=_set_left_time_span_boundary,
+                                designable=False)
     """
     .. warning:: Do not use this in a static plot.
     """
@@ -1441,54 +1547,64 @@ class StaticPlotWidget(ExPlotWidgetProperties, ExPlotWidget, SymbolOptions):  # 
             warnings.warn("Property 'leftTimeBoundaryEnabled' is not supposed to be used with at static plot, "
                           "since it does not use any time span.")
 
-    leftTimeBoundaryEnabled: bool = Property(bool,
-                                             fget=_get_left_time_span_boundary_bool,
-                                             fset=_set_left_time_span_boundary_bool,
-                                             designable=False)
+    leftTimeBoundaryEnabled = Property(bool,
+                                       fget=_get_left_time_span_boundary_bool,
+                                       fset=_set_left_time_span_boundary_bool,
+                                       designable=False)
     """
     .. warning:: Do not use this in a static plot.
     """
 
     # ~~~~~~~~~~~~ replaceData ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    replaceDataItemPenColor: QColor = Property(QColor,
-                                               fget=ExPlotWidget._get_slot_item_pen_color,
-                                               fset=ExPlotWidget._set_slot_item_pen_color)
+    replaceDataItemPenColor = Property(QColor,
+                                       fget=ExPlotWidget._get_slot_item_pen_color,
+                                       fset=ExPlotWidget._set_slot_item_pen_color)
     """
     Pen color for the item displaying data through the :meth:`replaceDataAsCurve`,
     :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+
+    :type: QColor
     """
 
-    replaceDataItemPenWidth: int = Property(int,
-                                            fget=ExPlotWidget._get_slot_item_pen_width,
-                                            fset=ExPlotWidget._set_slot_item_pen_width)
+    replaceDataItemPenWidth = Property(int,
+                                       fget=ExPlotWidget._get_slot_item_pen_width,
+                                       fset=ExPlotWidget._set_slot_item_pen_width)
     """
     Pen width for the item displaying data through the :meth:`replaceDataAsCurve`,
     :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+
+    :type: int
     """
 
-    replaceDataItemPenStyle: Qt.PenStyle = Property(Qt.PenStyle,
-                                                    fget=ExPlotWidget._get_slot_item_pen_style,
-                                                    fset=ExPlotWidget._set_slot_item_pen_style)
+    replaceDataItemPenStyle = Property(Qt.PenStyle,
+                                       fget=ExPlotWidget._get_slot_item_pen_style,
+                                       fset=ExPlotWidget._set_slot_item_pen_style)
     """
     Pen line style for the item displaying data through the :meth:`replaceDataAsCurve`,
     :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+
+    :type: Qt.PenStyle
     """
 
-    replaceDataItemBrushColor: str = Property(QColor,
-                                              fget=ExPlotWidget._get_slot_item_brush_color,
-                                              fset=ExPlotWidget._set_slot_item_brush_color)
+    replaceDataItemBrushColor = Property(QColor,
+                                         fget=ExPlotWidget._get_slot_item_brush_color,
+                                         fset=ExPlotWidget._set_slot_item_brush_color)
     """
     Brush color for the item displaying data through the :meth:`replaceDataAsCurve`,
     :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+
+    :type: str
     """
 
-    replaceDataItemSymbol: int = Property(SymbolOptions,
-                                          fget=ExPlotWidget._get_slot_item_symbol,
-                                          fset=ExPlotWidget._set_slot_item_symbol)
+    replaceDataItemSymbol = Property(SymbolOptions,
+                                     fget=ExPlotWidget._get_slot_item_symbol,
+                                     fset=ExPlotWidget._set_slot_item_symbol)
     """
     Symbol for the item displaying data through the :meth:`replaceDataAsCurve`,
     :meth:`replaceDataAsBarGraph`, :meth:`replaceDataAsInjectionBars` slots.
+
+    :type: int
     """
 
     @Slot(np.ndarray)
