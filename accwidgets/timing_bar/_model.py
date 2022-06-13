@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pyjapc import PyJapc  # noqa: F401
 
 
-class TimingBarDomain(Enum):
+class TimingBarDomain(str, Enum):
     """
     Enumeration of known timing domains that can be resolved to an XTIM
     device supplying timing information.

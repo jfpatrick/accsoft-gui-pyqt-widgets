@@ -24,7 +24,7 @@ from accwidgets._api import disable_assert_cache
 from accwidgets.qt import make_icon
 
 
-class WidgetBoxGroup(Enum):
+class WidgetBoxGroup(str, Enum):
 
     LAYOUTS = "Layouts"
     SPACERS = "Spacers"
