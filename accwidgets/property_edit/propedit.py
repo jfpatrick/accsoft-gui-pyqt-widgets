@@ -245,8 +245,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._buttons = new_val
         self._recalculate_button_box()
 
-    buttons: "PropertyEdit.Buttons" = Property(_QtDesignerButtons, _get_buttons, _set_buttons)
-    """Bit mask of what buttons should be displayed in the widget."""
+    buttons = Property(_QtDesignerButtons, _get_buttons, _set_buttons)
+    """
+    Bit mask of what buttons should be displayed in the widget.
+
+    :type: PropertyEdit.Buttons
+    """
 
     def _get_button_position(self) -> "PropertyEdit.ButtonPosition":
         return self._button_position
@@ -255,8 +259,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._button_position = new_val
         self._recalculate_main_layout()
 
-    buttonPosition: "PropertyEdit.ButtonPosition" = Property(_QtDesignerButtonPosition, _get_button_position, _set_button_position)
-    """Position where Get/Set buttons are placed, relative to the fields form."""
+    buttonPosition = Property(_QtDesignerButtonPosition, _get_button_position, _set_button_position)
+    """
+    Position where Get/Set buttons are placed, relative to the fields form.
+
+    :type: PropertyEdit.ButtonPosition
+    """
 
     def _get_title(self) -> str:
         """Title that is displayed when decoration type is 'GroupBox'."""
@@ -267,8 +275,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         if isinstance(self._decoration, QGroupBox):
             cast(QGroupBox, self._decoration).setTitle(new_val)
 
-    title: str = Property(str, _get_title, _set_title)
-    """Title that is displayed when decoration type is 'GroupBox'."""
+    title = Property(str, _get_title, _set_title)
+    """
+    Title that is displayed when decoration type is 'GroupBox'.
+
+    :type: str
+    """
 
     def _get_decoration(self) -> "PropertyEdit.Decoration":
         return self._decoration_type
@@ -277,8 +289,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._decoration_type = new_val
         self._recalculate_container()
 
-    decoration: "PropertyEdit.Decoration" = Property(_QtDesignerDecoration, _get_decoration, _set_decoration)
-    """Decoration of the widget to visually group fields together."""
+    decoration = Property(_QtDesignerDecoration, _get_decoration, _set_decoration)
+    """
+    Decoration of the widget to visually group fields together.
+
+    :type: PropertyEdit.Decoration
+    """
 
     def _get_send_only_updated_values(self) -> bool:
         return self._send_only_updated
@@ -286,8 +302,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _set_send_only_updated_values(self, new_val: bool):
         self._send_only_updated = new_val
 
-    sendOnlyUpdatedValues: bool = Property(bool, _get_send_only_updated_values, _set_send_only_updated_values)
-    """If ``True``, only values from editable fields will be sent on pressing 'Set' button. Otherwise, all values will be sent."""
+    sendOnlyUpdatedValues = Property(bool, _get_send_only_updated_values, _set_send_only_updated_values)
+    """
+    If ``True``, only values from editable fields will be sent on pressing 'Set' button. Otherwise, all values will be sent.
+
+    :type: bool
+    """
 
     def _get_layout_left_margin(self) -> int:
         return self._insets.left()
@@ -296,8 +316,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._insets.setLeft(new_val)
         self._recalculate_main_layout()
 
-    leftInset: int = Property(int, _get_layout_left_margin, _set_layout_left_margin)
-    """Bottom margin for the contents inside the decoration."""
+    leftInset = Property(int, _get_layout_left_margin, _set_layout_left_margin)
+    """
+    Bottom margin for the contents inside the decoration.
+
+    :type: int
+    """
 
     def _get_layout_top_margin(self) -> int:
         return self._insets.top()
@@ -306,8 +330,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._insets.setTop(new_val)
         self._recalculate_main_layout()
 
-    topInset: int = Property(int, _get_layout_top_margin, _set_layout_top_margin)
-    """Top margin for the contents inside the decoration."""
+    topInset = Property(int, _get_layout_top_margin, _set_layout_top_margin)
+    """
+    Top margin for the contents inside the decoration.
+
+    :type: int
+    """
 
     def _get_layout_right_margin(self) -> int:
         return self._insets.right()
@@ -316,8 +344,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._insets.setRight(new_val)
         self._recalculate_main_layout()
 
-    rightInset: int = Property(int, _get_layout_right_margin, _set_layout_right_margin)
-    """Right margin for the contents inside the decoration."""
+    rightInset = Property(int, _get_layout_right_margin, _set_layout_right_margin)
+    """
+    Right margin for the contents inside the decoration.
+
+    :type: int
+    """
 
     def _get_layout_bottom_margin(self) -> int:
         return self._insets.bottom()
@@ -326,8 +358,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._insets.setBottom(new_val)
         self._recalculate_main_layout()
 
-    bottomInset: int = Property(int, _get_layout_bottom_margin, _set_layout_bottom_margin)
-    """Bottom margin for the contents inside the decoration."""
+    bottomInset = Property(int, _get_layout_bottom_margin, _set_layout_bottom_margin)
+    """
+    Bottom margin for the contents inside the decoration.
+
+    :type: int
+    """
 
     def _get_layout_h_spacing(self) -> int:
         if isinstance(self._widget_layout, QFormLayout):
@@ -338,8 +374,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _set_layout_h_spacing(self, new_val: int):
         cast(QFormLayout, self._widget_layout).setHorizontalSpacing(new_val)
 
-    formLayoutHorizontalSpacing: int = Property(int, _get_layout_h_spacing, _set_layout_h_spacing)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formLayoutHorizontalSpacing = Property(int, _get_layout_h_spacing, _set_layout_h_spacing)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: int
+    """
 
     def _get_layout_v_spacing(self) -> int:
         if isinstance(self._widget_layout, QFormLayout):
@@ -350,8 +390,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _set_layout_v_spacing(self, new_val: int):
         cast(QFormLayout, self._widget_layout).setVerticalSpacing(new_val)
 
-    formLayoutVerticalSpacing: int = Property(int, _get_layout_v_spacing, _set_layout_v_spacing)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formLayoutVerticalSpacing = Property(int, _get_layout_v_spacing, _set_layout_v_spacing)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: int
+    """
 
     def _get_layout_field_growth(self) -> "PropertyEdit.FormLayoutFieldGrowthPolicy":
         if isinstance(self._widget_layout, QFormLayout):
@@ -362,8 +406,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _set_layout_field_growth(self, new_val: "PropertyEdit.FormLayoutFieldGrowthPolicy"):
         cast(QFormLayout, self._widget_layout).setFieldGrowthPolicy(new_val)
 
-    formFieldGrowthPolicy: "PropertyEdit.FormLayoutFieldGrowthPolicy" = Property("QFormLayout::FieldGrowthPolicy", _get_layout_field_growth, _set_layout_field_growth)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formFieldGrowthPolicy = Property("QFormLayout::FieldGrowthPolicy", _get_layout_field_growth, _set_layout_field_growth)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: PropertyEdit.FormLayoutFieldGrowthPolicy
+    """
 
     def _get_layout_row_wrap(self) -> "PropertyEdit.FormLayoutRowWrapPolicy":
         if isinstance(self._widget_layout, QFormLayout):
@@ -374,8 +422,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
     def _set_layout_row_wrap(self, new_val: "PropertyEdit.FormLayoutRowWrapPolicy"):
         cast(QFormLayout, self._widget_layout).setRowWrapPolicy(new_val)
 
-    formRowWrapPolicy: "PropertyEdit.FormLayoutRowWrapPolicy" = Property("QFormLayout::RowWrapPolicy", _get_layout_row_wrap, _set_layout_row_wrap)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formRowWrapPolicy = Property("QFormLayout::RowWrapPolicy", _get_layout_row_wrap, _set_layout_row_wrap)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: PropertyEdit.FormLayoutRowWrapPolicy
+    """
 
     def _get_layout_label_align(self) -> Qt.Alignment:
         if isinstance(self._widget_layout, QFormLayout):
@@ -388,8 +440,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     # Even though Qt.Alignment is very verbose, we keep it original to avoid duplicating data structure into PropertyEdit,
     # so that in *.ui file it starts referring to PropertyEdit::AlignLeft, and stays Qt::AlignLeft
-    formLabelAlignment: Qt.Alignment = Property(Qt.Alignment, _get_layout_label_align, _set_layout_label_align)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formLabelAlignment = Property(Qt.Alignment, _get_layout_label_align, _set_layout_label_align)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: Qt.Alignment
+    """
 
     def _get_layout_form_align(self) -> Qt.Alignment:
         if isinstance(self._widget_layout, QFormLayout):
@@ -402,8 +458,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
 
     # Even though Qt.Alignment is very verbose, we keep it original to avoid duplicating data structure into PropertyEdit,
     # so that in *.ui file it starts referring to PropertyEdit::AlignLeft, and stays Qt::AlignLeft
-    formAlignment: Qt.Alignment = Property(Qt.Alignment, _get_layout_form_align, _set_layout_form_align)
-    """Layout parameter applied to the form layout produced by the default layout delegate."""
+    formAlignment = Property(Qt.Alignment, _get_layout_form_align, _set_layout_form_align)
+    """
+    Layout parameter applied to the form layout produced by the default layout delegate.
+
+    :type: Qt.Alignment
+    """
 
     def _get_button_box_offset(self) -> int:
         return self._layout.spacing()
@@ -412,8 +472,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._button_box_offset = new_val
         self._layout.setSpacing(new_val)
 
-    buttonBoxOffset: int = Property(int, _get_button_box_offset, _set_button_box_offset)
-    """Spacing between main form and button box."""
+    buttonBoxOffset = Property(int, _get_button_box_offset, _set_button_box_offset)
+    """
+    Spacing between main form and button box.
+
+    :type: int
+    """
 
     def _get_fields(self) -> List[PropertyEditField]:
         if is_designer():
@@ -426,8 +490,12 @@ class PropertyEdit(QWidget, _QtDesignerButtons, _QtDesignerButtonPosition, _QtDe
         self._widget_config = new_val
         self._layout_widgets()
 
-    fields: List[PropertyEditField] = Property(str, _get_fields, _set_fields, designable=False)
-    """Configuration for the fields that construct the form of widgets inside this container."""
+    fields = Property(str, _get_fields, _set_fields, designable=False)
+    """
+    Configuration for the fields that construct the form of widgets inside this container.
+
+    :type: ~typing.List[PropertyEditField]
+    """
 
     @property
     def widget_delegate(self) -> "AbstractPropertyEditWidgetDelegate":

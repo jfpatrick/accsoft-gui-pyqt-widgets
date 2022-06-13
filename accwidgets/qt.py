@@ -911,8 +911,12 @@ class ActivityIndicator(QWidget):
                 self._label = None
 
     # Unfortunately, can't call this a "text", because Sphinx does not pick it up for autodoc
-    hint: str = Property(str, fget=_get_hint, fset=setHint)
-    """Text value that is shown beside the spinning icon."""
+    hint = Property(str, fget=_get_hint, fset=setHint)
+    """
+    Text value that is shown beside the spinning icon.
+
+    :type: str
+    """
 
     @Slot()
     def startAnimation(self):

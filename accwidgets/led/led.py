@@ -123,8 +123,12 @@ class Led(QWidget, _QtDesignerStatus, _QtDesignerAlignment):
         self._status = Led.Status.NONE
         self._set_color(new_val)
 
-    color: QColor = Property("QColor", _get_color, _set_color_prop_wrapper)
-    """Fill color of the LED."""
+    color = Property("QColor", _get_color, _set_color_prop_wrapper)
+    """
+    Fill color of the LED.
+
+    :type: QColor
+    """
 
     def _get_status(self) -> "Led.Status":
         return self._status
@@ -141,8 +145,12 @@ class Led(QWidget, _QtDesignerStatus, _QtDesignerAlignment):
             return
         self._set_color(color)
 
-    status: "Led.Status" = Property(_QtDesignerStatus, _get_status, _set_status)
-    """Status to switch LED to a predefined color."""
+    status = Property(_QtDesignerStatus, _get_status, _set_status)
+    """
+    Status to switch LED to a predefined color.
+
+    :type: Led.Status
+    """
 
     def _get_alignment(self) -> "Led.Alignment":
         return self._alignment
@@ -155,8 +163,12 @@ class Led(QWidget, _QtDesignerStatus, _QtDesignerAlignment):
         self._accent_brush = QBrush(self._accent_grad)
         self.update()
 
-    alignment: "Led.Alignment" = Property(_QtDesignerAlignment, _get_alignment, _set_alignment)
-    """Alignment of the rendered LED inside the widget frame."""
+    alignment = Property(_QtDesignerAlignment, _get_alignment, _set_alignment)
+    """
+    Alignment of the rendered LED inside the widget frame.
+
+    :type: Led.Alignment
+    """
 
     def paintEvent(self, event: QPaintEvent):
         """

@@ -99,7 +99,7 @@ class ScreenshotButton(OrientedToolButton):
     def _set_include_window_decorations(self, new_val: bool):
         self._compatible_action().include_window_decorations = new_val
 
-    includeWindowDecorations: bool = Property(bool, _get_include_window_decorations, _set_include_window_decorations)
+    includeWindowDecorations = Property(bool, _get_include_window_decorations, _set_include_window_decorations)
     """
     Include window decorations in the screenshot if given :attr:`source` is a :class:`QMainWindow`.
 
@@ -112,6 +112,8 @@ class ScreenshotButton(OrientedToolButton):
     Raises:
         AssertionError: When setting the property and the :meth:`~QToolButton.defaultAction` of this widget is not of
                         type :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+
+    :type: bool
     """
 
     def _get_max_entries(self) -> int:
@@ -120,7 +122,7 @@ class ScreenshotButton(OrientedToolButton):
     def _set_max_entries(self, new_val: int):
         self._compatible_action().max_menu_entries = new_val
 
-    maxMenuEntries: int = Property(int, _get_max_entries, _set_max_entries)
+    maxMenuEntries = Property(int, _get_max_entries, _set_max_entries)
     """
     Limit of existing e-logbook entries displayed in the menu. This filter works together with :attr:`maxMenuDays`.
 
@@ -130,6 +132,8 @@ class ScreenshotButton(OrientedToolButton):
     Raises:
         AssertionError: When :meth:`~QToolButton.defaultAction` of this widget is not of
                         type :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+
+    :type: int
     """
 
     def _get_max_days(self) -> int:
@@ -138,7 +142,7 @@ class ScreenshotButton(OrientedToolButton):
     def _set_max_days(self, new_val: int):
         self._compatible_action().max_menu_days = new_val
 
-    maxMenuDays: int = Property(int, _get_max_days, _set_max_days)
+    maxMenuDays = Property(int, _get_max_days, _set_max_days)
     """
     Limit of recent days to collect the existing e-logbook entries that are then displayed in the menu. This filter
     works together with :attr:`maxMenuEntries`.
@@ -149,6 +153,8 @@ class ScreenshotButton(OrientedToolButton):
     Raises:
         AssertionError: When :meth:`~QToolButton.defaultAction` of this widget is not of
                         type :class:`~accwidgets.screenshot.ScreenshotAction` or a subclass.
+
+    :type: int
     """
 
     def _get_model(self) -> LogbookModel:

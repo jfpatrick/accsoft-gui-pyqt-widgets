@@ -218,13 +218,15 @@ class LogConsole(QWidget):
 
         self.expandedStateChanged.emit(self.expanded)
 
-    expanded: bool = Property(bool, fget=__get_expanded, fset=__set_expanded)
+    expanded = Property(bool, fget=__get_expanded, fset=__set_expanded)
     """
     Flag controlling whether the view is expanded or collapsed. The full log view is visible in expanded mode
     and hidden in collapsed mode. The single-line field of the last message is visible in either mode.
 
     If :attr:`collapsible` is set to :obj:`False`, setting this flag to :obj:`False` will reset :attr:`collapsible`
     back to :obj:`True`.
+
+    :type: bool
     """
 
     def __get_collapsible(self) -> bool:
@@ -250,13 +252,15 @@ class LogConsole(QWidget):
                 self._btn_toggle.deleteLater()
                 self._btn_toggle = None
 
-    collapsible: bool = Property(bool, fget=__get_collapsible, fset=__set_collapsible)
+    collapsible = Property(bool, fget=__get_collapsible, fset=__set_collapsible)
     """
     Specifies whether the widget can be toggle between "collapsed" and "expanded" modes. If not, the arrow button
     to toggle the modes is removed.
 
     If :attr:`expanded` is set to :obj:`False`, setting this flag to :obj:`False` will reset :attr:`expanded` back to
     :obj:`True`.
+
+    :type: bool
     """
 
     def __get_error_color(self) -> str:
@@ -265,10 +269,12 @@ class LogConsole(QWidget):
     def __set_error_color(self, color: QColor):
         self._set_color_to_scheme(color=color, level=LogLevel.ERROR)
 
-    errorColor: QColor = Property(QColor, fget=__get_error_color, fset=__set_error_color, designable=True)
+    errorColor = Property(QColor, fget=__get_error_color, fset=__set_error_color, designable=True)
     """
     Default error color, which can also be configured by the user in "Preferences" dialog. This property
     enables ability to restyle the widget with QSS.
+
+    :type: QColor
     """
 
     def __get_warn_color(self) -> str:
@@ -277,10 +283,12 @@ class LogConsole(QWidget):
     def __set_warn_color(self, color: QColor):
         self._set_color_to_scheme(color=color, level=LogLevel.WARNING)
 
-    warningColor: QColor = Property(QColor, fget=__get_warn_color, fset=__set_warn_color, designable=True)
+    warningColor = Property(QColor, fget=__get_warn_color, fset=__set_warn_color, designable=True)
     """
     Default warning color, which can also be configured by the user in "Preferences" dialog. This property
     enables ability to restyle the widget with QSS.
+
+    :type: QColor
     """
 
     def __get_critical_color(self) -> str:
@@ -289,10 +297,12 @@ class LogConsole(QWidget):
     def __set_critical_color(self, color: QColor):
         self._set_color_to_scheme(color=color, level=LogLevel.CRITICAL)
 
-    criticalColor: QColor = Property(QColor, fget=__get_critical_color, fset=__set_critical_color, designable=True)
+    criticalColor = Property(QColor, fget=__get_critical_color, fset=__set_critical_color, designable=True)
     """
     Default critical color, which can also be configured by the user in "Preferences" dialog. This property
     enables ability to restyle the widget with QSS.
+
+    :type: QColor
     """
 
     def __get_info_color(self) -> str:
@@ -301,10 +311,12 @@ class LogConsole(QWidget):
     def __set_info_color(self, color: QColor):
         self._set_color_to_scheme(color=color, level=LogLevel.INFO)
 
-    infoColor: QColor = Property(QColor, fget=__get_info_color, fset=__set_info_color, designable=True)
+    infoColor = Property(QColor, fget=__get_info_color, fset=__set_info_color, designable=True)
     """
     Default info color, which can also be configured by the user in "Preferences" dialog. This property
     enables ability to restyle the widget with QSS.
+
+    :type: QColor
     """
 
     def __get_debug_color(self) -> str:
@@ -313,10 +325,12 @@ class LogConsole(QWidget):
     def __set_debug_color(self, color: QColor):
         self._set_color_to_scheme(color=color, level=LogLevel.DEBUG)
 
-    debugColor: QColor = Property(QColor, fget=__get_debug_color, fset=__set_debug_color, designable=True)
+    debugColor = Property(QColor, fget=__get_debug_color, fset=__set_debug_color, designable=True)
     """
     Default debug color, which can also be configured by the user in "Preferences" dialog. This property
     enables ability to restyle the widget with QSS.
+
+    :type: QColor
     """
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:

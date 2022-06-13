@@ -91,9 +91,11 @@ class RbaButton(QWidget):
     # Even though it's a single color property currently, it cannot be removed, because unlike other
     # places that have QLabels, which can be configured with dynamic properties, this color is given to the
     # table model, which does not have access to QLabels and cannot propagate any dynamic property information.
-    mcsColor: Color = Property(QColor, fget=_get_color_fg_mcs, fset=_set_color_fg_mcs)
+    mcsColor = Property(QColor, fget=_get_color_fg_mcs, fset=_set_color_fg_mcs)
     """
     Font color for MSC roles in role picker. This property enables ability to restyle the widget with QSS.
+
+    :type: ~typing.Union[Qt.GlobalColor, QColor]
     """
 
     def set_icons(self,

@@ -261,8 +261,12 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._labels = new_val
         self._update_label_visibility()
 
-    labels: "TimingBar.Labels" = Property(_QtDesignerLabels, _get_labels, _set_labels)
-    """Bit mask for various labels that have to be displayed in the widget. By default, all the labels are enabled."""
+    labels = Property(_QtDesignerLabels, _get_labels, _set_labels)
+    """
+    Bit mask for various labels that have to be displayed in the widget. By default, all the labels are enabled.
+
+    :type: TimingBar.Labels
+    """
 
     def _get_displayed_tz(self) -> "TimingBar.TimeZone":
         return self._displayed_tz
@@ -273,10 +277,12 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._displayed_tz = new_val
         self._on_new_timing_info(False)
 
-    displayedTimeZone: "TimingBar.TimeZone" = Property(_QtDesignerTimeZone, _get_displayed_tz, _set_displayed_tz)
+    displayedTimeZone = Property(_QtDesignerTimeZone, _get_displayed_tz, _set_displayed_tz)
     """
     Timezone that is used to display the timestamps in the label. It will shift the timestamps reported by
     the model to correctly represent the selected timezone.
+
+    :type: TimingBar.TimeZone
     """
 
     def _get_indicate_heartbeat(self) -> bool:
@@ -286,8 +292,12 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._use_heartbeat = new_val
         self._update_alternate_indication()
 
-    indicateHeartbeat: bool = Property(bool, fget=_get_indicate_heartbeat, fset=_set_indicate_heartbeat)
-    """Flag to alternate background color on every new tick from the timing system. Defaults to :obj:`True`."""
+    indicateHeartbeat = Property(bool, fget=_get_indicate_heartbeat, fset=_set_indicate_heartbeat)
+    """
+    Flag to alternate background color on every new tick from the timing system. Defaults to :obj:`True`.
+
+    :type: bool
+    """
 
     def _get_highlighted_user(self) -> Optional[str]:
         return self._highlighted_user
@@ -296,12 +306,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._highlighted_user = new_val
         self._redraw()
 
-    highlightedUser: Optional[str] = Property(str, fget=_get_highlighted_user, fset=_set_highlighted_user)
+    highlightedUser = Property(str, fget=_get_highlighted_user, fset=_set_highlighted_user)
     """
     Optional timing user that can be set to highlight cycles with the matching user property. When not set,
     all cycles will be rendered in highlighted color. Default value is :obj:`None`.
 
     In the default color scheme, highlighted users are blue, while others are gray.
+
+    :type: ~typing.Optional[str]
     """
 
     def _get_render_supercycle(self) -> bool:
@@ -315,10 +327,12 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         else:
             self.hideSuperCycle()
 
-    renderSuperCycle: bool = Property(bool, fget=_get_render_supercycle, fset=_set_render_supercycle)
+    renderSuperCycle = Property(bool, fget=_get_render_supercycle, fset=_set_render_supercycle)
     """
     Flag to enable or disable rendering of the supercycle structure. When disabled, only the top row of the
     labels remains and the widget shrinks in height.
+
+    :type: bool
     """
 
     def _get_show_us(self) -> bool:
@@ -330,9 +344,11 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._show_us = new_val
         self._on_new_timing_info(False)
 
-    showMicroSeconds: bool = Property(bool, fget=_get_show_us, fset=_set_show_us)
+    showMicroSeconds = Property(bool, fget=_get_show_us, fset=_set_show_us)
     """
     Use microsecond precision in the timestamp label. Defaults to :obj:`False`.
+
+    :type: bool
     """
 
     def _get_show_tz(self) -> bool:
@@ -344,9 +360,11 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self._show_tz = new_val
         self._on_new_timing_info(False)
 
-    showTimeZone: bool = Property(bool, fget=_get_show_tz, fset=_set_show_tz)
+    showTimeZone = Property(bool, fget=_get_show_tz, fset=_set_show_tz)
     """
     Display timezone in the timestamp label. Defaults to :obj:`False`.
+
+    :type: bool
     """
 
     def _get_palette(self) -> TimingBarPalette:
@@ -382,13 +400,15 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
             new_val = TimingBarDomain(val)
         self.model.domain = new_val
 
-    domain: TimingBarDomain = Property(_QtDesignerDomain, fget=_get_domain, fset=_set_domain)
+    domain = Property(_QtDesignerDomain, fget=_get_domain, fset=_set_domain)
     """
     Currently displayed timing domain. Resetting this value will lead to termination of the active connections
     to XTIM and CTIM devices and creation of the new ones.
 
     This is a convenience property to access timing domain that actually belongs to the :attr:`model` (and can
     be modified there). It exists on the widget level for the sake of allowing this configuration in Qt Designer.
+
+    :type: TimingBarDomain
     """
 
     def _get_timing_mark_color(self) -> QColor:
@@ -400,12 +420,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    timingMarkColor: Color = Property(QColor, fget=_get_timing_mark_color, fset=_set_timing_mark_color, designable=True)
+    timingMarkColor = Property(QColor, fget=_get_timing_mark_color, fset=_set_timing_mark_color, designable=True)
     """
     Background color of the timing mark bar and its related label rendered in the supercycle view.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_timing_mark_text_color(self) -> QColor:
@@ -417,12 +439,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    timingMarkTextColor: Color = Property(QColor, fget=_get_timing_mark_text_color, fset=_set_timing_mark_text_color, designable=True)
+    timingMarkTextColor = Property(QColor, fget=_get_timing_mark_text_color, fset=_set_timing_mark_text_color, designable=True)
     """
     Font color of the timing mark label rendered in the supercycle view.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_normal_cycle_color(self) -> QColor:
@@ -434,13 +458,15 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    normalCycleColor: Color = Property(QColor, fget=_get_normal_cycle_color, fset=_set_normal_cycle_color, designable=True)
+    normalCycleColor = Property(QColor, fget=_get_normal_cycle_color, fset=_set_normal_cycle_color, designable=True)
     """
     Color of the cycle blocks and font for cycle start, user and LSA name labels for cycles that do not match the
     :attr:`highlightedUser` property when it's set.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_highlighted_cycle_color(self) -> QColor:
@@ -452,13 +478,15 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    highlightedCycleColor: Color = Property(QColor, fget=_get_highlighted_cycle_color, fset=_set_highlighted_cycle_color, designable=True)
+    highlightedCycleColor = Property(QColor, fget=_get_highlighted_cycle_color, fset=_set_highlighted_cycle_color, designable=True)
     """
     Color of the cycle blocks and font for cycle start, user and LSA name labels for cycles that match the
     :attr:`highlightedUser` property, or when this property is set to :obj:`None`.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_pattern_color(self) -> QColor:
@@ -470,12 +498,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundPatternColor: Color = Property(QColor, fget=_get_bg_pattern_color, fset=_set_bg_pattern_color, designable=True)
+    backgroundPatternColor = Property(QColor, fget=_get_bg_pattern_color, fset=_set_bg_pattern_color, designable=True)
     """
     Color of the dot pattern overlaid over background gradient.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_pattern_alt_color(self) -> QColor:
@@ -487,12 +517,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundPatternAltColor: Color = Property(QColor, fget=_get_bg_pattern_alt_color, fset=_set_bg_pattern_alt_color, designable=True)
+    backgroundPatternAltColor = Property(QColor, fget=_get_bg_pattern_alt_color, fset=_set_bg_pattern_alt_color, designable=True)
     """
     Alternate color of the dot pattern overlaid over background gradient when indicating heartbeat.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_top_color(self) -> QColor:
@@ -504,12 +536,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundTopColor: Color = Property(QColor, fget=_get_bg_top_color, fset=_set_bg_top_color, designable=True)
+    backgroundTopColor = Property(QColor, fget=_get_bg_top_color, fset=_set_bg_top_color, designable=True)
     """
     Top color of the background gradient.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_bottom_color(self) -> QColor:
@@ -521,12 +555,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundBottomColor: Color = Property(QColor, fget=_get_bg_bottom_color, fset=_set_bg_bottom_color, designable=True)
+    backgroundBottomColor = Property(QColor, fget=_get_bg_bottom_color, fset=_set_bg_bottom_color, designable=True)
     """
     Bottom color of the background gradient.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_top_alt_color(self) -> QColor:
@@ -538,12 +574,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundTopAltColor: Color = Property(QColor, fget=_get_bg_top_alt_color, fset=_set_bg_top_alt_color, designable=True)
+    backgroundTopAltColor = Property(QColor, fget=_get_bg_top_alt_color, fset=_set_bg_top_alt_color, designable=True)
     """
     Alternate top color of the background gradient when indicating heartbeat.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_bg_bottom_alt_color(self) -> QColor:
@@ -555,12 +593,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    backgroundBottomAltColor: Color = Property(QColor, fget=_get_bg_bottom_alt_color, fset=_set_bg_bottom_alt_color, designable=True)
+    backgroundBottomAltColor = Property(QColor, fget=_get_bg_bottom_alt_color, fset=_set_bg_bottom_alt_color, designable=True)
     """
     Alternate bottom color of the background gradient when indicating heartbeat.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_text_color(self) -> QColor:
@@ -572,12 +612,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    textColor: Color = Property(QColor, fget=_get_text_color, fset=_set_text_color, designable=True)
+    textColor = Property(QColor, fget=_get_text_color, fset=_set_text_color, designable=True)
     """
     Default text color of the timing domain and timestamp labels.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_error_text_color(self) -> QColor:
@@ -589,12 +631,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    errorTextColor: Color = Property(QColor, fget=_get_error_text_color, fset=_set_error_text_color, designable=True)
+    errorTextColor = Property(QColor, fget=_get_error_text_color, fset=_set_error_text_color, designable=True)
     """
     Font color of the error message (displayed when communication with XTIM or CTIM devices fails).
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     def _get_frame_color(self) -> QColor:
@@ -606,12 +650,14 @@ class TimingBar(QWidget, _QtDesignerLabels, _QtDesignerDomain, _QtDesignerTimeZo
         self.color_palette = palette
 
     # Property must stay designable in order to react to QSS styling
-    frameColor: Color = Property(QColor, fget=_get_frame_color, fset=_set_frame_color, designable=True)
+    frameColor = Property(QColor, fget=_get_frame_color, fset=_set_frame_color, designable=True)
     """
     Color of the frame around the widget.
 
     This property exists only for ability to restyle the widget with QSS. For programmatic styling, it is suggested to
     set :attr:`color_palette` property.
+
+    :type: Color
     """
 
     @Slot()
